@@ -1,0 +1,23 @@
+# Node
+node_modules/
+.env
+.DS_Store
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+android/.gradle
+android/captures
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/*.iml
+
+# Editor
+.vscode/
+.idea/

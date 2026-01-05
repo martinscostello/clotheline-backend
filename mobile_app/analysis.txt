@@ -1,0 +1,69 @@
+Analyzing mobile_app...                                         
+
+  error • The method 'toJson' isn't defined for the type 'ServiceModel' • lib/models/app_content_model.dart:34:57 • undefined_method
+warning • Unused import: 'package:flutter/material.dart' • lib/models/store_product.dart:1:8 • unused_import
+warning • The value of the field '_formKey' isn't used • lib/screens/admin/cms/admin_cms_content_screen.dart:20:9 • unused_field
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/cms/admin_cms_screen.dart:97:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/orders/admin_orders_screen.dart:75:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/orders/admin_orders_screen.dart:99:66 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/settings/admin_settings_screen.dart:55:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/users/admin_users_screen.dart:87:58 • deprecated_member_use
+   info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/screens/auth/login_screen.dart:1:8 • unnecessary_import
+warning • Unused import: '../../widgets/medical/MedicalLogo.dart' • lib/screens/auth/login_screen.dart:6:8 • unused_import
+warning • Unused import: '../../theme/app_theme.dart' • lib/screens/auth/login_screen.dart:9:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/login_screen.dart:164:37 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/login_screen.dart:211:41 • deprecated_member_use
+warning • Unused import: '../../../models/booking_models.dart' • lib/screens/user/booking/checkout_screen.dart:3:8 • unused_import
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/booking/checkout_screen.dart:376:55 • prefer_const_constructors
+warning • Unused import: 'package:laundry_app/theme/app_theme.dart' • lib/screens/user/dashboard_screen.dart:4:8 • unused_import
+warning • The value of the field '_isLoadingContent' isn't used • lib/screens/user/dashboard_screen.dart:78:8 • unused_field
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/dashboard_screen.dart:144:17 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/dashboard_screen.dart:522:20 • prefer_const_constructors
+   info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/screens/user/main_layout.dart:1:8 • unnecessary_import
+   info • The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/screens/user/products/product_detail_screen.dart:2:8 • unnecessary_import
+warning • Unused import: 'package:laundry_app/theme/app_theme.dart' • lib/screens/user/products/product_detail_screen.dart:3:8 • unused_import
+warning • Unused import: 'product_selection_sheet.dart' • lib/screens/user/products/product_detail_screen.dart:8:8 • unused_import
+warning • Unused import: '../../../widgets/ui/liquid_glass_container.dart' • lib/screens/user/products/product_detail_screen.dart:11:8 • unused_import
+warning • The declaration '_runAddToCartAnimation' isn't referenced • lib/screens/user/products/product_detail_screen.dart:49:8 • unused_element
+warning • The value of the local variable 'priceColor' isn't used • lib/screens/user/products/product_detail_screen.dart:61:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/products/product_detail_screen.dart:162:74 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/products/product_detail_screen.dart:241:71 • deprecated_member_use
+   info • Unnecessary use of string interpolation • lib/screens/user/products/product_detail_screen.dart:254:57 • unnecessary_string_interpolations
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/products/product_detail_screen.dart:270:81 • deprecated_member_use
+warning • The '!' will have no effect because the receiver can't be null • lib/screens/user/products/product_detail_screen.dart:337:33 • unnecessary_non_null_assertion
+warning • Unused import: 'package:laundry_app/theme/app_theme.dart' • lib/screens/user/products/product_selection_sheet.dart:4:8 • unused_import
+warning • Unused import: 'package:laundry_app/theme/app_theme.dart' • lib/screens/user/products/products_screen.dart:4:8 • unused_import
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/products/products_screen.dart:364:27 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/products/store_cart_screen.dart:35:19 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/products/store_cart_screen.dart:35:53 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/products/store_cart_screen.dart:77:11 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/products/store_cart_screen.dart:79:20 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/products/store_cart_screen.dart:105:30 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/products/store_cart_screen.dart:110:51 • prefer_const_constructors
+   info • Don't invoke 'print' in production code • lib/services/api_service.dart:41:9 • avoid_print
+warning • The value of the field '_nairaFormat' isn't used • lib/utils/currency_formatter.dart:4:29 • unused_field
+warning • Unused import: '../glass/GlassContainer.dart' • lib/widgets/booking/booking_sheet.dart:3:8 • unused_import
+   info • The 'child' argument should be last in widget constructor invocations • lib/widgets/booking/booking_sheet.dart:249:22 • sort_child_properties_last
+   info • The file name 'WashingMachineLogo.dart' isn't a lower_case_with_underscores identifier • lib/widgets/branding/WashingMachineLogo.dart:1:1 • file_names
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/branding/WashingMachineLogo.dart:18:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/branding/WashingMachineLogo.dart:80:37 • deprecated_member_use
+   info • The file name 'FigmaBackground.dart' isn't a lower_case_with_underscores identifier • lib/widgets/glass/FigmaBackground.dart:1:1 • file_names
+   info • The file name 'FigmaGlassCard.dart' isn't a lower_case_with_underscores identifier • lib/widgets/glass/FigmaGlassCard.dart:1:1 • file_names
+   info • The file name 'FloatingObjectsBackground.dart' isn't a lower_case_with_underscores identifier • lib/widgets/glass/FloatingObjectsBackground.dart:1:1 • file_names
+   info • The file name 'GlassContainer.dart' isn't a lower_case_with_underscores identifier • lib/widgets/glass/GlassContainer.dart:1:1 • file_names
+   info • The file name 'LaundryGlassBackground.dart' isn't a lower_case_with_underscores identifier • lib/widgets/glass/LaundryGlassBackground.dart:1:1 • file_names
+   info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/widgets/glass/LaundryGlassBackground.dart:3:8 • unnecessary_import
+   info • The file name 'LiquidBackground.dart' isn't a lower_case_with_underscores identifier • lib/widgets/glass/LiquidBackground.dart:1:1 • file_names
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/glass/LiquidBackground.dart:59:46 • deprecated_member_use
+   info • The file name 'LiquidMeshBackground.dart' isn't a lower_case_with_underscores identifier • lib/widgets/glass/LiquidMeshBackground.dart:1:1 • file_names
+   info • The file name 'WaterDroplet.dart' isn't a lower_case_with_underscores identifier • lib/widgets/glass/WaterDroplet.dart:1:1 • file_names
+   info • The file name 'MedicalLogo.dart' isn't a lower_case_with_underscores identifier • lib/widgets/medical/MedicalLogo.dart:1:1 • file_names
+   info • Use 'const' with the constructor to improve performance • lib/widgets/medical/MedicalLogo.dart:20:25 • prefer_const_constructors
+warning • The value of the local variable 'paint' isn't used • lib/widgets/medical/MedicalLogo.dart:44:11 • unused_local_variable
+   info • The file name 'RefractiveRingClipper.dart' isn't a lower_case_with_underscores identifier • lib/widgets/ui/RefractiveRingClipper.dart:1:1 • file_names
+   info • 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead • lib/widgets/ui/liquid_glass_container.dart:36:9 • deprecated_member_use
+   info • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • lib/widgets/ui/liquid_glass_container.dart:37:9 • deprecated_member_use
+   info • 'translate' is deprecated and shouldn't be used. Use translateByVector3, translateByVector4, or translateByDouble instead • lib/widgets/ui/liquid_glass_container.dart:38:9 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/ui/liquid_glass_container.dart:54:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/ui/liquid_glass_container.dart:85:39 • deprecated_member_use
+

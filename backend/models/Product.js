@@ -1,0 +1,23 @@
+const mongoose = require('mongoose');
+
+const ProductSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    description: String,
+    price: { type: Number, required: true },
+    category: String,
+    imageUrls: [String], // Array of image URLs
+    variations: [{
+        name: String,
+        price: Number,
+        originalPrice: Number
+    }],
+    isFreeShipping: { type: Boolean, default: false },
+    discountPercentage: { type: Number, default: 0 },
+    originalPrice: { type: Number }, // derived or set
+    stock: { type: Number, default: 0 },
+    soldCount: { type: Number, default: 0 },
+    rating: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true }
+});
+
+module.exports = mongoose.model('Product', ProductSchema);

@@ -1,0 +1,5 @@
+[dotenv@17.2.3] injecting env (1) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+No MONGO_URI found, starting In-Memory MongoDB...
+Server running on port 5001
+In-Memory MongoDB started at mongodb://127.0.0.1:64106/
+MongoDB connected

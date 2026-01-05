@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: clotheline-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: PORT
+        value: 10000

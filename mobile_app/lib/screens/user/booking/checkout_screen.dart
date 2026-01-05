@@ -1,0 +1,541 @@
+import 'package:flutter/material.dart';
+import '../../../theme/app_theme.dart';
+import '../../../models/booking_models.dart';
+import '../../../services/cart_service.dart';
+import 'package:flutter/services.dart';
+import '../../../services/content_service.dart';
+import '../../../models/app_content_model.dart';
+import '../../../services/order_service.dart';
+
+class CheckoutScreen extends StatefulWidget {
+  // Use Singleton instead of passing list
+  const CheckoutScreen({super.key});
+
+  @override
+  State<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends State<CheckoutScreen> {
+  final _cartService = CartService();
+  int _currentStage = 1;
+  
+  // Logic Selections
+  int _beforeWashOption = 1; 
+  int _afterWashOption = 1;
+
+  // Controllers
+  final _pickupAddressController = TextEditingController();
+  final _pickupPhoneController = TextEditingController();
+  final _deliveryAddressController = TextEditingController();
+  final _deliveryPhoneController = TextEditingController();
+
+  // Branch Info
+  String _branchAddress = "Loading...";
+  String _branchPhone = "Loading...";
+  final _contentService = ContentService();
+
+  @override
+  void initState() {
+     super.initState();
+     _fetchContent();
+  }
+
+  Future<void> _fetchContent() async {
+    final content = await _contentService.getAppContent();
+    if(mounted && content != null) {
+      setState(() {
+        _branchAddress = content.contactAddress;
+        _branchPhone = content.contactPhone;
+      });
+    }
+  }
+
+  // Navigation Helpers
+  String _getStageTitle() {
+    if (_currentStage == 1) return "Pickup & Drop-off";
+    if (_currentStage == 2) return "Order Summary";
+    return "Checkout";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_getStageTitle(), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: textColor),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        ),
+      ),
+      body: ListenableBuilder(
+        listenable: _cartService,
+        builder: (context, _) {
+          return Column(
+            children: [
+              // Step Indicator
+              _buildStepIndicator(isDark),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: _buildStageContent(isDark, textColor),
+                ),
+              ),
+
+               // Navigation Buttons
+               _buildBottomBar(isDark),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
+  Widget _buildStepIndicator(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildStepDot(1, isDark),
+          _buildStepLine(1, isDark),
+          _buildStepDot(2, isDark),
+          // Stage 3 is conceptually Payment/Final
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepDot(int step, bool isDark) {
+    final isActive = _currentStage >= step;
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: isActive ? AppTheme.primaryColor : (isDark ? Colors.white10 : Colors.grey.shade300),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text("$step", style: TextStyle(color: isActive ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _buildStepLine(int step, bool isDark) {
+    final isActive = _currentStage > step;
+    return Container(
+      width: 50,
+      height: 2,
+      color: isActive ? AppTheme.primaryColor : (isDark ? Colors.white10 : Colors.grey.shade300),
+    );
+  }
+
+  Widget _buildStageContent(bool isDark, Color textColor) {
+    if (_currentStage == 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Before Wash Section
+          _buildSectionHeader("Before Wash", textColor),
+          const SizedBox(height: 15),
+          _buildOptionTile(
+            value: 1,
+            groupValue: _beforeWashOption,
+            title: "Pickup: We will pickup",
+            subtitle: "Schedule a pickup time",
+            onChanged: (val) => setState(() => _beforeWashOption = val!),
+            isDark: isDark,
+            colors: textColor,
+          ),
+          if (_beforeWashOption == 1) _buildAddressInputs(_pickupAddressController, _pickupPhoneController, isDark),
+          
+          const SizedBox(height: 10),
+          _buildOptionTile(
+            value: 2,
+            groupValue: _beforeWashOption,
+            title: "I'll Drop off",
+            subtitle: "Bring to our location",
+            onChanged: (val) => setState(() => _beforeWashOption = val!),
+            isDark: isDark,
+            colors: textColor,
+          ),
+          if (_beforeWashOption == 2) _buildBranchInfo(isDark),
+
+          const SizedBox(height: 30),
+
+          // After Wash Section
+          _buildSectionHeader("After Wash", textColor),
+          const SizedBox(height: 15),
+           _buildOptionTile(
+            value: 1,
+            groupValue: _afterWashOption,
+            title: "Deliver to Me",
+            subtitle: "Schedule a delivery time",
+            onChanged: (val) => setState(() => _afterWashOption = val!),
+            isDark: isDark,
+            colors: textColor,
+          ),
+          if (_afterWashOption == 1) _buildAddressInputs(_deliveryAddressController, _deliveryPhoneController, isDark, labelPrefix: "Delivery"),
+
+          const SizedBox(height: 10),
+          _buildOptionTile(
+            value: 2,
+            groupValue: _afterWashOption,
+            title: "I'll Pick up",
+            subtitle: "Collect from our location",
+            onChanged: (val) => setState(() => _afterWashOption = val!),
+            isDark: isDark,
+            colors: textColor,
+          ),
+           if (_afterWashOption == 2) _buildBranchInfo(isDark),
+        ],
+      );
+    } else {
+      // Stage 2: Summary
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           _buildSectionHeader("Order Details", textColor),
+           const SizedBox(height: 15),
+           _buildSummaryCard(isDark, textColor),
+           
+           const SizedBox(height: 30),
+            _buildSectionHeader("Logistics", textColor),
+            const SizedBox(height: 10),
+            _buildLogisticsSummary(isDark, textColor),
+        ],
+      );
+    }
+  }
+
+  Widget _buildSectionHeader(String title, Color textColor) {
+    return Text(title, style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold));
+  }
+
+  Widget _buildOptionTile({
+    required int value, 
+    required int groupValue, 
+    required String title, 
+    required String subtitle, 
+    required ValueChanged<int?> onChanged,
+    required bool isDark,
+    required Color colors,
+  }) {
+    final isSelected = value == groupValue;
+    return GestureDetector(
+      onTap: () => onChanged(value),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.1) : (isDark ? Colors.white10 : Colors.grey.shade50),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.transparent),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: isSelected ? AppTheme.primaryColor : Colors.grey,
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(color: colors, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(subtitle, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddressInputs(TextEditingController addrCtrl, TextEditingController phoneCtrl, bool isDark, {String labelPrefix = "Pickup"}) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 20, right: 10, bottom: 20, top: 5),
+      child: Column(
+        children: [
+          _buildTextField(addrCtrl, "$labelPrefix Address", Icons.location_on, isDark),
+          const SizedBox(height: 10),
+          _buildTextField(phoneCtrl, "Contact Phone", Icons.phone, isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.black26 : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
+      ),
+      child: TextField(
+        controller: controller,
+        style: TextStyle(color: isDark ? Colors.white : Colors.black),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black38),
+          prefixIcon: Icon(icon, color: Colors.grey),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBranchInfo(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(left: 20, bottom: 20),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300, style: BorderStyle.solid),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Our Branch Location:", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+          const SizedBox(height: 4),
+          Row(children: [
+            const Icon(Icons.store, size: 16, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            Text(_branchAddress, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: 4),
+          Row(children: [
+            const Icon(Icons.call, size: 16, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            Text(_branchPhone, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(bool isDark, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        children: [
+          // Laundry Items
+          ..._cartService.items.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text("${item.quantity}x ${item.item.name} (${item.serviceType.name})", style: TextStyle(color: textColor))),
+                Text("₦${item.totalPrice.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              ],
+            ),
+          )),
+          
+          // Store Items
+          ..._cartService.storeItems.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text("${item.quantity}x ${item.product.name} ${item.variant != null ? '(${item.variant!.name})' : ''}", style: TextStyle(color: textColor))),
+                Text("₦${item.totalPrice.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              ],
+            ),
+          )),
+
+          const Divider(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Total", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+              Text("₦${_cartService.totalAmount.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogisticsSummary(bool isDark, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLogisticsRow("Pickup", _beforeWashOption == 1 ? "We pick up at: ${_pickupAddressController.text}" : "You drop off at Branch", textColor),
+          const SizedBox(height: 10),
+          _buildLogisticsRow("Delivery", _afterWashOption == 1 ? "We deliver to: ${_deliveryAddressController.text}" : "You pick up at Branch", textColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogisticsRow(String label, String value, Color textColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 80, child: Text(label, style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
+        Expanded(child: Text(value, style: TextStyle(color: textColor))),
+      ],
+    );
+  }
+
+  final _orderService = OrderService();
+  bool _isSubmitting = false;
+
+  Future<void> _submitOrder() async {
+    setState(() => _isSubmitting = true);
+
+    // Prepare Items
+    List<Map<String, dynamic>> items = [];
+    
+    // Laundry Items
+    for (var i in _cartService.items) {
+      items.add({
+        'itemType': 'Service',
+        'itemId': i.item.id,
+        'name': i.item.name,
+        'serviceType': i.serviceType.name,
+        'quantity': i.quantity,
+        'price': i.totalPrice / i.quantity // Unit price
+      });
+    }
+
+    // Store Items
+    for (var i in _cartService.storeItems) {
+      items.add({
+        'itemType': 'Product',
+        'itemId': i.product.id,
+        'name': i.product.name,
+        'variant': i.variant?.name,
+        'quantity': i.quantity,
+        'price': i.price
+      });
+    }
+
+    final orderData = {
+      'items': items,
+      'totalAmount': _cartService.totalAmount,
+      'pickupOption': _beforeWashOption == 1 ? 'Pickup' : 'Dropoff',
+      'deliveryOption': _afterWashOption == 1 ? 'Deliver' : 'Pickup',
+      'pickupAddress': _beforeWashOption == 1 ? _pickupAddressController.text : null,
+      'pickupPhone': _beforeWashOption == 1 ? _pickupPhoneController.text : null,
+      'deliveryAddress': _afterWashOption == 1 ? _deliveryAddressController.text : null,
+      'deliveryPhone': _afterWashOption == 1 ? _deliveryPhoneController.text : null,
+      'guestInfo': {
+        'name': 'Guest User', // Placeholder if no auth
+        'phone': _pickupPhoneController.text.isNotEmpty ? _pickupPhoneController.text : _deliveryPhoneController.text
+      }
+    };
+
+    final success = await _orderService.createOrder(orderData);
+    
+    setState(() => _isSubmitting = false);
+
+    if (success && mounted) {
+      _cartService.clearCart(); 
+      // Show Success Dialog
+      showDialog(
+        context: context, 
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Order Placed!"),
+          content: const Text("Your order has been successfully placed."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop(); // Close Dialog
+                Navigator.of(context).pop(); // Close Checkout
+              }, 
+              child: const Text("OK")
+            )
+          ],
+        )
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to place order")));
+    }
+  }
+
+  Widget _buildBottomBar(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.black26 : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        boxShadow: [
+           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))
+        ]
+      ),
+      child: _currentStage == 1 
+        ? SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              onPressed: () => setState(() => _currentStage = 2),
+              child: const Text("PROCEED", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          )
+        : Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                  onPressed: _isSubmitting ? null : _submitOrder,
+                  child: _isSubmitting 
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text("PROCEED TO PAYMENT", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 15),
+               SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.call),
+                  label: const Text("Call to Place Order"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark ? Colors.white : Colors.black,
+                    side: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                  onPressed: () {
+                    // Call logic
+                  },
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+}

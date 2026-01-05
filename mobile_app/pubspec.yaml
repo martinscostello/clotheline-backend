@@ -1,0 +1,51 @@
+name: laundry_app
+description: "A new Flutter project for Laundry Business."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  provider: ^6.1.1
+  flutter_riverpod: ^2.4.9
+
+  # Internal Packages
+  liquid_glass_ui:
+    path: ../packages/liquid_glass_ui
+
+
+  # UI & Animation
+  google_fonts: ^6.1.0
+  flutter_animate: ^4.5.0
+  glassmorphism: ^3.0.0
+  # For Shaders
+  flutter_shaders: ^0.1.2 
+
+  # Networking
+  http: ^1.1.2
+  dio: ^5.4.0
+  flutter_secure_storage: ^9.0.0
+
+  # Extras
+  intl: ^0.19.0
+  cupertino_icons: ^1.0.2
+  image_picker: ^1.2.1
+  image_cropper: ^11.0.0
+  http_parser: ^4.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/shaders/

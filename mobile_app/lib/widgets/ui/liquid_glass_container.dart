@@ -1,0 +1,141 @@
+import 'dart:ui';
+import 'package:flutter/material.dart';
+
+/// A reusable, high-fidelity "Liquid Glass" container.
+/// 
+/// Features:
+/// - Full Refraction (Center Zoom 1.06x, Blur 2.0)
+/// - Subtle Concave Rim (Inner White Shadow)
+/// - Depth Shadow (Back Black Shadow)
+/// - Fully responsive zoom origin (anchored to screen center)
+class LiquidGlassContainer extends StatelessWidget {
+  final Widget child;
+  final double radius;
+  final double? width;
+  final double? height;
+  final EdgeInsetsGeometry? padding;
+
+  const LiquidGlassContainer({
+    super.key,
+    required this.child,
+    this.radius = 24.0,
+    this.width,
+    this.height,
+    this.padding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate Center for Refraction (Uniform Zoom)
+    // This ensures the zoom "inflates" from the center of the screen, not top-left.
+    final screenSize = MediaQuery.of(context).size;
+    final cx = screenSize.width / 2;
+    final cy = screenSize.height / 2;
+    
+    final Matrix4 zoomMatrix = Matrix4.identity()
+      ..translate(cx, cy)
+      ..scale(1.06) // 1.06x Zoom
+      ..translate(-cx, -cy);
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        fit: StackFit.loose,
+        children: [
+          // 0. Shadow Layer (Depth)
+          // A subtle shadow behind the glass to lift it off the background.
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(radius),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2), // Tuned Intensity
+                    blurRadius: 15,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8), 
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 1. Liquid Glass Lens (Refraction)
+          // Applies the warp and blur effect to the ENTIRE container.
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(radius),
+              child: BackdropFilter(
+                filter: ImageFilter.compose(
+                  outer: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0), // Tuned Blur
+                  inner: ImageFilter.matrix(zoomMatrix.storage), // Uniform Center Warp
+                ),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+          ),
+
+          // 2. Subtle Concave Rim (Inner Reflection)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _InnerShadowPainter(
+                  radius: radius,
+                  color: Colors.white.withOpacity(0.2), // Tuned Opacity
+                  blur: 2, // Matches Lens Blur
+                  offset: const Offset(0, 0), // Uniform
+                  strokeWidth: 1.2, // Tuned Spread
+                ),
+              ),
+            ),
+          ),
+
+          // 3. Child Content
+          Container(
+            padding: padding,
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Custom Painter for the Internal Rim Light
+class _InnerShadowPainter extends CustomPainter {
+  final double radius;
+  final double strokeWidth;
+  final Color color;
+  final double blur;
+  final Offset offset;
+
+  _InnerShadowPainter({
+    required this.radius,
+    this.strokeWidth = 2,
+    this.color = const Color(0xB3FFFFFF),
+    this.blur = 1,
+    this.offset = const Offset(2, 2),
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+
+    canvas.save();
+    canvas.clipRRect(rrect);
+    
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth * 2 // Double width so half is clipped
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
+
+    canvas.drawRRect(rrect.shift(offset), paint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
