@@ -197,8 +197,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                  ),
               ),
             ),
-            // Floating padding removed
-            // const SizedBox(height: 80), 
+            // Floating padding restored to clear Navbar
+            const SizedBox(height: 90), 
           ],
         );
       },
