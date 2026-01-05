@@ -122,11 +122,22 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
                                   image: p.imageUrls.isNotEmpty 
-                                      ? DecorationImage(image: NetworkImage(p.imageUrls.first), fit: BoxFit.cover)
-                                      : null,
-                                  color: Colors.white10
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: p.imageUrls.isNotEmpty 
+                                      ? Image.network(
+                                          p.imageUrls.first,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Center(child: Icon(Icons.broken_image, color: Colors.redAccent, size: 20));
+                                          },
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white30)));
+                                          },
+                                        )
+                                      : const Center(child: Icon(Icons.image, color: Colors.white24)),
                                 ),
-                                child: p.imageUrls.isEmpty ? const Icon(Icons.image, color: Colors.white) : null,
                               ),
                               title: Text(p.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                               subtitle: Text("₦${p.price.toStringAsFixed(0)} • Stock: ${p.stockLevel} • ${p.category}", style: const TextStyle(color: Colors.white70, fontSize: 12)),
