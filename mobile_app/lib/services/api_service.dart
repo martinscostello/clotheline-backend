@@ -6,13 +6,7 @@ import 'dart:io';
 class ApiService {
   // Use localhost for iOS Simulator, or 10.0.2.2 for Android Emulator
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5001/api'; // Web localhost
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5001/api'; // Android Emulator
-    }
-    return 'http://localhost:5001/api'; // iOS Simulator
+    return 'https://clotheline-api.onrender.com/api'; 
   }
   
   final Dio _dio = Dio(BaseOptions(

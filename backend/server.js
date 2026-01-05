@@ -39,7 +39,9 @@ const connectDB = async () => {
     }
 };
 
-connectDB();
+connectDB().then(() => {
+    require('./controllers/serviceController').seedServices();
+});
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
