@@ -4,7 +4,11 @@ const AppContentSchema = new mongoose.Schema({
     heroCarousel: [{
         imageUrl: { type: String, required: true },
         title: String,
-        actionUrl: String
+        titleColor: { type: String, default: "0xFFFFFFFF" }, // Default white
+        tagLine: String,
+        tagLineColor: { type: String, default: "0xFFFFFFFF" },
+        actionUrl: String,
+        active: { type: Boolean, default: true }
     }],
     homeGridServices: [{
         type: mongoose.Schema.Types.ObjectId,
