@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:laundry_app/services/api_service.dart';
 import '../models/store_product.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 // Service to manage Store Data (Product Listing, Editing)
 class StoreService extends ChangeNotifier {
@@ -53,12 +55,32 @@ class StoreService extends ChangeNotifier {
   }
 
   Future<void> fetchFeaturedProducts() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 1. Load from cache first if empty
+    if (_featuredProducts.isEmpty) {
+      try {
+        final cached = prefs.getString('featured_products_cache');
+        if (cached != null) {
+          final List<dynamic> data = jsonDecode(cached);
+          _featuredProducts = data.map((json) => StoreProduct.fromJson(json)).toList();
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint("Error loading featured product cache: $e");
+      }
+    }
+
+    // 2. Fetch from API
     try {
       final response = await _apiService.client.get('/products?limit=5');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         _featuredProducts = data.map((json) => StoreProduct.fromJson(json)).toList();
         notifyListeners();
+        
+        // Save to cache
+        await prefs.setString('featured_products_cache', jsonEncode(data));
       }
     } catch (e) {
       debugPrint("Error fetching featured products: $e");

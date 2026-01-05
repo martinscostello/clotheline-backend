@@ -4,6 +4,8 @@ import 'package:laundry_app/models/app_content_model.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class ContentService {
   final ApiService _apiService = ApiService();
@@ -54,16 +56,32 @@ class ContentService {
   }
 
   Future<AppContentModel?> getAppContent() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // 1. Try fetching from network
     try {
       final response = await _apiService.client.get('/content');
       if (response.statusCode == 200) {
+        // Cache data
+        await prefs.setString('app_content_cache', jsonEncode(response.data));
         return AppContentModel.fromJson(response.data);
       }
-      return null;
     } catch (e) {
-      debugPrint("Error fetching content: $e");
-      return null;
+      debugPrint("Error fetching content from API: $e");
     }
+
+    // 2. Fallback to cache if network fails
+    try {
+      final cachedString = prefs.getString('app_content_cache');
+      if (cachedString != null) {
+        debugPrint("Loading content from cache");
+        return AppContentModel.fromJson(jsonDecode(cachedString));
+      }
+    } catch (e) {
+      debugPrint("Error reading content cache: $e");
+    }
+    
+    return null;
   }
 
   Future<bool> updateAppContent(Map<String, dynamic> updates) async {

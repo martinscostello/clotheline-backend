@@ -136,7 +136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ListenableBuilder(
                   listenable: _laundryService,
                   builder: (context, child) {
-                     if (_laundryService.isLoading) {
+                     if (_laundryService.isLoading && _laundryService.services.isEmpty) {
                        return const Center(child: CircularProgressIndicator());
                      }
                      return _buildServiceGrid(context, isDark);
