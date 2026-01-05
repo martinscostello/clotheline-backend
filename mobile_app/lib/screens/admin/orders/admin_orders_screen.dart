@@ -72,7 +72,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                  padding: const EdgeInsets.fromLTRB(20, 140, 20, 100),
                   itemCount: orders.length,
                   itemBuilder: (context, index) {
                     final order = orders[index];
