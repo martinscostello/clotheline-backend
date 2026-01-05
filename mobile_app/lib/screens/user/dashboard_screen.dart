@@ -139,6 +139,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                      if (_laundryService.isLoading && _laundryService.services.isEmpty) {
                        return const Center(child: CircularProgressIndicator());
                      }
+                     
+                     if (!_laundryService.isLoading && _laundryService.services.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cloud_off, size: 48, color: isDark ? Colors.white54 : Colors.black45),
+                              const SizedBox(height: 10),
+                              Text("Connection Lost", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                              const SizedBox(height: 10),
+                              ElevatedButton.icon(
+                                onPressed: _fetchData, 
+                                icon: const Icon(Icons.refresh),
+                                label: const Text("Retry"),
+                              )
+                            ],
+                          ),
+                        );
+                     }
                      return _buildServiceGrid(context, isDark);
                   }
                 ),
