@@ -63,4 +63,14 @@ class CartService extends ChangeNotifier {
     _storeItems.clear();
     notifyListeners();
   }
+
+  void clearServiceItems() {
+    _items.clear();
+    notifyListeners();
+  }
+
+  void clearStoreItems() {
+    _storeItems.clear();
+    notifyListeners();
+  }
 }

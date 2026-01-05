@@ -3,7 +3,7 @@ import '../../../models/store_product.dart';
 import '../../../services/cart_service.dart';
 import '../../../utils/currency_formatter.dart';
 import 'package:laundry_app/theme/app_theme.dart';
-import '../booking/checkout_screen.dart';
+import 'store_checkout_screen.dart';
 
 class StoreCartScreen extends StatelessWidget {
   const StoreCartScreen({super.key});
@@ -192,7 +192,7 @@ class StoreCartScreen extends StatelessWidget {
                  ),
                  onPressed: () {
                    Navigator.of(context).push(MaterialPageRoute(
-                     builder: (context) => const CheckoutScreen(),
+                     builder: (context) => const StoreCheckoutScreen(),
                    ));
                  },
                  child: const Text("Checkout", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

@@ -335,6 +335,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: Column(
         children: [
           // Laundry Items
+          // Laundry Items Only
           ..._cartService.items.map((item) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
@@ -346,24 +347,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           )),
           
-          // Store Items
-          ..._cartService.storeItems.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(child: Text("${item.quantity}x ${item.product.name} ${item.variant != null ? '(${item.variant!.name})' : ''}", style: TextStyle(color: textColor))),
-                Text("₦${item.totalPrice.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-              ],
-            ),
-          )),
-
           const Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("Total", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-              Text("₦${_cartService.totalAmount.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
+              Text("₦${_cartService.serviceTotalAmount.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
             ],
           ),
         ],
@@ -420,23 +409,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       });
     }
 
-    // Store Items
+    // Store Items (REMOVED - Laundry Only)
+    /*
     for (var i in _cartService.storeItems) {
-      items.add({
-        'itemType': 'Product',
-        'itemId': i.product.id,
-        'name': i.product.name,
-        'variant': i.variant?.name,
-        'quantity': i.quantity,
-        'price': i.price
-      });
+       // ...
     }
+    */
 
     final orderData = {
       'items': items,
-      'totalAmount': _cartService.totalAmount,
+      'totalAmount': _cartService.serviceTotalAmount,
       'pickupOption': _beforeWashOption == 1 ? 'Pickup' : 'Dropoff',
-      'deliveryOption': _afterWashOption == 1 ? 'Deliver' : 'Pickup',
+      'deliveryOption': _afterWashOption == 1 ? 'Deliver' : 'Pickup', // Fixed logic
       'pickupAddress': _beforeWashOption == 1 ? _pickupAddressController.text : null,
       'pickupPhone': _beforeWashOption == 1 ? _pickupPhoneController.text : null,
       'deliveryAddress': _afterWashOption == 1 ? _deliveryAddressController.text : null,
@@ -452,7 +436,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isSubmitting = false);
 
     if (success && mounted) {
-      _cartService.clearCart(); 
+      _cartService.clearServiceItems();  // ONLY Clear Laundry 
       // Show Success Dialog
       showDialog(
         context: context, 

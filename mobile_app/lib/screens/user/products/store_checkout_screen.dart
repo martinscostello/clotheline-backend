@@ -1,0 +1,428 @@
+import 'package:flutter/material.dart';
+import '../../../theme/app_theme.dart';
+import '../../../models/booking_models.dart';
+import '../../../services/cart_service.dart';
+import 'package:flutter/services.dart';
+import '../../../services/content_service.dart';
+// import '../../../models/app_content_model.dart';
+import '../../../services/order_service.dart';
+
+class StoreCheckoutScreen extends StatefulWidget {
+  const StoreCheckoutScreen({super.key});
+
+  @override
+  State<StoreCheckoutScreen> createState() => _StoreCheckoutScreenState();
+}
+
+class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
+  final _cartService = CartService();
+  int _currentStage = 1;
+  
+  // Logic Selections
+  int _deliveryOption = 1; // 1 = Deliver, 2 = Pickup
+
+  // Controllers
+  final _deliveryAddressController = TextEditingController();
+  final _contactPhoneController = TextEditingController();
+
+  // Branch Info
+  String _branchAddress = "Loading...";
+  String _branchPhone = "Loading...";
+  final _contentService = ContentService();
+
+  @override
+  void initState() {
+     super.initState();
+     _fetchContent();
+  }
+
+  Future<void> _fetchContent() async {
+    final content = await _contentService.getAppContent();
+    if(mounted && content != null) {
+      setState(() {
+        _branchAddress = content.contactAddress;
+        _branchPhone = content.contactPhone;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_currentStage == 1 ? "Delivery Options" : "Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: textColor),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        ),
+      ),
+      body: ListenableBuilder(
+        listenable: _cartService,
+        builder: (context, _) {
+          if (_cartService.storeItems.isEmpty && _currentStage == 1) {
+             // Should verify valid state if accessed directly
+             return const Center(child: Text("Cart is empty"));
+          }
+          
+          return Column(
+            children: [
+              _buildStepIndicator(isDark),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: _buildStageContent(isDark, textColor),
+                ),
+              ),
+               _buildBottomBar(isDark),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
+  Widget _buildStepIndicator(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildStepDot(1, isDark),
+          _buildStepLine(1, isDark),
+          _buildStepDot(2, isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepDot(int step, bool isDark) {
+    final isActive = _currentStage >= step;
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: isActive ? AppTheme.primaryColor : (isDark ? Colors.white10 : Colors.grey.shade300),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text("$step", style: TextStyle(color: isActive ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _buildStepLine(int step, bool isDark) {
+    final isActive = _currentStage > step;
+    return Container(
+      width: 50,
+      height: 2,
+      color: isActive ? AppTheme.primaryColor : (isDark ? Colors.white10 : Colors.grey.shade300),
+    );
+  }
+
+  Widget _buildStageContent(bool isDark, Color textColor) {
+    if (_currentStage == 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Text("How do you want your products?", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+           const SizedBox(height: 20),
+           
+           // Option 1: Delivery
+           _buildOptionTile(
+            value: 1,
+            groupValue: _deliveryOption,
+            title: "Review Delivery",
+            subtitle: "We deliver to your doorstep",
+            onChanged: (val) => setState(() => _deliveryOption = val!),
+            isDark: isDark,
+            colors: textColor,
+          ),
+          if (_deliveryOption == 1) 
+            Padding(
+               padding: const EdgeInsets.only(left: 20, right: 10, bottom: 20),
+               child: Column(
+                 children: [
+                   _buildTextField(_deliveryAddressController, "Delivery Address", Icons.location_on, isDark),
+                   const SizedBox(height: 10),
+                   _buildTextField(_contactPhoneController, "Contact Phone", Icons.phone, isDark),
+                 ],
+               ),
+            ),
+
+          const SizedBox(height: 10),
+          
+          // Option 2: Pickup
+          _buildOptionTile(
+            value: 2,
+            groupValue: _deliveryOption,
+            title: "I'll Pick up",
+            subtitle: "Collect from our branch",
+            onChanged: (val) => setState(() => _deliveryOption = val!),
+            isDark: isDark,
+            colors: textColor,
+          ),
+          if (_deliveryOption == 2) _buildBranchInfo(isDark),
+        ],
+      );
+    } else {
+      // Summary
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Text("Order Details", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+           const SizedBox(height: 15),
+           _buildSummaryCard(isDark, textColor),
+           
+           const SizedBox(height: 30),
+            Text("Delivery Option", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white10 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Row(
+                children: [
+                  Icon(_deliveryOption == 1 ? Icons.local_shipping : Icons.store, color: AppTheme.primaryColor),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_deliveryOption == 1 ? "Delivery to Doorstep" : "Pickup at Branch", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+                        if (_deliveryOption == 1)
+                          Text(_deliveryAddressController.text, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                        if (_deliveryOption == 2)
+                          Text("Our Branch: $_branchAddress", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            )
+        ],
+      );
+    }
+  }
+
+  Widget _buildSummaryCard(bool isDark, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        children: [
+          // ONLY Store Items
+          ..._cartService.storeItems.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text("${item.quantity}x ${item.product.name} ${item.variant != null ? '(${item.variant!.name})' : ''}", style: TextStyle(color: textColor))),
+                Text("₦${item.totalPrice.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              ],
+            ),
+          )),
+          const Divider(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Total Amount", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+              Text("₦${_cartService.storeTotalAmount.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ... (Helper widgets similar to CheckoutScreen) ...
+  // To save space/complexity I'll inline simplest versions or copy relevant ones.
+  
+  Widget _buildOptionTile({required int value, required int groupValue, required String title, required String subtitle, required ValueChanged<int?> onChanged, required bool isDark, required Color colors}) {
+    final isSelected = value == groupValue;
+    return GestureDetector(
+      onTap: () => onChanged(value),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.1) : (isDark ? Colors.white10 : Colors.grey.shade50),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.transparent),
+        ),
+        child: Row(
+          children: [
+            Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_off, color: isSelected ? AppTheme.primaryColor : Colors.grey),
+            const SizedBox(width: 15),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: TextStyle(color: colors, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(subtitle, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+            ])),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.black26 : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
+      ),
+      child: TextField(
+        controller: controller,
+        style: TextStyle(color: isDark ? Colors.white : Colors.black),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black38),
+          prefixIcon: Icon(icon, color: Colors.grey),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBranchInfo(bool isDark) {
+     return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(children: [
+        const Icon(Icons.store, color: AppTheme.primaryColor),
+        const SizedBox(width: 10),
+        Expanded(child: Text(_branchAddress, style: TextStyle(color: isDark ? Colors.white : Colors.black87))),
+      ]),
+    );
+  }
+
+  final _orderService = OrderService();
+  bool _isSubmitting = false;
+
+  Future<void> _submitOrder() async {
+    setState(() => _isSubmitting = true);
+    List<Map<String, dynamic>> items = [];
+    
+    // ONLY Store Items
+    for (var i in _cartService.storeItems) {
+      items.add({
+        'itemType': 'Product',
+        'itemId': i.product.id,
+        'name': i.product.name,
+        'variant': i.variant?.name,
+        'quantity': i.quantity,
+        'price': i.price
+      });
+    }
+
+    final orderData = {
+      'items': items,
+      'totalAmount': _cartService.storeTotalAmount,
+      'pickupOption': _deliveryOption == 2 ? 'Pickup' : 'None', // Store pickup
+      'deliveryOption': _deliveryOption == 1 ? 'Deliver' : 'Pickup',
+      'deliveryAddress': _deliveryOption == 1 ? _deliveryAddressController.text : null,
+      'deliveryPhone': _deliveryOption == 1 ? _contactPhoneController.text : null,
+      'guestInfo': {
+         'name': 'Guest User',
+         'phone': _contactPhoneController.text
+      }
+    };
+
+    final success = await _orderService.createOrder(orderData);
+    setState(() => _isSubmitting = false);
+
+    if (success && mounted) {
+      // Clear ONLY store items ??
+      // CartService currently has `clearCart()` which clears ALL.
+      // I need `clearStoreItems()` in CartService.
+      // For now I'll use `_cartService.clearCart()` assuming separation means user won't mix. 
+      // But user might have Laundry items in Bucket.
+      // I MUST IMPLEMENT `clearStoreItems()` in CartService.
+      
+      // Clear Store Items
+      _cartService.clearStoreItems();
+      
+      showDialog(
+        context: context, 
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Order Placed!"),
+          content: const Text("Your store order has been successfully placed."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop(); 
+                Navigator.of(context).pop(); 
+                Navigator.of(context).pop(); // Back to Dashboard?
+              }, 
+              child: const Text("OK")
+            )
+          ],
+        )
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to place order")));
+    }
+  }
+
+  Widget _buildBottomBar(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.black26 : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]
+      ),
+      child: _currentStage == 1 
+        ? SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              onPressed: () {
+                 if(_deliveryOption==1 && (_deliveryAddressController.text.isEmpty || _contactPhoneController.text.isEmpty)) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill in address and phone")));
+                    return;
+                 }
+                 setState(() => _currentStage = 2);
+              },
+              child: const Text("PROCEED TO SUMMARY", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          )
+        : SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              onPressed: _isSubmitting ? null : _submitOrder,
+              child: _isSubmitting 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text("CONFIRM ORDER", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ),
+    );
+  }
+}
