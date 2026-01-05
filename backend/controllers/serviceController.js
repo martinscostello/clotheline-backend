@@ -12,9 +12,10 @@ exports.getAllServices = async (req, res) => {
 
 exports.createService = async (req, res) => {
     try {
-        const { name, icon, color, description, discountPercentage, discountLabel } = req.body;
+        const { name, icon, color, description, image, discountPercentage, discountLabel } = req.body;
         const newService = new Service({
             name, icon, color, description,
+            image: image || 'assets/images/service_laundry.png',
             discountPercentage: discountPercentage || 0,
             discountLabel: discountLabel || ''
         });
@@ -29,7 +30,7 @@ exports.createService = async (req, res) => {
 exports.updateService = async (req, res) => {
     try {
         const {
-            name, icon, color, description,
+            name, icon, color, description, image,
             discountPercentage, discountLabel, isActive,
             isLocked, lockedLabel, items, serviceTypes
         } = req.body;
@@ -41,6 +42,7 @@ exports.updateService = async (req, res) => {
         if (icon) service.icon = icon;
         if (color) service.color = color;
         if (description) service.description = description;
+        if (image) service.image = image; // [FIX] Update Image
         if (discountPercentage !== undefined) service.discountPercentage = discountPercentage;
         if (discountLabel !== undefined) service.discountLabel = discountLabel;
         if (isActive !== undefined) service.isActive = isActive;
@@ -85,6 +87,7 @@ exports.seedServices = async () => {
                     icon: 'local_laundry_service',
                     color: '0xFF448AFF',
                     description: 'Wash & Fold, Ironing',
+                    image: 'assets/images/service_laundry.png',
                     items: [
                         { name: 'Shirt', price: 500 },
                         { name: 'Trousers', price: 600 },
@@ -105,6 +108,7 @@ exports.seedServices = async () => {
                     icon: 'do_not_step',
                     color: '0xFFFF4081',
                     description: 'Sneaker & Shoe Cleaning',
+                    image: 'assets/images/service_shoes.png',
                     items: [
                         { name: 'Sneakers', price: 1500 },
                         { name: 'Boots', price: 2000 },
@@ -121,6 +125,7 @@ exports.seedServices = async () => {
                     icon: 'water_drop',
                     color: '0xFF00E676',
                     description: 'Deep Clean & Vacuum',
+                    image: 'assets/images/service_rug.png',
                     items: [
                         { name: 'Small Rug', price: 3000 },
                         { name: 'Medium Rug', price: 5000 },
@@ -137,6 +142,7 @@ exports.seedServices = async () => {
                     icon: 'house',
                     color: '0xFFFF6D00',
                     description: 'Professional On-site service',
+                    image: 'assets/images/service_house_cleaning.png',
                     items: [
                         { name: '1 Bedroom Flat', price: 15000 },
                         { name: '2 Bedroom Flat', price: 25000 },

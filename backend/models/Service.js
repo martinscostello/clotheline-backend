@@ -16,6 +16,10 @@ const ServiceSchema = new mongoose.Schema({
     description: {
         type: String
     },
+    image: {
+        type: String,
+        default: 'assets/images/service_laundry.png'
+    },
     isActive: {
         type: Boolean,
         default: true
