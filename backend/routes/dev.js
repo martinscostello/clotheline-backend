@@ -7,5 +7,6 @@ const { seedUsers } = require('../controllers/devController');
 // @access  Public (Dev only)
 router.get('/seed', seedUsers);
 router.get('/reset-products', require('../controllers/devController').resetProducts);
+router.get('/reset-services', require('../controllers/devController').resetServices);
 
 module.exports = router;

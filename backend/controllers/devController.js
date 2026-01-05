@@ -45,11 +45,14 @@ exports.seedUsers = async (req, res) => {
 const Product = require('../models/Product');
 const { seedProducts } = require('./productController');
 
-exports.resetProducts = async (req, res) => {
+const Service = require('../models/Service');
+const { seedServices } = require('./serviceController');
+
+exports.resetServices = async (req, res) => {
     try {
-        await Product.deleteMany({});
-        await seedProducts();
-        res.json({ msg: 'Products Reset and Seeded' });
+        await Service.deleteMany({});
+        await seedServices();
+        res.json({ msg: 'Services Reset and Seeded' });
     } catch (e) {
         res.status(500).send(e.message);
     }
