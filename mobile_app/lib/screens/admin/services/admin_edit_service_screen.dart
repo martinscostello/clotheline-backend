@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../models/service_model.dart';
 import '../../../../services/api_service.dart';
 import '../../../../services/content_service.dart';
+import '../../../../services/laundry_service.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
@@ -101,6 +102,9 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
       );
 
       if (response.statusCode == 200) {
+        // Refresh Singleton for User App
+        LaundryService().fetchServices();
+        
         if(mounted) Navigator.pop(context);
       } else {
         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to save changes")));

@@ -107,67 +107,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
       behavior: ScrollBehavior().copyWith(overscroll: false),
       child: Stack(
         children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 80, 
-              bottom: 120
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeroCarousel(),
-                const SizedBox(height: 30),
-                
-                // Categories Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    "Services",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
+          RefreshIndicator(
+            onRefresh: _fetchData,
+            color: isDark ? Colors.white : AppTheme.primaryColor,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(), // Ensure scroll even if empty
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 80, 
+                bottom: 120
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeroCarousel(),
+                  const SizedBox(height: 30),
+                  
+                  // Categories Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      "Services",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 15),
-
-                // Dynamic Service Grid Layout
-                ListenableBuilder(
-                  listenable: _laundryService,
-                  builder: (context, child) {
-                     if (_laundryService.isLoading && _laundryService.services.isEmpty) {
-                       return const Center(child: CircularProgressIndicator());
-                     }
-                     
-                     if (!_laundryService.isLoading && _laundryService.services.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.cloud_off, size: 48, color: isDark ? Colors.white54 : Colors.black45),
-                              const SizedBox(height: 10),
-                              Text("Connection Lost", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
-                              const SizedBox(height: 10),
-                              ElevatedButton.icon(
-                                onPressed: _fetchData, 
-                                icon: const Icon(Icons.refresh),
-                                label: const Text("Retry"),
-                              )
-                            ],
-                          ),
-                        );
-                     }
-                     return _buildServiceGrid(context, isDark);
-                  }
-                ),
-                const SizedBox(height: 30),
-
-                // Featured
-                _buildFeaturedHeader(isDark),
-                const SizedBox(height: 15),
-                _buildFeaturedProductsList(isDark),
-              ],
+                  const SizedBox(height: 15),
+  
+                  // Dynamic Service Grid Layout
+                  ListenableBuilder(
+                    listenable: _laundryService,
+                    builder: (context, child) {
+                       if (_laundryService.isLoading && _laundryService.services.isEmpty) {
+                         return const Center(child: CircularProgressIndicator());
+                       }
+                       
+                       if (!_laundryService.isLoading && _laundryService.services.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.cloud_off, size: 48, color: isDark ? Colors.white54 : Colors.black45),
+                                const SizedBox(height: 10),
+                                Text("Connection Lost", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                                const SizedBox(height: 10),
+                                ElevatedButton.icon(
+                                  onPressed: _fetchData, 
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text("Retry"),
+                                )
+                              ],
+                            ),
+                          );
+                       }
+                       return _buildServiceGrid(context, isDark);
+                    }
+                  ),
+                  const SizedBox(height: 30),
+  
+                  // Featured
+                  _buildFeaturedHeader(isDark),
+                  const SizedBox(height: 15),
+                  _buildFeaturedProductsList(isDark),
+                ],
+              ),
             ),
           ),
 
