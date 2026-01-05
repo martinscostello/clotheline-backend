@@ -2,7 +2,10 @@ const Product = require('../models/Product');
 
 exports.getAllProducts = async (req, res) => {
     try {
-        const products = await Product.find({ isActive: true });
+        const limit = parseInt(req.query.limit) || 0;
+        const products = await Product.find({ isActive: true })
+            .sort({ createdAt: -1 })
+            .limit(limit);
         res.json(products);
     } catch (err) {
         console.error(err.message);
