@@ -49,7 +49,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildQuickAction(context, "Services", Icons.category, Colors.blueGrey, () {
+                    _buildQuickAction(context, "Manage Service Categories", Icons.category, Colors.blueGrey, () {
                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
                     }),
                     const SizedBox(width: 15),

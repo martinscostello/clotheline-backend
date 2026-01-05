@@ -18,9 +18,16 @@ class ClothingItem {
 class CartItem {
   final ClothingItem item;
   final ServiceType serviceType;
+  final double discountPercentage;
   int quantity;
 
-  CartItem({required this.item, required this.serviceType, this.quantity = 1});
+  CartItem({required this.item, required this.serviceType, this.quantity = 1, this.discountPercentage = 0.0});
 
-  double get totalPrice => item.basePrice * serviceType.priceMultiplier * quantity;
+  double get totalPrice {
+     double base = item.basePrice * serviceType.priceMultiplier * quantity;
+     if (discountPercentage > 0) {
+       return base * (1 - (discountPercentage / 100));
+     }
+     return base;
+  }
 }

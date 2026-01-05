@@ -11,6 +11,8 @@ class ServiceModel {
   final String lockedLabel;
   final List<ServiceItem> items;
   final List<ServiceVariant> serviceTypes;
+  final double discountPercentage;
+  final String discountLabel;
 
   ServiceModel({
     required this.id,

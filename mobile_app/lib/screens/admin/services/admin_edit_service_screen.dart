@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../models/service_model.dart';
 import '../../../../services/api_service.dart';
+import '../../../../services/content_service.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class AdminEditServiceScreen extends StatefulWidget {
   final ServiceModel service;
@@ -17,13 +20,17 @@ class AdminEditServiceScreen extends StatefulWidget {
 
 class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
   final _formKey = GlobalKey<FormState>();
+  final ContentService _contentService = ContentService();
+
   late TextEditingController _nameController;
   late TextEditingController _bannerController;
   late TextEditingController _discountController;
+  late TextEditingController _discountLabelController;
   
   bool _isLocked = false;
   List<ServiceItem> _items = [];
   List<ServiceVariant> _variants = [];
+  String _imageUrl = "";
   bool _isSaving = false;
 
   @override
@@ -32,9 +39,43 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
     _nameController = TextEditingController(text: widget.service.name);
     _bannerController = TextEditingController(text: widget.service.lockedLabel);
     _discountController = TextEditingController(text: widget.service.discountPercentage.toString());
+    _discountLabelController = TextEditingController(text: widget.service.discountLabel);
     _isLocked = widget.service.isLocked;
     _items = List.from(widget.service.items);
     _variants = List.from(widget.service.serviceTypes);
+    _imageUrl = widget.service.image;
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+       CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Service Image',
+            toolbarColor: AppTheme.primaryColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.ratio4x3,
+            lockAspectRatio: false,
+          ),
+          IOSUiSettings(
+            title: 'Crop Service Image',
+          ),
+        ],
+      );
+
+      if (croppedFile != null) {
+         setState(() => _isSaving = true);
+         String? url = await _contentService.uploadImage(croppedFile.path);
+         setState(() => _isSaving = false);
+         if (url != null) {
+           setState(() => _imageUrl = url);
+         }
+      }
+    }
   }
 
   Future<void> _saveService() async {
@@ -43,9 +84,11 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
 
     final Map<String, dynamic> body = {
       "name": _nameController.text,
+      "image": _imageUrl,
       "isLocked": _isLocked,
       "lockedLabel": _bannerController.text,
       "discountPercentage": double.tryParse(_discountController.text) ?? 0,
+      "discountLabel": _discountLabelController.text,
       "items": _items.map((e) => e.toJson()).toList(),
       "serviceTypes": _variants.map((e) => e.toJson()).toList(),
     };
@@ -71,6 +114,31 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
 
   void _addItem() {
     _showItemDialog();
+  }
+  
+  void _addVariant() {
+    TextEditingController vCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF202020),
+        title: const Text("Add Service Type", style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: vCtrl, 
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(labelText: "Type Name (e.g. Wash & Fold)", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)))
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(onPressed: (){
+             if(vCtrl.text.isNotEmpty) {
+               setState(() => _variants.add(ServiceVariant(name: vCtrl.text)));
+               Navigator.pop(ctx);
+             }
+          }, child: const Text("Add"))
+        ],
+      )
+    );
   }
 
   void _showItemDialog([int? index]) {
@@ -138,6 +206,47 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 0. Image Section
+                Center(
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15),
+                            color: Colors.black26,
+                            image: _imageUrl.isNotEmpty ? DecorationImage(
+                              image: NetworkImage(_imageUrl),
+                              fit: BoxFit.cover,
+                              colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.3), BlendMode.darken)
+                            ) : null
+                          ),
+                          child: _imageUrl.isEmpty ? const Icon(Icons.add_a_photo, color: Colors.white24, size: 50) : null,
+                        ),
+                        const Positioned(
+                          right: 10,
+                          bottom: 10,
+                          child: Icon(Icons.edit, color: Colors.white70),
+                        ),
+                        // Dimension Helper Badge
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
+                            child: const Text("Recommended: 800x600", style: TextStyle(color: Colors.white, fontSize: 10)),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
                 // 1. General Settings
                 GlassContainer(
                   opacity: 0.1,
@@ -174,6 +283,19 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 15),
+                             Expanded(
+                              child: TextFormField(
+                                controller: _discountLabelController,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  labelText: "Label (e.g. 15% OFF)",
+                                  labelStyle: TextStyle(color: Colors.white54),
+                                  border: OutlineInputBorder(),
+                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -183,7 +305,42 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // 2. Access Control (Locking)
+                // 2. Service Types (Variants) - NEW
+                 GlassContainer(
+                  opacity: 0.1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Service Types", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            IconButton(icon: const Icon(Icons.add, color: AppTheme.primaryColor), onPressed: _addVariant)
+                          ],
+                        ),
+                        if (_variants.isEmpty)
+                         const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: Text("No service types defined", style: TextStyle(color: Colors.white38, fontSize: 12))),
+                         
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _variants.map((v) => Chip(
+                            backgroundColor: Colors.white10,
+                            label: Text(v.name, style: const TextStyle(color: Colors.white)),
+                            deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white54),
+                            onDeleted: () => setState(() => _variants.remove(v)),
+                          )).toList(),
+                        )
+                      ],
+                    ),
+                  ),
+                 ),
+
+                const SizedBox(height: 20),
+
+                // 3. Access Control (Locking)
                 GlassContainer(
                    opacity: 0.1,
                    child: Padding(
@@ -200,15 +357,15 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                          ),
                          if (_isLocked)
                            TextFormField(
-                              controller: _bannerController,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                labelText: "Banner Text (e.g. Coming Soon)",
-                                labelStyle: TextStyle(color: Colors.white54),
-                                border: OutlineInputBorder(),
-                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
-                              ),
-                            ),
+                               controller: _bannerController,
+                               style: const TextStyle(color: Colors.white),
+                               decoration: const InputDecoration(
+                                 labelText: "Banner Text (e.g. Coming Soon)",
+                                 labelStyle: TextStyle(color: Colors.white54),
+                                 border: OutlineInputBorder(),
+                                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                               ),
+                             ),
                        ],
                      ),
                    ),
@@ -216,7 +373,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
 
                 const SizedBox(height: 20),
 
-                // 3. Manage Items (Cloth Types)
+                // 4. Manage Items (Cloth Types)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

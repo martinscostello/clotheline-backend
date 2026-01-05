@@ -7,6 +7,7 @@ import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/models/app_content_model.dart';
+import 'package:laundry_app/services/laundry_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,58 +22,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentHeroIndex = 0;
   Timer? _carouselTimer;
 
-  // Hero Data
-  final List<Map<String, String>> _heroItems = [
-    {
-      "image": "assets/images/hero_offer.png",
-      "title": "15% Off First Order",
-      "subtitle": "Use code FRESH15 for your first laundry booking.",
-    },
-    {
-      "image": "assets/images/service_shoes.png", 
-      "title": "Premium Sneaker Care",
-      "subtitle": "Bring your kicks back to life with our detailed cleaning.",
-    },
-    {
-      "image": "assets/images/service_laundry.png",
-      "title": "Express 24h Delivery",
-      "subtitle": "Need it fast? We deliver clean clothes in 24 hours.",
-    },
-  ];
-
-  // Service Grid Data
-  final List<Map<String, dynamic>> _serviceCategories = [
-    {
-      "name": "Regular & Bulk Laundry",
-      "subtitle": "Shirt, Trouser, Duvet, Blanket",
-      "image": "assets/images/service_laundry.png",
-      "badge": "15% Off",
-      "badgeColor": Colors.pinkAccent
-    },
-    {
-      "name": "Footwears",
-      "subtitle": "Shoes, Canvas, Boots, etc",
-      "image": "assets/images/service_shoes.png",
-      "badge": "10% Off",
-      "badgeColor": Colors.redAccent
-    },
-    {
-      "name": "Rug Cleaning",
-      "subtitle": "Rug & Carpet",
-      "image": "assets/images/service_rug.png",
-      "badge": "Coming Soon",
-      "badgeColor": Colors.blueAccent
-    },
-    {
-      "name": "House Cleaning",
-      "subtitle": "All House Cleaning Service",
-      "image": "assets/images/service_house_cleaning.png",
-      "badge": "Coming Soon",
-      "badgeColor": Colors.blueAccent
-    },
-  ];
-
-  // Dynamic Content State
+  // Services
+  final LaundryService _laundryService = LaundryService();
   final ContentService _contentService = ContentService();
   AppContentModel? _appContent;
   bool _isLoadingContent = true;
@@ -80,10 +31,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchAppContent();
+    _fetchData();
     _startCarouselTimer();
   }
 
+  Future<void> _fetchData() async {
+    await Future.wait([
+      _laundryService.fetchServices(),
+      _fetchAppContent()
+    ]);
+  }
 
   Future<void> _fetchAppContent() async {
     final content = await _contentService.getAppContent();
@@ -91,7 +48,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _appContent = content;
         _isLoadingContent = false;
-        // If content loaded, reset carousel to 0 just in case
         _currentHeroIndex = 0;
       });
     }
@@ -104,11 +60,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  List<dynamic> _getItems() {
+  List<HeroCarouselItem> _getItems() {
     if (_appContent != null && _appContent!.heroCarousel.isNotEmpty) {
       return _appContent!.heroCarousel;
     }
-    return _heroItems;
+    return [];
   }
 
   void _startCarouselTimer() {
@@ -160,7 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
-                    "Categories",
+                    "Services",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -170,8 +126,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 15),
 
-                // New Service Grid Layout
-                _buildServiceGrid(context, isDark),
+                // Dynamic Service Grid Layout
+                ListenableBuilder(
+                  listenable: _laundryService,
+                  builder: (context, child) {
+                     if (_laundryService.isLoading) {
+                       return const Center(child: CircularProgressIndicator());
+                     }
+                     return _buildServiceGrid(context, isDark);
+                  }
+                ),
                 const SizedBox(height: 30),
 
                 // Featured
@@ -219,7 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Good Morning",
+                _appContent?.brandText ?? "Good Morning",
                 style: TextStyle(
                   fontSize: 14,
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -229,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               Text(
-                "DirectorM",
+                "Clotheline",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -282,29 +246,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildHeroCard(dynamic item, int totalItems) {
-    String image, title, subtitle;
-    
-    if (item is HeroCarouselItem) {
-      image = item.imageUrl;
-      title = item.title ?? "";
-      subtitle = item.actionUrl ?? ""; // Using actionUrl as subtitle placeholder for now or ""
-    } else {
-      image = item['image']!;
-      title = item['title']!;
-      subtitle = item['subtitle']!;
-    }
-
-    // Determine Image Source (Asset vs Network)
-    final imageProvider = image.startsWith('assets') 
-        ? AssetImage(image) as ImageProvider
-        : NetworkImage(image);
+  Widget _buildHeroCard(HeroCarouselItem item, int totalItems) {
+    // Parse Colors
+    Color titleClr = Colors.white;
+    Color tagClr = Colors.white70;
+    try {
+      if (item.titleColor != null) {
+         String hex = item.titleColor!.replaceAll("0x", "").replaceAll("#", "");
+         if (hex.length == 6) hex = "FF$hex";
+         titleClr = Color(int.parse(hex, radix: 16));
+      }
+       if (item.tagLineColor != null) {
+         String hex = item.tagLineColor!.replaceAll("0x", "").replaceAll("#", "");
+         if (hex.length == 6) hex = "FF$hex";
+         tagClr = Color(int.parse(hex, radix: 16));
+      }
+    } catch (_) {}
 
     return Container(
+      key: ValueKey("${item.imageUrl}${item.titleColor}${item.tagLineColor}${item.tagLine}"), // Force rebuild on any property change
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         image: DecorationImage(
-          image: imageProvider,
+          image: NetworkImage(item.imageUrl),
           fit: BoxFit.cover,
         ),
       ),
@@ -321,25 +285,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // User commanded: HARD FIX
           children: [
             Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
+              item.title ?? "",
+              style: TextStyle(
+                color: titleClr,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (subtitle.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
+            if (item.tagLine != null && item.tagLine!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  item.tagLine!,
+                  style: TextStyle(
+                    color: tagClr,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-            ],
             const SizedBox(height: 10),
             Row(
               children: List.generate(totalItems, (index) {
@@ -362,6 +328,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildServiceGrid(BuildContext context, bool isDark) {
+    if (_laundryService.services.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text("No services available.", style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)),
+      );
+    }
+
+    // Sort: Unlocked first, then locked? Or by name? Default order likely fine.
+    var services = _laundryService.services;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.builder(
@@ -373,14 +349,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSpacing: 15,
           childAspectRatio: 0.85, 
         ),
-        itemCount: _serviceCategories.length,
+        itemCount: services.length,
         itemBuilder: (context, index) {
-          final cat = _serviceCategories[index];
+          final s = services[index];
           
           final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image Top - [FIX] Rounded 4 Sides
+              // Image Top
               Expanded(
                 flex: 4,
                 child: Stack(
@@ -388,31 +364,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        // [FIX] Full Rounding as requested
                         borderRadius: BorderRadius.circular(20), 
                         image: DecorationImage(
-                          image: AssetImage(cat['image']),
+                          image: s.image.startsWith('http') ? NetworkImage(s.image) : AssetImage(s.image) as ImageProvider,
                           fit: BoxFit.cover,
+                          onError: (_,__) {} 
                         ),
                       ),
                     ),
-                    // Badge
-                     if (cat['badge'] != null)
+                    // Discount / Status Badge
+                     if (s.isLocked)
                       Positioned(
-                        top: 10,
-                        right: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: cat['badgeColor'],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            cat['badge'],
-                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
+                        top: 10, right: 10,
+                        child: _buildBadge(s.lockedLabel, Colors.blueAccent),
+                      )
+                     else if (s.discountPercentage > 0)
+                      Positioned(
+                        top: 10, right: 10,
+                        child: _buildBadge(s.discountLabel.isNotEmpty ? s.discountLabel : "${s.discountPercentage.toStringAsFixed(0)}% OFF", Colors.pinkAccent),
+                      )
                   ],
                 ),
               ),
@@ -425,34 +395,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          cat['name'],
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black87,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+                      Text(
+                        s.name,
+                        maxLines: 1, // Reduced to 1 line to prevent overflow title
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          cat['subtitle'] ?? "",
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isDark ? Colors.white60 : Colors.black54,
-                            fontSize: 11,
+                       // Helper text or description? Using description but truncated
+                       Expanded( // Wrap in Expanded
+                         child: Text(
+                            s.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isDark ? Colors.white60 : Colors.black54,
+                              fontSize: 11,
+                            ),
                           ),
-                        ),
-                      ),
+                       ),
                     ],
                   ),
                 ),
@@ -462,10 +427,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           return GestureDetector(
             onTap: () {
-              if (cat['badge'] == "Coming Soon") {
+              if (s.isLocked) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("${cat['name']} is coming soon!"),
+                    content: Text("${s.name} is coming soon!"),
                     backgroundColor: isDark ? Colors.white10 : Colors.black87,
                     behavior: SnackBarBehavior.floating,
                   )
@@ -477,18 +442,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                builder: (context) => BookingSheet(categoryName: cat['name']),
+                builder: (context) => BookingSheet(serviceModel: s),
               );
             },
             child: isDark 
-              // Dark Mode: Glass Card
               ? LiquidGlassContainer(
                   radius: 20,
-                  opacity: 0.1, // Glass Effect Opacity (not content)
+                  opacity: 0.1,
                   padding: EdgeInsets.zero,
                   child: content, 
                 ).animate().scale(delay: (100 * index).ms, duration: 400.ms)
-              // Light Mode: White Card
               : Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -508,6 +471,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ).animate().scale(delay: (100 * index).ms, duration: 400.ms),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -568,13 +545,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
              Positioned.fill(
                child: ClipRRect(
-                 // [FIX] Full Rounding in all corners
                  borderRadius: BorderRadius.circular(20),
-                 child: Image.asset(imagePath, fit: BoxFit.cover)
+                 child: Image.asset(imagePath, fit: BoxFit.cover, errorBuilder: (c,e,s) => Container(color: Colors.grey))
                ),
              ),
-             // [FIX] Removed heavy black background/gradient for Dark Mode visibility issue
-             // Only small bottom shade for text
              Positioned(
                bottom: 0,
                left: 0,

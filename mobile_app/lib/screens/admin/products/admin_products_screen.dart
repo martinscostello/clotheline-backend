@@ -121,7 +121,8 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                                 width: 50, height: 50,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
-                                  image: p.imageUrls.isNotEmpty 
+                                  color: Colors.black12,
+                                ),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: p.imageUrls.isNotEmpty 

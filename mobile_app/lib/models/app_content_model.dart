@@ -56,14 +56,27 @@ class AppContentModel {
 class HeroCarouselItem {
   String imageUrl;
   String? title;
+  String? titleColor;
+  String? tagLine;
+  String? tagLineColor;
   String? actionUrl;
 
-  HeroCarouselItem({required this.imageUrl, this.title, this.actionUrl});
+  HeroCarouselItem({
+    required this.imageUrl, 
+    this.title, 
+    this.titleColor = "0xFFFFFFFF",
+    this.tagLine,
+    this.tagLineColor = "0xFFFFFFFF",
+    this.actionUrl
+  });
 
   factory HeroCarouselItem.fromJson(Map<String, dynamic> json) {
     return HeroCarouselItem(
       imageUrl: json['imageUrl'],
       title: json['title'],
+      titleColor: json['titleColor'] ?? "0xFFFFFFFF",
+      tagLine: json['tagLine'],
+      tagLineColor: json['tagLineColor'] ?? "0xFFFFFFFF",
       actionUrl: json['actionUrl'],
     );
   }
@@ -71,6 +84,9 @@ class HeroCarouselItem {
   Map<String, dynamic> toJson() => {
     'imageUrl': imageUrl,
     'title': title,
+    'titleColor': titleColor,
+    'tagLine': tagLine,
+    'tagLineColor': tagLineColor,
     'actionUrl': actionUrl,
   };
 }

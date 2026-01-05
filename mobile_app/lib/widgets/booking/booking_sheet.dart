@@ -2,86 +2,77 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../glass/GlassContainer.dart';
 import '../../models/booking_models.dart';
-// Import the package for the dropdown
 import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 import '../../screens/user/booking/my_bucket_screen.dart';
-import '../../services/cart_service.dart'; // [NEW] Import Service
-
-class ClothType {
-  final String id;
-  final String name;
-  final double price;
-
-  ClothType({required this.id, required this.name, required this.price});
-}
+import '../../services/cart_service.dart';
+import '../../models/service_model.dart';
 
 class BookingSheet extends StatefulWidget {
-  final String categoryName;
+  final ServiceModel serviceModel;
 
-  const BookingSheet({super.key, required this.categoryName});
+  const BookingSheet({super.key, required this.serviceModel});
 
   @override
   State<BookingSheet> createState() => _BookingSheetState();
 }
 
 class _BookingSheetState extends State<BookingSheet> {
-  // Mock Data
-  late List<ClothType> _clothItems; 
-  
-  final List<ServiceType> _serviceTypes = [
-    ServiceType(id: '1', name: 'Wash & Fold', priceMultiplier: 1.0),
-    ServiceType(id: '2', name: 'Iron Only', priceMultiplier: 0.8),
-    ServiceType(id: '3', name: 'Dry Clean', priceMultiplier: 1.5),
-  ];
-
-  // Using Service instead of local state for items
   final _cartService = CartService(); 
-
+  
   // Selections
-  ClothType? _selectedCloth;
-  ServiceType? _selectedService;
+  ServiceItem? _selectedCloth;
+  ServiceVariant? _selectedVariant;
   int _quantity = 1;
 
   @override
   void initState() {
     super.initState();
-    _initMockData();
-    _selectedService = _serviceTypes[0];
-  }
-  
-  void _initMockData() {
-    if (widget.categoryName.toLowerCase().contains("footwear")) {
-       _clothItems = [
-        ClothType(id: 'f1', name: 'Sneakers', price: 3000),
-        ClothType(id: 'f2', name: 'Boots', price: 4000),
-        ClothType(id: 'f3', name: 'Shoes', price: 2500),
-      ];
-    } else {
-      // Default / Laundry
-      _clothItems = [
-        ClothType(id: '1', name: 'Duvet', price: 2000),
-        ClothType(id: '2', name: 'Blanket / Small Duvet', price: 1500),
-        ClothType(id: '3', name: 'Towel', price: 500),
-        ClothType(id: '4', name: 'Shirt', price: 800),
-        ClothType(id: '5', name: 'Trousers', price: 800),
-      ];
+    // Default selections
+    if (widget.serviceModel.items.isNotEmpty) {
+      _selectedCloth = widget.serviceModel.items.first;
     }
-    _selectedCloth = _clothItems[0];
+    // Default variant if any, else we might not use variants if empty
+    // But backend should provide default variants? Or we create a dummy "Standard"
+    if (widget.serviceModel.serviceTypes.isNotEmpty) {
+      _selectedVariant = widget.serviceModel.serviceTypes.first;
+    } 
   }
 
   void _addToBucket() {
-    if (_selectedCloth != null && _selectedService != null) {
-      // Add to global service
+    if (_selectedCloth != null) {
+      // If variants exist, use selected one. Else default.
+      String variantName = _selectedVariant?.name ?? "Standard";
+      // We map ServiceVariant to ServiceType or similar?
+      // CartItem needs ServiceType. ServiceType has id, name, priceMultiplier.
+      // Our ServiceVariant only has name. We assume multiplier 1.0 for now unless added.
+      // Wait, CartModel logic might need Review.
+      // Let's create a temporary ServiceType object.
+      
+      final serviceTypeObj = ServiceType(
+        id: variantName, // using name as ID for now
+        name: variantName,
+        priceMultiplier: 1.0 
+      );
+      
+      // CartItem expects ClothingItem (id, name, basePrice)
+      // ServiceItem has (name, price). ID is missing? We can use name as ID.
+      final clothItem = ClothingItem(
+        id: _selectedCloth!.name, 
+        name: _selectedCloth!.name, 
+        basePrice: _selectedCloth!.price
+      );
+
       _cartService.addItem(CartItem(
-        item: ClothingItem(id: _selectedCloth!.id, name: _selectedCloth!.name, basePrice: _selectedCloth!.price),
-        serviceType: _selectedService!,
+        item: clothItem,
+        serviceType: serviceTypeObj,
         quantity: _quantity,
+        discountPercentage: widget.serviceModel.discountPercentage, 
       ));
       
       setState(() {
         _quantity = 1;
       });
-      // Optionally show toast?
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Added to bucket"), duration: Duration(seconds: 1)));
     }
   }
 
@@ -112,7 +103,7 @@ class _BookingSheetState extends State<BookingSheet> {
             ]
           ),
           padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 40),
-          constraints: const BoxConstraints(maxHeight: 750), // Increased height for larger dropdown
+          constraints: const BoxConstraints(maxHeight: 750), 
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,26 +121,21 @@ class _BookingSheetState extends State<BookingSheet> {
               ),
               const SizedBox(height: 20),
               
-              Text("Book ${widget.categoryName}", style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold)),
+              Text("Book ${widget.serviceModel.name}", style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 25),
 
-              // 1. Select Cloth Type (LiquidGlassDropdown)
-              Text("Select Cloth Type", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              
-              // [FIX] Wider Dropdown Area (350 width target)
-              // Using SizedBox to force width, assuming LiquidGlassDropdown expands
-                Container( // Wrapper for layout, or just use Padding
-                  padding: const EdgeInsets.symmetric(horizontal: 0), // V2 has internal padding? 
-                  // V2 has internal padding 16 horiz.
-                  // Let's just use the widget directly, maybe wrapped in a width constrainer if needed.
+              // 1. Select Cloth Type
+              if (widget.serviceModel.items.isNotEmpty && _selectedCloth != null) ...[
+                Text("Select Cloth Type", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                SizedBox(
                   width: double.infinity,
-                  child: LiquidGlassDropdown<ClothType>(
+                  child: LiquidGlassDropdown<ServiceItem>(
                     value: _selectedCloth!,
                     isDark: isDark,
-                    items: _clothItems.map((c) => DropdownMenuItem(
+                    items: widget.serviceModel.items.map((c) => DropdownMenuItem(
                       value: c,
-                      child: SizedBox( // Ensure width for row
+                      child: SizedBox( 
                         width: 250, 
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -165,28 +151,32 @@ class _BookingSheetState extends State<BookingSheet> {
                     },
                   ),
                 ),
+                const SizedBox(height: 20),
+              ] else ...[
+                 Center(child: Text("No items available for this service", style: TextStyle(color: secondaryTextColor))),
+                 const SizedBox(height: 20),
+              ],
 
-              const SizedBox(height: 20),
-
-              // 2. Service Type (LiquidGlassDropdown)
-              Text("Service Type", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-               SizedBox(
-                 width: double.infinity,
-                 child: LiquidGlassDropdown<ServiceType>(
-                  value: _selectedService!,
-                  isDark: isDark,
-                  items: _serviceTypes.map((s) => DropdownMenuItem(
-                    value: s,
-                    child: Text(s.name),
-                  )).toList(),
-                  onChanged: (val) {
-                     if(val != null) setState(() => _selectedService = val);
-                  },
+              // 2. Service Type
+              if (widget.serviceModel.serviceTypes.isNotEmpty && _selectedVariant != null) ...[
+                Text("Service Type", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                 SizedBox(
+                   width: double.infinity,
+                   child: LiquidGlassDropdown<ServiceVariant>(
+                    value: _selectedVariant!,
+                    isDark: isDark,
+                    items: widget.serviceModel.serviceTypes.map((s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(s.name),
+                    )).toList(),
+                    onChanged: (val) {
+                       if(val != null) setState(() => _selectedVariant = val);
+                    },
+                   ),
                  ),
-               ),
-
-              const SizedBox(height: 20),
+                 const SizedBox(height: 20),
+              ],
 
               // 3. Quantity
               Row(
@@ -266,3 +256,5 @@ class _BookingSheetState extends State<BookingSheet> {
     );
   }
 }
+
+

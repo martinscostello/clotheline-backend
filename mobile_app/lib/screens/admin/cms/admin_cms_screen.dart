@@ -53,7 +53,7 @@ class AdminCMSScreen extends StatelessWidget {
 
               const SizedBox(height: 15),
               _buildCMSCard(
-                title: "Manage Product Categories", 
+                title: "Manage Service Categories", 
                 subtitle: "Update service categories & prices.",
                 icon: Icons.category, 
                 color: Colors.blueAccent,

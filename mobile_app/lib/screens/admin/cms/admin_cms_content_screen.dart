@@ -7,6 +7,7 @@ import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/models/app_content_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:laundry_app/widgets/common/color_picker_sheet.dart';
 
 class AdminCMSContentScreen extends StatefulWidget {
   final String section; // 'home', 'ads', 'branding'
@@ -27,11 +28,25 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
   final TextEditingController _brandTextController = TextEditingController();
   final TextEditingController _contactAddressCtrl = TextEditingController();
   final TextEditingController _contactPhoneCtrl = TextEditingController();
-
+  
+  // Dynamic Controllers
+  final List<TextEditingController> _heroTitleControllers = [];
+  final List<TextEditingController> _heroTagControllers = [];
+  
   @override
   void initState() {
     super.initState();
     _fetchContent();
+  }
+
+  @override
+  void dispose() {
+    _brandTextController.dispose();
+    _contactAddressCtrl.dispose();
+    _contactPhoneCtrl.dispose();
+    for (var c in _heroTitleControllers) c.dispose();
+    for (var c in _heroTagControllers) c.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchContent() async {
@@ -49,6 +64,14 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
         _brandTextController.text = content.brandText;
         _contactAddressCtrl.text = content.contactAddress;
         _contactPhoneCtrl.text = content.contactPhone;
+
+        // Init Controllers
+        _heroTitleControllers.clear();
+        _heroTagControllers.clear();
+        for (var item in content.heroCarousel) {
+          _heroTitleControllers.add(TextEditingController(text: item.title));
+          _heroTagControllers.add(TextEditingController(text: item.tagLine));
+        }
       }
       setState(() {
         _content = content;
@@ -61,28 +84,26 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     if (_content == null) return;
     
     _content!.brandText = _brandTextController.text;
-    
-    // Filter out invalid items before saving (e.g. placeholders with empty images)
-    // We create a temporary copy to send to backend, but usually updateAppContent takes Map.
-    // So we can manipulate the _content object but we must be careful not to break the UI state 
-    // if the save fails?
-    // Actually, if we filter them out, they will be gone from the UI too after fetch?
-    // Let's filter them in the toJson call or create a clean list.
+    _content!.contactAddress = _contactAddressCtrl.text;
+    _content!.contactPhone = _contactPhoneCtrl.text;
 
+    // Sync controllers back to model
+    for(int i=0; i< _content!.heroCarousel.length; i++) {
+       if (i < _heroTitleControllers.length) {
+         _content!.heroCarousel[i].title = _heroTitleControllers[i].text;
+         _content!.heroCarousel[i].tagLine = _heroTagControllers[i].text;
+       }
+    }
+    
     final cleanCarousel = _content!.heroCarousel.where((i) => i.imageUrl.isNotEmpty).toList();
     final cleanAds = _content!.productAds.where((i) => i.imageUrl.isNotEmpty).toList();
 
-    // Create a map manually or use a copy? 
-    // Easiest is to temporarily set them, get json, then restore? 
-    // Or just construct the JSON manually.
-    
     final updateData = {
       'heroCarousel': cleanCarousel.map((e) => e.toJson()).toList(),
       'productAds': cleanAds.map((e) => e.toJson()).toList(),
       'brandText': _content!.brandText,
-      'contactAddress': _contactAddressCtrl.text,
-      'contactPhone': _contactPhoneCtrl.text,
-      // Grid services usually not edited here yet but if they were:
+      'contactAddress': _content!.contactAddress,
+      'contactPhone': _content!.contactPhone,
       'homeGridServices': _content!.homeGridServices.map((e) => e.id).toList(), 
     };
     
@@ -207,59 +228,169 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
   }
 
   Widget _buildHomeConfig() {
-    // Only show the first 3 placeholders
     final items = _content!.heroCarousel.take(3).toList();
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text("Hero Carousel (Max 3)", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        Text("Tap image to change", style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+        Text("Tap image to change. Recommended Size: 800x600", style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
         const SizedBox(height: 15),
         ...items.asMap().entries.map((entry) {
           int idx = entry.key;
           var item = entry.value;
           return Padding(
-            padding: const EdgeInsets.only(bottom: 15),
-            child: GestureDetector(
-              onTap: () {
-                _pickAndUploadImage((url) {
-                  setState(() {
-                    _content!.heroCarousel[idx].imageUrl = url;
-                  });
-                }, preset: CropAspectRatioPreset.ratio16x9);
-              },
-              child: GlassContainer(
-                opacity: 0.1,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Slide ${idx + 1}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-                    AspectRatio(
-                      aspectRatio: 16/9,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white24),
-                          image: item.imageUrl.isNotEmpty 
-                              ? DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover)
-                              : null
+            padding: const EdgeInsets.only(bottom: 25),
+            child: GlassContainer(
+              opacity: 0.1,
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Slide ${idx + 1}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  
+                  // Image & Dimension Tag
+                  GestureDetector(
+                    onTap: () {
+                      _pickAndUploadImage((url) {
+                        setState(() {
+                          _content!.heroCarousel[idx].imageUrl = url;
+                        });
+                      }, preset: CropAspectRatioPreset.ratio16x9);
+                    },
+                    child: Stack(
+                      children: [
+                        AspectRatio(
+                          aspectRatio: 16/9,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black26,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white24),
+                              image: item.imageUrl.isNotEmpty 
+                                  ? DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover)
+                                  : null
+                            ),
+                            child: item.imageUrl.isEmpty 
+                                ? const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40))
+                                : null,
+                          ),
                         ),
-                        child: item.imageUrl.isEmpty 
-                            ? const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40))
-                            : null,
-                      ),
+                        // Dimension Tag (Top Right)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
+                            child: const Text("800x600", style: TextStyle(color: Colors.white, fontSize: 10)),
+                          ),
+                        )
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+
+                  const SizedBox(height: 15),
+                  
+                  // Captions
+                  // Captions
+                  _buildCaptionField(
+                    "Bold Title", 
+                    _heroTitleControllers.length > idx ? _heroTitleControllers[idx] : TextEditingController(), 
+                    color: item.titleColor ?? "0xFFFFFFFF",
+                    onColorChanged: (val) => setState(() => item.titleColor = val)
+                  ),
+                  const SizedBox(height: 10),
+                  _buildCaptionField(
+                    "Tag Line", 
+                    _heroTagControllers.length > idx ? _heroTagControllers[idx] : TextEditingController(),
+                    color: item.tagLineColor ?? "0xFFFFFFFF",
+                    onColorChanged: (val) => setState(() => item.tagLineColor = val)
+                  ),
+                ],
               ),
             ),
           );
         }),
       ],
     );
+  }
+
+  Widget _buildCaptionField(String label, TextEditingController controller, {required String color, required Function(String) onColorChanged}) {
+    Color displayColor = Colors.white;
+    try {
+      if (color.startsWith("0x")) {
+        displayColor = Color(int.parse(color.substring(2), radix: 16));
+      }
+    } catch (_) {}
+
+     return Row(
+       children: [
+         Expanded(
+           flex: 2,
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+               const SizedBox(height: 4),
+               TextFormField(
+                 controller: controller,
+                 style: const TextStyle(color: Colors.white, fontSize: 13),
+                 decoration: InputDecoration(
+                   isDense: true,
+                   contentPadding: const EdgeInsets.all(8),
+                   filled: true,
+                   fillColor: Colors.white10,
+                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
+                 ),
+               ),
+             ],
+           ),
+         ),
+         const SizedBox(width: 10),
+         Expanded(
+           flex: 1,
+           child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               const Text("Color", style: TextStyle(color: Colors.white70, fontSize: 11)),
+               const SizedBox(height: 4),
+               GestureDetector(
+                onTap: () {
+                   showModalBottomSheet(
+                     context: context, 
+                     backgroundColor: Colors.transparent,
+                     builder: (ctx) => ColorPickerSheet(
+                       initialColor: color, 
+                       onColorSelected: onColorChanged
+                     )
+                   );
+                },
+                child: Container(
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: displayColor,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.white24)
+                  ),
+                  child: Center(
+                    child: Text(
+                      color.replaceAll("0xFF", "#").replaceAll("0x", "#"), 
+                      style: TextStyle(
+                        fontSize: 12, 
+                        color: displayColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                        fontWeight: FontWeight.bold
+                      )
+                    ),
+                  ),
+                ),
+              )
+             ],
+           ),
+         ),
+       ],
+     );
   }
 
   Widget _buildAdsConfig() {
@@ -319,6 +450,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     required VoidCallback onImageTap,
     required Function(bool) onActiveChanged
   }) {
+    String dimText = aspectRatio == 16/9 ? "800x450" : "800x200";
     return GlassContainer(
       opacity: 0.1,
       child: Column(
@@ -334,21 +466,34 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
             const SizedBox(height: 10),
             GestureDetector(
               onTap: onImageTap,
-              child: AspectRatio(
-                aspectRatio: aspectRatio,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black26,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white24),
-                    image: item.imageUrl.isNotEmpty 
-                        ? DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover)
-                        : null
+              child: Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: aspectRatio,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white24),
+                        image: item.imageUrl.isNotEmpty 
+                            ? DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover)
+                            : null
+                      ),
+                      child: item.imageUrl.isEmpty 
+                          ? const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40))
+                          : null,
+                    ),
                   ),
-                  child: item.imageUrl.isEmpty 
-                      ? const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40))
-                      : null,
-                ),
+                   Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
+                        child: Text(dimText, style: const TextStyle(color: Colors.white, fontSize: 10)),
+                      ),
+                    )
+                ],
               ),
             ),
           ] else 

@@ -22,7 +22,10 @@ class LiquidGlassContainer extends StatelessWidget {
     this.width,
     this.height,
     this.padding,
+    this.blur = 2.0,
   });
+
+  final double blur;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +54,7 @@ class LiquidGlassContainer extends StatelessWidget {
                 borderRadius: BorderRadius.circular(radius),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2), // Tuned Intensity
+                  color: Colors.black.withValues(alpha: 0.2), // Tuned Intensity
                     blurRadius: 15,
                     spreadRadius: 1,
                     offset: const Offset(0, 8), 
@@ -68,7 +71,7 @@ class LiquidGlassContainer extends StatelessWidget {
               borderRadius: BorderRadius.circular(radius),
               child: BackdropFilter(
                 filter: ImageFilter.compose(
-                  outer: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0), // Tuned Blur
+                  outer: ImageFilter.blur(sigmaX: blur, sigmaY: blur), // Tuned Blur
                   inner: ImageFilter.matrix(zoomMatrix.storage), // Uniform Center Warp
                 ),
                 child: Container(color: Colors.transparent),
@@ -82,7 +85,7 @@ class LiquidGlassContainer extends StatelessWidget {
               child: CustomPaint(
                 painter: _InnerShadowPainter(
                   radius: radius,
-                  color: Colors.white.withOpacity(0.2), // Tuned Opacity
+                  color: Colors.white.withValues(alpha: 0.2), // Tuned Opacity
                   blur: 2, // Matches Lens Blur
                   offset: const Offset(0, 0), // Uniform
                   strokeWidth: 1.2, // Tuned Spread

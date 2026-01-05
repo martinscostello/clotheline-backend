@@ -7,6 +7,7 @@ import '../../../utils/add_to_cart_animation.dart';
 import 'store_cart_screen.dart';
 import 'package:liquid_glass_ui/liquid_glass_dropdown.dart';
 import '../../../utils/currency_formatter.dart';
+import '../../../widgets/fullscreen_gallery.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final StoreProduct product;
@@ -21,6 +22,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   ProductVariant? _selectedVariant;
   final ContentService _contentService = ContentService();
   AppContentModel? _appContent;
+  int _currentImageIndex = 0;
   
   // Keys for Animation
   final GlobalKey _cartKey = GlobalKey();
@@ -39,21 +41,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final content = await _contentService.getAppContent();
     if (mounted) setState(() => _appContent = content);
   }
-  
 
-
-  void _runAddToCartAnimation(VoidCallback onComplete) {
-    // Import AddToCartAnimation
-    // We need to import the util file first.
-    // Assuming we added it to utils/add_to_cart_animation.dart
-    // For now, I will assume the key is bound.
-    // Actually, I can't import inside the class. I will need to add import top level.
-    // Ignoring import for now, I'll add it in separate step or assume context valid.
-  }
-  
   @override
   Widget build(BuildContext context) {
-    // ... (Color definitions same as before)
     const priceColor = Color(0xFFFF5722);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF101010) : Colors.white;
@@ -67,10 +57,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         listenable: cartService,
         builder: (context, _) {
           StoreCartItem? cartItem;
-          // Check if item is in cart. 
-          // If variants exist, we check if the CURRENT selected variant is in cart?
-          // OR if *any* variant of this product is in cart?
-          // User said: "add to cart changes to go to cart".
           try {
              if (widget.product.variants.isNotEmpty) {
                 cartItem = cartService.storeItems.firstWhere((i) => i.product.id == widget.product.id && i.variant?.id == _selectedVariant?.id);
@@ -86,7 +72,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               CustomScrollView(
                 slivers: [
                    SliverAppBar(
-                     expandedHeight: 400, // Taller image
+                     expandedHeight: 400, 
                      pinned: true,
                      backgroundColor: bgColor,
                      leading: IconButton(
@@ -103,7 +89,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         const SizedBox(width: 10),
                         
-                        // Cart Icon
                         Stack(
                           children: [
                             CircleAvatar(
@@ -121,19 +106,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         const SizedBox(width: 10),
                      ],
                      flexibleSpace: FlexibleSpaceBar(
-                       background: GestureDetector(
-                         onTap: () {
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => Scaffold(
-                             backgroundColor: Colors.black,
-                             appBar: AppBar(backgroundColor: Colors.transparent, iconTheme: const IconThemeData(color: Colors.white)),
-                             body: Center(child: InteractiveViewer(child: widget.product.imagePath.startsWith('http') 
-                                 ? Image.network(widget.product.imagePath) 
-                                 : Image.asset(widget.product.imagePath))),
-                           )));
-                         },
-                         child: widget.product.imagePath.startsWith('http') 
-                           ? Image.network(widget.product.imagePath, fit: BoxFit.cover) 
-                           : Image.asset(widget.product.imagePath, fit: BoxFit.cover),
+                       background: Stack(
+                         children: [
+                           PageView.builder(
+                             itemCount: widget.product.imageUrls.isNotEmpty ? widget.product.imageUrls.length : 1,
+                             onPageChanged: (index) => setState(() => _currentImageIndex = index),
+                             itemBuilder: (context, index) {
+                               String img = widget.product.imagePath;
+                               if (widget.product.imageUrls.isNotEmpty) img = widget.product.imageUrls[index];
+
+                               return GestureDetector(
+                                 onTap: () {
+                                   Navigator.push(context, MaterialPageRoute(builder: (_) => FullScreenGallery(
+                                     imageUrls: widget.product.imageUrls.isNotEmpty ? widget.product.imageUrls : [widget.product.imagePath],
+                                     initialIndex: index,
+                                   )));
+                                 },
+                                 child: img.startsWith('http') 
+                                   ? Image.network(img, fit: BoxFit.cover, errorBuilder: (_,__,___) => Image.asset('assets/images/service_laundry.png', fit: BoxFit.cover)) 
+                                   : Image.asset(img, fit: BoxFit.cover),
+                               );
+                             },
+                           ),
+                           Positioned(
+                             bottom: 16,
+                             right: 16,
+                             child: Container(
+                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                               decoration: BoxDecoration(
+                                 color: Colors.black54,
+                                 borderRadius: BorderRadius.circular(20),
+                               ),
+                               child: Text(
+                                 "${_currentImageIndex + 1}/${widget.product.imageUrls.isNotEmpty ? widget.product.imageUrls.length : 1}",
+                                 style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                               ),
+                             ),
+                           )
+                         ],
                        ),
                      ),
                    ),
@@ -159,7 +169,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                              decoration: BoxDecoration(
                                color: const Color(0xFF5D4037), // Brownish
                                borderRadius: BorderRadius.circular(8),
-                               boxShadow: [BoxShadow(color: Colors.brown.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))],
+                               boxShadow: [BoxShadow(color: Colors.brown.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))],
                              ),
                              child: Text(
                                _appContent?.brandText ?? "🏅 Official Brand: Clotheline ~ Quality Assurance",
@@ -179,7 +189,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                            const SizedBox(height: 16),
 
                             // 4. Price (Big & Bold)
-                            // Logic for selected variant or default product
                             Builder(
                               builder: (context) {
                                 double currentPrice = _selectedVariant?.price ?? widget.product.price;
@@ -246,7 +255,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                              decoration: BoxDecoration(
                                gradient: const LinearGradient(colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)]), // Light Green Gradient
                                borderRadius: BorderRadius.circular(12),
-                               border: Border.all(color: Colors.green.withOpacity(0.3)),
+                               border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
                              ),
                              child: Row(
                                children: [
@@ -275,7 +284,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                              children: [
                                Container(
                                  padding: const EdgeInsets.all(8),
-                                 decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+                                 decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), shape: BoxShape.circle),
                                  child: const Icon(Icons.local_shipping_outlined, color: Colors.orange, size: 20),
                                ),
                                const SizedBox(width: 12),
@@ -324,9 +333,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context, CartService service, StoreCartItem? cartItem) {
-    // If in cart -> Show Qty + Go to Cart
-    // If NOT in cart -> Show Add to Cart (with animation)
-    
     if (cartItem != null) {
       return Row(
         children: [
@@ -376,7 +382,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          key: _addBtnKey, // KEY FOR ANIMATION START
+          key: _addBtnKey, 
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFF5722),
             foregroundColor: Colors.white,
@@ -384,19 +390,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           ),
           onPressed: () {
-             // Animate
              AddToCartAnimation.run(context, _addBtnKey, _cartKey, () {
-                // On Animation Complete, Add to Cart logic
-                // Or add immediately and just animate visual? 
-                // Better to add, then animate? OR animate then add?
-                // User said "tiny ball should wrap... into the cart icon". 
-                // Usually instant feedback is better.
-                // Let's Add -> Then Animate.
+               // Animation Done
              });
              
              final item = StoreCartItem(
                product: widget.product,
-               variant: _selectedVariant, // Valid even if null (no variants)
+               variant: _selectedVariant,
                quantity: 1
              );
              service.addStoreItem(item);
