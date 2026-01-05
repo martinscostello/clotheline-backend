@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
@@ -16,8 +17,7 @@ class AdminOrdersScreen extends StatefulWidget {
 }
 
 class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final List<String> _tabs = ["New", "InProgress", "Ready", "Completed", "Cancelled"];
+  Timer? _refreshTimer;
 
   @override
   void initState() {
@@ -25,8 +25,24 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
     _tabController = TabController(length: _tabs.length, vsync: this);
     // Fetch orders on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<OrderService>(context, listen: false).fetchOrders();
+      _fetchOrders();
     });
+    // Auto-refresh every 15 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      if (mounted) _fetchOrders(silent: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchOrders({bool silent = false}) async {
+    // If not silent, we could show a loader, but for now we rely on Provider's internal state or just silent update
+    await Provider.of<OrderService>(context, listen: false).fetchOrders();
   }
 
   @override
@@ -71,13 +87,17 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                   return Center(child: Text("No $status orders", style: const TextStyle(color: Colors.white30)));
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 140, 20, 100),
-                  itemCount: orders.length,
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    return _buildOrderCard(order);
-                  },
+                return RefreshIndicator(
+                  onRefresh: () => _fetchOrders(),
+                  color: AppTheme.primaryColor,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 140, 20, 100),
+                    itemCount: orders.length,
+                    itemBuilder: (context, index) {
+                      final order = orders[index];
+                      return _buildOrderCard(order);
+                    },
+                  ),
                 );
               }).toList(),
             );

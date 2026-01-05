@@ -135,23 +135,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
         return Column(
           children: [
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(top: 150, bottom: 20, left: 20, right: 20),
-                children: [
-                  // Laundry Items
-                  ..._cartService.items.map((item) => _buildBucketItem(
-                    title: item.item.name,
-                    subtitle: item.serviceType.name,
-                    quantity: item.quantity,
-                    price: item.totalPrice,
-                    onDelete: () => _cartService.removeItem(item),
-                    isDark: isDark, textColor: textColor, secondaryTextColor: secondaryTextColor
-                  )),
-                  
-                  // Store Items Removed
+              child: RefreshIndicator(
+                onRefresh: () => _fetchOrders(),
+                color: AppTheme.primaryColor,
+                child: ListView(
+                  padding: const EdgeInsets.only(top: 150, bottom: 20, left: 20, right: 20),
+                  children: [
+                    // Laundry Items
+                    ..._cartService.items.map((item) => _buildBucketItem(
+                      title: item.item.name,
+                      subtitle: item.serviceType.name,
+                      quantity: item.quantity,
+                      price: item.totalPrice,
+                      onDelete: () => _cartService.removeItem(item),
+                      isDark: isDark, textColor: textColor, secondaryTextColor: secondaryTextColor
+                    )),
+                    
+                    // Store Items Removed
 
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
             // Checkout Summary Area
@@ -279,48 +283,52 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return ListenableBuilder(
       listenable: _orderService,
       builder: (context, _) {
-       return ListView.builder(
-        padding: const EdgeInsets.only(top: 150, bottom: 100, left: 20, right: 20),
-        itemCount: filtered.length,
-        itemBuilder: (context, index) {
-          final order = filtered[index];
-          final dateStr = DateFormat('MMM d, h:mm a').format(order.date);
-          
-          final content = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                  _buildStatusBadge(order.status),
-                ],
-              ),
-              const SizedBox(height: 10),
-               Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 5),
-              Text(dateStr, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12)),
-            ],
-          );
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 15),
-            child: isDark 
-              ? GlassContainer(opacity: 0.1, child: content)
-              : Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                       BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
-                    ]
-                  ),
-                  child: content,
+       return RefreshIndicator(
+        onRefresh: () => _fetchOrders(),
+        color: AppTheme.primaryColor,
+        child: ListView.builder(
+          padding: const EdgeInsets.only(top: 150, bottom: 100, left: 20, right: 20),
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            final order = filtered[index];
+            final dateStr = DateFormat('MMM d, h:mm a').format(order.date);
+            
+            final content = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                    _buildStatusBadge(order.status),
+                  ],
                 ),
-          );
-        },
-      );
+                const SizedBox(height: 10),
+                 Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                Text(dateStr, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12)),
+              ],
+            );
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 15),
+              child: isDark 
+                ? GlassContainer(opacity: 0.1, child: content)
+                : Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                         BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
+                      ]
+                    ),
+                    child: content,
+                  ),
+            );
+          },
+        ),
+       );
       }
     );
   }
