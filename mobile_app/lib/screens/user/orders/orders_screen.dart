@@ -156,7 +156,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
             // Checkout Summary Area
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(16, 3, 16, 12),
               decoration: BoxDecoration(
                 color: isDark ? Colors.black45 : Colors.white,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -165,6 +165,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ]
               ),
               child: SafeArea(
+                 top: false,
                  child: Column(
                    mainAxisSize: MainAxisSize.min,
                    children: [
