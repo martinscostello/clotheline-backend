@@ -97,7 +97,7 @@ exports.seedProducts = async () => {
                     category: 'Cleaning',
                     description: 'Tough stain removal for bright whites.',
                     stock: 50,
-                    imageUrls: ['https://images.unsplash.com/photo-1626806775351-538068b2f4fa?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Ariel+Detergent']
                 },
                 {
                     name: 'Comfort Softener (Blue)',
@@ -105,7 +105,7 @@ exports.seedProducts = async () => {
                     category: 'Softeners',
                     description: 'Long lasting fragrance and softness.',
                     stock: 30,
-                    imageUrls: ['https://images.unsplash.com/photo-1585838012675-b669ba8c6428?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Comfort+Softener']
                 },
 
                 // Perfumes
@@ -115,7 +115,7 @@ exports.seedProducts = async () => {
                     category: 'Fragrances',
                     description: 'Concentrated perfume with spicy, woody notes.',
                     stock: 10,
-                    imageUrls: ['https://images.unsplash.com/photo-1523293188086-b469999be957?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Savage+Dior']
                 },
                 {
                     name: 'Creed Aventus',
@@ -124,7 +124,7 @@ exports.seedProducts = async () => {
                     description: 'The best-selling men\'s fragrance in the history of the House of Creed.',
                     stock: 5,
                     discountPercentage: 5,
-                    imageUrls: ['https://images.unsplash.com/photo-1594035910387-fea4779426e9?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Creed+Aventus']
                 },
                 {
                     name: 'Baccarat Rouge 540',
@@ -132,7 +132,7 @@ exports.seedProducts = async () => {
                     category: 'Fragrances',
                     description: 'Luminous and sophisticated, Baccarat Rouge 540 lays on the skin like an amber, floral and woody breeze.',
                     stock: 8,
-                    imageUrls: ['https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Baccarat+Rouge']
                 },
 
                 // Body Sprays
@@ -142,7 +142,7 @@ exports.seedProducts = async () => {
                     category: 'Fragrances',
                     description: '48h effective anti-perspirant protection.',
                     stock: 100,
-                    imageUrls: ['https://images.unsplash.com/photo-1619451334792-150fd785ee74?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Nivea+Men']
                 },
                 {
                     name: 'Sure Invisible Ice',
@@ -150,7 +150,7 @@ exports.seedProducts = async () => {
                     category: 'Fragrances',
                     description: 'Anti-perspirant deodorant spray.',
                     stock: 80,
-                    imageUrls: ['https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Sure+Invisible']
                 },
                 {
                     name: 'Rexona MotionSense',
@@ -158,7 +158,7 @@ exports.seedProducts = async () => {
                     category: 'Fragrances',
                     description: 'Workout intensity deodorant.',
                     stock: 80,
-                    imageUrls: ['https://images.unsplash.com/photo-1571781565036-d3f75af02a9d?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Rexona']
                 },
 
                 // Roll-ons
@@ -168,7 +168,7 @@ exports.seedProducts = async () => {
                     category: 'Fragrances',
                     description: 'For smooth and beautiful underarms.',
                     stock: 200,
-                    imageUrls: ['https://images.unsplash.com/photo-1608248597279-f99d160bfbc8?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Nivea+Pearl']
                 },
                 {
                     name: 'Dove Men+Care Roll-on',
@@ -176,7 +176,7 @@ exports.seedProducts = async () => {
                     category: 'Fragrances',
                     description: 'Clean Comfort anti-perspirant.',
                     stock: 150,
-                    imageUrls: ['https://images.unsplash.com/photo-1616782528148-15cf4bc8b8ec?auto=format&fit=crop&q=80&w=500']
+                    imageUrls: ['https://placehold.co/600x600/101010/ffffff/png?text=Dove+Men']
                 }
             ];
 
