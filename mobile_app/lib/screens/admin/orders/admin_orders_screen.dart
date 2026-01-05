@@ -65,7 +65,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
               controller: _tabController,
               children: _tabs.map((status) {
                 // Filter Orders
-                final orders = orderService.orders.where((o) => o.status == status).toList();
+                final orders = orderService.orders.where((o) => o.status.name == status).toList();
                 
                 if (orders.isEmpty) {
                   return Center(child: Text("No $status orders", style: const TextStyle(color: Colors.white30)));
@@ -108,11 +108,11 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text("#${order.id.substring(order.id.length - 6)}", style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
-                    _buildStatusBadge(order.status),
+                    _buildStatusBadge(order.status.name),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(order.guestInfo['name'] ?? "Guest", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(order.guestName ?? "Guest", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 Text(DateFormat('MMM dd, hh:mm a').format(order.date), style: const TextStyle(color: Colors.white38, fontSize: 12)),
                 const Divider(color: Colors.white10, height: 20),
                 Row(

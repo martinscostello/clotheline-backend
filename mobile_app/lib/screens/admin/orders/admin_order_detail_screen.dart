@@ -22,7 +22,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _currentStatus = widget.order.status;
+    _currentStatus = widget.order.status.name;
   }
 
   Future<void> _updateStatus(String newStatus) async {
@@ -102,8 +102,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                       children: [
                         const Text("Customer Info", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 15),
-                        _buildInfoRow(Icons.person, widget.order.guestInfo['name'] ?? "Guest"),
-                        _buildInfoRow(Icons.phone, widget.order.guestInfo['phone'] ?? "N/A"),
+                        _buildInfoRow(Icons.person, widget.order.guestName ?? "Guest"),
+                        _buildInfoRow(Icons.phone, widget.order.guestPhone ?? "N/A"),
                         const SizedBox(height: 10),
                         const Divider(color: Colors.white10),
                         const SizedBox(height: 10),
