@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
-import 'screens/dev_landing_screen.dart'; // Import Dev Landing
+import 'screens/dev_landing_screen.dart'; 
+import 'services/laundry_service.dart';
+import 'services/cart_service.dart';
+import 'services/store_service.dart';
+import 'services/order_service.dart';
 
 // Global Theme Notifier
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
@@ -21,22 +26,30 @@ class LaundryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeNotifier,
-      builder: (_, ThemeMode currentMode, __) {
-        return MaterialApp(
-          title: 'Laundry Business',
-          debugShowCheckedModeBanner: false,
-          
-          // Theme Configuration
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: currentMode,
-          
-          // BYPASS LOGIN: Direct to Dev Landing
-          home: const DevLandingScreen(), 
-        );
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LaundryService()),
+        ChangeNotifierProvider(create: (_) => CartService()),
+        ChangeNotifierProvider(create: (_) => StoreService()),
+        ChangeNotifierProvider(create: (_) => OrderService()),
+      ],
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: themeNotifier,
+        builder: (_, ThemeMode currentMode, __) {
+          return MaterialApp(
+            title: 'Laundry Business',
+            debugShowCheckedModeBanner: false,
+            
+            // Theme Configuration
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: currentMode,
+            
+            // BYPASS LOGIN: Direct to Dev Landing
+            home: const DevLandingScreen(), 
+          );
+        },
+      ),
     );
   }
 }
