@@ -3,7 +3,7 @@ import '../../../models/store_product.dart';
 import '../../../services/cart_service.dart';
 import '../../../utils/currency_formatter.dart';
 import 'package:laundry_app/theme/app_theme.dart';
-// import 'checkout_screen.dart'; // Will link to a store-specific checkout or unified
+import '../booking/checkout_screen.dart';
 
 class StoreCartScreen extends StatelessWidget {
   const StoreCartScreen({super.key});
@@ -191,7 +191,9 @@ class StoreCartScreen extends StatelessWidget {
                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                  ),
                  onPressed: () {
-                   // Navigate to Payment
+                   Navigator.of(context).push(MaterialPageRoute(
+                     builder: (context) => const CheckoutScreen(),
+                   ));
                  },
                  child: const Text("Checkout", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                ),
