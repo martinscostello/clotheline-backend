@@ -8,6 +8,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/models/app_content_model.dart';
 import 'package:laundry_app/services/laundry_service.dart';
+import 'package:laundry_app/services/store_service.dart';
+import 'package:laundry_app/models/store_product.dart';
+import 'package:laundry_app/screens/user/products/product_detail_screen.dart';
+import 'package:laundry_app/utils/currency_formatter.dart';
+import 'package:provider/provider.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -38,6 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _fetchData() async {
     await Future.wait([
       _laundryService.fetchServices(),
+      StoreService().fetchFeaturedProducts(),
       _fetchAppContent()
     ]);
   }
@@ -519,64 +525,139 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildFeaturedProductsList(bool isDark) {
-    return SizedBox(
-      height: 160,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none, 
-        padding: const EdgeInsets.only(left: 20),
-        children: [
-          _buildProductCard('assets/images/product_pods.png', 'Detergent Pods', isDark),
-          _buildProductCard('assets/images/product_softener.png', 'Fabric Softener', isDark),
-          _buildProductCard('assets/images/product_basket.png', 'Laundry Basket', isDark),
-        ],
-      ),
+    return ListenableBuilder(
+      listenable: StoreService(),
+      builder: (context, _) {
+        final products = StoreService().featuredProducts;
+        final isLoading = StoreService().isLoading;
+
+        if (isLoading && products.isEmpty) {
+          return const SizedBox(height: 160, child: Center(child: CircularProgressIndicator()));
+        }
+
+        if (products.isEmpty) {
+          return SizedBox(
+            height: 100, 
+            child: Center(
+              child: Text("No newly added products", style: TextStyle(color: isDark ? Colors.white54 : Colors.black45)),
+            )
+          );
+        }
+
+        return SizedBox(
+          height: 180, // Increased slightly for better layout
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none, 
+            padding: const EdgeInsets.only(left: 20),
+            itemCount: products.length,
+            itemBuilder: (context, index) {
+              return _buildProductCard(products[index], isDark);
+            },
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildProductCard(String imagePath, String label, bool isDark) {
-    return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 15),
-      child: LiquidGlassContainer(
-        radius: 20,
-        padding: EdgeInsets.zero,
-        child: Stack(
-          children: [
-             Positioned.fill(
-               child: ClipRRect(
-                 borderRadius: BorderRadius.circular(20),
-                 child: Image.asset(imagePath, fit: BoxFit.cover, errorBuilder: (c,e,s) => Container(color: Colors.grey))
+  Widget _buildProductCard(StoreProduct product, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+         Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(product: product),
+            ),
+          );
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 15),
+        child: LiquidGlassContainer(
+          radius: 20,
+          padding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+               Positioned.fill(
+                 child: Stack(
+                   fit: StackFit.expand,
+                   children: [
+                     Container(color: isDark ? Colors.white10 : Colors.grey[200]),
+                     ClipRRect(
+                       borderRadius: BorderRadius.circular(20),
+                       child: product.imageUrls.isNotEmpty 
+                          ? Image.network(
+                              product.imageUrls.first, 
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(child: CircularProgressIndicator(value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null));
+                              },
+                              errorBuilder: (c,e,s) => const Icon(Icons.broken_image, color: Colors.grey)
+                            )
+                          : const Icon(Icons.shopping_bag, color: Colors.grey, size: 40),
+                     ),
+                   ],
+                 ),
                ),
-             ),
-             Positioned(
-               bottom: 0,
-               left: 0,
-               right: 0,
-               height: 60,
-               child: Container(
-                 decoration: BoxDecoration(
-                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                   gradient: LinearGradient(
-                     begin: Alignment.topCenter,
-                     end: Alignment.bottomCenter,
-                     colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
+               // Discount Badge
+               if (product.discountPercentage > 0)
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "-${product.discountPercentage.toStringAsFixed(0)}%",
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+               Positioned(
+                 bottom: 0,
+                 left: 0,
+                 right: 0,
+                 height: 70,
+                 child: Container(
+                   decoration: BoxDecoration(
+                     borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                     gradient: LinearGradient(
+                       begin: Alignment.topCenter,
+                       end: Alignment.bottomCenter,
+                       colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+                     ),
                    ),
                  ),
                ),
-             ),
-             Align(
-               alignment: Alignment.bottomCenter,
-               child: Padding(
-                 padding: const EdgeInsets.all(12.0),
-                 child: Text(
-                   label, 
-                   textAlign: TextAlign.center,
-                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)
+               Align(
+                 alignment: Alignment.bottomCenter,
+                 child: Padding(
+                   padding: const EdgeInsets.all(12.0),
+                   child: Column(
+                     mainAxisSize: MainAxisSize.min,
+                     children: [
+                       Text(
+                         product.name, 
+                         textAlign: TextAlign.center,
+                         maxLines: 1,
+                         overflow: TextOverflow.ellipsis,
+                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)
+                       ),
+                       const SizedBox(height: 4),
+                       Text(
+                         CurrencyFormatter.format(product.price),
+                         style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 12),
+                       ),
+                     ],
+                   ),
                  ),
                ),
-             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

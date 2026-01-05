@@ -16,6 +16,9 @@ class StoreService extends ChangeNotifier {
   List<String> _categories = ["All"];
   List<String> get categories => List.unmodifiable(_categories);
 
+  List<StoreProduct> _featuredProducts = [];
+  List<StoreProduct> get featuredProducts => List.unmodifiable(_featuredProducts);
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -46,6 +49,19 @@ class StoreService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint("Error fetching categories: $e");
+    }
+  }
+
+  Future<void> fetchFeaturedProducts() async {
+    try {
+      final response = await _apiService.client.get('/products?limit=5');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        _featuredProducts = data.map((json) => StoreProduct.fromJson(json)).toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Error fetching featured products: $e");
     }
   }
 
