@@ -5,6 +5,7 @@ import 'package:laundry_app/theme/app_theme.dart';
 import 'admin_cms_content_screen.dart';
 import '../services/admin_services_screen.dart';
 import '../products/admin_products_screen.dart';
+import '../orders/admin_orders_screen.dart';
 
 class AdminCMSScreen extends StatelessWidget {
   const AdminCMSScreen({super.key});
@@ -51,6 +52,16 @@ class AdminCMSScreen extends StatelessWidget {
               const Text("Store Data", style: TextStyle(color: Colors.white54, fontSize: 14)),
               const SizedBox(height: 10),
 
+              const SizedBox(height: 15),
+              _buildCMSCard(
+                title: "Manage Orders",
+                subtitle: "View & Update Order Status.",
+                icon: Icons.assignment_outlined,
+                color: Colors.pinkAccent,
+                onTap: () {
+                   Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()));
+                },
+              ),
               const SizedBox(height: 15),
               _buildCMSCard(
                 title: "Manage Service Categories", 
