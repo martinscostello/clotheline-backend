@@ -52,6 +52,8 @@ class StoreProduct {
     if (originalPrice <= price) return 0;
     return ((originalPrice - price) / originalPrice * 100).round();
   }
+  
+  double get discountPercentage => discountPercent.toDouble();
 
   double get savedAmount => originalPrice > price ? originalPrice - price : 0;
 
