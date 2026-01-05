@@ -119,7 +119,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return ListenableBuilder(
       listenable: _cartService,
       builder: (context, _) {
-        if (_cartService.items.isEmpty && _cartService.storeItems.isEmpty) {
+        if (_cartService.items.isEmpty) { 
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -148,15 +148,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     isDark: isDark, textColor: textColor, secondaryTextColor: secondaryTextColor
                   )),
                   
-                  // Store Items
-                  ..._cartService.storeItems.map((item) => _buildBucketItem(
-                    title: item.product.name,
-                    subtitle: item.variant?.name ?? "Product",
-                    quantity: item.quantity,
-                    price: item.totalPrice,
-                    onDelete: () => _cartService.removeStoreItem(item),
-                     isDark: isDark, textColor: textColor, secondaryTextColor: secondaryTextColor
-                  )),
+                  // Store Items Removed
 
                   const SizedBox(height: 20),
                 ],
@@ -164,7 +156,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
             // Checkout Summary Area
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isDark ? Colors.black45 : Colors.white,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -179,34 +171,34 @@ class _OrdersScreenState extends State<OrdersScreen> {
                      Row(
                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                        children: [
-                         Text("Total Estimate", style: TextStyle(color: secondaryTextColor)),
-                         Text(CurrencyFormatter.format(_cartService.totalAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 20)),
+                         Text("Total Estimate", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                         Text(CurrencyFormatter.format(_cartService.serviceTotalAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)),
                        ],
                      ),
-                     const SizedBox(height: 15),
+                     const SizedBox(height: 10),
                      SizedBox(
                        width: double.infinity,
                        child: ElevatedButton(
                          style: ElevatedButton.styleFrom(
                            backgroundColor: AppTheme.primaryColor,
                            foregroundColor: Colors.white,
-                           padding: const EdgeInsets.symmetric(vertical: 16),
-                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), 
+                           padding: const EdgeInsets.symmetric(vertical: 12),
+                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), 
                          ),
                          onPressed: () {
                            Navigator.of(context).push(MaterialPageRoute(
                              builder: (context) => const CheckoutScreen()
                            ));
                          }, 
-                         child: const Text("RESUME CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold)),
+                         child: const Text("RESUME CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                        ),
                      )
                    ],
                  ),
               ),
             ),
-            // Floating padding
-            const SizedBox(height: 80), 
+            // Floating padding removed
+            // const SizedBox(height: 80), 
           ],
         );
       },
