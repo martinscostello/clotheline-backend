@@ -42,3 +42,15 @@ exports.seedUsers = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+const Product = require('../models/Product');
+const { seedProducts } = require('./productController');
+
+exports.resetProducts = async (req, res) => {
+    try {
+        await Product.deleteMany({});
+        await seedProducts();
+        res.json({ msg: 'Products Reset and Seeded' });
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
+};
