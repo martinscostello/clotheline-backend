@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
+import '../services/admin_services_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -48,8 +49,8 @@ class AdminDashboardScreen extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildQuickAction(context, "Manage Settings", Icons.settings, Colors.blueGrey, () {
-                       // Navigate to settings
+                    _buildQuickAction(context, "Services", Icons.category, Colors.blueGrey, () {
+                       Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
                     }),
                     const SizedBox(width: 15),
                     _buildQuickAction(context, "Add Product", Icons.add_shopping_cart, Colors.purpleAccent, () {

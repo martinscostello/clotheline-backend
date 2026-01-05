@@ -3,6 +3,7 @@ import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'admin_cms_content_screen.dart';
+import '../services/admin_services_screen.dart';
 import '../products/admin_products_screen.dart';
 
 class AdminCMSScreen extends StatelessWidget {
@@ -53,11 +54,11 @@ class AdminCMSScreen extends StatelessWidget {
               const SizedBox(height: 15),
               _buildCMSCard(
                 title: "Manage Product Categories", 
-                subtitle: "Update product categories.",
+                subtitle: "Update service categories & prices.",
                 icon: Icons.category, 
                 color: Colors.blueAccent,
                 onTap: () {
-                   // Placeholder
+                   Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
                 },
               ),
               const SizedBox(height: 15),
@@ -116,9 +117,9 @@ class AdminCMSScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                   Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                   const SizedBox(height: 4),
+                   Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
                 ],
               ),
             ),
