@@ -71,50 +71,61 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                      );
                      _fetchServices(); // Refresh on return
                   },
-                  child: GlassContainer(
-                    opacity: 0.1,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Icon / Image
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Color(int.parse(service.color.replaceAll('#', '0xFF'))).withOpacity(0.2),
-                            shape: BoxShape.circle,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      image: service.image.startsWith('http') || service.image.startsWith('assets') ? DecorationImage(
+                        image: service.image.startsWith('http') ? NetworkImage(service.image) : AssetImage(service.image) as ImageProvider,
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.6), BlendMode.darken),
+                      ) : null,
+                    ),
+                    child: GlassContainer(
+                      opacity: 0.05, // Lower opacity to see image
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Icon
+                          if (!service.image.startsWith('http')) 
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Color(int.parse(service.color.replaceAll('#', '0xFF'))).withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _getIconData(service.icon),
+                                color: Color(int.parse(service.color.replaceAll('#', '0xFF'))),
+                                size: 32,
+                              ),
+                            ),
+                          const SizedBox(height: 12),
+                          // Name
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text(
+                              service.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
                           ),
-                          child: Icon(
-                            _getIconData(service.icon),
-                            color: Color(int.parse(service.color.replaceAll('#', '0xFF'))),
-                            size: 32,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Name
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            service.name,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        // Status Badge
-                        const SizedBox(height: 8),
-                        if (service.isLocked)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(4)),
-                            child: Text(service.lockedLabel, style: const TextStyle(color: Colors.white, fontSize: 10)),
-                          )
-                        else if (service.discountPercentage > 0)
-                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
-                            child: Text("-${service.discountPercentage}% OFF", style: const TextStyle(color: Colors.white, fontSize: 10)),
-                          )
-                      ],
+                          // Status Badge
+                          const SizedBox(height: 8),
+                          if (service.isLocked)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(4)),
+                              child: Text(service.lockedLabel, style: const TextStyle(color: Colors.white, fontSize: 10)),
+                            )
+                          else if (service.discountPercentage > 0)
+                             Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
+                              child: Text("-${service.discountPercentage}% OFF", style: const TextStyle(color: Colors.white, fontSize: 10)),
+                            )
+                        ],
+                      ),
                     ),
                   ),
                 );
