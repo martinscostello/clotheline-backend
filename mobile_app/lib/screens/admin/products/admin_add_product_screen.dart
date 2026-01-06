@@ -56,6 +56,11 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     _isFreeShipping = p?.isFreeShipping ?? false;
     _existingImages = p?.imageUrls ?? [];
     _variants = p?.variants ?? [];
+    
+    // Fetch latest categories
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<StoreService>(context, listen: false).fetchCategories();
+    });
   }
 
   @override
@@ -327,7 +332,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                              dropdownColor: const Color(0xFF2C2C2C),
                              style: const TextStyle(color: Colors.white),
                              isExpanded: true,
-                             items: ["Cleaning", "Softeners", "Fragrances", "Tools", "Other"]
+                             items: Provider.of<StoreService>(context).categories
+                               .where((c) => c != "All") // Exclude 'All' filter option
                                .map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(), 
                              onChanged: (val) => setState(() => _selectedCategory = val!),
                            ),
