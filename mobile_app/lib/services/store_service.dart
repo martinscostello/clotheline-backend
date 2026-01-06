@@ -13,6 +13,18 @@ class StoreService extends ChangeNotifier {
 
   final ApiService _apiService = ApiService();
 
+  List<StoreProduct> _products = [];
+  List<StoreProduct> get products => List.unmodifiable(_products);
+
+  List<String> _categories = ["All"];
+  List<String> get categories => List.unmodifiable(_categories);
+
+  List<StoreProduct> _featuredProducts = [];
+  List<StoreProduct> get featuredProducts => List.unmodifiable(_featuredProducts);
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
   List<CategoryModel> _categoryObjects = [];
   List<CategoryModel> get categoryObjects => List.unmodifiable(_categoryObjects);
 
