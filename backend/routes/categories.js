@@ -8,12 +8,8 @@ const auth = require('../middleware/auth');
 // GET all categories
 router.get('/', async (req, res) => {
     try {
+        res.set('X-Debug-Version', 'Fix-Resurrect-v1'); // Identify deployment
         const categories = await Category.find({}).sort({ name: 1 });
-        // Return simple list of names for now to match current frontend expectation, 
-        // OR return full objects and update frontend to handle them.
-        // Frontend currently expects ["All", "Fragrance", ...].
-        // But for Admin we need objects (id, name, image).
-        // Let's return objects. Frontend StoreService needs update.
         res.json(categories);
     } catch (err) {
         res.status(500).json({ msg: 'Server Error' });
@@ -27,7 +23,11 @@ router.post('/', auth, async (req, res) => {
 
         let category = await Category.findOne({ name });
         if (category) {
-            return res.status(400).json({ msg: 'Category already exists' });
+            // Self-repair: If exists (maybe hidden/deleted), reactivate and return it
+            category.isActive = true;
+            if (image) category.image = image; // Update image if provided
+            await category.save();
+            return res.json(category);
         }
 
         category = new Category({
