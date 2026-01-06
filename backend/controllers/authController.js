@@ -133,15 +133,17 @@ exports.getAllUsers = async (req, res) => {
 
 exports.seedUsers = async () => {
     try {
-        const count = await User.countDocuments();
-        if (count === 0) {
-            console.log('Seeding Users...');
+        const adminEmail = 'admin@clotheline.com';
+        let admin = await User.findOne({ email: adminEmail });
+
+        if (!admin) {
+            console.log('Seeding Master Admin...');
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash('admin123', salt);
 
-            const admin = new User({
+            admin = new User({
                 name: 'Master Admin',
-                email: 'admin@clotheline.com',
+                email: adminEmail,
                 password: hashedPassword,
                 phone: '0000000000',
                 role: 'admin',
@@ -157,7 +159,11 @@ exports.seedUsers = async () => {
             });
 
             await admin.save();
-            console.log('Master Admin Seeded: admin@clotheline.com / admin123');
+            console.log('Master Admin Seeded/Restored: admin@clotheline.com / admin123');
+        } else {
+            // Optional: Ensure it has master permissions if it exists?
+            // For now, just logging.
+            // console.log('Master Admin already exists.');
         }
     } catch (err) {
         console.error('User Seeding Error:', err);
