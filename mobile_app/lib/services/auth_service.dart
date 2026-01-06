@@ -13,22 +13,30 @@ class AuthService extends ChangeNotifier {
   Map<String, dynamic>? get currentUser => _currentUser;
   bool _isInitialized = false;
   
-  // Dev Mode Helper
-  void enableDevMode() {
-    _currentUser = {
-      'id': 'dev_admin_id',
-      'name': 'Dev Admin',
-      'email': 'dev@admin.com',
-      'role': 'admin',
-      'isMasterAdmin': true,
-      'permissions': {
-         'manageOrders': true,
-         'manageUsers': true,
-         'manageCMS': true,
-         'manageServices': true,
-         'manageProducts': true,
-      }
-    };
+  Future<void> enableDevMode() async {
+    try {
+      print("Dev Mode: Attempting to login as 'admin@clotheline.com'...");
+      await login('admin@clotheline.com', 'admin123');
+      print("Dev Mode: Login Successful. Token acquired.");
+    } catch (e) {
+      print("Dev Mode Login Failed: $e. Using fallback data (Might cause 401 on backend)");
+      _currentUser = {
+        'id': 'dev_admin_id',
+        'name': 'Dev Admin (Offline)',
+        'email': 'dev@admin.com',
+        'role': 'admin',
+        'isMasterAdmin': true,
+        'permissions': {
+           'manageOrders': true,
+           'manageUsers': true,
+           'manageCMS': true,
+           'manageServices': true,
+           'manageProducts': true,
+           'manageDelivery': true
+        }
+      };
+      // We still set initialized so the app doesn't hang, but features might fail.
+    }
     _isInitialized = true;
     notifyListeners();
   }

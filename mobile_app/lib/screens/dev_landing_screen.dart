@@ -63,16 +63,18 @@ class DevLandingScreen extends StatelessWidget {
                   side: const BorderSide(color: Colors.white24),
                   textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                onPressed: () {
+                onPressed: () async {
                    // Enable Dev Mode (Master Admin access)
                    // We need to import provider first at top
                    final auth = Provider.of<AuthService>(context, listen: false);
-                   auth.enableDevMode();
+                   await auth.enableDevMode();
                    
-                   Navigator.pushReplacement(
-                    context, 
-                    MaterialPageRoute(builder: (_) => const AdminMainLayout())
-                  );
+                   if (context.mounted) {
+                     Navigator.pushReplacement(
+                      context, 
+                      MaterialPageRoute(builder: (_) => const AdminMainLayout())
+                    );
+                   }
                 },
               ),
             ),

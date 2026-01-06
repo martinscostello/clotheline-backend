@@ -130,3 +130,36 @@ exports.getAllUsers = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+exports.seedUsers = async () => {
+    try {
+        const count = await User.countDocuments();
+        if (count === 0) {
+            console.log('Seeding Users...');
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash('admin123', salt);
+
+            const admin = new User({
+                name: 'Master Admin',
+                email: 'admin@clotheline.com',
+                password: hashedPassword,
+                phone: '0000000000',
+                role: 'admin',
+                isMasterAdmin: true,
+                permissions: {
+                    manageOrders: true,
+                    manageUsers: true,
+                    manageCMS: true,
+                    manageServices: true,
+                    manageProducts: true,
+                    manageDelivery: true
+                }
+            });
+
+            await admin.save();
+            console.log('Master Admin Seeded: admin@clotheline.com / admin123');
+        }
+    } catch (err) {
+        console.error('User Seeding Error:', err);
+    }
+};
