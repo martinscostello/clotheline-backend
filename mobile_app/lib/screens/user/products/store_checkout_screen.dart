@@ -131,49 +131,58 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_currentStage == 1 ? "Delivery Options" : "Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: textColor),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (_currentStage > 1) {
-              setState(() => _currentStage--);
-            } else {
-              Navigator.pop(context);
-            }
-          },
-        ),
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-        ),
-      ),
-      body: ListenableBuilder(
-        listenable: _cartService,
-        builder: (context, _) {
-          if (_cartService.storeItems.isEmpty && _currentStage == 1) {
-             // Should verify valid state if accessed directly
-             return const Center(child: Text("Cart is empty"));
-          }
-          
-          return Column(
-            children: [
-              _buildStepIndicator(isDark),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: _buildStageContent(isDark, textColor),
-                ),
-              ),
-               _buildBottomBar(isDark),
-            ],
-          );
+    return PopScope(
+      canPop: _currentStage == 1,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (_currentStage > 1) {
+          setState(() => _currentStage--);
         }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_currentStage == 1 ? "Delivery Options" : "Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: IconThemeData(color: textColor),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (_currentStage > 1) {
+                setState(() => _currentStage--);
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+          ),
+        ),
+        body: ListenableBuilder(
+          listenable: _cartService,
+          builder: (context, _) {
+            if (_cartService.storeItems.isEmpty && _currentStage == 1) {
+               // Should verify valid state if accessed directly
+               return const Center(child: Text("Cart is empty"));
+            }
+            
+            return Column(
+              children: [
+                _buildStepIndicator(isDark),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildStageContent(isDark, textColor),
+                  ),
+                ),
+                 _buildBottomBar(isDark),
+              ],
+            );
+          }
+        ),
       ),
     );
   }
@@ -355,18 +364,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
             ),
           )),
           const Divider(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Total Amount", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-              Text(CurrencyFormatter.format(_cartService.storeTotalAmount), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
-            ],
-          ),
-        ],
-      ),
-    );
-            ],
-          ),
+          
           if (_deliveryFee > 0) ...[
             const SizedBox(height: 10),
              Row(
@@ -377,6 +375,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
               ],
             ),
           ],
+
           const Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -385,11 +384,27 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
               Text(CurrencyFormatter.format(_cartService.storeTotalAmount + _deliveryFee), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
             ],
           ),
+        ],
+      ),
+    );
+  }
 
   // ... (Helper widgets similar to CheckoutScreen) ...
   // To save space/complexity I'll inline simplest versions or copy relevant ones.
   
-  Widget _buildOptionTile({required int value, required int groupValue, required String title, required String subtitle, required ValueChanged<int?> onChanged, required bool isDark, required Color colors}) {
+  Widget _buildSectionHeader(String title, Color textColor) {
+    return Text(title, style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold));
+  }
+
+  Widget _buildOptionTile({
+    required int value, 
+    required int groupValue, 
+    required String title, 
+    required String subtitle, 
+    required ValueChanged<int?> onChanged,
+    required bool isDark,
+    required Color colors,
+  }) {
     final isSelected = value == groupValue;
     return GestureDetector(
       onTap: () => onChanged(value),
@@ -403,12 +418,20 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
         ),
         child: Row(
           children: [
-            Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_off, color: isSelected ? AppTheme.primaryColor : Colors.grey),
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: isSelected ? AppTheme.primaryColor : Colors.grey,
+            ),
             const SizedBox(width: 15),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: TextStyle(color: colors, fontWeight: FontWeight.bold, fontSize: 16)),
-              Text(subtitle, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
-            ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(color: colors, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(subtitle, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+                ],
+              ),
+            )
           ],
         ),
       ),
@@ -437,17 +460,32 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
   }
 
   Widget _buildBranchInfo(bool isDark) {
-     return Container(
+    return Container(
+      margin: const EdgeInsets.only(left: 20, bottom: 20),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? Colors.white10 : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300, style: BorderStyle.solid),
       ),
-      child: Row(children: [
-        const Icon(Icons.store, color: AppTheme.primaryColor),
-        const SizedBox(width: 10),
-        Expanded(child: Text(_branchAddress, style: TextStyle(color: isDark ? Colors.white : Colors.black87))),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Our Branch Location:", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 12)),
+          const SizedBox(height: 4),
+          Row(children: [
+            const Icon(Icons.store, size: 16, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            Text(_branchAddress, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: 4),
+          Row(children: [
+            const Icon(Icons.call, size: 16, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            Text(_branchPhone, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+          ]),
+        ],
+      ),
     );
   }
 
@@ -489,14 +527,6 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     setState(() => _isSubmitting = false);
 
     if (success && mounted) {
-      // Clear ONLY store items ??
-      // CartService currently has `clearCart()` which clears ALL.
-      // I need `clearStoreItems()` in CartService.
-      // For now I'll use `_cartService.clearCart()` assuming separation means user won't mix. 
-      // But user might have Laundry items in Bucket.
-      // I MUST IMPLEMENT `clearStoreItems()` in CartService.
-      
-      // Clear Store Items
       _cartService.clearStoreItems();
       
       showDialog(
@@ -528,19 +558,22 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       decoration: BoxDecoration(
         color: isDark ? Colors.black26 : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]
+        boxShadow: [
+           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))
+        ]
       ),
       child: _currentStage == 1 
         ? SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
               onPressed: () {
+                 // Validation
                  if(_deliveryOption==1 && (_deliveryAddressController.text.isEmpty || _contactPhoneController.text.isEmpty)) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill in address and phone")));
                     return;
@@ -554,10 +587,10 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
               onPressed: _isSubmitting ? null : _submitOrder,
               child: _isSubmitting 

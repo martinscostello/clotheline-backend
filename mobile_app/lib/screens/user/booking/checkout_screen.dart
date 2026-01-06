@@ -149,48 +149,57 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_getStageTitle(), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: textColor),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (_currentStage > 1) {
-              setState(() => _currentStage--);
-            } else {
-              Navigator.pop(context);
-            }
-          },
-        ),
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-        ),
-      ),
-      body: ListenableBuilder(
-        listenable: _cartService,
-        builder: (context, _) {
-          return Column(
-            children: [
-              // Step Indicator
-              _buildStepIndicator(isDark),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: _buildStageContent(isDark, textColor),
-                ),
-              ),
-
-               // Navigation Buttons
-               _buildBottomBar(isDark),
-            ],
-          );
+    return PopScope(
+      canPop: _currentStage == 1,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (_currentStage > 1) {
+          setState(() => _currentStage--);
         }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_getStageTitle(), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: IconThemeData(color: textColor),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (_currentStage > 1) {
+                setState(() => _currentStage--);
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+          ),
+        ),
+        body: ListenableBuilder(
+          listenable: _cartService,
+          builder: (context, _) {
+            return Column(
+              children: [
+                // Step Indicator
+                _buildStepIndicator(isDark),
+  
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildStageContent(isDark, textColor),
+                  ),
+                ),
+  
+                 // Navigation Buttons
+                 _buildBottomBar(isDark),
+              ],
+            );
+          }
+        ),
       ),
     );
   }
