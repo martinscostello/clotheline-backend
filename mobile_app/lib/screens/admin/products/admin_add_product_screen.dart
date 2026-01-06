@@ -317,8 +317,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 // 3. Category & Stock
                  Row(
                   children: [
-                    Expanded(
-                      flex: 2,
                       child: Container(
                          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
                          decoration: BoxDecoration(
@@ -326,20 +324,34 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                            borderRadius: BorderRadius.circular(15),
                            border: Border.all(color: Colors.white12)
                          ),
-                         child: DropdownButtonHideUnderline(
-                           child: DropdownButton<String>(
-                             value: _selectedCategory,
-                             dropdownColor: const Color(0xFF2C2C2C),
-                             style: const TextStyle(color: Colors.white),
-                             isExpanded: true,
-                             items: Provider.of<StoreService>(context).categories
-                               .where((c) => c != "All") // Exclude 'All' filter option
-                               .map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(), 
-                             onChanged: (val) => setState(() => _selectedCategory = val!),
-                           ),
+                         child: Consumer<StoreService>( // Use Consumer for better updates
+                           builder: (context, store, child) {
+                             final categories = store.categories.where((c) => c != "All").toList();
+                             
+                             // Ensure selected value exists in list (or set to null)
+                             String? dropdownValue = _selectedCategory;
+                             if (!categories.contains(dropdownValue)) {
+                               dropdownValue = null;
+                             }
+
+                             return DropdownButtonHideUnderline(
+                               child: DropdownButton<String>(
+                                 value: dropdownValue,
+                                 hint: const Text("Select Category", style: TextStyle(color: Colors.white54)),
+                                 dropdownColor: const Color(0xFF2C2C2C),
+                                 style: const TextStyle(color: Colors.white),
+                                 isExpanded: true,
+                                 items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(), 
+                                 onChanged: (val) {
+                                   if (val != null) {
+                                      setState(() => _selectedCategory = val);
+                                   }
+                                 },
+                               ),
+                             );
+                           }
                          ),
                       ),
-                    ),
                     const SizedBox(width: 15),
                     Expanded(
                       child: _buildGlassTextField(controller: _stockController, label: "Stock", isNumber: true)
