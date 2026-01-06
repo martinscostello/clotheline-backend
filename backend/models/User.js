@@ -23,6 +23,22 @@ const UserSchema = new mongoose.Schema({
         enum: ['user', 'admin'],
         default: 'user'
     },
+    // Admin Specific Fields
+    isMasterAdmin: {
+        type: Boolean,
+        default: false
+    },
+    isRevoked: {
+        type: Boolean,
+        default: false
+    },
+    permissions: {
+        manageCMS: { type: Boolean, default: false }, // Home, Ads, Branding
+        manageOrders: { type: Boolean, default: false },
+        manageServices: { type: Boolean, default: false },
+        manageProducts: { type: Boolean, default: false },
+        manageUsers: { type: Boolean, default: false }, // Broadcast
+    },
     createdAt: {
         type: Date,
         default: Date.now

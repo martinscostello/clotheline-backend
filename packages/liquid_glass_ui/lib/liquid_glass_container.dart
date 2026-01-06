@@ -15,7 +15,8 @@ class LiquidGlassContainer extends StatelessWidget {
   final double? width;
   final double? height;
   final EdgeInsetsGeometry? padding;
-  final double opacity; 
+  final Color? color;
+  final double opacity;
 
   const LiquidGlassContainer({
     super.key,
@@ -26,7 +27,11 @@ class LiquidGlassContainer extends StatelessWidget {
     this.height,
     this.padding,
     this.opacity = 1.0, 
+    this.blur = 2.0,
+    this.color,
   });
+
+  final double blur;
 
   @override
   Widget build(BuildContext context) {
@@ -71,10 +76,10 @@ class LiquidGlassContainer extends StatelessWidget {
               borderRadius: effectiveBorderRadius,
               child: BackdropFilter(
                 filter: ImageFilter.compose(
-                  outer: ImageFilter.blur(sigmaX: 2.0 * opacity, sigmaY: 2.0 * opacity), 
+                  outer: ImageFilter.blur(sigmaX: blur, sigmaY: blur), 
                   inner: ImageFilter.matrix(zoomMatrix.storage), 
                 ),
-                child: Container(color: Colors.white.withValues(alpha: 0.02 * opacity)), 
+                child: Container(color: color ?? Colors.white.withValues(alpha: 0.02 * opacity)), 
               ),
             ),
           ),

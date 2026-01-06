@@ -84,42 +84,48 @@ class _LiquidGlassDropdownState<T> extends State<LiquidGlassDropdown<T>> {
                        radius: 16,
                        padding: const EdgeInsets.symmetric(vertical: 8),
                        opacity: 1.0, 
+                       blur: 5.0, // Increased Blur
                        borderRadius: BorderRadius.circular(16),
-                       child: Column(
-                         mainAxisSize: MainAxisSize.min,
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: widget.items.map((item) {
-                           final isSelected = item.value == widget.value;
-                             return InkWell(
-                               onTap: () {
-                                 widget.onChanged(item.value);
-                                 _closeDropdown();
-                               },
-                               child: Container(
-                                 width: double.infinity,
-                                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                 decoration: BoxDecoration(
-                                    color: isSelected 
-                                        ? (widget.isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05))
-                                        : null,
-                                 ),
-                                 child: DefaultTextStyle(
-                                   style: TextStyle(
-                                     color: widget.isDark ? Colors.white : Colors.black87,
-                                     fontSize: 14,
-                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                       child: ConstrainedBox(
+                         constraints: const BoxConstraints(maxHeight: 300),
+                         child: SingleChildScrollView(
+                           child: Column(
+                             mainAxisSize: MainAxisSize.min,
+                             crossAxisAlignment: CrossAxisAlignment.start,
+                             children: widget.items.map((item) {
+                               final isSelected = item.value == widget.value;
+                                 return InkWell(
+                                   onTap: () {
+                                     widget.onChanged(item.value);
+                                     _closeDropdown();
+                                   },
+                                   child: Container(
+                                     width: double.infinity,
+                                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                     decoration: BoxDecoration(
+                                        color: isSelected 
+                                            ? (widget.isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05))
+                                            : null,
+                                     ),
+                                     child: DefaultTextStyle(
+                                       style: TextStyle(
+                                         color: widget.isDark ? Colors.white : Colors.black87,
+                                         fontSize: 14,
+                                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                       ),
+                                       child: Row(
+                                         children: [
+                                           Expanded(child: item.child),
+                                           if (isSelected) 
+                                             Icon(Icons.check, size: 16, color: widget.isDark ? Colors.white : Colors.black87),
+                                         ],
+                                       ),
+                                     ),
                                    ),
-                                   child: Row(
-                                     children: [
-                                       Expanded(child: item.child),
-                                       if (isSelected) 
-                                         Icon(Icons.check, size: 16, color: widget.isDark ? Colors.white : Colors.black87),
-                                     ],
-                                   ),
-                                 ),
-                               ),
-                             );
-                         }).toList(),
+                                 );
+                             }).toList(),
+                           ),
+                         ),
                        ),
                      ),
                    ),

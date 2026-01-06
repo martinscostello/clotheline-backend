@@ -56,5 +56,7 @@
 	<string>We need access to your camera to capture images for the app content.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to your microphone for video capture.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to calculate accurate delivery fees and verify you are within our service zones.</string>
 </dict>
 </plist>

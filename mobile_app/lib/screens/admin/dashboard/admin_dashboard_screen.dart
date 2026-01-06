@@ -1,11 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
+import '../../../services/auth_service.dart';
+import '../../../services/order_service.dart';
+import '../../../models/order_model.dart';
+import '../../../utils/currency_formatter.dart';
 import '../services/admin_services_screen.dart';
+import '../products/admin_add_product_screen.dart';
+import '../cms/admin_cms_content_screen.dart';
+// import '../orders/admin_orders_screen.dart'; // If needed for 'Create Order' or linking Recent Activity
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<OrderService>(context, listen: false).fetchOrders();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,110 +38,190 @@ class AdminDashboardScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.notifications_active, color: AppTheme.secondaryColor), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppTheme.secondaryColor), 
+            onPressed: () => Provider.of<OrderService>(context, listen: false).fetchOrders()
+          ),
         ],
       ),
       body: LiquidBackground(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(top: 100, bottom: 100, left: 20, right: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Stats Grid
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 15,
-                mainAxisSpacing: 15,
-                childAspectRatio: 1.4,
+          child: Consumer<OrderService>(
+            builder: (context, orderService, _) {
+              final orders = orderService.orders;
+            
+            // Get Permissions
+            final authService = Provider.of<AuthService>(context, listen: false);
+            final user = authService.currentUser;
+            final permissions = user != null ? (user['permissions'] ?? {}) : {};
+            final isMaster = user != null && user['isMasterAdmin'] == true;
+
+            // Calculate Stats (Client-Side)c
+              final activeOrders = orders.where((o) => o.status != OrderStatus.Completed && o.status != OrderStatus.Cancelled).length;
+              final pendingOrders = orders.where((o) => o.status == OrderStatus.New).length;
+              final revenue = orders
+                  .where((o) => o.status == OrderStatus.Completed) // Assuming only completed counts as revenue
+                  .fold(0.0, (sum, o) => sum + o.totalAmount);
+
+              // Recent Orders (Sort by date desc just in case, catch 5)
+              final recentOrders = List<OrderModel>.from(orders);
+              recentOrders.sort((a, b) => b.date.compareTo(a.date));
+              final top5Orders = recentOrders.take(5).toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   _buildStatCard("Active Orders", "12", Icons.local_laundry_service, Colors.blue),
-                   _buildStatCard("Pending", "5", Icons.pending_actions, Colors.orange),
-                   _buildStatCard("Revenue", "₦1,240", Icons.attach_money, Colors.green),
-                   _buildStatCard("New Users", "8", Icons.person_add, Colors.purple),
-                ],
-              ),
-              const SizedBox(height: 30),
+                  // Stats Grid
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                    childAspectRatio: 1.4,
+                    children: [
+                       _buildStatCard("Active Orders", "$activeOrders", Icons.local_laundry_service, Colors.blue),
+                       _buildStatCard("Pending", "$pendingOrders", Icons.pending_actions, Colors.orange),
+                       _buildStatCard("Revenue", CurrencyFormatter.format(revenue), Icons.attach_money, Colors.green),
+                       _buildStatCard("New Users", "N/A", Icons.person_add, Colors.purple), // Placeholder
+                    ],
+                  ),
+                  const SizedBox(height: 30),
 
-              // Quick Actions
-              const Text("Quick Actions", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildQuickAction(context, "Manage Service Categories", Icons.category, Colors.blueGrey, () {
-                       Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
-                    }),
-                    const SizedBox(width: 15),
-                    _buildQuickAction(context, "Add Product", Icons.add_shopping_cart, Colors.purpleAccent, () {
-                      // Placeholder for Add Product
-                    }),
-                    const SizedBox(width: 15),
-                    _buildQuickAction(context, "Create Order", Icons.add_circle_outline, Colors.orangeAccent, () {
-                      // Placeholder for Create Order
-                    }),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // Recent Activity / Incoming Requests
-              const Text("Incoming Requests", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 5,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: GlassContainer(
-                      opacity: 0.1,
-                      padding: const EdgeInsets.all(15),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.white10,
-                            child: Text("${index + 1}", style: const TextStyle(color: Colors.white)),
-                          ),
+                  const SizedBox(height: 20),
+                  const Text("Quick Actions", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 15),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        if (isMaster || permissions['manageServices'] == true)
+                           _buildQuickAction(context, "Manage Services", Icons.local_laundry_service, Colors.blueAccent, () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
+                           }),
+                        if ((isMaster || permissions['manageServices'] == true) && (isMaster || permissions['manageProducts'] == true || permissions['manageCMS'] == true))
                           const SizedBox(width: 15),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        if (isMaster || permissions['manageProducts'] == true)
+                           _buildQuickAction(context, "Add Product", Icons.add_shopping_cart, Colors.purpleAccent, () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAddProductScreen()));
+                           }),
+                        if ((isMaster || permissions['manageProducts'] == true) && (isMaster || permissions['manageCMS'] == true))
+                          const SizedBox(width: 15),
+                        if (isMaster || permissions['manageCMS'] == true)
+                           _buildQuickAction(context, "Ads & Banners", Icons.campaign, Colors.orangeAccent, () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads')));
+                           }),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Recent Activity / Incoming Requests
+                  const Text("Incoming Orders", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  
+                  if (top5Orders.isEmpty)
+                     const Padding(
+                       padding: EdgeInsets.all(20.0),
+                       child: Center(child: Text("No orders found", style: TextStyle(color: Colors.white38))),
+                     )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: top5Orders.length,
+                      itemBuilder: (context, index) {
+                        final order = top5Orders[index];
+                        final timeDiff = DateTime.now().difference(order.date);
+                        String timeAgo;
+                        if (timeDiff.inMinutes < 60) {
+                          timeAgo = "${timeDiff.inMinutes} mins ago";
+                        } else if (timeDiff.inHours < 24) {
+                          timeAgo = "${timeDiff.inHours} hrs ago";
+                        } else {
+                          timeAgo = "${timeDiff.inDays} days ago";
+                        }
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: GlassContainer(
+                            opacity: 0.1,
+                            padding: const EdgeInsets.all(15),
+                            child: Row(
                               children: [
-                                Text("User #${200 + index} placed an order", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                const Text("2 mins ago • Pickup Req", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                                CircleAvatar(
+                                  backgroundColor: Colors.white10,
+                                  radius: 18,
+                                  child: Icon(_getStatusIcon(order.status), size: 18, color: Colors.white70),
+                                ),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text("${order.guestName ?? 'User'} placed an order", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                      Text(
+                                        "$timeAgo • ${CurrencyFormatter.format(order.totalAmount)} • ${order.status.name}",
+                                        style: TextStyle(color: _getStatusColor(order.status), fontSize: 12)
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // const Icon(Icons.chevron_right, color: Colors.white24),
                               ],
                             ),
                           ),
-                          const Icon(Icons.chevron_right, color: Colors.white24),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              )
-            ],
+                        );
+                      },
+                    )
+                ],
+              );
+            }
           ),
         ),
       ),
     );
   }
 
+  IconData _getStatusIcon(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.New: return Icons.new_releases;
+      case OrderStatus.InProgress: return Icons.local_laundry_service;
+      case OrderStatus.Ready: return Icons.check_circle_outline;
+      case OrderStatus.Completed: return Icons.done_all;
+      case OrderStatus.Cancelled: return Icons.cancel;
+    }
+  }
+
+  Color _getStatusColor(OrderStatus status) {
+     switch (status) {
+      case OrderStatus.New: return Colors.orangeAccent;
+      case OrderStatus.InProgress: return Colors.blueAccent;
+      case OrderStatus.Ready: return Colors.greenAccent;
+      case OrderStatus.Completed: return Colors.grey;
+      case OrderStatus.Cancelled: return Colors.redAccent;
+    }
+  }
+
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return GlassContainer(
       opacity: 0.15,
+      padding: const EdgeInsets.all(12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 30),
+          Icon(icon, color: color, size: 28),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          Text(title, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(title, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
         ],
       ),
     );
@@ -138,7 +240,7 @@ class AdminDashboardScreen extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withOpacity(0.2), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 10),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/screens/user/main_layout.dart';
 import 'package:laundry_app/screens/admin/admin_main_layout.dart';
+import 'package:provider/provider.dart';
+import 'package:laundry_app/services/auth_service.dart';
 
 class DevLandingScreen extends StatelessWidget {
   const DevLandingScreen({super.key});
@@ -62,6 +64,11 @@ class DevLandingScreen extends StatelessWidget {
                   textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 onPressed: () {
+                   // Enable Dev Mode (Master Admin access)
+                   // We need to import provider first at top
+                   final auth = Provider.of<AuthService>(context, listen: false);
+                   auth.enableDevMode();
+                   
                    Navigator.pushReplacement(
                     context, 
                     MaterialPageRoute(builder: (_) => const AdminMainLayout())

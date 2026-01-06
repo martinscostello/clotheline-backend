@@ -59,13 +59,13 @@ class StoreProduct {
 
   factory StoreProduct.fromJson(Map<String, dynamic> json) {
     return StoreProduct(
-      id: json['_id'],
-      name: json['name'],
+      id: json['_id'] ?? "unknown_id",
+      name: json['name'] ?? "Unnamed Product",
       category: json['category'] ?? "Uncategorized",
       imageUrls: (json['imageUrls'] as List?)?.map((e) => e.toString()).toList() ?? [],
       description: json['description'] ?? "",
-      price: (json['price'] as num).toDouble(),
-      originalPrice: (json['originalPrice'] as num?)?.toDouble() ?? (json['price'] as num).toDouble(),
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      originalPrice: (json['originalPrice'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? 0.0,
       soldCount: json['soldCount'] ?? 0,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       stockLevel: json['stock'] ?? 0,
@@ -109,7 +109,7 @@ class ProductVariant {
     
     return ProductVariant(
       id: json['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: json['name'],
+      name: json['name'] ?? "Unknown Variant",
       price: p,
       originalPrice: op,
     );

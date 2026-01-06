@@ -120,26 +120,51 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
     _showItemDialog();
   }
   
-  void _addVariant() {
-    TextEditingController vCtrl = TextEditingController();
+  void _showVariantDialog([int? index]) {
+    final nameCtrl = TextEditingController(text: index != null ? _variants[index].name : "");
+    final multCtrl = TextEditingController(text: index != null ? _variants[index].priceMultiplier.toString() : "1.0");
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF202020),
-        title: const Text("Add Service Type", style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: vCtrl, 
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(labelText: "Type Name (e.g. Wash & Fold)", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)))
+        title: Text(index == null ? "Add Service Type" : "Edit Service Type", style: const TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+             TextField(
+               controller: nameCtrl, 
+               style: const TextStyle(color: Colors.white),
+               decoration: const InputDecoration(labelText: "Type Name (e.g. Wash & Fold)", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)))
+             ),
+             const SizedBox(height: 10),
+             TextField(
+               controller: multCtrl, 
+               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+               style: const TextStyle(color: Colors.white),
+               decoration: const InputDecoration(labelText: "Price Multiplier (e.g. 1.5)", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)))
+             ),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
           ElevatedButton(onPressed: (){
-             if(vCtrl.text.isNotEmpty) {
-               setState(() => _variants.add(ServiceVariant(name: vCtrl.text)));
+             if(nameCtrl.text.isNotEmpty && multCtrl.text.isNotEmpty) {
+               final newVariant = ServiceVariant(
+                 name: nameCtrl.text, 
+                 priceMultiplier: double.tryParse(multCtrl.text) ?? 1.0
+               );
+               
+               setState(() {
+                 if (index != null) {
+                   _variants[index] = newVariant;
+                 } else {
+                   _variants.add(newVariant);
+                 }
+               });
                Navigator.pop(ctx);
              }
-          }, child: const Text("Add"))
+          }, child: const Text("Save"))
         ],
       )
     );
@@ -321,7 +346,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text("Service Types", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            IconButton(icon: const Icon(Icons.add, color: AppTheme.primaryColor), onPressed: _addVariant)
+                            IconButton(icon: const Icon(Icons.add, color: AppTheme.primaryColor), onPressed: () => _showVariantDialog())
                           ],
                         ),
                         if (_variants.isEmpty)
@@ -330,12 +355,17 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: _variants.map((v) => Chip(
-                            backgroundColor: Colors.white10,
-                            label: Text(v.name, style: const TextStyle(color: Colors.white)),
-                            deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white54),
-                            onDeleted: () => setState(() => _variants.remove(v)),
-                          )).toList(),
+                          children: _variants.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final v = entry.value;
+                            return InputChip(
+                              backgroundColor: Colors.white10,
+                              label: Text("${v.name} (${v.priceMultiplier}x)", style: const TextStyle(color: Colors.white)),
+                              deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white54),
+                              onDeleted: () => setState(() => _variants.removeAt(index)),
+                              onPressed: () => _showVariantDialog(index),
+                            );
+                          }).toList(),
                         )
                       ],
                     ),

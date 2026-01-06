@@ -18,6 +18,8 @@ class AdminOrdersScreen extends StatefulWidget {
 
 class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTickerProviderStateMixin {
   Timer? _refreshTimer;
+  late TabController _tabController;
+  final List<String> _tabs = ["New", "InProgress", "Ready", "Completed", "Cancelled"];
 
   @override
   void initState() {

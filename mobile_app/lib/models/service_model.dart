@@ -31,11 +31,11 @@ class ServiceModel {
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
     return ServiceModel(
-      id: json['_id'],
-      name: json['name'],
+      id: json['_id'] ?? "unknown_id",
+      name: json['name'] ?? "Unnamed Service",
       image: json['image'] ?? "assets/images/service_laundry.png",
-      icon: json['icon'],
-      color: json['color'],
+      icon: json['icon'] ?? "cleaning_services",
+      color: json['color'] ?? "0xFF2196F3",
       description: json['description'] ?? '',
       discountPercentage: (json['discountPercentage'] as num?)?.toDouble() ?? 0,
       discountLabel: json['discountLabel'] ?? "",
@@ -57,6 +57,23 @@ class ServiceModel {
       case 'house': return Icons.house;
       default: return Icons.cleaning_services;
     }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'name': name,
+      'image': image,
+      'icon': icon,
+      'color': color,
+      'description': description,
+      'discountPercentage': discountPercentage,
+      'discountLabel': discountLabel,
+      'isLocked': isLocked,
+      'lockedLabel': lockedLabel,
+      'items': items.map((e) => e.toJson()).toList(),
+      'serviceTypes': serviceTypes.map((e) => e.toJson()).toList(),
+    };
   }
 
   // Helper to get Color object
@@ -90,12 +107,16 @@ class ServiceItem {
 
 class ServiceVariant {
   final String name;
+  final double priceMultiplier;
 
-  ServiceVariant({required this.name});
+  ServiceVariant({required this.name, this.priceMultiplier = 1.0});
 
   factory ServiceVariant.fromJson(Map<String, dynamic> json) {
-    return ServiceVariant(name: json['name']);
+    return ServiceVariant(
+      name: json['name'],
+      priceMultiplier: (json['priceMultiplier'] as num?)?.toDouble() ?? 1.0,
+    );
   }
   
-  Map<String, dynamic> toJson() => {'name': name};
+  Map<String, dynamic> toJson() => {'name': name, 'priceMultiplier': priceMultiplier};
 }

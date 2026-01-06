@@ -55,11 +55,48 @@ class ContentService {
     }
   }
 
-  Future<AppContentModel?> getAppContent() async {
+  // Defaults
+  static final Map<String, dynamic> _defaults = {
+    "_id": "default_content_id",
+    "brandText": "Good Morning",
+    "heroCarousel": [
+      {
+        "imageUrl": "https://images.unsplash.com/photo-1545173168-9f1947eebb8f?q=80&w=2971&auto=format&fit=crop", // Safe generic laundry img
+        "title": "Premium Laundry Service",
+        "tagLine": "We care for your clothes",
+        "titleColor": "white",
+        "tagLineColor": "white70"
+      },
+      {
+         "imageUrl": "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?q=80&w=2970&auto=format&fit=crop",
+         "title": "Fast Pickup & Delivery",
+         "tagLine": "Schedule in seconds",
+         "titleColor": "white",
+         "tagLineColor": "white70"
+      }
+    ]
+  };
+
+  // Fast Load: Cache -> Defaults
+  Future<AppContentModel> getAppContent() async {
     final prefs = await SharedPreferences.getInstance();
     
-    // 1. Try fetching from network
+    // 1. Try Cache
     try {
+      final cachedString = prefs.getString('app_content_cache');
+      if (cachedString != null) {
+        return AppContentModel.fromJson(jsonDecode(cachedString));
+      }
+    } catch (_) {}
+
+    // 2. Return Defaults
+    return AppContentModel.fromJson(_defaults);
+  }
+  
+  // Background Refresh: Network -> Cache
+  Future<AppContentModel?> refreshAppContent() async {
+    final prefs = await SharedPreferences.getInstance();
+     try {
       final response = await _apiService.client.get('/content');
       if (response.statusCode == 200) {
         // Cache data
@@ -69,18 +106,6 @@ class ContentService {
     } catch (e) {
       debugPrint("Error fetching content from API: $e");
     }
-
-    // 2. Fallback to cache if network fails
-    try {
-      final cachedString = prefs.getString('app_content_cache');
-      if (cachedString != null) {
-        debugPrint("Loading content from cache");
-        return AppContentModel.fromJson(jsonDecode(cachedString));
-      }
-    } catch (e) {
-      debugPrint("Error reading content cache: $e");
-    }
-    
     return null;
   }
 

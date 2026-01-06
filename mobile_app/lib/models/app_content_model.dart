@@ -72,7 +72,7 @@ class HeroCarouselItem {
 
   factory HeroCarouselItem.fromJson(Map<String, dynamic> json) {
     return HeroCarouselItem(
-      imageUrl: json['imageUrl'],
+      imageUrl: json['imageUrl'] ?? "", 
       title: json['title'],
       titleColor: json['titleColor'] ?? "0xFFFFFFFF",
       tagLine: json['tagLine'],
@@ -100,7 +100,7 @@ class ProductAd {
 
   factory ProductAd.fromJson(Map<String, dynamic> json) {
     return ProductAd(
-      imageUrl: json['imageUrl'],
+      imageUrl: json['imageUrl'] ?? "",
       targetScreen: json['targetScreen'],
       active: json['active'] ?? true,
     );

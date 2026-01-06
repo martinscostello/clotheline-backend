@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../models/booking_models.dart';
 import '../../../services/cart_service.dart';
@@ -6,6 +7,9 @@ import 'package:flutter/services.dart';
 import '../../../services/content_service.dart';
 import '../../../models/app_content_model.dart';
 import '../../../services/order_service.dart';
+import '../../../services/delivery_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
 class CheckoutScreen extends StatefulWidget {
   // Use Singleton instead of passing list
@@ -15,7 +19,7 @@ class CheckoutScreen extends StatefulWidget {
   State<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> {
+class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProviderStateMixin {
   final _cartService = CartService();
   int _currentStage = 1;
   
@@ -29,6 +33,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _deliveryAddressController = TextEditingController();
   final _deliveryPhoneController = TextEditingController();
 
+  // Location Data
+  LatLng? _pickupLatLng;
+  LatLng? _deliveryLatLng;
+  double _pickupFee = 0.0;
+  double _deliveryFee = 0.0;
+  bool _isLocating = false;
+
+  // Animation
+  late AnimationController _breathingController;
+  late Animation<double> _breathingAnimation;
+
   // Branch Info
   String _branchAddress = "Loading...";
   String _branchPhone = "Loading...";
@@ -38,6 +53,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void initState() {
      super.initState();
      _fetchContent();
+     WidgetsBinding.instance.addPostFrameCallback((_) {
+       Provider.of<DeliveryService>(context, listen: false).fetchSettings();
+     });
+
+     _breathingController = AnimationController(
+       vsync: this,
+       duration: const Duration(milliseconds: 1500),
+     )..repeat(reverse: true);
+     
+     _breathingAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+       CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut)
+     );
+  }
+
+  @override
+  void dispose() {
+    _breathingController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchContent() async {
@@ -55,6 +88,60 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_currentStage == 1) return "Pickup & Drop-off";
     if (_currentStage == 2) return "Order Summary";
     return "Checkout";
+  }
+  
+  // LOGIC: Get Location
+  Future<void> _getCurrentLocation(bool isPickup) async {
+    setState(() => _isLocating = true);
+    
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location services are disabled.")));
+      setState(() => _isLocating = false);
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location permissions are denied")));
+        setState(() => _isLocating = false);
+        return;
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location permissions are permanently denied, we cannot request permissions.")));
+      setState(() => _isLocating = false);
+      return;
+    } 
+
+    try {
+      Position position = await Geolocator.getCurrentPosition();
+      final deliveryService = Provider.of<DeliveryService>(context, listen: false);
+      double fee = deliveryService.calculateDeliveryFee(position.latitude, position.longitude);
+      
+      setState(() {
+        if (isPickup) {
+          _pickupLatLng = LatLng(position.latitude, position.longitude);
+          _pickupFee = fee;
+          // Note: NOT updating address controller text
+        } else {
+          _deliveryLatLng = LatLng(position.latitude, position.longitude);
+          _deliveryFee = fee;
+          // Note: NOT updating address controller text
+        }
+      });
+      
+    } catch (e) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error getting location: $e")));
+    } finally {
+      setState(() => _isLocating = false);
+    }
   }
 
   @override
@@ -107,7 +194,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           _buildStepDot(1, isDark),
           _buildStepLine(1, isDark),
           _buildStepDot(2, isDark),
-          // Stage 3 is conceptually Payment/Final
         ],
       ),
     );
@@ -154,7 +240,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             isDark: isDark,
             colors: textColor,
           ),
-          if (_beforeWashOption == 1) _buildAddressInputs(_pickupAddressController, _pickupPhoneController, isDark),
+          if (_beforeWashOption == 1) _buildAddressInputs(_pickupAddressController, _pickupPhoneController, isDark, true),
           
           const SizedBox(height: 10),
           _buildOptionTile(
@@ -162,7 +248,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             groupValue: _beforeWashOption,
             title: "I'll Drop off",
             subtitle: "Bring to our location",
-            onChanged: (val) => setState(() => _beforeWashOption = val!),
+            onChanged: (val) {
+               setState(() {
+                 _beforeWashOption = val!;
+                 _pickupFee = 0.0; // Reset fee
+                 _pickupLatLng = null; // Reset GPS
+               });
+            },
             isDark: isDark,
             colors: textColor,
           ),
@@ -182,7 +274,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             isDark: isDark,
             colors: textColor,
           ),
-          if (_afterWashOption == 1) _buildAddressInputs(_deliveryAddressController, _deliveryPhoneController, isDark, labelPrefix: "Delivery"),
+          if (_afterWashOption == 1) _buildAddressInputs(_deliveryAddressController, _deliveryPhoneController, isDark, false, labelPrefix: "Delivery"),
 
           const SizedBox(height: 10),
           _buildOptionTile(
@@ -190,7 +282,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             groupValue: _afterWashOption,
             title: "I'll Pick up",
             subtitle: "Collect from our location",
-            onChanged: (val) => setState(() => _afterWashOption = val!),
+            onChanged: (val) {
+               setState(() {
+                 _afterWashOption = val!;
+                 _deliveryFee = 0.0; // Reset fee
+                 _deliveryLatLng = null; // Reset GPS
+               });
+            },
             isDark: isDark,
             colors: textColor,
           ),
@@ -261,12 +359,54 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildAddressInputs(TextEditingController addrCtrl, TextEditingController phoneCtrl, bool isDark, {String labelPrefix = "Pickup"}) {
+  Widget _buildAddressInputs(TextEditingController addrCtrl, TextEditingController phoneCtrl, bool isDark, bool isPickup, {String labelPrefix = "Pickup"}) {
+    // Check if GPS is active for this field
+    bool isGpsActive = isPickup ? _pickupLatLng != null : _deliveryLatLng != null;
+
     return Padding(
       padding: const EdgeInsets.only(left: 20, right: 10, bottom: 20, top: 5),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTextField(addrCtrl, "$labelPrefix Address", Icons.location_on, isDark),
+          Row(
+            children: [
+              Expanded(child: _buildTextField(addrCtrl, "$labelPrefix Address (Manual Entry)", Icons.location_on, isDark)),
+              const SizedBox(width: 8),
+              
+              // Animated GPS Button
+              InkWell(
+                onTap: () => _getCurrentLocation(isPickup),
+                child: AnimatedBuilder(
+                  animation: _breathingAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: isGpsActive ? _breathingAnimation.value : 1.0,
+                      child: Container(
+                        height: 50, width: 50,
+                        decoration: BoxDecoration(
+                          color: isGpsActive 
+                              ? AppTheme.primaryColor 
+                              : AppTheme.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.primaryColor),
+                          boxShadow: isGpsActive ? [
+                            BoxShadow(color: AppTheme.primaryColor.withOpacity(0.5), blurRadius: 10, spreadRadius: 2)
+                          ] : [],
+                        ),
+                        child: Icon(Icons.my_location, color: isGpsActive ? Colors.white : AppTheme.primaryColor),
+                      ),
+                    );
+                  },
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 5),
+          // Note Text
+          Text(
+            "Turn on GPS to get accurate Delivery fee", 
+            style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12, fontStyle: FontStyle.italic)
+          ),
           const SizedBox(height: 10),
           _buildTextField(phoneCtrl, "Contact Phone", Icons.phone, isDark),
         ],
@@ -326,6 +466,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildSummaryCard(bool isDark, Color textColor) {
+    double total = _cartService.serviceTotalAmount + _pickupFee + _deliveryFee;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -335,7 +477,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: Column(
         children: [
           // Laundry Items
-          // Laundry Items Only
           ..._cartService.items.map((item) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
@@ -348,11 +489,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           )),
           
           const Divider(),
+          
+          if (_beforeWashOption == 1) // Pickup selected
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                 Text("Pickup Fee", style: TextStyle(color: textColor)),
+                 Text("₦${_pickupFee.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+               ],
+             ),
+          
+          if (_afterWashOption == 1) // Delivery selected
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                 Text("Delivery Fee", style: TextStyle(color: textColor)),
+                 Text("₦${_deliveryFee.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+               ],
+             ),
+          
+          const Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("Total", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-              Text("₦${_cartService.serviceTotalAmount.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
+              Text("₦${total.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
             ],
           ),
         ],
@@ -370,9 +531,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildLogisticsRow("Pickup", _beforeWashOption == 1 ? "We pick up at: ${_pickupAddressController.text}" : "You drop off at Branch", textColor),
+          _buildLogisticsRow("Pickup", _beforeWashOption == 1 ? "At: ${_pickupAddressController.text}" : "Drop off at Branch", textColor),
           const SizedBox(height: 10),
-          _buildLogisticsRow("Delivery", _afterWashOption == 1 ? "We deliver to: ${_deliveryAddressController.text}" : "You pick up at Branch", textColor),
+          _buildLogisticsRow("Delivery", _afterWashOption == 1 ? "To: ${_deliveryAddressController.text}" : "Pick up at Branch", textColor),
         ],
       ),
     );
@@ -409,24 +570,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       });
     }
 
-    // Store Items (REMOVED - Laundry Only)
-    /*
-    for (var i in _cartService.storeItems) {
-       // ...
-    }
-    */
+    double total = _cartService.serviceTotalAmount + _pickupFee + _deliveryFee;
 
     final orderData = {
       'items': items,
-      'totalAmount': _cartService.serviceTotalAmount,
+      'totalAmount': total,
       'pickupOption': _beforeWashOption == 1 ? 'Pickup' : 'Dropoff',
-      'deliveryOption': _afterWashOption == 1 ? 'Deliver' : 'Pickup', // Fixed logic
+      'deliveryOption': _afterWashOption == 1 ? 'Deliver' : 'Pickup',
       'pickupAddress': _beforeWashOption == 1 ? _pickupAddressController.text : null,
       'pickupPhone': _beforeWashOption == 1 ? _pickupPhoneController.text : null,
       'deliveryAddress': _afterWashOption == 1 ? _deliveryAddressController.text : null,
       'deliveryPhone': _afterWashOption == 1 ? _deliveryPhoneController.text : null,
+      // Metadata for location
+      'pickupCoordinates': _pickupLatLng != null ? {'lat': _pickupLatLng!.latitude, 'lng': _pickupLatLng!.longitude} : null,
+      'deliveryCoordinates': _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
+      'pickupFee': _pickupFee,
+      'deliveryFee': _deliveryFee,
       'guestInfo': {
-        'name': 'Guest User', // Placeholder if no auth
+        'name': 'Guest User', 
         'phone': _pickupPhoneController.text.isNotEmpty ? _pickupPhoneController.text : _deliveryPhoneController.text
       }
     };
@@ -436,8 +597,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isSubmitting = false);
 
     if (success && mounted) {
-      _cartService.clearServiceItems();  // ONLY Clear Laundry 
-      // Show Success Dialog
+      _cartService.clearServiceItems();  
       showDialog(
         context: context, 
         barrierDismissible: false,
@@ -447,8 +607,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(ctx).pop(); // Close Dialog
-                Navigator.of(context).pop(); // Close Checkout
+                Navigator.of(ctx).pop(); 
+                Navigator.of(context).pop(); 
               }, 
               child: const Text("OK")
             )

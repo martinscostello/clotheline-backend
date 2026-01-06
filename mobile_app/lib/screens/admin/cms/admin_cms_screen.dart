@@ -6,98 +6,120 @@ import 'admin_cms_content_screen.dart';
 import '../services/admin_services_screen.dart';
 import '../products/admin_products_screen.dart';
 import '../orders/admin_orders_screen.dart';
+import 'package:provider/provider.dart';
+import '../../../services/auth_service.dart';
 
 class AdminCMSScreen extends StatelessWidget {
   const AdminCMSScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("Content Management", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: LiquidBackground(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 100, bottom: 100, left: 20, right: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("App Appearance", style: TextStyle(color: Colors.white54, fontSize: 14)),
-              const SizedBox(height: 10),
-              _buildCMSCard(
-                title: "Home Screen",
-                subtitle: "Hero carousel & Featured services.",
-                icon: Icons.home_filled,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'home'))),
-              ),
-              const SizedBox(height: 15),
-              _buildCMSCard(
-                title: "Ads & Banners",
-                subtitle: "Manage promotional banners across the app.",
-                icon: Icons.campaign,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads'))),
-              ),
-              const SizedBox(height: 15),
-              _buildCMSCard(
-                title: "Branding Text",
-                subtitle: "Update brands and slogans.",
-                icon: Icons.text_fields,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding'))),
-              ),
+    return Consumer<AuthService>(
+      builder: (context, authService, _) {
+          final user = authService.currentUser;
+          final permissions = user != null ? (user['permissions'] ?? {}) : {};
+          final isMaster = user != null && user['isMasterAdmin'] == true;
 
-              const SizedBox(height: 30),
-              const Text("Store Data", style: TextStyle(color: Colors.white54, fontSize: 14)),
-              const SizedBox(height: 10),
+          final canManageCMS = isMaster || permissions['manageCMS'] == true;
+          final canManageOrders = isMaster || permissions['manageOrders'] == true;
+          final canManageServices = isMaster || permissions['manageServices'] == true;
+          final canManageProducts = isMaster || permissions['manageProducts'] == true;
 
-              const SizedBox(height: 15),
-              _buildCMSCard(
-                title: "Manage Orders",
-                subtitle: "View & Update Order Status.",
-                icon: Icons.assignment_outlined,
-                color: Colors.pinkAccent,
-                onTap: () {
-                   Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()));
-                },
+          return Scaffold(
+            extendBodyBehindAppBar: true,
+            appBar: AppBar(
+              title: const Text("Content Management", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+            ),
+            body: LiquidBackground(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 100, bottom: 100, left: 20, right: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (canManageCMS) ...[
+                      const Text("App Appearance", style: TextStyle(color: Colors.white54, fontSize: 14)),
+                      const SizedBox(height: 10),
+                      _buildCMSCard(
+                        title: "Home Screen",
+                        subtitle: "Hero carousel & Featured services.",
+                        icon: Icons.home_filled,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'home'))),
+                      ),
+                      const SizedBox(height: 15),
+                      _buildCMSCard(
+                        title: "Ads & Banners",
+                        subtitle: "Manage promotional banners across the app.",
+                        icon: Icons.campaign,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads'))),
+                      ),
+                      const SizedBox(height: 15),
+                      _buildCMSCard(
+                        title: "Branding Text",
+                        subtitle: "Update brands and slogans.",
+                        icon: Icons.text_fields,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding'))),
+                      ),
+                      const SizedBox(height: 30),
+                    ],
+
+                    if (canManageOrders || canManageServices || canManageProducts)
+                      const Text("Store Data", style: TextStyle(color: Colors.white54, fontSize: 14)),
+                    const SizedBox(height: 10),
+
+                    if (canManageOrders) ...[
+                      const SizedBox(height: 15),
+                      _buildCMSCard(
+                        title: "Manage Orders",
+                        subtitle: "View & Update Order Status.",
+                        icon: Icons.assignment_outlined,
+                        color: Colors.pinkAccent,
+                        onTap: () {
+                           Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()));
+                        },
+                      ),
+                    ],
+                    
+                    if (canManageServices) ...[
+                      const SizedBox(height: 15),
+                      _buildCMSCard(
+                        title: "Manage Service Categories", 
+                        subtitle: "Update service categories & prices.",
+                        icon: Icons.category, 
+                        color: Colors.blueAccent,
+                        onTap: () {
+                           Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
+                        },
+                      ),
+                    ],
+
+                    if (canManageProducts) ...[
+                      const SizedBox(height: 15),
+                      _buildCMSCard(
+                        title: "Manage Products", 
+                        subtitle: "Update store inventory and descriptions.",
+                        icon: Icons.shopping_bag, 
+                        color: Colors.purpleAccent,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen())),
+                      ),
+                    ],
+
+                    if (canManageServices) ...[
+                      const SizedBox(height: 15),
+                      _buildCMSCard(
+                        title: "Delivery Fees",
+                        subtitle: "Set delivery charges.",
+                        icon: Icons.local_shipping,
+                        onTap: () {},
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              const SizedBox(height: 15),
-              _buildCMSCard(
-                title: "Manage Service Categories", 
-                subtitle: "Update service categories & prices.",
-                icon: Icons.category, 
-                color: Colors.blueAccent,
-                onTap: () {
-                   Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
-                },
-              ),
-              const SizedBox(height: 15),
-              _buildCMSCard(
-                title: "Manage Products", 
-                subtitle: "Update store inventory and descriptions.",
-                icon: Icons.shopping_bag, 
-                color: Colors.purpleAccent,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen())),
-              ),
-              const SizedBox(height: 15),
-              _buildCMSCard(
-                title: "Delivery Fees",
-                subtitle: "Set delivery charges.",
-                icon: Icons.local_shipping,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppTheme.secondaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () {
-          // Quick add action sheet
-        },
-      ),
+            ),
+          );
+      }
     );
   }
 

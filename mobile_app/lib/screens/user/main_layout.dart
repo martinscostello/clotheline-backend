@@ -18,12 +18,20 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const ProductsScreen(), // Store
-    const OrdersScreen(),   // Order History
-    const SettingsScreen(), // Settings
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      DashboardScreen(
+        onSwitchToStore: () => setState(() => _currentIndex = 1),
+      ),
+      const ProductsScreen(),
+      const OrdersScreen(),
+      const SettingsScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +71,8 @@ class _MainLayoutState extends State<MainLayout> {
     // Let's make it taller to cover Home Indicator on iOS.
     
     return LiquidGlassContainer(
+      color: Colors.white.withValues(alpha: 0.2),
+      blur: 20,
       // [FIX] Custom shape: Rounded Top Only
       borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
       padding: EdgeInsets.only(

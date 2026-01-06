@@ -9,8 +9,8 @@ import '../admin/admin_main_layout.dart';
 import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
-  final Function(ThemeMode) onThemeChanged;
-  const LoginScreen({super.key, required this.onThemeChanged});
+  final Function(ThemeMode)? onThemeChanged;
+  const LoginScreen({super.key, this.onThemeChanged});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();

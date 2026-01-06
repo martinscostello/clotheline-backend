@@ -85,7 +85,13 @@ class StoreCartScreen extends StatelessWidget {
             height: 80,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              image: DecorationImage(image: AssetImage(item.product.imagePath), fit: BoxFit.cover),
+              image: item.product.imageUrls.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(item.product.imageUrls.first),
+                      fit: BoxFit.cover,
+                    )
+                  : null, // Could add a placeholder asset here if empty
+              color: item.product.imageUrls.isEmpty ? Colors.grey[800] : null,
               border: Border.all(color: Colors.grey.withValues(alpha: 0.1))
             ),
           ),

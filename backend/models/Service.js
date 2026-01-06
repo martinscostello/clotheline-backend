@@ -46,7 +46,11 @@ const ServiceSchema = new mongoose.Schema({
     }],
     // Service Variants (e.g. "Wash & Iron", "Steam Only")
     serviceTypes: [{
-        name: String
+        name: String,
+        priceMultiplier: {
+            type: Number,
+            default: 1.0
+        }
     }]
 });
 

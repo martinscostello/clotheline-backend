@@ -46,12 +46,14 @@ connectDB().then(() => {
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/dev', require('./routes/dev'));
 app.use('/api/content', require('./routes/content'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/orders', require('./routes/orders'));
+app.use('/api/delivery', require('./routes/delivery'));
 
 // Make uploads folder static
 app.use('/uploads', express.static('uploads'));

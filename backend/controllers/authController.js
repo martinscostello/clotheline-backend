@@ -60,6 +60,10 @@ exports.login = async (req, res) => {
             return res.status(400).json({ msg: 'Invalid Credentials' });
         }
 
+        if (user.isRevoked) {
+            return res.status(403).json({ msg: 'Your access has been Revoked: Contact Master Admin for assistance' });
+        }
+
         const payload = {
             user: {
                 id: user.id,
@@ -69,9 +73,58 @@ exports.login = async (req, res) => {
 
         jwt.sign(payload, process.env.JWT_SECRET || 'secret123', { expiresIn: '7d' }, (err, token) => {
             if (err) throw err;
-            res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
+            res.json({
+                token,
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    role: user.role,
+                    isMasterAdmin: user.isMasterAdmin,
+                    permissions: user.permissions
+                }
+            });
         });
 
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Verify Token & Return Fresh User Data
+exports.verifyToken = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId).select('-password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        // Role-based revocation check
+        if (user.role === 'admin' && user.isRevoked) {
+            return res.status(403).json({ msg: 'Access Revoked' });
+        }
+
+        res.json({
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isMasterAdmin: user.isMasterAdmin || false,
+                permissions: user.permissions || {}
+            }
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        // Fetch all users, excluding password
+        const users = await User.find().select('-password').sort({ date: -1 });
+        res.json(users);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

@@ -7,6 +7,8 @@ import 'services/laundry_service.dart';
 import 'services/cart_service.dart';
 import 'services/store_service.dart';
 import 'services/order_service.dart';
+import 'services/delivery_service.dart';
+import 'services/auth_service.dart';
 
 // Global Theme Notifier
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
@@ -32,6 +34,8 @@ class LaundryApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartService()),
         ChangeNotifierProvider(create: (_) => StoreService()),
         ChangeNotifierProvider(create: (_) => OrderService()),
+        ChangeNotifierProvider(create: (_) => DeliveryService()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeNotifier,

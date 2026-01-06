@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import '../../auth/login_screen.dart';
+import '../../../services/auth_service.dart';
+
+import 'admin_manage_admins_screen.dart';
+import 'admin_delivery_settings_screen.dart';
 
 class AdminSettingsScreen extends StatelessWidget {
   const AdminSettingsScreen({super.key});
@@ -27,9 +33,12 @@ class AdminSettingsScreen extends StatelessWidget {
                 opacity: 0.1,
                 child: Column(
                   children: [
-                    _buildSettingTile(Icons.admin_panel_settings, "Manage Administrators", () {}),
-                    _buildSettingTile(Icons.local_shipping, "Delivery Zones & Fees", () {}),
-                    _buildSettingTile(Icons.percent, "Global Discounts", () {}),
+                    _buildSettingTile(Icons.admin_panel_settings, "Manage Administrators", () {
+                       Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManageAdminsScreen()));
+                    }),
+                    _buildSettingTile(Icons.local_shipping, "Delivery Zones & Fees", () {
+                       Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
+                    }),
                   ],
                 ),
               ),
@@ -56,9 +65,14 @@ class AdminSettingsScreen extends StatelessWidget {
                     foregroundColor: Colors.red,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
-                  onPressed: () {
-                     // Log out
-                     Navigator.of(context).popUntil((route) => route.isFirst);
+                  onPressed: () async {
+                     await Provider.of<AuthService>(context, listen: false).logout();
+                     if (context.mounted) {
+                       Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false
+                       );
+                     }
                   }, 
                   icon: const Icon(Icons.logout),
                   label: const Text("Admin Logout"),

@@ -35,6 +35,11 @@ exports.updateService = async (req, res) => {
             isLocked, lockedLabel, items, serviceTypes
         } = req.body;
 
+        console.log('--- UPDATE SERVICE DEBUG ---');
+        console.log('Service ID:', req.params.id);
+        if (serviceTypes) console.log('Received serviceTypes:', JSON.stringify(serviceTypes, null, 2));
+        else console.log('No serviceTypes received');
+
         let service = await Service.findById(req.params.id);
         if (!service) return res.status(404).json({ msg: 'Service not found' });
 
@@ -97,10 +102,10 @@ exports.seedServices = async () => {
                         { name: 'Bed Sheet', price: 1000 }
                     ],
                     serviceTypes: [
-                        { name: 'Wash & Iron' },
-                        { name: 'Wash Only' },
-                        { name: 'Iron Only' },
-                        { name: 'Starch & Iron' }
+                        { name: 'Wash & Iron', priceMultiplier: 1.5 },
+                        { name: 'Wash Only', priceMultiplier: 1.0 },
+                        { name: 'Iron Only', priceMultiplier: 0.8 },
+                        { name: 'Starch & Iron', priceMultiplier: 2.0 }
                     ]
                 },
                 {
@@ -116,8 +121,8 @@ exports.seedServices = async () => {
                         { name: 'Slippers', price: 500 }
                     ],
                     serviceTypes: [
-                        { name: 'Standard Clean' },
-                        { name: 'Deep Clean (Soles)' }
+                        { name: 'Standard Clean', priceMultiplier: 1.0 },
+                        { name: 'Deep Clean (Soles)', priceMultiplier: 1.5 }
                     ]
                 },
                 {
@@ -133,8 +138,8 @@ exports.seedServices = async () => {
                         { name: 'Extra Large', price: 12000 }
                     ],
                     serviceTypes: [
-                        { name: 'General Wash' },
-                        { name: 'Stain Removal' }
+                        { name: 'General Wash', priceMultiplier: 1.0 },
+                        { name: 'Stain Removal', priceMultiplier: 1.5 }
                     ]
                 },
                 {
@@ -150,9 +155,9 @@ exports.seedServices = async () => {
                         { name: 'Office Space (Large)', price: 40000 }
                     ],
                     serviceTypes: [
-                        { name: 'Regular Clean' },
-                        { name: 'Deep Clean' },
-                        { name: 'Post-Construction' }
+                        { name: 'Regular Clean', priceMultiplier: 1.0 },
+                        { name: 'Deep Clean', priceMultiplier: 1.5 },
+                        { name: 'Post-Construction', priceMultiplier: 2.0 }
                     ]
                 }
             ];

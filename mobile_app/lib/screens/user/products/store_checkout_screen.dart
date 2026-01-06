@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../services/content_service.dart';
 // import '../../../models/app_content_model.dart';
 import '../../../services/order_service.dart';
+import '../../../utils/currency_formatter.dart';
 
 class StoreCheckoutScreen extends StatefulWidget {
   const StoreCheckoutScreen({super.key});
@@ -229,7 +230,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(child: Text("${item.quantity}x ${item.product.name} ${item.variant != null ? '(${item.variant!.name})' : ''}", style: TextStyle(color: textColor))),
-                Text("₦${item.totalPrice.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                Text(CurrencyFormatter.format(item.totalPrice), style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
               ],
             ),
           )),
@@ -238,7 +239,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("Total Amount", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-              Text("₦${_cartService.storeTotalAmount.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
+              Text(CurrencyFormatter.format(_cartService.storeTotalAmount), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
             ],
           ),
         ],

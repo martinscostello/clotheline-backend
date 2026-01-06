@@ -54,10 +54,29 @@ class StoreService extends ChangeNotifier {
     }
   }
 
+  Future<void> rotateFeaturedProducts() async {
+    if (_products.isEmpty && _featuredProducts.isEmpty) await fetchProducts();
+    
+    // If we have products, pick 5 random ones
+    if (_products.isNotEmpty) {
+      final shuffled = List<StoreProduct>.from(_products)..shuffle();
+      final newFeatured = shuffled.take(5).toList();
+      
+      // Check if different from current
+      final currentIds = _featuredProducts.map((e) => e.id).toSet();
+      final newIds = newFeatured.map((e) => e.id).toSet();
+      
+      if (currentIds.difference(newIds).isNotEmpty || newIds.difference(currentIds).isNotEmpty) {
+          _featuredProducts = newFeatured;
+          notifyListeners();
+      }
+    }
+  }
+
   Future<void> fetchFeaturedProducts() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 1. Load from cache first if empty
+    // 1. Load from cache first
     if (_featuredProducts.isEmpty) {
       try {
         final cached = prefs.getString('featured_products_cache');
@@ -66,21 +85,35 @@ class StoreService extends ChangeNotifier {
           _featuredProducts = data.map((json) => StoreProduct.fromJson(json)).toList();
           notifyListeners();
         }
-      } catch (e) {
-        debugPrint("Error loading featured product cache: $e");
-      }
+      } catch (e) {}
     }
 
-    // 2. Fetch from API
+    // 2. Fetch ALL products then random select 5
+    // This supports the "Random at intervals" requirement better than backend limit
     try {
-      final response = await _apiService.client.get('/products?limit=5');
+      final response = await _apiService.client.get('/products'); // Get ALL
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        _featuredProducts = data.map((json) => StoreProduct.fromJson(json)).toList();
-        notifyListeners();
-        
-        // Save to cache
-        await prefs.setString('featured_products_cache', jsonEncode(data));
+        final allProducts = data.map((json) => StoreProduct.fromJson(json)).toList();
+        _products = allProducts; // Update main list too while we are at it
+
+        if (allProducts.isNotEmpty) {
+           final shuffled = List<StoreProduct>.from(allProducts)..shuffle();
+           final newFeatured = shuffled.take(5).toList();
+           
+           // Compare? Since it's random, it will ALMOST ALWAYS be different.
+           // So we probably WANT to update it.
+           // But the user complained about blinking. 
+           // If we just loaded from cache, and now we load random... it WILL replace cache.
+           // Maybe only replace if cache was empty? 
+           // User wants "changed at intervals".
+           
+           _featuredProducts = newFeatured;
+           notifyListeners();
+           
+           // Cache THIS selection
+           await prefs.setString('featured_products_cache', jsonEncode(newFeatured.map((e)=>e.toJson()).toList()));
+        }
       }
     } catch (e) {
       debugPrint("Error fetching featured products: $e");

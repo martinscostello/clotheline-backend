@@ -13,9 +13,14 @@ import 'package:laundry_app/models/store_product.dart';
 import 'package:laundry_app/screens/user/products/product_detail_screen.dart';
 import 'package:laundry_app/utils/currency_formatter.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:laundry_app/screens/user/products/products_screen.dart';
+import 'dart:convert'; // For robust comparison check
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback? onSwitchToStore;
+
+  const DashboardScreen({super.key, this.onSwitchToStore});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -33,11 +38,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   AppContentModel? _appContent;
   bool _isLoadingContent = true;
 
+  Timer? _rotationTimer;
+
   @override
   void initState() {
     super.initState();
     _fetchData();
     _startCarouselTimer();
+    
+    // Rotate featured products every 60s
+    _rotationTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+       StoreService().rotateFeaturedProducts();
+    });
   }
 
   Future<void> _fetchData() async {
@@ -49,19 +61,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _fetchAppContent() async {
-    final content = await _contentService.getAppContent();
-    if (mounted) {
-      setState(() {
-        _appContent = content;
-        _isLoadingContent = false;
-        _currentHeroIndex = 0;
-      });
+    // 1. Fast Load (Cache or Defaults) - Instant
+    if (_appContent == null) {
+      final content = await _contentService.getAppContent();
+      if (mounted) {
+        setState(() {
+          _appContent = content;
+          _isLoadingContent = false;
+        });
+      }
     }
+
+    // 2. Background Refresh (Silent)
+    _contentService.refreshAppContent().then((updatedContent) {
+      if (updatedContent != null && mounted) {
+        final currentJson = jsonEncode(_appContent?.toJson());
+        final newJson = jsonEncode(updatedContent.toJson());
+
+        if (currentJson != newJson) {
+           debugPrint("Content updated from server. Refreshing UI.");
+           setState(() {
+            _appContent = updatedContent;
+          });
+        }
+      }
+    });
   }
+
 
   @override
   void dispose() {
     _carouselTimer?.cancel();
+    _rotationTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -140,28 +171,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ListenableBuilder(
                     listenable: _laundryService,
                     builder: (context, child) {
-                       if (_laundryService.isLoading && _laundryService.services.isEmpty) {
-                         return const Center(child: CircularProgressIndicator());
-                       }
-                       
-                       if (!_laundryService.isLoading && _laundryService.services.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.cloud_off, size: 48, color: isDark ? Colors.white54 : Colors.black45),
-                                const SizedBox(height: 10),
-                                Text("Connection Lost", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
-                                const SizedBox(height: 10),
-                                ElevatedButton.icon(
-                                  onPressed: _fetchData, 
-                                  icon: const Icon(Icons.refresh),
-                                  label: const Text("Retry"),
-                                )
-                              ],
-                            ),
-                          );
-                       }
+                       // Never show spinner, always show grid (defaults handle the content)
                        return _buildServiceGrid(context, isDark);
                     }
                   ),
@@ -298,8 +308,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         image: DecorationImage(
-          image: NetworkImage(item.imageUrl),
+          image: (item.imageUrl.isNotEmpty && item.imageUrl.startsWith('http'))
+              ? CachedNetworkImageProvider(item.imageUrl)
+              : const AssetImage('assets/images/error_placeholder.png') as ImageProvider,
           fit: BoxFit.cover,
+          onError: (exception, stackTrace) {
+             debugPrint("Image Load Error: $exception");
+          } 
         ),
       ),
       child: Container(
@@ -308,14 +323,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.0)],
           ),
         ),
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // User commanded: HARD FIX
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               item.title ?? "",
@@ -365,9 +380,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    // Sort: Unlocked first, then locked? Or by name? Default order likely fine.
     var services = _laundryService.services;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.builder(
@@ -396,7 +409,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20), 
                         image: DecorationImage(
-                          image: s.image.startsWith('http') ? NetworkImage(s.image) : AssetImage(s.image) as ImageProvider,
+                          image: s.image.startsWith('http') 
+                            ? CachedNetworkImageProvider(s.image)
+                            : AssetImage(s.image) as ImageProvider,
                           fit: BoxFit.cover,
                           onError: (_,__) {} 
                         ),
@@ -427,7 +442,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Text(
                         s.name,
-                        maxLines: 1, // Reduced to 1 line to prevent overflow title
+                        maxLines: 1, 
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black87,
@@ -436,8 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                       // Helper text or description? Using description but truncated
-                       Expanded( // Wrap in Expanded
+                       Expanded( 
                          child: Text(
                             s.description,
                             maxLines: 2,
@@ -488,9 +502,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                        blurRadius: 5,
+                        spreadRadius: 0,
                       )
                     ]
                   ),
@@ -534,7 +553,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             )
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              if (widget.onSwitchToStore != null) {
+                widget.onSwitchToStore!();
+              } else {
+                Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (context) => const ProductsScreen())
+                );
+              }
+            },
             child: Row(
               children: const [
                 Text("View All", style: TextStyle(color: Colors.blueAccent)),
@@ -583,7 +611,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
-
   Widget _buildProductCard(StoreProduct product, bool isDark) {
     return GestureDetector(
       onTap: () {
@@ -597,91 +624,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         width: 140,
         margin: const EdgeInsets.only(right: 15),
-        child: LiquidGlassContainer(
-          radius: 20,
-          padding: EdgeInsets.zero,
-          child: Stack(
-            children: [
-               Positioned.fill(
-                 child: Stack(
-                   fit: StackFit.expand,
+        decoration: BoxDecoration(
+           color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+           borderRadius: BorderRadius.circular(16),
+           boxShadow: [
+             if (!isDark)
+             BoxShadow(
+               color: Colors.black.withOpacity(0.1),
+               blurRadius: 10,
+               offset: const Offset(0, 4),
+             )
+           ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+             Positioned.fill(
+               child: Stack(
+                 fit: StackFit.expand,
+                 children: [
+                   Container(color: isDark ? Colors.white10 : Colors.grey[100]),
+                   ClipRRect(
+                     borderRadius: BorderRadius.circular(20),
+                     child: product.imageUrls.isNotEmpty 
+                        ? CachedNetworkImage(
+                            imageUrl: product.imageUrls.first, 
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[300])),
+                            errorWidget: (context, url, error) => Image.asset('assets/images/error_placeholder.png', fit: BoxFit.cover),
+                          )
+                        : Image.asset('assets/images/error_placeholder.png', fit: BoxFit.cover),
+                   ),
+                 ],
+               ),
+             ),
+             // Discount Badge
+             if (product.discountPercentage > 0)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "-${product.discountPercentage.toStringAsFixed(0)}%",
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+             Positioned(
+               bottom: 0,
+               left: 0,
+               right: 0,
+               height: 70,
+               child: Container(
+                 decoration: BoxDecoration(
+                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                   gradient: LinearGradient(
+                     begin: Alignment.topCenter,
+                     end: Alignment.bottomCenter,
+                     colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+                   ),
+                 ),
+               ),
+             ),
+             Align(
+               alignment: Alignment.bottomCenter,
+               child: Padding(
+                 padding: const EdgeInsets.all(12.0),
+                 child: Column(
+                   mainAxisSize: MainAxisSize.min,
                    children: [
-                     Container(color: isDark ? Colors.white10 : Colors.grey[200]),
-                     ClipRRect(
-                       borderRadius: BorderRadius.circular(20),
-                       child: product.imageUrls.isNotEmpty 
-                          ? Image.network(
-                              product.imageUrls.first, 
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(child: CircularProgressIndicator(value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null));
-                              },
-                              errorBuilder: (c,e,s) => const Icon(Icons.broken_image, color: Colors.grey)
-                            )
-                          : const Icon(Icons.shopping_bag, color: Colors.grey, size: 40),
+                     Text(
+                       product.name, 
+                       textAlign: TextAlign.center,
+                       maxLines: 1,
+                       overflow: TextOverflow.ellipsis,
+                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                     ),
+                     const SizedBox(height: 4),
+                     Text(
+                       CurrencyFormatter.format(product.price),
+                       style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 12),
                      ),
                    ],
                  ),
                ),
-               // Discount Badge
-               if (product.discountPercentage > 0)
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        "-${product.discountPercentage.toStringAsFixed(0)}%",
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-               Positioned(
-                 bottom: 0,
-                 left: 0,
-                 right: 0,
-                 height: 70,
-                 child: Container(
-                   decoration: BoxDecoration(
-                     borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                     gradient: LinearGradient(
-                       begin: Alignment.topCenter,
-                       end: Alignment.bottomCenter,
-                       colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
-                     ),
-                   ),
-                 ),
-               ),
-               Align(
-                 alignment: Alignment.bottomCenter,
-                 child: Padding(
-                   padding: const EdgeInsets.all(12.0),
-                   child: Column(
-                     mainAxisSize: MainAxisSize.min,
-                     children: [
-                       Text(
-                         product.name, 
-                         textAlign: TextAlign.center,
-                         maxLines: 1,
-                         overflow: TextOverflow.ellipsis,
-                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)
-                       ),
-                       const SizedBox(height: 4),
-                       Text(
-                         CurrencyFormatter.format(product.price),
-                         style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 12),
-                       ),
-                     ],
-                   ),
-                 ),
-               ),
-            ],
-          ),
+             ),
+          ],
         ),
       ),
     );

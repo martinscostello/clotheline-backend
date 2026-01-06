@@ -50,33 +50,41 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
   }
 
   Future<void> _fetchContent() async {
-    final content = await _contentService.getAppContent();
-    if (mounted) {
-      if (content != null) {
-        // Ensure minimum items for placeholders
-        while (content.heroCarousel.length < 3) {
-          content.heroCarousel.add(HeroCarouselItem(imageUrl: ""));
-        }
-        while (content.productAds.length < 2) {
-          content.productAds.add(ProductAd(imageUrl: "", active: true));
-        }
+    try {
+      final content = await _contentService.getAppContent();
+      if (mounted) {
+        if (content != null) {
+          // Ensure minimum items for placeholders
+          while (content.heroCarousel.length < 3) {
+            content.heroCarousel.add(HeroCarouselItem(imageUrl: ""));
+          }
+          while (content.productAds.length < 2) {
+            content.productAds.add(ProductAd(imageUrl: "", active: true));
+          }
 
-        _brandTextController.text = content.brandText;
-        _contactAddressCtrl.text = content.contactAddress;
-        _contactPhoneCtrl.text = content.contactPhone;
+          _brandTextController.text = content.brandText;
+          _contactAddressCtrl.text = content.contactAddress;
+          _contactPhoneCtrl.text = content.contactPhone;
 
-        // Init Controllers
-        _heroTitleControllers.clear();
-        _heroTagControllers.clear();
-        for (var item in content.heroCarousel) {
-          _heroTitleControllers.add(TextEditingController(text: item.title));
-          _heroTagControllers.add(TextEditingController(text: item.tagLine));
+          // Init Controllers
+          _heroTitleControllers.clear();
+          _heroTagControllers.clear();
+          for (var item in content.heroCarousel) {
+            _heroTitleControllers.add(TextEditingController(text: item.title));
+            _heroTagControllers.add(TextEditingController(text: item.tagLine));
+          }
         }
+        setState(() {
+          _content = content;
+          _isLoading = false;
+        });
       }
-      setState(() {
-        _content = content;
-        _isLoading = false;
-      });
+    } catch (e) {
+      debugPrint("Error fetching content: $e");
+      if (mounted) {
+         setState(() => _isLoading = false);
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
     }
   }
 
