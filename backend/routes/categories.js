@@ -8,7 +8,7 @@ const auth = require('../middleware/auth');
 // GET all categories
 router.get('/', async (req, res) => {
     try {
-        const categories = await Category.find({ isActive: true }).sort({ name: 1 });
+        const categories = await Category.find({}).sort({ name: 1 });
         // Return simple list of names for now to match current frontend expectation, 
         // OR return full objects and update frontend to handle them.
         // Frontend currently expects ["All", "Fragrance", ...].
