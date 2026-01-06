@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:laundry_app/services/api_service.dart';
 import '../models/store_product.dart';
+import '../models/category_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
@@ -12,19 +13,12 @@ class StoreService extends ChangeNotifier {
 
   final ApiService _apiService = ApiService();
 
-  List<StoreProduct> _products = [];
-  List<StoreProduct> get products => List.unmodifiable(_products);
+  List<CategoryModel> _categoryObjects = [];
+  List<CategoryModel> get categoryObjects => List.unmodifiable(_categoryObjects);
 
-  List<String> _categories = ["All"];
-  List<String> get categories => List.unmodifiable(_categories);
+  Future<void> fetchProducts({bool forceRefresh = false}) async {
+    if (_products.isNotEmpty && !forceRefresh) return;
 
-  List<StoreProduct> _featuredProducts = [];
-  List<StoreProduct> get featuredProducts => List.unmodifiable(_featuredProducts);
-
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
-  Future<void> fetchProducts() async {
     _isLoading = true;
     notifyListeners();
     try {
@@ -43,16 +37,44 @@ class StoreService extends ChangeNotifier {
 
   Future<void> fetchCategories() async {
     try {
-      final response = await _apiService.client.get('/products/categories');
+      final response = await _apiService.client.get('/categories');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        _categories = ["All", ...data.map((e) => e.toString()).toList()];
+        // Parse into CategoryModel objects
+        _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
+        
+        // Update the string list for UI compatibility (StoreScreen filter)
+        _categories = ["All", ..._categoryObjects.map((c) => c.name).toList()];
+        
         notifyListeners();
       }
     } catch (e) {
       debugPrint("Error fetching categories: $e");
     }
   }
+
+  Future<bool> addCategory(String name) async {
+    try {
+      final response = await _apiService.client.post('/categories', data: {'name': name});
+      if (response.statusCode == 200) {
+        await fetchCategories();
+        return true;
+      }
+      return false;
+    } catch (e) { return false; }
+  }
+
+  Future<bool> deleteCategory(String id) async {
+    try {
+      final response = await _apiService.client.delete('/categories/$id');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        await fetchCategories();
+        return true;
+      }
+      return false;
+    } catch (e) { return false; }
+  }
+
 
   Future<void> rotateFeaturedProducts() async {
     if (_products.isEmpty && _featuredProducts.isEmpty) await fetchProducts();
@@ -101,13 +123,6 @@ class StoreService extends ChangeNotifier {
            final shuffled = List<StoreProduct>.from(allProducts)..shuffle();
            final newFeatured = shuffled.take(5).toList();
            
-           // Compare? Since it's random, it will ALMOST ALWAYS be different.
-           // So we probably WANT to update it.
-           // But the user complained about blinking. 
-           // If we just loaded from cache, and now we load random... it WILL replace cache.
-           // Maybe only replace if cache was empty? 
-           // User wants "changed at intervals".
-           
            _featuredProducts = newFeatured;
            notifyListeners();
            
@@ -124,7 +139,7 @@ class StoreService extends ChangeNotifier {
     try {
       final response = await _apiService.client.post('/products', data: productData);
       if (response.statusCode == 200) {
-        await fetchProducts(); // Refresh
+        await fetchProducts(forceRefresh: true); // Refresh
         return true;
       }
       return false;
@@ -138,13 +153,7 @@ class StoreService extends ChangeNotifier {
     try {
       final response = await _apiService.client.put('/products/$id', data: updates);
       if (response.statusCode == 200) {
-        // Optimistic update
-        final index = _products.indexWhere((p) => p.id == id);
-        if (index != -1) {
-           // We might need to refetch to be sure, or merge updates.
-           // For simplicity, refetch.
-        }
-        await fetchProducts();
+        await fetchProducts(forceRefresh: true);
         return true;
       }
       return false;

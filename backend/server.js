@@ -54,6 +54,7 @@ app.use('/api/content', require('./routes/content'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/delivery', require('./routes/delivery'));
+app.use('/api/categories', require('./routes/categories'));
 
 // Make uploads folder static
 app.use('/uploads', express.static('uploads'));

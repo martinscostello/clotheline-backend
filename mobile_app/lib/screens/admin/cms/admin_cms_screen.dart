@@ -5,6 +5,7 @@ import 'package:laundry_app/theme/app_theme.dart';
 import 'admin_cms_content_screen.dart';
 import '../services/admin_services_screen.dart';
 import '../products/admin_products_screen.dart';
+import 'admin_categories_screen.dart';
 import '../orders/admin_orders_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
@@ -95,6 +96,14 @@ class AdminCMSScreen extends StatelessWidget {
                     ],
 
                     if (canManageProducts) ...[
+                      const SizedBox(height: 15),
+                      _buildCMSCard(
+                        title: "Manage Product Categories", 
+                        subtitle: "Create & edit store categories (e.g. Fragrance).",
+                        icon: Icons.category_outlined, 
+                        color: Colors.orangeAccent,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCategoriesScreen())),
+                      ),
                       const SizedBox(height: 15),
                       _buildCMSCard(
                         title: "Manage Products", 
