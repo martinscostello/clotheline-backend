@@ -68,6 +68,54 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     super.dispose();
   }
 
+  // LOGIC: Get Location (Standardized)
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLocating = true);
+    
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location services are disabled.")));
+      setState(() => _isLocating = false);
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location permissions are denied")));
+        setState(() => _isLocating = false);
+        return;
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location permissions are permanently denied.")));
+      setState(() => _isLocating = false);
+      return;
+    } 
+
+    try {
+      Position position = await Geolocator.getCurrentPosition();
+      final deliveryService = Provider.of<DeliveryService>(context, listen: false);
+      double fee = deliveryService.calculateDeliveryFee(position.latitude, position.longitude);
+      
+      setState(() {
+         // Only Update Delivery GPS & Fee
+         _deliveryLatLng = LatLng(position.latitude, position.longitude);
+         _deliveryFee = fee;
+      });
+      
+    } catch (e) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error getting location: $e")));
+    } finally {
+      setState(() => _isLocating = false);
+    }
+  }
+
   Future<void> _fetchContent() async {
     final content = await _contentService.getAppContent();
     if(mounted && content != null) {
