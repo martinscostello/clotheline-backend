@@ -52,6 +52,7 @@ class StoreService extends ChangeNotifier {
       final response = await _apiService.client.get('/categories');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
+        debugPrint("Fetched Categories: $data");
         // Parse into CategoryModel objects
         _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
         

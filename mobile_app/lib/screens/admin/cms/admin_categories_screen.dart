@@ -51,8 +51,12 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
               if (nameCtrl.text.isNotEmpty) {
                  Navigator.pop(ctx);
                  setState(() => _isLoading = true);
-                 await _storeService.addCategory(nameCtrl.text);
+                 final success = await _storeService.addCategory(nameCtrl.text);
                  setState(() => _isLoading = false);
+                 
+                 if (!success && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to add category. Name might be duplicate.")));
+                 }
               }
             },
             child: const Text("Add"),
