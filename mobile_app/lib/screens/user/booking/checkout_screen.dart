@@ -156,6 +156,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (_currentStage > 1) {
+              setState(() => _currentStage--);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+        ),
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
           statusBarBrightness: isDark ? Brightness.dark : Brightness.light,

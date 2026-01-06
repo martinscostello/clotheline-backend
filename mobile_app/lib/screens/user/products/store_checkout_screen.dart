@@ -6,6 +6,10 @@ import 'package:flutter/services.dart';
 import '../../../services/content_service.dart';
 // import '../../../models/app_content_model.dart';
 import '../../../services/order_service.dart';
+import '../../../services/delivery_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
 import '../../../utils/currency_formatter.dart';
 
 class StoreCheckoutScreen extends StatefulWidget {
@@ -15,7 +19,7 @@ class StoreCheckoutScreen extends StatefulWidget {
   State<StoreCheckoutScreen> createState() => _StoreCheckoutScreenState();
 }
 
-class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
+class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTickerProviderStateMixin {
   final _cartService = CartService();
   int _currentStage = 1;
   
@@ -26,6 +30,15 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
   final _deliveryAddressController = TextEditingController();
   final _contactPhoneController = TextEditingController();
 
+  // Location Data
+  LatLng? _deliveryLatLng;
+  double _deliveryFee = 0.0;
+  bool _isLocating = false;
+
+  // Animation
+  late AnimationController _breathingController;
+  late Animation<double> _breathingAnimation;
+
   // Branch Info
   String _branchAddress = "Loading...";
   String _branchPhone = "Loading...";
@@ -35,6 +48,24 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
   void initState() {
      super.initState();
      _fetchContent();
+     WidgetsBinding.instance.addPostFrameCallback((_) {
+       Provider.of<DeliveryService>(context, listen: false).fetchSettings();
+     });
+
+     _breathingController = AnimationController(
+       vsync: this,
+       duration: const Duration(milliseconds: 1500),
+     )..repeat(reverse: true);
+     
+     _breathingAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+       CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut)
+     );
+  }
+
+  @override
+  void dispose() {
+    _breathingController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchContent() async {
@@ -59,6 +90,16 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (_currentStage > 1) {
+              setState(() => _currentStage--);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+        ),
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
           statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
@@ -150,7 +191,38 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
                padding: const EdgeInsets.only(left: 20, right: 10, bottom: 20),
                child: Column(
                  children: [
-                   _buildTextField(_deliveryAddressController, "Delivery Address", Icons.location_on, isDark),
+                   Row(
+                     children: [
+                       Expanded(child: _buildTextField(_deliveryAddressController, "Delivery Address (Manual or GPS)", Icons.location_on, isDark)),
+                       const SizedBox(width: 8),
+                       InkWell(
+                          onTap: _getCurrentLocation,
+                          child: AnimatedBuilder(
+                            animation: _breathingAnimation,
+                            builder: (context, child) {
+                              bool isActive = _deliveryLatLng != null;
+                              return Transform.scale(
+                                scale: isActive ? _breathingAnimation.value : 1.0,
+                                child: Container(
+                                  height: 50, width: 50,
+                                  decoration: BoxDecoration(
+                                    color: isActive ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppTheme.primaryColor),
+                                  ),
+                                  child: Icon(Icons.my_location, color: isActive ? Colors.white : AppTheme.primaryColor),
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                     ],
+                   ),
+                   if (_deliveryLatLng == null)
+                     Padding(
+                       padding: const EdgeInsets.only(top: 5, left: 5),
+                       child: Text("Use GPS for accurate fee calculation", style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12, fontStyle: FontStyle.italic)),
+                     ),
                    const SizedBox(height: 10),
                    _buildTextField(_contactPhoneController, "Contact Phone", Icons.phone, isDark),
                  ],
@@ -245,7 +317,26 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
         ],
       ),
     );
-  }
+            ],
+          ),
+          if (_deliveryFee > 0) ...[
+            const SizedBox(height: 10),
+             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Delivery Fee", style: TextStyle(color: textColor)),
+                Text(CurrencyFormatter.format(_deliveryFee), style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+          const Divider(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Total Amount", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+              Text(CurrencyFormatter.format(_cartService.storeTotalAmount + _deliveryFee), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
+            ],
+          ),
 
   // ... (Helper widgets similar to CheckoutScreen) ...
   // To save space/complexity I'll inline simplest versions or copy relevant ones.
@@ -333,11 +424,13 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> {
 
     final orderData = {
       'items': items,
-      'totalAmount': _cartService.storeTotalAmount,
+      'totalAmount': _cartService.storeTotalAmount + _deliveryFee,
       'pickupOption': _deliveryOption == 2 ? 'Pickup' : 'None', // Store pickup
       'deliveryOption': _deliveryOption == 1 ? 'Deliver' : 'Pickup',
       'deliveryAddress': _deliveryOption == 1 ? _deliveryAddressController.text : null,
       'deliveryPhone': _deliveryOption == 1 ? _contactPhoneController.text : null,
+      'deliveryCoordinates': _deliveryOption == 1 && _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
+      'deliveryFee': _deliveryOption == 1 ? _deliveryFee : 0,
       'guestInfo': {
          'name': 'Guest User',
          'phone': _contactPhoneController.text

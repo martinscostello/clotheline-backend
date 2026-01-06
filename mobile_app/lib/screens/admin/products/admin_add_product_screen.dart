@@ -317,6 +317,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 // 3. Category & Stock
                  Row(
                   children: [
+                    Expanded(
+                      flex: 2,
                       child: Container(
                          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
                          decoration: BoxDecoration(
@@ -352,6 +354,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                            }
                          ),
                       ),
+                    ),
                     const SizedBox(width: 15),
                     Expanded(
                       child: _buildGlassTextField(controller: _stockController, label: "Stock", isNumber: true)
