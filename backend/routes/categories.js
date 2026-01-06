@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Category = require('../models/Category');
 const auth = require('../middleware/auth');
-const upload = require('../middleware/upload'); // Assuming upload middleware exists or use similar logic to products
+const auth = require('../middleware/auth');
+
 
 // GET all categories
 router.get('/', async (req, res) => {
