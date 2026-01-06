@@ -66,15 +66,15 @@ class StoreService extends ChangeNotifier {
     }
   }
 
-  Future<bool> addCategory(String name) async {
+  Future<String?> addCategory(String name) async {
     try {
       final response = await _apiService.client.post('/categories', data: {'name': name});
       if (response.statusCode == 200) {
         await fetchCategories();
-        return true;
+        return null; // Success
       }
-      return false;
-    } catch (e) { return false; }
+      return response.data['msg'] ?? "Failed with status ${response.statusCode}";
+    } catch (e) { return "Error: $e"; }
   }
 
   Future<bool> deleteCategory(String id) async {
