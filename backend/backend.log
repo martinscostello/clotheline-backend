@@ -1,0 +1,8 @@
+
+> backend@1.0.0 start
+> node server.js
+
+[dotenv@17.2.3] injecting env (2) from .env -- tip: ⚙️  override existing env vars with { override: true }
+Connecting to MongoDB at mongodb+srv://clotheline_admin:YkEm5z7HBhmQbVPT@cluster0.mfrdlw7.mongodb.net/?appName=Cluster0
+Server running on port 5001
+MongoDB connected

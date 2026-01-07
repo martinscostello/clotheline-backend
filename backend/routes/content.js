@@ -24,6 +24,11 @@ router.put('/', async (req, res) => {
         if (req.body.productAds) content.productAds = req.body.productAds;
         if (req.body.brandText) content.brandText = req.body.brandText;
 
+        // [NEW] Added support for new fields
+        if (req.body.contactAddress) content.contactAddress = req.body.contactAddress;
+        if (req.body.contactPhone) content.contactPhone = req.body.contactPhone;
+        if (req.body.freeShippingThreshold !== undefined) content.freeShippingThreshold = req.body.freeShippingThreshold;
+
         const updatedContent = await content.save();
         res.json(updatedContent);
     } catch (err) {

@@ -28,11 +28,12 @@ exports.createProduct = async (req, res) => {
         const {
             name, price, category, imageUrls, variations,
             description, isFreeShipping, discountPercentage,
-            stock, originalPrice
+            stock, originalPrice, brand
         } = req.body;
 
         const newProduct = new Product({
             name,
+            brand: brand || "Generic",
             price,
             category,
             imageUrls: imageUrls || [],

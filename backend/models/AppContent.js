@@ -28,7 +28,8 @@ const AppContentSchema = new mongoose.Schema({
         default: ["Fragrances", "Softeners", "Household", "Cleaning", "Accesories", "Beddings", "Clothes", "Special"]
     },
     contactAddress: { type: String, default: "123 Laundry St, Lagos" },
-    contactPhone: { type: String, default: "+234 800 000 0000" }
+    contactPhone: { type: String, default: "+234 800 000 0000" },
+    freeShippingThreshold: { type: Number, default: 25000 }
 }, { timestamps: true });
 
 // Ensure we only have one config document

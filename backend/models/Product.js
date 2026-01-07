@@ -17,6 +17,13 @@ const ProductSchema = new mongoose.Schema({
     stock: { type: Number, default: 0 },
     soldCount: { type: Number, default: 0 },
     rating: { type: Number, default: 0 },
+    brand: { type: String, default: "Generic" },
+    reviews: [{
+        userName: String,
+        rating: Number,
+        comment: String,
+        date: { type: Date, default: Date.now }
+    }],
     isActive: { type: Boolean, default: true }
 });
 
