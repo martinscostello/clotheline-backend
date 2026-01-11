@@ -1,59 +1,51 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+require('dotenv').config();
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Configure Storage
-const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: function (req, file, cb) {
-        // Create unique filename: fieldname-timestamp.ext
-        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-    }
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'clotheline_uploads', // Folder in Cloudinary
+        allowed_formats: ['jpg', 'png', 'jpeg', 'gif'],
+        public_id: (req, file) => file.fieldname + '-' + Date.now(), // Unique filename
+    },
 });
 
 // Init Upload
 const upload = multer({
     storage: storage,
     limits: { fileSize: 5000000 }, // 5MB limit
-    fileFilter: function (req, file, cb) {
-        checkFileType(file, cb);
-    }
-}).single('image'); // 'image' is the field name we expect
-
-// Check File Type
-function checkFileType(file, cb) {
-    const filetypes = /jpeg|jpg|png|gif/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
-
-    if (mimetype && extname) {
-        return cb(null, true);
-    } else {
-        cb('Error: Images Only!');
-    }
-}
+}).single('image');
 
 // Upload Route
 router.post('/', (req, res) => {
     upload(req, res, (err) => {
         if (err) {
-            res.status(400).json({ message: err });
-        } else {
-            if (req.file == undefined) {
-                res.status(400).json({ message: 'No file selected!' });
-            } else {
-                // Return the public URL
-                // Assuming server runs on localhost:5001 or similar, we return relative path
-                // Frontend or Backend logic should prepend base URL if needed.
-                // Here we return full relative path that can be served statically
-                const fileUrl = `/uploads/${req.file.filename}`;
-                res.json({
-                    message: 'File Uploaded!',
-                    filePath: fileUrl
-                });
-            }
+            console.error("Upload Error:", err);
+            return res.status(400).json({ message: err.message || err });
         }
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file selected!' });
+        }
+
+        // Return the Cloudinary URL
+        // req.file.path contains the secure URL from Cloudinary
+        res.json({
+            message: 'File Uploaded to Cloud!',
+            filePath: req.file.path
+        });
     });
 });
 
