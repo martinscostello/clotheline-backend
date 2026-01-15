@@ -39,6 +39,10 @@ const UserSchema = new mongoose.Schema({
         manageProducts: { type: Boolean, default: false },
         manageUsers: { type: Boolean, default: false }, // Broadcast
     },
+    // OTP / Verification
+    otp: { type: String },
+    otpExpires: { type: Date },
+    isVerified: { type: Boolean, default: false },
     createdAt: {
         type: Date,
         default: Date.now
