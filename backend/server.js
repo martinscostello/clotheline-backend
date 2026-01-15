@@ -6,9 +6,12 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+const morgan = require('morgan');
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(morgan('dev')); // Log requests to console
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -56,6 +59,8 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/delivery', require('./routes/delivery'));
 app.use('/api/categories', require('./routes/categories'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/chat', require('./routes/chat'));
 
 // Make uploads folder static
 app.use('/uploads', express.static('uploads'));

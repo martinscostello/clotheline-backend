@@ -1,9 +1,11 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const sendEmail = require('../utils/sendEmail');
 
 exports.signup = async (req, res) => {
     try {
+        console.log('Signup Request Body:', req.body);
         const { name, email, password, phone, role } = req.body;
 
         // Check if user exists
@@ -16,18 +18,67 @@ exports.signup = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create user (Allow sending 'role' for now for testing, but typically restricted)
+        // Generate OTP (6 digits)
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        console.log(`[OTP DEBUG] Generated OTP for ${email}: ${otp}`); // FORCE LOG TO CONSOLE
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 Minutes
+
         user = new User({
             name,
             email,
             password: hashedPassword,
             phone,
-            role: role || 'user'
+            role: role || 'user',
+            otp,
+            otpExpires,
+            isVerified: false
         });
 
         await user.save();
 
-        // Return JWT
+        // Send OTP Email
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Your Verification Code',
+                message: `Your verification code is: ${otp}. It expires in 10 minutes.`
+            });
+        } catch (emailErr) {
+            console.error("Email send failed:", emailErr);
+            // We still proceed, user can request resend later (if we implement resend)
+            // For now, just log it.
+        }
+
+        res.json({ msg: 'OTP sent', email: user.email });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.verifyEmail = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        let user = await User.findOne({ email });
+        if (!user) return res.status(400).json({ msg: 'Invalid Email' });
+
+        if (user.otp !== otp) {
+            return res.status(400).json({ msg: 'Invalid OTP' });
+        }
+
+        if (user.otpExpires < Date.now()) {
+            return res.status(400).json({ msg: 'OTP Expired' });
+        }
+
+        // Verify Success
+        user.isVerified = true;
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        await user.save();
+
+        // Login (Generate Token)
         const payload = {
             user: {
                 id: user.id,
