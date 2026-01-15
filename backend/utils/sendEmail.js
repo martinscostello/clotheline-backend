@@ -1,0 +1,42 @@
+const nodemailer = require('nodemailer');
+
+const sendEmail = async (options) => {
+    // 1. Create Transporter
+    // TIP: For development without real credentials, we can just log to console
+    // But we'll set up the structure for Gmail/SMTP
+
+    // If you want to use Gmail:
+    // service: 'gmail', auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+
+    // For now, if no credentials, we just log it (Dev Mode)
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.log("---------------------------------------------------");
+        console.log(`[Mock Email] To: ${options.email}`);
+        console.log(`[Mock Email] Subject: ${options.subject}`);
+        console.log(`[Mock Email] Body: ${options.message}`);
+        console.log("---------------------------------------------------");
+        return;
+    }
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail', // Or use host/port for other SMTP
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
+
+    // 2. Define Email Options
+    const mailOptions = {
+        from: '"Clotheline Laundry" <noreply@clotheline.com>',
+        to: options.email,
+        subject: options.subject,
+        text: options.message,
+        // html: options.html // Optional
+    };
+
+    // 3. Send Email
+    await transporter.sendMail(mailOptions);
+};
+
+module.exports = sendEmail;
