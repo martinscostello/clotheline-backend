@@ -95,7 +95,7 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         // Enforce Admin
-        const requestor = await User.findById(req.user.userId);
+        const requestor = await User.findById(req.user.id);
         if (!requestor || requestor.role !== 'admin') {
             return res.status(403).json({ msg: 'Admins only' });
         }
