@@ -7,27 +7,31 @@ const User = require('../models/User');
 // --- SEED DATA ---
 const BENIN_DATA = {
     name: "Benin",
-    address: "4 Princess Ezomo Street, Airport Road, Opposite First Bank, Benin",
-    phone: "08000000000", // Default
+    address: "4 Princess Ezomo Street, Airport Road, Opposite First Bank, Benin City",
+    phone: "08123242359",
     location: { lat: 6.3033777, lng: 5.5944979 },
     isDefault: true,
-    deliveryZones: [
-        { name: "Zone A", description: "0-3km", radiusKm: 3, baseFee: 500 },
-        { name: "Zone B", description: "3-8km", radiusKm: 8, baseFee: 1000 },
-        { name: "Zone C", description: "8-15km", radiusKm: 15, baseFee: 2000 }
+    deliveryZones: [ // Zone A-E
+        { name: "Zone A: Immediate Coverage", description: "0 - 2.5 km", radiusKm: 2.5, baseFee: 500, color: '#4CAF50' },
+        { name: "Zone B: Core City", description: "2.5 - 5.5 km", radiusKm: 5.5, baseFee: 1000, color: '#2196F3' },
+        { name: "Zone C: Extended City", description: "5.5 - 9 km", radiusKm: 9, baseFee: 2000, color: '#FFC107' },
+        { name: "Zone D: Outskirts", description: "9 - 14 km", radiusKm: 14, baseFee: 3000, color: '#FF5722' },
+        { name: "Zone E: Outside Service Area", description: "> 14 km", radiusKm: 9999, baseFee: 99999, color: '#9E9E9E' } // 99999 fee indicates "Out of Range"
     ]
 };
 
 const ABUJA_DATA = {
     name: "Abuja",
-    address: "44 Ebitu Ukiwe Street, Suite B2 Busymart Plaza, Jabi, Abuja",
-    phone: "08000000000", // Default
+    address: "44 Ebitu Ukiwe Street, Suite B2, Busymart Plaza, Jabi, Abuja",
+    phone: "07060827325",
     location: { lat: 9.0667295, lng: 7.4301391 },
     isDefault: false,
     deliveryZones: [
-        { name: "Zone A", description: "Central Area (0-5km)", radiusKm: 5, baseFee: 1000 },
-        { name: "Zone B", description: "Metro (5-12km)", radiusKm: 12, baseFee: 2000 },
-        { name: "Zone C", description: "Outskirts (12-25km)", radiusKm: 25, baseFee: 3500 }
+        { name: "Zone A: Immediate Coverage", description: "0 - 2.5 km", radiusKm: 2.5, baseFee: 1000, color: '#4CAF50' },
+        { name: "Zone B: Core City", description: "2.5 - 5.5 km", radiusKm: 5.5, baseFee: 2000, color: '#2196F3' },
+        { name: "Zone C: Extended City", description: "5.5 - 9 km", radiusKm: 9, baseFee: 3500, color: '#FFC107' },
+        { name: "Zone D: Outskirts", description: "9 - 14 km", radiusKm: 14, baseFee: 5000, color: '#FF5722' },
+        { name: "Zone E: Outside Service Area", description: "> 14 km", radiusKm: 9999, baseFee: 99999, color: '#9E9E9E' }
     ]
 };
 
