@@ -69,31 +69,103 @@ exports.updateService = async (req, res) => {
         const {
             name, icon, color, description, image,
             discountPercentage, discountLabel, isActive,
-            isLocked, lockedLabel, items, serviceTypes
+            isLocked, lockedLabel, items, serviceTypes,
+            branchId // [NEW] Context
         } = req.body;
 
         console.log('--- UPDATE SERVICE DEBUG ---');
         console.log('Service ID:', req.params.id);
-        if (serviceTypes) console.log('Received serviceTypes:', JSON.stringify(serviceTypes, null, 2));
-        else console.log('No serviceTypes received');
+        console.log('Branch Context:', branchId ? branchId : 'Global/Base');
 
         let service = await Service.findById(req.params.id);
         if (!service) return res.status(404).json({ msg: 'Service not found' });
 
-        if (name) service.name = name;
-        if (icon) service.icon = icon;
-        if (color) service.color = color;
-        if (description) service.description = description;
-        if (image) service.image = image; // [FIX] Update Image
-        if (discountPercentage !== undefined) service.discountPercentage = discountPercentage;
-        if (discountLabel !== undefined) service.discountLabel = discountLabel;
-        if (isActive !== undefined) service.isActive = isActive;
+        // IF BRANCH CONTEXT EXISTS -> ONLY UPDATE BRANCH SPECIFIC DATA
+        if (branchId) {
+            console.log(`Scoped Update for Branch: ${branchId}`);
 
-        // New Fields
-        if (isLocked !== undefined) service.isLocked = isLocked;
-        if (lockedLabel) service.lockedLabel = lockedLabel;
-        if (items) service.items = items;
-        if (serviceTypes) service.serviceTypes = serviceTypes;
+            // 1. Update Top-Level Availability for Branch
+            if (isActive !== undefined) {
+                const availIndex = service.branchAvailability.findIndex(b => b.branchId.toString() === branchId);
+                if (availIndex > -1) {
+                    service.branchAvailability[availIndex].isActive = isActive;
+                } else {
+                    service.branchAvailability.push({ branchId, isActive });
+                }
+            }
+
+            // 2. Update Items Pricing (Scoped)
+            if (items && Array.isArray(items)) {
+                items.forEach(updatedItem => {
+                    // Find matching item in DB (by ID if possible, else Name)
+                    // Note: verifying by ID is safer if frontend sends it
+                    let dbItem = service.items.find(i =>
+                        (updatedItem._id && i._id.toString() === updatedItem._id) ||
+                        i.name === updatedItem.name
+                    );
+
+                    if (dbItem) {
+                        // We strictly update ONLY the pricing for this branch
+                        // We do NOT update the name or base price here
+
+                        const newPrice = updatedItem.price; // Admin sent this as "the price"
+
+                        const priceIndex = dbItem.branchPricing.findIndex(bp => bp.branchId.toString() === branchId);
+                        if (priceIndex > -1) {
+                            if (updatedItem.isActive !== undefined) dbItem.branchPricing[priceIndex].isActive = updatedItem.isActive;
+                            if (newPrice !== undefined) dbItem.branchPricing[priceIndex].price = newPrice;
+                        } else {
+                            // Create new override
+                            dbItem.branchPricing.push({
+                                branchId,
+                                price: newPrice !== undefined ? newPrice : dbItem.price, // Fallback to base if undefined, but unlikely
+                                isActive: updatedItem.isActive ?? true
+                            });
+                        }
+                    }
+                });
+            }
+
+            // [NOTE] serviceTypes currently don't have branch scoping in schema (priceMultiplier is global).
+            // If needed, schema update required. For now, we assume Multipliers are Global.
+
+        } else {
+            // GLOBAL UPDATE (Default Behavior) - Updates Base Values
+            if (name) service.name = name;
+            if (icon) service.icon = icon;
+            if (color) service.color = color;
+            if (description) service.description = description;
+            if (image) service.image = image;
+            if (discountPercentage !== undefined) service.discountPercentage = discountPercentage;
+            if (discountLabel !== undefined) service.discountLabel = discountLabel;
+            if (isActive !== undefined) service.isActive = isActive;
+            if (isLocked !== undefined) service.isLocked = isLocked;
+            if (lockedLabel) service.lockedLabel = lockedLabel;
+
+            // For items, we replace/update logic needs care to not wipe branch pricing
+            // Simple approach: If items sent, we update basic fields, preserving branchPricing
+            if (items) {
+                // Check if we are replacing list or updating.
+                // Mongoose might replace existing array if we just do service.items = items;
+                // But newly sent items won't have branchPricing data usually.
+
+                // Smart Merge for Global Update:
+                // Map new items to existing to preserve branchPricing
+                const mergedItems = items.map(newItem => {
+                    const existing = service.items.find(i => i.name === newItem.name); // Match by name or ID
+                    if (existing) {
+                        return {
+                            ...newItem,
+                            branchPricing: existing.branchPricing // PRESERVE THIS
+                        };
+                    }
+                    return newItem;
+                });
+                service.items = mergedItems;
+            }
+
+            if (serviceTypes) service.serviceTypes = serviceTypes;
+        }
 
         await service.save();
         res.json(service);
