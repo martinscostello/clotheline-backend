@@ -24,7 +24,14 @@ const ProductSchema = new mongoose.Schema({
         comment: String,
         date: { type: Date, default: Date.now }
     }],
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    // Branch Specific Pricing & Stock
+    branchInfo: [{
+        branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+        price: Number,
+        stock: { type: Number, default: 0 },
+        isActive: { type: Boolean, default: true }
+    }]
 });
 
 module.exports = mongoose.model('Product', ProductSchema);

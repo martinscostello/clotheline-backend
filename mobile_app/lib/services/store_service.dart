@@ -4,6 +4,7 @@ import '../models/store_product.dart';
 import '../models/category_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:laundry_app/data/seed_data.dart'; // Added Import
 
 // Service to manage Store Data (Product Listing, Editing)
 class StoreService extends ChangeNotifier {
@@ -28,43 +29,91 @@ class StoreService extends ChangeNotifier {
   List<CategoryModel> _categoryObjects = [];
   List<CategoryModel> get categoryObjects => List.unmodifiable(_categoryObjects);
 
-  Future<void> fetchProducts({bool forceRefresh = false}) async {
-    if (_products.isNotEmpty && !forceRefresh) return;
+  bool _isHydrated = false;
+  bool get isHydrated => _isHydrated;
 
-    _isLoading = true;
-    notifyListeners();
+  // 1. Load Cache Only
+  Future<void> loadFromCache() async {
+    final prefs = await SharedPreferences.getInstance();
     try {
-      final response = await _apiService.client.get('/products');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+      final cached = prefs.getString('products_cache');
+      if (cached != null) {
+        final List<dynamic> data = jsonDecode(cached);
         _products = data.map((json) => StoreProduct.fromJson(json)).toList();
+      } else {
+        // Fallback to Seed Data (First Launch)
+        _products = kDefaultProducts.map((json) => StoreProduct.fromJson(json)).toList();
+      }
+      
+      final cachedCats = prefs.getString('categories_cache');
+      if (cachedCats != null) {
+         final List<dynamic> data = jsonDecode(cachedCats);
+         _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
+         _categories = ["All", ..._categoryObjects.map((c) => c.name).toList()];
       }
     } catch (e) {
-      debugPrint("Error fetching products: $e");
+      debugPrint("Error loading store cache: $e");
     } finally {
-      _isLoading = false;
+      _isHydrated = true;
       notifyListeners();
     }
   }
 
-  Future<void> fetchCategories() async {
+  // 2. Silent Sync
+  Future<void> fetchFromApi() async {
+    _isLoading = true;
+    // notifyListeners(); // Don't notify here to avoid flickering if we are hydrating silently
+    
+    // Fetch Products
     try {
-      final response = await _apiService.client.get('/categories');
+      final response = await _apiService.client.get('/products');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        debugPrint("Fetched Categories: $data");
-        // Parse into CategoryModel objects
-        _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
+        final newProducts = data.where((e) => e is Map).map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
         
-        // Update the string list for UI compatibility (StoreScreen filter)
-        _categories = ["All", ..._categoryObjects.map((c) => c.name).toList()];
-        
+        // Cache Logic (Simple overwrite for now, optimized diffing can be added if needed)
+        _products = newProducts;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('products_cache', jsonEncode(data));
         notifyListeners();
       }
     } catch (e) {
-      debugPrint("Error fetching categories: $e");
+      debugPrint("Error fetching products: $e");
     }
+
+    // Fetch Categories (Parallel or sequential doesn't matter much here, sequential safer)
+    try {
+       final response = await _apiService.client.get('/categories');
+       if (response.statusCode == 200) {
+          final List<dynamic> data = response.data;
+           _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
+           _categories = ["All", ..._categoryObjects.map((c) => c.name).toList()];
+           
+           final prefs = await SharedPreferences.getInstance();
+           await prefs.setString('categories_cache', jsonEncode(data));
+           notifyListeners();
+       }
+    } catch(e) {
+       debugPrint("Error fetching categories: $e");
+    }
+
+    _isLoading = false;
+    // notifyListeners(); 
   }
+
+  // COMPATIBILITY (Wraps silent sync)
+  Future<void> fetchProducts({bool forceRefresh = false}) async {
+    if (!_isHydrated) await loadFromCache();
+    await fetchFromApi();
+  }
+  
+  // Categories Helper
+  Future<void> fetchCategories() async {
+     // Managed by fetchFromApi now, but kept for specific calls
+     // No-op or alias to fetchFromApi if we want to sync everything
+  }
+
+
 
   Future<String?> addCategory(String name) async {
     try {
@@ -108,7 +157,7 @@ class StoreService extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchFeaturedProducts() async {
+  Future<void> fetchFeaturedProducts({bool onlyCache = false}) async {
     final prefs = await SharedPreferences.getInstance();
 
     // 1. Load from cache first
@@ -117,11 +166,13 @@ class StoreService extends ChangeNotifier {
         final cached = prefs.getString('featured_products_cache');
         if (cached != null) {
           final List<dynamic> data = jsonDecode(cached);
-          _featuredProducts = data.map((json) => StoreProduct.fromJson(json)).toList();
+          _featuredProducts = data.where((e) => e is Map).map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
           notifyListeners();
         }
       } catch (e) {}
     }
+
+    if (onlyCache) return;
 
     // 2. Fetch ALL products then random select 5
     // This supports the "Random at intervals" requirement better than backend limit
@@ -129,7 +180,7 @@ class StoreService extends ChangeNotifier {
       final response = await _apiService.client.get('/products'); // Get ALL
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        final allProducts = data.map((json) => StoreProduct.fromJson(json)).toList();
+        final allProducts = data.where((e) => e is Map).map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
         _products = allProducts; // Update main list too while we are at it
 
         if (allProducts.isNotEmpty) {

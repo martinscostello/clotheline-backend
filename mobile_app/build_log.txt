@@ -1,53 +1,68 @@
-Resolving dependencies...
-Downloading packages...
-  characters 1.4.0 (1.4.1 available)
-  flutter_launcher_icons 0.13.1 (0.14.4 available)
-  flutter_lints 3.0.2 (6.0.0 available)
-  flutter_riverpod 2.6.1 (3.1.0 available)
-  flutter_secure_storage 9.2.4 (10.0.0 available)
-  flutter_secure_storage_linux 1.2.3 (3.0.0 available)
-  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
-  flutter_secure_storage_platform_interface 1.1.2 (2.0.1 available)
-  flutter_secure_storage_web 1.2.1 (2.1.0 available)
-  flutter_secure_storage_windows 3.1.2 (4.1.0 available)
-  intl 0.19.0 (0.20.2 available)
-  js 0.6.7 (0.7.2 available)
-  lints 3.0.0 (6.0.0 available)
-  matcher 0.12.17 (0.12.18 available)
-  material_color_utilities 0.11.1 (0.13.0 available)
-  mgrs_dart 2.0.0 (3.0.0 available)
-  package_info_plus 8.3.1 (9.0.0 available)
-  proj4dart 2.1.0 (3.0.0 available)
-  riverpod 2.6.1 (3.1.0 available)
-  test_api 0.7.7 (0.7.8 available)
-  unicode 0.3.1 (1.1.8 available)
-Got dependencies!
-21 packages have newer versions incompatible with dependency constraints.
-Try `flutter pub outdated` for more information.
-Running Gradle task 'assembleDebug'...                          
-lib/screens/admin/products/admin_add_product_screen.dart:320:28: Error: Expected ']' before this.
-                      child: Container(
-                           ^
-lib/screens/admin/products/admin_add_product_screen.dart:320:23: Error: The getter 'child' isn't defined for the type '_AdminAddProductScreenState'.
- - '_AdminAddProductScreenState' is from 'package:laundry_app/screens/admin/products/admin_add_product_screen.dart' ('lib/screens/admin/products/admin_add_product_screen.dart').
-Try correcting the name to the name of an existing getter, or defining a getter or field named 'child'.
-                      child: Container(
-                      ^^^^^
-Target kernel_snapshot_program failed: Exception
+Warning: Building for device with codesigning disabled. You will have to manually codesign before deploying to device.
+Building com.directorm.clotheline for device (ios-release)...
+Warning: CocoaPods recommended version 1.16.2 or greater not installed.
+Pods handling may fail on some projects involving plugins.
+To update CocoaPods, see https://guides.cocoapods.org/using/getting-started.html#updating-cocoapods
+
+Running pod install...                                             811ms
+Upgrading Pods-Runner.release.xcconfig
+Upgrading Pods-Runner.profile.xcconfig
+Upgrading Pods-Runner.debug.xcconfig
+Running Xcode build...                                          
+Xcode build done.                                           10.0s
+Failed to build iOS app
+Error output from Xcode build:
+↳
+    ** BUILD FAILED **
 
 
-FAILURE: Build failed with an exception.
+Xcode's output:
+↳
+    Writing result bundle at path:
+    	/var/folders/7f/msc9mlg16rb5819f3vt5trl80000gn/T/flutter_tools.1svV8p/flutter_ios_build_temp_dirEwJvq3/temporary_xcresult_bundle
 
-* What went wrong:
-Execution failed for task ':app:compileFlutterBuildDebug'.
-> Process 'command '/Users/directorm/Development/flutter/bin/flutter'' finished with non-zero exit value 1
+    lib/screens/user/orders/order_detail_screen.dart:6:8: Error: Error when reading 'lib/glass/GlassContainer.dart': No such file or directory
+    import '../../../glass/GlassContainer.dart';
+           ^
+    lib/screens/user/orders/order_detail_screen.dart:38:13: Error: The method 'GlassContainer' isn't defined for the type 'OrderDetailScreen'.
+     - 'OrderDetailScreen' is from 'package:laundry_app/screens/user/orders/order_detail_screen.dart' ('lib/screens/user/orders/order_detail_screen.dart').
+    Try correcting the name to the name of an existing method, or defining a method named 'GlassContainer'.
+                GlassContainer(
+                ^^^^^^^^^^^^^^
+    lib/screens/user/orders/order_detail_screen.dart:91:42: Error: The operator '[]' isn't defined for the type 'OrderItem'.
+     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
+    Try correcting the operator to an existing operator, or defining a '[]' operator.
+                          child: Text("${item['quantity']}x", style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                                             ^
+    lib/screens/user/orders/order_detail_screen.dart:98:36: Error: The operator '[]' isn't defined for the type 'OrderItem'.
+     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
+    Try correcting the operator to an existing operator, or defining a '[]' operator.
+                              Text(item['name'] ?? 'Unknown Item', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                                       ^
+    lib/screens/user/orders/order_detail_screen.dart:99:36: Error: The operator '[]' isn't defined for the type 'OrderItem'.
+     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
+    Try correcting the operator to an existing operator, or defining a '[]' operator.
+                              Text(item['serviceType'] ?? 'Standard', style: TextStyle(color: secondaryTextColor, fontSize: 12)),
+                                       ^
+    lib/screens/user/orders/order_detail_screen.dart:103:56: Error: The operator '[]' isn't defined for the type 'OrderItem'.
+     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
+    Try correcting the operator to an existing operator, or defining a '[]' operator.
+                        Text(CurrencyFormatter.format((item['price'] ?? 0.0) * (item['quantity'] ?? 1)), 
+                                                           ^
+    lib/screens/user/orders/order_detail_screen.dart:103:81: Error: The operator '[]' isn't defined for the type 'OrderItem'.
+     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
+    Try correcting the operator to an existing operator, or defining a '[]' operator.
+                        Text(CurrencyFormatter.format((item['price'] ?? 0.0) * (item['quantity'] ?? 1)), 
+                                                                                    ^
+    lib/screens/user/orders/order_detail_screen.dart:115:13: Error: The method 'GlassContainer' isn't defined for the type 'OrderDetailScreen'.
+     - 'OrderDetailScreen' is from 'package:laundry_app/screens/user/orders/order_detail_screen.dart' ('lib/screens/user/orders/order_detail_screen.dart').
+    Try correcting the name to the name of an existing method, or defining a method named 'GlassContainer'.
+                GlassContainer(
+                ^^^^^^^^^^^^^^
+    Target kernel_snapshot_program failed: Exception
+    Failed to package /Users/directorm/Anti_Gravity/Clotheline/mobile_app.
+    Command PhaseScriptExecution failed with a nonzero exit code
+    note: Run script build phase 'Run Script' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Runner' from project 'Runner')
+    note: Run script build phase 'Thin Binary' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Runner' from project 'Runner')
 
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-
-BUILD FAILED in 2s
-Running Gradle task 'assembleDebug'...                           2,425ms
-Gradle task assembleDebug failed with exit code 1
+Encountered error while building for device.

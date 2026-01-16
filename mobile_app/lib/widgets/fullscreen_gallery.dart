@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'custom_cached_image.dart'; // Unified image handler
 
 class FullScreenGallery extends StatefulWidget {
   final List<String> imageUrls;
@@ -13,6 +14,8 @@ class FullScreenGallery extends StatefulWidget {
   @override
   State<FullScreenGallery> createState() => _FullScreenGalleryState();
 }
+
+
 
 class _FullScreenGalleryState extends State<FullScreenGallery> {
   late PageController _pageController;
@@ -44,9 +47,10 @@ class _FullScreenGalleryState extends State<FullScreenGallery> {
                 minScale: 0.5,
                 maxScale: 4.0,
                 child: Center(
-                  child: url.startsWith('http')
-                      ? Image.network(url)
-                      : Image.asset(url),
+                  child: CustomCachedImage(
+                    imageUrl: url,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               );
             },
@@ -97,9 +101,11 @@ class _FullScreenGalleryState extends State<FullScreenGallery> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(6),
-                        child: url.startsWith('http')
-                            ? Image.network(url, fit: BoxFit.cover)
-                            : Image.asset(url, fit: BoxFit.cover),
+                        child: CustomCachedImage(
+                          imageUrl: url,
+                          fit: BoxFit.cover,
+                          borderRadius: 6,
+                        ),
                       ),
                     ),
                   );

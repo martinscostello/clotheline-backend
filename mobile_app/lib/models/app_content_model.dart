@@ -9,6 +9,7 @@ class AppContentModel {
   List<String> productCategories;
   String contactAddress;
   String contactPhone;
+  double freeShippingThreshold; // [NEW]
 
   AppContentModel({
     required this.id,
@@ -19,17 +20,21 @@ class AppContentModel {
     required this.productCategories,
     required this.contactAddress,
     required this.contactPhone,
+    this.freeShippingThreshold = 25000.0,
   });
 
   factory AppContentModel.fromJson(Map<String, dynamic> json) {
+    final gridRaw = json['homeGridServices'];
+    final gridList = (gridRaw is List) 
+        ? gridRaw.where((e) => e is Map).map((e) => ServiceModel.fromJson(Map<String, dynamic>.from(e))).toList() 
+        : <ServiceModel>[];
+
     return AppContentModel(
-      id: json['_id'],
+      id: json['_id'] ?? "",
       heroCarousel: (json['heroCarousel'] as List?)
           ?.map((e) => HeroCarouselItem.fromJson(e))
           .toList() ?? [],
-      homeGridServices: (json['homeGridServices'] as List?)
-          ?.map((e) => ServiceModel.fromJson(e))
-          .toList() ?? [],
+      homeGridServices: gridList,
       productAds: (json['productAds'] as List?)
           ?.map((e) => ProductAd.fromJson(e))
           .toList() ?? [],
@@ -37,6 +42,7 @@ class AppContentModel {
       productCategories: (json['productCategories'] as List?)?.map((e) => e.toString()).toList() ?? [],
       contactAddress: json['contactAddress'] ?? "123 Laundry St, Lagos",
       contactPhone: json['contactPhone'] ?? "+234 800 000 0000",
+      freeShippingThreshold: (json['freeShippingThreshold'] as num?)?.toDouble() ?? 25000.0,
     );
   }
 
@@ -49,6 +55,7 @@ class AppContentModel {
       'productCategories': productCategories,
       'contactAddress': contactAddress,
       'contactPhone': contactPhone,
+      'freeShippingThreshold': freeShippingThreshold,
     };
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 
 class LiquidBackground extends StatelessWidget {
   final Widget child;
@@ -26,9 +26,7 @@ class LiquidBackground extends StatelessWidget {
                 colors: [Color(0xFF7000FF), Colors.transparent],
               ),
             ),
-          ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .move(duration: 4000.ms, begin: const Offset(0, 0), end: const Offset(50, 50))
-              .scale(duration: 4000.ms, begin: const Offset(1, 1), end: const Offset(1.2, 1.2)),
+          ),
         ),
 
         Positioned(
@@ -43,9 +41,7 @@ class LiquidBackground extends StatelessWidget {
                 colors: [Color(0xFF00F0FF), Colors.transparent],
               ),
             ),
-          ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .move(duration: 5000.ms, begin: const Offset(0, 0), end: const Offset(-40, -60))
-              .scale(duration: 5000.ms, begin: const Offset(1, 1), end: const Offset(1.5, 1.5)),
+          ),
         ),
 
          Positioned(
@@ -58,8 +54,7 @@ class LiquidBackground extends StatelessWidget {
               shape: BoxShape.circle,
               color: const Color(0xFF00F0FF).withOpacity(0.15)
             ),
-          ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .move(duration: 6000.ms, begin: const Offset(0, 0), end: const Offset(20, -20)),
+          ),
         ),
 
         // Main Content

@@ -61,6 +61,12 @@ app.use('/api/delivery', require('./routes/delivery'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/broadcast', require('./routes/broadcast'));
+app.use('/api/payments', require('./routes/payments'));
+app.use('/api/reports', require('./routes/reports'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/branches', require('./routes/branches'));
+app.use('/api/promotions', require('./routes/promotions'));
 
 // Make uploads folder static
 app.use('/uploads', express.static('uploads'));

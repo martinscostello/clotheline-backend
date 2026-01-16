@@ -15,7 +15,14 @@ import 'package:laundry_app/utils/currency_formatter.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:laundry_app/screens/user/products/products_screen.dart';
-import 'dart:convert'; // For robust comparison check
+import 'dart:convert';
+import '../../../widgets/custom_cached_image.dart';
+import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
+import 'chat/chat_screen.dart';
+import 'notifications/notifications_screen.dart';
+import '../../providers/branch_provider.dart';
+import '../common/branch_selection_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onSwitchToStore;
@@ -26,7 +33,7 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
   // Hero Carousel State
   final PageController _pageController = PageController();
   int _currentHeroIndex = 0;
@@ -35,45 +42,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Services
   final LaundryService _laundryService = LaundryService();
   final ContentService _contentService = ContentService();
+  
   AppContentModel? _appContent;
-  bool _isLoadingContent = true;
+  bool _isHydrated = false; // The Hydration Gate
 
   Timer? _rotationTimer;
 
+  // Throttling State
+  static DateTime? _lastSyncTime;
+  static const Duration _syncThrottle = Duration(seconds: 15); // Faster refresh (15s)
+  
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    WidgetsBinding.instance.addObserver(this); // Track Lifecycle
+    _hydrateAndSync();
     _startCarouselTimer();
     
     // Rotate featured products every 60s
     _rotationTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-       StoreService().rotateFeaturedProducts();
+       if (mounted) StoreService().rotateFeaturedProducts();
     });
   }
 
-  Future<void> _fetchData() async {
-    await Future.wait([
-      _laundryService.fetchServices(),
-      StoreService().fetchFeaturedProducts(),
-      _fetchAppContent()
-    ]);
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _carouselTimer?.cancel();
+    _rotationTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
   }
 
-  Future<void> _fetchAppContent() async {
-    // 1. Fast Load (Cache or Defaults) - Instant
-    if (_appContent == null) {
-      final content = await _contentService.getAppContent();
-      if (mounted) {
-        setState(() {
-          _appContent = content;
-          _isLoadingContent = false;
-        });
-      }
+  // Monitor App Lifecycle to prevent "Too much work on resume"
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // iOS Strict Resume Policy:
+      // Do NOT trigger sync on resume. Cache is sufficient.
+      // This prevents resource watchdog kills on physical devices.
+      debugPrint("App Resumed. Staying with cached data.");
+    }
+  }
+
+  // 1. HYDRATION: Load Cache -> Render UI
+  Future<void> _hydrateAndSync() async {
+    // A. Load Content Cache
+    final cachedContent = await _contentService.loadFromCache();
+    
+    // B. Load Laundry Cache (Wait for it to populate service list)
+    await _laundryService.loadFromCache();
+
+    // C. Load Store Cache (Internal cache load)
+    // STRICT: Cache Only. Do not hit network yet.
+    await StoreService().fetchFeaturedProducts(onlyCache: true); 
+
+    if (mounted) {
+      setState(() {
+        _appContent = cachedContent;
+        _isHydrated = true; // GATE OPEN: Render UI
+      });
     }
 
-    // 2. Background Refresh (Silent)
-    _contentService.refreshAppContent().then((updatedContent) {
+    // 2. SILENT SYNC: Fetch Fresh Data in Background
+    // DELAYED to avoid "heavy work" during initial frame rendering (Resume/Launch crash protection)
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) _performSilentSync();
+    });
+  }
+
+  Future<void> _performSilentSync({bool isResume = false}) async {
+    // Throttling Check
+    // If we passed the check, update the timestamp
+    final now = DateTime.now();
+    if (_lastSyncTime != null && now.difference(_lastSyncTime!) < _syncThrottle) {
+      // Check if we REALLY need to force it (e.g. pull to refresh bypasses this call usually)
+      if (isResume) {
+         debugPrint("Resume Sync Throttled. Last sync was ${_lastSyncTime?.toIso8601String()}");
+         return; 
+      }
+    }
+    
+    _lastSyncTime = now;
+    debugPrint("Starting Silent Sync... (isResume: $isResume)");
+
+    // A. Sync Content
+    _contentService.fetchFromApi().then((updatedContent) {
       if (updatedContent != null && mounted) {
         final currentJson = jsonEncode(_appContent?.toJson());
         final newJson = jsonEncode(updatedContent.toJson());
@@ -86,16 +140,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     });
+
+    // B. Sync Laundry (Service handles diffing internally)
+    _laundryService.fetchFromApi();
+
+    // C. Sync Store (Service handles diffing internally)
+    StoreService().fetchFeaturedProducts();
+  }
+  
+  // Pull-to-Refresh action
+  Future<void> _handleRefresh() async {
+     // Bypass throttle for user-initiated refresh
+     _lastSyncTime = null; 
+     await _performSilentSync();
   }
 
 
-  @override
-  void dispose() {
-    _carouselTimer?.cancel();
-    _rotationTimer?.cancel();
-    _pageController.dispose();
-    super.dispose();
-  }
+
 
   List<HeroCarouselItem> _getItems() {
     if (_appContent != null && _appContent!.heroCarousel.isNotEmpty) {
@@ -134,12 +195,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       statusBarBrightness: isDark ? Brightness.dark : Brightness.light, 
     ));
 
+    // HYDRATION GATE
+    if (!_isHydrated) {
+      return Scaffold(
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        body: _buildDashboardSkeleton(isDark),
+      );
+    }
+
     return ScrollConfiguration(
       behavior: ScrollBehavior().copyWith(overscroll: false),
       child: Stack(
         children: [
           RefreshIndicator(
-            onRefresh: _fetchData,
+            onRefresh: _handleRefresh,
             color: isDark ? Colors.white : AppTheme.primaryColor,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(), // Ensure scroll even if empty
@@ -150,6 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                   // Content Body
                   _buildHeroCarousel(),
                   const SizedBox(height: 30),
                   
@@ -165,13 +235,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 15),
+
   
                   // Dynamic Service Grid Layout
                   ListenableBuilder(
                     listenable: _laundryService,
                     builder: (context, child) {
-                       // Never show spinner, always show grid (defaults handle the content)
                        return _buildServiceGrid(context, isDark);
                     }
                   ),
@@ -192,6 +261,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
             right: 0,
             child: _buildHeader(isDark),
           ),
+        ],
+      ),
+    );
+  }
+
+  // SKELETON LOADER (Shown only during cold launch)
+  Widget _buildDashboardSkeleton(bool isDark) {
+    Color color = isDark ? Colors.white10 : Colors.grey.shade200;
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 80),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           // Hero Skeleton
+           Container(
+             height: 200, 
+             width: double.infinity,
+             margin: const EdgeInsets.symmetric(horizontal: 20),
+             decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
+           ),
+           const SizedBox(height: 30),
+           // Title Skeleton
+           Container(height: 20, width: 100, margin: const EdgeInsets.only(left: 20), color: color),
+           const SizedBox(height: 15),
+           // Grid Skeleton
+           GridView.count(
+             crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+             padding: const EdgeInsets.symmetric(horizontal: 20),
+             crossAxisSpacing: 15, mainAxisSpacing: 15,
+             childAspectRatio: 0.85,
+             children: List.generate(4, (index) => Container(
+               decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
+             )),
+           )
         ],
       ),
     );
@@ -222,41 +326,93 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _appContent?.brandText ?? "Good Morning",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.white70 : Colors.black87,
-                  shadows: [
-                    if (isDark) const Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
-                  ],
-                ),
+              Consumer<AuthService>(
+                builder: (context, auth, _) {
+                  final name = auth.currentUser?['name']?.toString().split(" ").first ?? "Friend";
+                  return Text(
+                    "Hi $name,",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      shadows: [
+                        if (isDark) const Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
+                      ],
+                    ),
+                  );
+                }
               ),
-              Text(
-                "Clotheline",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                  shadows: [
-                    if (isDark) const Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
-                  ],
-                ),
+              Consumer<BranchProvider>(
+                builder: (context, branchProvider, _) {
+                  final branchName = branchProvider.selectedBranch?.name ?? "Select City";
+                  return GestureDetector(
+                    onTap: () {
+                       Navigator.push(context, MaterialPageRoute(builder: (_) => const BranchSelectionScreen(isModal: true)));
+                    },
+                    child: Text(
+                      "Clotheline · $branchName",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black,
+                        shadows: [
+                          if (isDark) const Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
+                        ],
+                      ),
+                    ),
+                  );
+                }
               ),
             ],
           ),
-          Container(
-            width: 50,
-            height: 50,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-            ),
-            child: LiquidGlassContainer(
-              radius: 50,
-              padding: EdgeInsets.zero,
-              child: Center(
-                child: Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white : Colors.black87),
-              ), 
+          
+          // Header Actions (Capsule)
+          LiquidGlassContainer(
+            radius: 30, // Capsule Shape
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Chat Support
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen()));
+                  },
+                  child: Icon(Icons.support_agent_rounded, color: isDark ? Colors.white : Colors.black87, size: 24),
+                ),
+                
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Container(width: 1, height: 20, color: isDark ? Colors.white24 : Colors.black12),
+                ),
+                
+                // Notifications
+                GestureDetector(
+                   onTap: () {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsScreen()));
+                   },
+                   child: Stack(
+                     clipBehavior: Clip.none,
+                     children: [
+                       Icon(Icons.notifications_outlined, color: isDark ? Colors.white : Colors.black87, size: 24),
+                       // Consumer for badge could go here
+                       Consumer<NotificationService>(
+                         builder: (context, ns, _) {
+                           if (ns.unreadCount > 0) {
+                             return Positioned(
+                               top: -2, right: -2,
+                               child: Container(
+                                 width: 10, height: 10,
+                                 decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                               ),
+                             );
+                           }
+                           return const SizedBox();
+                         }
+                       )
+                     ],
+                   ),
+                )
+              ],
             ),
           ),
         ],
@@ -307,27 +463,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
       key: ValueKey("${item.imageUrl}${item.titleColor}${item.tagLineColor}${item.tagLine}"), // Force rebuild on any property change
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        image: DecorationImage(
-          image: (item.imageUrl.isNotEmpty && item.imageUrl.startsWith('http'))
-              ? CachedNetworkImageProvider(item.imageUrl)
-              : const AssetImage('assets/images/error_placeholder.png') as ImageProvider,
-          fit: BoxFit.cover,
-          onError: (exception, stackTrace) {
-             debugPrint("Image Load Error: $exception");
-          } 
-        ),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.0)],
-          ),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
+      child: Stack(
+        children: [
+            Positioned.fill(
+              child: CustomCachedImage(
+                imageUrl: item.imageUrl,
+                fit: BoxFit.cover,
+                borderRadius: 24,
+              ),
+            ),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.0)],
+                  ),
+                ),
+                padding: const EdgeInsets.all(24),
+                child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -367,9 +524,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }),
             ),
           ],
+                ),
+              ),
+            ),
+
+          ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildServiceGrid(BuildContext context, bool isDark) {
@@ -384,13 +545,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.builder(
+        padding: EdgeInsets.zero,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 15,
           mainAxisSpacing: 15,
-          childAspectRatio: 0.85, 
+          childAspectRatio: 1.1, // More compact (was 0.85)
         ),
         itemCount: services.length,
         itemBuilder: (context, index) {
@@ -404,28 +566,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 flex: 4,
                 child: Stack(
                   children: [
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20), 
-                        image: DecorationImage(
-                          image: s.image.startsWith('http') 
-                            ? CachedNetworkImageProvider(s.image)
-                            : AssetImage(s.image) as ImageProvider,
-                          fit: BoxFit.cover,
-                          onError: (_,__) {} 
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16), 
+                        ),
+                        child: CustomCachedImage(
+                            imageUrl: s.image,
+                            fit: BoxFit.cover,
+                            borderRadius: 16,
                         ),
                       ),
-                    ),
                     // Discount / Status Badge
                      if (s.isLocked)
                       Positioned(
-                        top: 10, right: 10,
+                        top: 8, right: 8,
                         child: _buildBadge(s.lockedLabel, Colors.blueAccent),
                       )
                      else if (s.discountPercentage > 0)
                       Positioned(
-                        top: 10, right: 10,
+                        top: 8, right: 8,
                         child: _buildBadge(s.discountLabel.isNotEmpty ? s.discountLabel : "${s.discountPercentage.toStringAsFixed(0)}% OFF", Colors.pinkAccent),
                       )
                   ],
@@ -433,9 +593,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               // Text Bottom
               Expanded(
-                flex: 3,
+                flex: 2, // Reducing text space
                 child: Padding(
-                  padding: const EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.all(10.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -447,21 +607,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black87,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                       Expanded( 
-                         child: Text(
+                       // Hide description for compactness if needed, or keep it small
+                       if (s.description.isNotEmpty)
+                         Text(
                             s.description,
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: isDark ? Colors.white60 : Colors.black54,
-                              fontSize: 11,
+                              fontSize: 10,
                             ),
                           ),
-                       ),
                     ],
                   ),
                 ),
@@ -489,35 +648,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 builder: (context) => BookingSheet(serviceModel: s),
               );
             },
-            child: isDark 
-              ? LiquidGlassContainer(
-                  radius: 20,
-                  opacity: 0.1,
-                  padding: EdgeInsets.zero,
-                  child: content, 
-                ).animate().scale(delay: (100 * index).ms, duration: 400.ms)
-              : Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.05),
-                        blurRadius: 5,
-                        spreadRadius: 0,
-                      )
-                    ]
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E2C) : Colors.white, // Solid dark for dark mode
+                borderRadius: BorderRadius.circular(20),
+                border: isDark ? Border.all(color: Colors.white10) : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: content
-                  ),
-                ).animate().scale(delay: (100 * index).ms, duration: 400.ms),
+                  if (!isDark)
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                    blurRadius: 5,
+                    spreadRadius: 0,
+                  )
+                ]
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: content
+              ),
+            ).animate().scale(delay: (100 * index).ms, duration: 400.ms),
           );
         },
       ),
@@ -646,14 +800,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                    Container(color: isDark ? Colors.white10 : Colors.grey[100]),
                    ClipRRect(
                      borderRadius: BorderRadius.circular(20),
-                     child: product.imageUrls.isNotEmpty 
-                        ? CachedNetworkImage(
-                            imageUrl: product.imageUrls.first, 
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[300])),
-                            errorWidget: (context, url, error) => Image.asset('assets/images/error_placeholder.png', fit: BoxFit.cover),
-                          )
-                        : Image.asset('assets/images/error_placeholder.png', fit: BoxFit.cover),
+                     child: CustomCachedImage(
+                       imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : "",
+                       fit: BoxFit.cover,
+                       borderRadius: 20,
+                       // handles fallback
+                     ),
                    ),
                  ],
                ),

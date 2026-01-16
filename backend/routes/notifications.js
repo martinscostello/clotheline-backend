@@ -34,8 +34,6 @@ router.post('/create', auth, async (req, res) => {
     try {
         const { userId, title, message, type } = req.body;
 
-        // Ensure only admin or system creates (skip check for now for testing)
-
         const newNotification = new Notification({
             userId,
             title,
@@ -45,6 +43,48 @@ router.post('/create', auth, async (req, res) => {
 
         await newNotification.save();
         res.json(newNotification);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// --- PREFERENCES ---
+
+const User = require('../models/User');
+
+// GET /preferences
+router.get('/preferences', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId).select('notificationPreferences');
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        // Return defaults if not set (fallback)
+        const prefs = user.notificationPreferences || {
+            email: true, push: true, orderUpdates: true,
+            chatMessages: true, adminBroadcasts: true, bucketUpdates: true
+        };
+        res.json(prefs);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// PUT /preferences
+router.put('/preferences', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        // Merge existing with new updates
+        const current = user.notificationPreferences || {};
+        const updates = req.body;
+
+        user.notificationPreferences = { ...current, ...updates };
+        await user.save();
+
+        res.json(user.notificationPreferences);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

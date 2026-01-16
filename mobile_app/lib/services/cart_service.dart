@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/booking_models.dart';
 import '../models/store_product.dart';
+import 'api_service.dart';
 
 // Simple Singleton Service for Cart Persistence
 class CartService extends ChangeNotifier {
   static final CartService _instance = CartService._internal();
   factory CartService() => _instance;
-  CartService._internal();
+
 
   final List<CartItem> _items = [];
   final List<StoreCartItem> _storeItems = []; // [NEW] Store items
@@ -16,8 +17,31 @@ class CartService extends ChangeNotifier {
   
   double get storeTotalAmount => _storeItems.fold(0, (sum, item) => sum + item.totalPrice);
   double get serviceTotalAmount => _items.fold(0, (sum, item) => sum + item.totalPrice);
+  double _taxRate = 7.5;
+  bool _taxEnabled = true;
 
-  double get totalAmount => serviceTotalAmount + storeTotalAmount;
+  double get taxRate => _taxEnabled ? _taxRate : 0.0;
+  
+
+
+  CartService._internal() {
+    _fetchTaxSettings();
+  }
+
+  Future<void> _fetchTaxSettings() async {
+    try {
+      // Lazy import to avoid circular dep if any (ApiService is safe)
+      final ApiService api = ApiService(); 
+      final response = await api.client.get('/settings');
+      if (response.data != null) {
+        _taxEnabled = response.data['taxEnabled'] ?? true;
+        _taxRate = (response.data['taxRate'] ?? 7.5).toDouble();
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Error fetching tax settings: $e");
+    }
+  }
 
   void addItem(CartItem item) {
     _items.add(item);
@@ -58,10 +82,104 @@ class CartService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Branch Context
+  String? _activeBranchId;
+  String? get activeBranchId => _activeBranchId;
+
+  // Returns true if valid to switch, false if cart needs clearing confirmation
+  bool validateBranch(String newBranchId) {
+    if (_activeBranchId == null) return true; // First load
+    if (_items.isEmpty && _storeItems.isEmpty) return true; // Empty cart is safe
+    if (_activeBranchId == newBranchId) return true; // Same branch
+    return false; // Mismatch with items in cart
+  }
+
+  // Promotions
+  Map<String, dynamic>? _appliedPromotion;
+  Map<String, dynamic>? get appliedPromotion => _appliedPromotion;
+
+  double get discountAmount {
+    if (_appliedPromotion == null) return 0.0;
+    
+    // Backend returns the exact discount amount in validation, but we can also limit it here if we trust the object
+    // For simplicity, let's use the object returned by the validate endpoint which should contain 'discountAmount'
+    // relative to the subtotal sent. However, if subtotal changes (items added), we technically need to RE-VALIDATE or RE-CALCULATE.
+    
+    // Strategy: We will recalculate locally based on the rules if simple, OR just store the fixed value if it was fixed.
+    // Better Strategy: Recalculate based on type.
+    
+    final type = _appliedPromotion!['type'];
+    final value = (_appliedPromotion!['value'] as num).toDouble();
+    
+    if (type == 'fixed') {
+      return value > subtotal ? subtotal : value;
+    } else if (type == 'percentage') {
+       double discount = (subtotal * value) / 100;
+       // Check for max discount if we had that field, assuming backend validation handled capped logic for the initial check.
+       // Ideally we should re-verify with backend on checkout, but for UI:
+       return discount;
+    }
+    return 0.0;
+  }
+
+  // Base Subtotal (Before Discount)
+  double get subtotal => serviceTotalAmount + storeTotalAmount; 
+
+  double get subtotalAfterDiscount => (subtotal - discountAmount) < 0 ? 0 : (subtotal - discountAmount);
+
+  double get taxAmount => (subtotalAfterDiscount * (taxRate / 100));
+  
+  double get totalAmount => subtotalAfterDiscount + taxAmount;
+
+  // Apply Promo
+  Future<String?> applyPromoCode(String code) async {
+    if (_activeBranchId == null) return "Please select a branch first";
+    
+    try {
+      final ApiService api = ApiService();
+      final response = await api.client.post('/promotions/validate', data: {
+        'code': code,
+        'branchId': _activeBranchId,
+        'cartTotal': subtotal
+      });
+
+      if (response.statusCode == 200 && response.data['isValid'] == true) {
+         _appliedPromotion = response.data;
+         notifyListeners();
+         return null; // Success
+      } else {
+        return response.data['message'] ?? "Invalid code";
+      }
+    } catch (e) {
+      // Handle 400s etc
+      if (e.toString().contains("400") || e.toString().contains("404")) { // Simplified dio error check
+         // Try to parse error message if possible, otherwise generic
+         return "Invalid or expired promotion";
+      }
+      return "Error validating code";
+    }
+  }
+
+  void removePromo() {
+    _appliedPromotion = null;
+    notifyListeners();
+  }
+
+  // --- Update Clear Methods to wipe promo ---
+
   void clearCart() {
     _items.clear();
     _storeItems.clear();
+    _appliedPromotion = null; // Clear Promo
     notifyListeners();
+  }
+
+  // When branch updates
+  void setBranch(String branchId) {
+    if (_activeBranchId != branchId) {
+       _appliedPromotion = null; // Clear promo on branch switch
+    }
+    _activeBranchId = branchId;
   }
 
   void clearServiceItems() {

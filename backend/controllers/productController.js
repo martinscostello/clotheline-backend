@@ -3,9 +3,36 @@ const Product = require('../models/Product');
 exports.getAllProducts = async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 0;
-        const products = await Product.find({ isActive: true })
+        const { branchId, category } = req.query;
+
+        // Basic Filter
+        let query = { isActive: true };
+        if (category) query.category = category;
+
+        let products = await Product.find(query)
             .sort({ createdAt: -1 })
             .limit(limit);
+
+        if (branchId) {
+            // Project Branch Pricing & Stock
+            products = products.reduce((acc, product) => {
+                const p = product.toObject();
+
+                if (p.branchInfo && p.branchInfo.length > 0) {
+                    const bInfo = p.branchInfo.find(b => b.branchId.toString() === branchId);
+                    if (bInfo) {
+                        if (!bInfo.isActive) return acc; // Skip inactive
+                        p.price = bInfo.price; // Override Price
+                        p.stock = bInfo.stock; // Override Stock
+                        // p.originalPrice? Maybe keep global original or override if needed.
+                    }
+                }
+
+                acc.push(p);
+                return acc;
+            }, []);
+        }
+
         res.json(products);
     } catch (err) {
         console.error(err.message);

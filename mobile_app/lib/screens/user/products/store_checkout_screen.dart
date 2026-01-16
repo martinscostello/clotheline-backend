@@ -11,6 +11,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/currency_formatter.dart';
+import '../../../providers/branch_provider.dart';
 
 class StoreCheckoutScreen extends StatefulWidget {
   const StoreCheckoutScreen({super.key});
@@ -101,7 +102,13 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     try {
       Position position = await Geolocator.getCurrentPosition();
       final deliveryService = Provider.of<DeliveryService>(context, listen: false);
-      double fee = deliveryService.calculateDeliveryFee(position.latitude, position.longitude);
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      
+      double fee = deliveryService.calculateDeliveryFee(
+        position.latitude, 
+        position.longitude,
+        branch: branchProvider.selectedBranch
+      );
       
       setState(() {
          // Only Update Delivery GPS & Fee
@@ -460,6 +467,11 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
   }
 
   Widget _buildBranchInfo(bool isDark) {
+    // Prefer BranchProvider info
+    final branch = Provider.of<BranchProvider>(context).selectedBranch;
+    final displayAddress = branch?.address ?? _branchAddress;
+    final displayPhone = branch?.phone ?? _branchPhone;
+
     return Container(
       margin: const EdgeInsets.only(left: 20, bottom: 20),
       padding: const EdgeInsets.all(12),
@@ -476,13 +488,13 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
           Row(children: [
             const Icon(Icons.store, size: 16, color: AppTheme.primaryColor),
             const SizedBox(width: 8),
-            Text(_branchAddress, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
+            Expanded(child: Text(displayAddress, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold))),
           ]),
           const SizedBox(height: 4),
           Row(children: [
             const Icon(Icons.call, size: 16, color: AppTheme.primaryColor),
             const SizedBox(width: 8),
-            Text(_branchPhone, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            Text(displayPhone, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
           ]),
         ],
       ),
@@ -508,10 +520,26 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       });
     }
 
+    // [Multi-Branch] Get Selected Branch
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final selectedBranch = branchProvider.selectedBranch;
+
+    // [Safeguard] Ensure Checkout Branch matches Cart Branch
+    if (selectedBranch?.id != _cartService.activeBranchId && _cartService.activeBranchId != null) {
+       setState(() => _isSubmitting = false);
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Branch mismatch. Please clear cart or switch branch back.")));
+       return;
+    }
+
     final orderData = {
+      'branchId': selectedBranch?.id, 
       'items': items,
-      'totalAmount': _cartService.storeTotalAmount + _deliveryFee,
-      'pickupOption': _deliveryOption == 2 ? 'Pickup' : 'None', // Store pickup
+      'totalAmount': _cartService.totalAmount + _deliveryFee, // [FIX] Use totalAmount (includes discount & tax)
+      'subtotal': _cartService.subtotal,
+      'discountAmount': _cartService.discountAmount,
+      'taxAmount': _cartService.taxAmount,
+      'appliedPromotion': _cartService.appliedPromotion, // [NEW] Snapshot Promo
+      'pickupOption': _deliveryOption == 2 ? 'Pickup' : 'None', 
       'deliveryOption': _deliveryOption == 1 ? 'Deliver' : 'Pickup',
       'deliveryAddress': _deliveryOption == 1 ? _deliveryAddressController.text : null,
       'deliveryPhone': _deliveryOption == 1 ? _contactPhoneController.text : null,

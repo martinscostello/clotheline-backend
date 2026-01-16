@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const OrderSchema = new mongoose.Schema({
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }, // Required for Multi-Branch
+    branchCenterCoordinates: {
+        lat: Number,
+        lng: Number
+    },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Optional if guest checkout allowed, but typically required
     guestInfo: { // If no user account
         name: String,
@@ -20,7 +25,11 @@ const OrderSchema = new mongoose.Schema({
         price: { type: Number, required: true }
     }],
 
-    totalAmount: { type: Number, required: true },
+    // Money Fields
+    subtotal: { type: Number, default: 0 }, // Sum of items
+    taxRate: { type: Number, default: 0 }, // % at time of purchase
+    taxAmount: { type: Number, default: 0 }, // Calculated tax
+    totalAmount: { type: Number, required: true }, // subtotal + taxAmount
 
     status: {
         type: String,

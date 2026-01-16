@@ -18,6 +18,11 @@ const NotificationSchema = new mongoose.Schema({
         type: String, // 'order', 'bucket', 'broadcast'
         required: true
     },
+    branchId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch',
+        default: null // Null CAN imply global, but should be explicit for Orders
+    },
     isRead: {
         type: Boolean,
         default: false

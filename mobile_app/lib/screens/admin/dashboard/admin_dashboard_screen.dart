@@ -10,6 +10,10 @@ import '../../../utils/currency_formatter.dart';
 import '../services/admin_services_screen.dart';
 import '../products/admin_add_product_screen.dart';
 import '../cms/admin_cms_content_screen.dart';
+import '../notifications/admin_notification_dashboard.dart';
+import '../reports/admin_financial_dashboard.dart';
+import '../settings/admin_tax_settings_screen.dart';
+import '../settings/admin_delivery_settings_screen.dart';
 // import '../orders/admin_orders_screen.dart'; // If needed for 'Create Order' or linking Recent Activity
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -112,6 +116,25 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                            _buildQuickAction(context, "Ads & Banners", Icons.campaign, Colors.orangeAccent, () {
                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads')));
                            }),
+                        if (isMaster || permissions['manageUsers'] == true) ...[
+                           const SizedBox(width: 15),
+                           _buildQuickAction(context, "Notifications", Icons.notifications_active, Colors.pinkAccent, () {
+                              // Navigator push to AdminNotificationDashboard
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminNotificationDashboard()));
+                           }),
+                           const SizedBox(width: 15),
+                           _buildQuickAction(context, "Financial Reports", Icons.bar_chart, Colors.tealAccent, () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialDashboard()));
+                           }),
+                           const SizedBox(width: 15),
+                           _buildQuickAction(context, "Tax & VAT", Icons.percent, Colors.indigoAccent, () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxSettingsScreen()));
+                           }),
+                           const SizedBox(width: 15),
+                           _buildQuickAction(context, "Delivery Settings", Icons.map, Colors.cyanAccent, () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
+                           }),
+                        ]
                       ],
                     ),
                   ),

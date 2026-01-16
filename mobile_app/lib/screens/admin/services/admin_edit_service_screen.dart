@@ -3,6 +3,8 @@ import '../../../../models/service_model.dart';
 import '../../../../services/api_service.dart';
 import '../../../../services/content_service.dart';
 import '../../../../services/laundry_service.dart';
+import 'package:provider/provider.dart';
+import '../../../../providers/branch_provider.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
@@ -31,6 +33,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
   bool _isLocked = false;
   List<ServiceItem> _items = [];
   List<ServiceVariant> _variants = [];
+  List<BranchPrice> _branchPricing = [];
   String _imageUrl = "";
   bool _isSaving = false;
 
@@ -44,6 +47,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
     _isLocked = widget.service.isLocked;
     _items = List.from(widget.service.items);
     _variants = List.from(widget.service.serviceTypes);
+    _branchPricing = List.from(widget.service.branchPricing);
     _imageUrl = widget.service.image;
   }
 
@@ -92,6 +96,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
       "discountLabel": _discountLabelController.text,
       "items": _items.map((e) => e.toJson()).toList(),
       "serviceTypes": _variants.map((e) => e.toJson()).toList(),
+      "branchPricing": _branchPricing.map((e) => e.toJson()).toList(),
     };
 
     try {
@@ -358,12 +363,27 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                           children: _variants.asMap().entries.map((entry) {
                             final index = entry.key;
                             final v = entry.value;
-                            return InputChip(
-                              backgroundColor: Colors.white10,
-                              label: Text("${v.name} (${v.priceMultiplier}x)", style: const TextStyle(color: Colors.white)),
-                              deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white54),
-                              onDeleted: () => setState(() => _variants.removeAt(index)),
-                              onPressed: () => _showVariantDialog(index),
+                            return GestureDetector(
+                              onTap: () => _showVariantDialog(index),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white10,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.white24),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text("${v.name} (${v.priceMultiplier}x)", style: const TextStyle(color: Colors.white, fontSize: 13)),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () => setState(() => _variants.removeAt(index)),
+                                      child: const Icon(Icons.close, size: 16, color: Colors.white54),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             );
                           }).toList(),
                         )
@@ -403,6 +423,82 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                        ],
                      ),
                    ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // 3.5 Branch Pricing
+                GlassContainer(
+                   opacity: 0.1,
+                   child: Padding(
+                     padding: const EdgeInsets.all(15),
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                          const Text("Branch Pricing Override", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          ...context.watch<BranchProvider>().branches.map((b) {
+                             final existing = _branchPricing.firstWhere(
+                               (bp) => bp.branchId == b.id, 
+                               orElse: () => BranchPrice(branchId: b.id, isAvailable: true, priceOverride: null)
+                             );
+
+                             return Padding(
+                               padding: const EdgeInsets.only(bottom: 10),
+                               child: Row(
+                                 children: [
+                                   Expanded(flex: 2, child: Text(b.name, style: const TextStyle(color: Colors.white70))),
+                                   Expanded(
+                                     flex: 2,
+                                     child: SizedBox(
+                                       height: 40,
+                                       child: TextField(
+                                         controller: TextEditingController(text: existing.priceOverride?.toString() ?? ""),
+                                         keyboardType: TextInputType.number,
+                                         style: const TextStyle(color: Colors.white),
+                                         decoration: const InputDecoration(
+                                           hintText: "Default",
+                                           hintStyle: TextStyle(color: Colors.white24),
+                                           contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                           enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                                         ),
+                                         onChanged: (val) {
+                                            // Live update local list
+                                            final price = double.tryParse(val);
+                                            setState(() {
+                                              _branchPricing.removeWhere((x) => x.branchId == b.id);
+                                              _branchPricing.add(BranchPrice(
+                                                branchId: b.id, 
+                                                isAvailable: existing.isAvailable, 
+                                                priceOverride: price
+                                              ));
+                                            });
+                                         },
+                                       ),
+                                     ),
+                                   ),
+                                   const SizedBox(width: 10),
+                                   Switch(
+                                     value: existing.isAvailable, 
+                                     activeColor: AppTheme.primaryColor,
+                                     onChanged: (val) {
+                                        setState(() {
+                                          _branchPricing.removeWhere((x) => x.branchId == b.id);
+                                          _branchPricing.add(BranchPrice(
+                                            branchId: b.id, 
+                                            isAvailable: val, 
+                                            priceOverride: existing.priceOverride
+                                          ));
+                                        });
+                                     }
+                                   )
+                                 ],
+                               ),
+                             );
+                          }).toList(),
+                       ],
+                     ),
+                   )
                 ),
 
                 const SizedBox(height: 20),

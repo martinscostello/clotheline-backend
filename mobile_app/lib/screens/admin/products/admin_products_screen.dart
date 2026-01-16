@@ -6,6 +6,7 @@ import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../services/store_service.dart';
 import '../../../models/store_product.dart';
 import '../../../utils/currency_formatter.dart';
+import '../../../widgets/custom_cached_image.dart'; // Added Import
 import 'admin_add_product_screen.dart';
 
 class AdminProductsScreen extends StatefulWidget {
@@ -41,11 +42,14 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AdminAddProductScreen()),
           );
+          if (context.mounted) {
+            Provider.of<StoreService>(context, listen: false).fetchProducts(forceRefresh: true);
+          }
         },
         backgroundColor: AppTheme.primaryColor,
         icon: const Icon(Icons.add, color: Colors.white),
@@ -88,28 +92,31 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
 
   Widget _buildProductCard(StoreProduct product) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => AdminAddProductScreen(product: product)), // Edit Mode
         );
+        if (context.mounted) {
+            Provider.of<StoreService>(context, listen: false).fetchProducts(forceRefresh: true);
+        }
       },
-            child: Container(
+      child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          image: product.imageUrls.isNotEmpty 
-            ? DecorationImage(
-                image: NetworkImage(product.imageUrls.first),
-                fit: BoxFit.cover,
-                // Removed heavy darken filter, kept subtle for text readability if needed, 
-                // but user asked for CLARITY.
-                // Let's rely on a gradient at the bottom for text.
-              ) 
-            : null,
-          color: product.imageUrls.isEmpty ? const Color(0xFF202020) : null,
+          color: const Color(0xFF202020),
         ),
         child: Stack(
           children: [
+            // Background Image
+            if (product.imageUrls.isNotEmpty)
+              Positioned.fill(
+                child: CustomCachedImage(
+                  imageUrl: product.imageUrls.first,
+                  fit: BoxFit.cover,
+                  borderRadius: 20,
+                ),
+              ),
             // Gradient for text visibility at bottom
             Positioned(
               bottom: 0, left: 0, right: 0,

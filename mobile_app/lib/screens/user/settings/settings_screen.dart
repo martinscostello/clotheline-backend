@@ -5,6 +5,9 @@ import 'package:laundry_app/screens/auth/login_screen.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../services/auth_service.dart';
+import 'notification_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -38,14 +41,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Profile Header
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
-              child: Icon(Icons.person, size: 40, color: isDark ? Colors.white : Colors.grey),
+            Consumer<AuthService>(
+              builder: (context, auth, _) {
+                final user = auth.currentUser;
+                final name = user?['name'] ?? 'User';
+                final email = user?['email'] ?? 'guest@clotheline.com';
+                
+                return Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                      child: Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                        style: TextStyle(fontSize: 30, color: isDark ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(name, style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(email, style: TextStyle(color: secondaryTextColor)),
+                  ]
+                );
+              }
             ),
-            const SizedBox(height: 10),
-            Text("John Doe", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-            Text("john.doe@example.com", style: TextStyle(color: secondaryTextColor)),
             const SizedBox(height: 30),
 
             // Appearance Section
@@ -98,7 +116,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               isDark: isDark,
               child: Column(
                 children: [
-                  _buildSettingTile(Icons.notifications_outlined, "Notifications", textColor, isDark, () {}),
+                  _buildSettingTile(Icons.notifications_outlined, "Notifications", textColor, isDark, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()));
+                  }),
                   _buildDivider(isDark),
                   _buildSettingTile(Icons.question_answer_outlined, "FAQs", textColor, isDark, () {}),
                   _buildDivider(isDark),

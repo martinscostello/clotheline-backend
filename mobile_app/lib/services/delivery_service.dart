@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../models/branch_model.dart';
 
 class DeliveryService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -106,25 +107,37 @@ class DeliveryService extends ChangeNotifier {
     }
   }
 
-  // Calculate Fee Logic (Distance Bands from HQ)
-  double calculateDeliveryFee(double userLat, double userLng) {
-    if (_settings == null) {
-       _settings = Map.from(_defaults); 
+  // Calculate Fee Logic (Distance Bands from HQ or Branch)
+  double calculateDeliveryFee(double userLat, double userLng, {Branch? branch}) {
+    LatLng laundryPoint;
+    List<dynamic> zones;
+
+    if (branch != null) {
+      laundryPoint = LatLng(branch.location.lat, branch.location.lng);
+      zones = branch.deliveryZones.map((z) => {
+        'radiusKm': z.radiusKm,
+        'baseFee': z.baseFee,
+        // Map other fields if needed
+      }).toList();
+    } else {
+      // Fallback to old global settings
+      if (_settings == null) {
+         _settings = Map.from(_defaults); 
+      }
+      final laundryLoc = _settings!['laundryLocation'];
+       laundryPoint = LatLng(laundryLoc['lat'], laundryLoc['lng']);
+       zones = List<Map<String, dynamic>>.from(_settings!['zones']);
     }
     
-    final laundryLoc = _settings!['laundryLocation'];
     final Distance distanceCalc = const Distance();
-    
     final userPoint = LatLng(userLat, userLng);
-    final laundryPoint = LatLng(laundryLoc['lat'], laundryLoc['lng']);
     
-    // 1. Calculate Straight-Line Distance from HQ (in Km)
+    // 1. Calculate Straight-Line Distance in Km
     final double distanceMeters = distanceCalc.as(LengthUnit.Meter, userPoint, laundryPoint);
     final double distanceKm = distanceMeters / 1000;
     
     // 2. Find Containing Band (Nearest -> Farthest)
     Map<String, dynamic>? matchedZone;
-    final zones = List<Map<String, dynamic>>.from(_settings!['zones']);
     
     // Sort zones by radius just in case (Smallest radius first)
     zones.sort((a, b) => (a['radiusKm'] as num).compareTo(b['radiusKm'] as num));
@@ -138,12 +151,8 @@ class DeliveryService extends ChangeNotifier {
        }
     }
     
-    // 3. Handle Out of Range (Zone E equivalent)
+    // 3. Handle Out of Range
     if (matchedZone == null) {
-      // If beyond all zones, we can return a high default or throw/handle "Out of Area"
-      // For now, return -1 to signal "Out of Area" to the UI, or max fee.
-      // User said: "Reject order politely" or "Manual approval".
-      // Let's return -1.0 so UI can show "Useh Road is too far" etc.
       return -1.0; 
     }
     

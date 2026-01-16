@@ -21,12 +21,17 @@ class StoreProduct {
   final DateTime? dealEndTime;
   final bool isFreeShipping;
   
-  final String category; // [NEW] Category for grouping
+  final String brand;
+  final List<ProductReview> reviews; // [NEW]
+  final String category; 
   final List<ProductVariant> variants;
+  final List<BranchProductInfo> branchInfo; // [NEW]
 
   StoreProduct({
     required this.id,
     required this.name,
+    this.brand = "Generic", // Default
+    this.reviews = const [], // Default
     required this.category, 
     required this.imageUrls,
     this.description = "",
@@ -42,6 +47,7 @@ class StoreProduct {
     this.isFreeShipping = false,
     this.dealEndTime,
     this.variants = const [],
+    this.branchInfo = const [], // [NEW]
   });
   
   // Backward compatibility getter
@@ -58,26 +64,38 @@ class StoreProduct {
   double get savedAmount => originalPrice > price ? originalPrice - price : 0;
 
   factory StoreProduct.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic val) {
+      if (val is num) return val.toDouble();
+      if (val is String) return double.tryParse(val) ?? 0.0;
+      return 0.0;
+    }
+
     return StoreProduct(
       id: json['_id'] ?? "unknown_id",
       name: json['name'] ?? "Unnamed Product",
+      brand: json['brand'] ?? "Generic",
       category: json['category'] ?? "Uncategorized",
       imageUrls: (json['imageUrls'] as List?)?.map((e) => e.toString()).toList() ?? [],
       description: json['description'] ?? "",
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      originalPrice: (json['originalPrice'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? 0.0,
+      price: parseDouble(json['price']),
+      originalPrice: parseDouble(json['originalPrice'] ?? json['price']),
       soldCount: json['soldCount'] ?? 0,
-      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      rating: parseDouble(json['rating']),
+      reviews: (json['reviews'] as List?)?.map((e) => ProductReview.fromJson(e)).toList() ?? [],
+      reviewCount: (json['reviews'] as List?)?.length ?? 0, 
       stockLevel: json['stock'] ?? 0,
       isFreeShipping: json['isFreeShipping'] ?? false,
-      // Mapping variants from backend structure {name, price}
       variants: (json['variations'] as List?)?.map((e) => ProductVariant.fromJson(e)).toList() ?? [],
+      branchInfo: (json['branchInfo'] is List) 
+          ? (json['branchInfo'] as List).where((e) => e is Map).map((e) => BranchProductInfo.fromJson(Map<String, dynamic>.from(e))).toList() 
+          : [],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
+      'brand': brand,
       'category': category,
       'price': price,
       'imageUrls': imageUrls,
@@ -86,7 +104,27 @@ class StoreProduct {
       'stock': stockLevel,
       'isFreeShipping': isFreeShipping,
       'variations': variants.map((e) => e.toJson()).toList(),
+      'branchInfo': branchInfo.map((e) => e.toJson()).toList(),
+      // Reviews usually not sent back on product update
     };
+  }
+}
+
+class ProductReview {
+  final String userName;
+  final double rating;
+  final String comment;
+  final DateTime date;
+
+  ProductReview({required this.userName, required this.rating, required this.comment, required this.date});
+
+  factory ProductReview.fromJson(Map<String, dynamic> json) {
+    return ProductReview(
+      userName: json['userName'] ?? "Anonymous",
+      rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
+      comment: json['comment'] ?? "",
+      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+    );
   }
 }
 
@@ -131,4 +169,29 @@ class StoreCartItem {
   
   double get price => variant?.price ?? product.price;
   double get totalPrice => price * quantity;
+}
+
+class BranchProductInfo {
+  final String branchId;
+  final double? price; // Override
+  final int stock;
+  final bool isAvailable;
+
+  BranchProductInfo({required this.branchId, this.price, required this.stock, this.isAvailable = true});
+
+  factory BranchProductInfo.fromJson(Map<String, dynamic> json) {
+    return BranchProductInfo(
+      branchId: json['branchId'],
+      price: (json['price'] as num?)?.toDouble(),
+      stock: json['stock'] ?? 0,
+      isAvailable: json['isAvailable'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'branchId': branchId,
+    'price': price,
+    'stock': stock,
+    'isAvailable': isAvailable,
+  };
 }

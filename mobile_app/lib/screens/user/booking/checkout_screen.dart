@@ -10,6 +10,8 @@ import '../../../services/order_service.dart';
 import '../../../services/delivery_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import '../main_layout.dart';
+import '../../../providers/branch_provider.dart';
 
 class CheckoutScreen extends StatefulWidget {
   // Use Singleton instead of passing list
@@ -123,7 +125,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     try {
       Position position = await Geolocator.getCurrentPosition();
       final deliveryService = Provider.of<DeliveryService>(context, listen: false);
-      double fee = deliveryService.calculateDeliveryFee(position.latitude, position.longitude);
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      
+      double fee = deliveryService.calculateDeliveryFee(
+        position.latitude, 
+        position.longitude,
+        branch: branchProvider.selectedBranch
+      );
       
       setState(() {
         if (isPickup) {
@@ -455,6 +463,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   Widget _buildBranchInfo(bool isDark) {
+    // Prefer BranchProvider info
+    final branch = Provider.of<BranchProvider>(context).selectedBranch;
+    final displayAddress = branch?.address ?? _branchAddress;
+    final displayPhone = branch?.phone ?? _branchPhone;
+
     return Container(
       margin: const EdgeInsets.only(left: 20, bottom: 20),
       padding: const EdgeInsets.all(12),
@@ -471,13 +484,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           Row(children: [
             const Icon(Icons.store, size: 16, color: AppTheme.primaryColor),
             const SizedBox(width: 8),
-            Text(_branchAddress, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
+            Expanded(child: Text(displayAddress, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold))),
           ]),
           const SizedBox(height: 4),
           Row(children: [
             const Icon(Icons.call, size: 16, color: AppTheme.primaryColor),
             const SizedBox(width: 8),
-            Text(_branchPhone, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            Text(displayPhone, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
           ]),
         ],
       ),
@@ -591,7 +604,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
     double total = _cartService.serviceTotalAmount + _pickupFee + _deliveryFee;
 
+    // [Multi-Branch] Get Selected Branch
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final selectedBranch = branchProvider.selectedBranch;
+
     final orderData = {
+      'branchId': selectedBranch?.id, // [New]
       'items': items,
       'totalAmount': total,
       'pickupOption': _beforeWashOption == 1 ? 'Pickup' : 'Dropoff',
@@ -617,23 +635,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
     if (success && mounted) {
       _cartService.clearServiceItems();  
-      showDialog(
-        context: context, 
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          title: const Text("Order Placed!"),
-          content: const Text("Your order has been successfully placed."),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop(); 
-                Navigator.of(context).pop(); 
-              }, 
-              child: const Text("OK")
-            )
-          ],
-        )
+      _cartService.clearServiceItems();  
+      
+      // Use pushAndRemoveUntil to clear stack and go fresh to Orders Tab
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)), // 2 = Orders
+        (route) => false
       );
+      
+      // Optional: Show Toast/Snackbar on the new screen?
+      // Since we are changing context, we can't easily show it unless we pass arguments or use a global key.
+      // But clearing the cart and showing the "Pending" tab is validation enough.
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to place order")));
     }

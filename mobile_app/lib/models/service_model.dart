@@ -11,6 +11,7 @@ class ServiceModel {
   final String lockedLabel;
   final List<ServiceItem> items;
   final List<ServiceVariant> serviceTypes;
+  final List<BranchPrice> branchPricing; // [NEW]
   final double discountPercentage;
   final String discountLabel;
 
@@ -27,9 +28,16 @@ class ServiceModel {
     this.lockedLabel = "Coming Soon",
     this.items = const [],
     this.serviceTypes = const [],
+    this.branchPricing = const [], // [NEW]
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic val) {
+      if (val is num) return val.toDouble();
+      if (val is String) return double.tryParse(val) ?? 0.0;
+      return 0.0;
+    }
+
     return ServiceModel(
       id: json['_id'] ?? "unknown_id",
       name: json['name'] ?? "Unnamed Service",
@@ -37,12 +45,13 @@ class ServiceModel {
       icon: json['icon'] ?? "cleaning_services",
       color: json['color'] ?? "0xFF2196F3",
       description: json['description'] ?? '',
-      discountPercentage: (json['discountPercentage'] as num?)?.toDouble() ?? 0,
+      discountPercentage: parseDouble(json['discountPercentage']),
       discountLabel: json['discountLabel'] ?? "",
       isLocked: json['isLocked'] ?? false,
       lockedLabel: json['lockedLabel'] ?? "Coming Soon",
       items: (json['items'] as List?)?.map((e) => ServiceItem.fromJson(e)).toList() ?? [],
       serviceTypes: (json['serviceTypes'] as List?)?.map((e) => ServiceVariant.fromJson(e)).toList() ?? [],
+      branchPricing: (json['branchPricing'] as List?)?.map((e) => BranchPrice.fromJson(e)).toList() ?? [],
     );
   }
 
@@ -73,6 +82,7 @@ class ServiceModel {
       'lockedLabel': lockedLabel,
       'items': items.map((e) => e.toJson()).toList(),
       'serviceTypes': serviceTypes.map((e) => e.toJson()).toList(),
+      'branchPricing': branchPricing.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -119,4 +129,26 @@ class ServiceVariant {
   }
   
   Map<String, dynamic> toJson() => {'name': name, 'priceMultiplier': priceMultiplier};
+}
+
+class BranchPrice {
+  final String branchId;
+  final bool isAvailable;
+  final double? priceOverride; // If null, use default
+
+  BranchPrice({required this.branchId, this.isAvailable = true, this.priceOverride});
+
+  factory BranchPrice.fromJson(Map<String, dynamic> json) {
+    return BranchPrice(
+      branchId: json['branchId'] ?? "",
+      isAvailable: json['isAvailable'] ?? true,
+      priceOverride: (json['price'] as num?)?.toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'branchId': branchId,
+    'isAvailable': isAvailable,
+    'price': priceOverride,
+  };
 }

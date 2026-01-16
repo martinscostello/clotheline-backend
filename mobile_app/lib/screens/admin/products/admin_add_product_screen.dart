@@ -6,9 +6,13 @@ import 'package:dio/dio.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../services/store_service.dart';
+import '../../../widgets/glass/GlassContainer.dart'; // Added Import
 import '../../../services/api_service.dart'; // For Base URL
 import '../../../models/store_product.dart';
-import '../../../utils/currency_formatter.dart'; // Added import
+import '../../../utils/currency_formatter.dart';
+import '../../../widgets/custom_cached_image.dart'; // Added Import
+import '../../../providers/branch_provider.dart';
+import '../../../models/branch_model.dart';
 
 class AdminAddProductScreen extends StatefulWidget {
   final StoreProduct? product; // If provided, we are editing
@@ -26,6 +30,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   // Form Fields
   late TextEditingController _nameController;
   late TextEditingController _descController;
+  late TextEditingController _brandController; // Added
   late TextEditingController _basePriceController; // Was _priceController
   late TextEditingController _discountController; // Was _originalPriceController
   late TextEditingController _stockController;
@@ -33,11 +38,11 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   bool _isFreeShipping = false;
 
   // Images
-  List<File> _newImages = [];
-  List<String> _existingImages = []; // URLs
+  List<UploadItem> _uploadItems = []; // Unified list
 
   // Variants
   List<ProductVariant> _variants = [];
+  List<BranchProductInfo> _branchInfo = [];
 
   @override
   void initState() {
@@ -45,8 +50,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     final p = widget.product;
     _nameController = TextEditingController(text: p?.name ?? "");
     _descController = TextEditingController(text: p?.description ?? "");
-    // If editing, base price is originalPrice (if set and > price) or price (if discount is 0)
-    // Actually, backend model has originalPrice. If discount > 0, originalPrice should be the base.
+    _brandController = TextEditingController(text: p?.brand ?? "Generic");
+    
     double basePrice = (p?.originalPrice != null && p!.originalPrice > 0) ? p.originalPrice : (p?.price ?? 0);
     _basePriceController = TextEditingController(text: p != null ? basePrice.toString() : "");
     
@@ -54,8 +59,20 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     _stockController = TextEditingController(text: p?.stockLevel.toString() ?? "10");
     _selectedCategory = p?.category ?? "Cleaning";
     _isFreeShipping = p?.isFreeShipping ?? false;
-    _existingImages = p?.imageUrls ?? [];
+    
+    // Initialize existing images as 'completed' uploads
+    if (p?.imageUrls != null) {
+      _uploadItems = p!.imageUrls.map((url) => UploadItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString() + url.hashCode.toString(),
+        status: UploadStatus.success,
+        serverUrl: url,
+      )).toList();
+    }
+
+
+  
     _variants = p?.variants ?? [];
+    _branchInfo = List.from(p?.branchInfo ?? []);
     
     // Fetch latest categories
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -67,6 +84,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
+    _brandController.dispose(); // Added
     _basePriceController.dispose();
     _discountController.dispose();
     _stockController.dispose();
@@ -76,38 +94,93 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   Future<void> _pickImage() async {
     final List<XFile> images = await _picker.pickMultiImage();
     if (images.isNotEmpty) {
-      setState(() {
-        _newImages.addAll(images.map((x) => File(x.path)));
+      for (var xFile in images) {
+        final file = File(xFile.path);
+        final id = DateTime.now().microsecondsSinceEpoch.toString();
+        final item = UploadItem(id: id, localFile: file, status: UploadStatus.uploading);
+        
+        setState(() => _uploadItems.add(item));
+        _uploadFile(item);
+      }
+    }
+  }
+
+  Future<void> _uploadFile(UploadItem item) async {
+    if (item.localFile == null) return;
+
+    try {
+      final dio = Dio();
+      final uploadUrl = '${ApiService.baseUrl}/upload';
+      String fileName = item.localFile!.path.split('/').last;
+      
+      FormData formData = FormData.fromMap({
+        "image": await MultipartFile.fromFile(item.localFile!.path, filename: fileName),
       });
+
+      await dio.post(
+        uploadUrl, 
+        data: formData,
+        onSendProgress: (sent, total) {
+          if (mounted) {
+            setState(() {
+              item.progress = sent / total;
+            });
+          }
+        },
+      ).then((response) {
+        if (response.statusCode == 200) {
+            String path = response.data['filePath'];
+            String fullUrl;
+            if (path.startsWith('http')) {
+              fullUrl = path;
+            } else {
+              fullUrl = "https://clotheline-api.onrender.com$path";
+            }
+ 
+            if (mounted) {
+              setState(() {
+                item.serverUrl = fullUrl;
+                item.status = UploadStatus.success;
+                item.progress = 1.0;
+              });
+            }
+        } else {
+          throw Exception("Status ${response.statusCode}");
+        }
+      });
+    } catch (e) {
+      debugPrint("Upload Error: $e");
+      if (mounted) {
+        setState(() {
+          item.status = UploadStatus.error;
+          item.progress = 0.0;
+        });
+      }
     }
   }
 
   Future<void> _uploadImagesAndSave() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    // Check if any uploads are pending
+    if (_uploadItems.any((i) => i.status == UploadStatus.uploading)) {
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please wait for images to finish uploading")));
+       return;
+    }
+
+    // Check if any failed
+    if (_uploadItems.any((i) => i.status == UploadStatus.error)) {
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Some images failed to upload. Please remove or retry them.")));
+       return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      List<String> finalImageUrls = List.from(_existingImages);
-
-      // 1. Upload New Images
-      if (_newImages.isNotEmpty) {
-        final dio = Dio();
-        final uploadUrl = '${ApiService.baseUrl}/upload'; 
-        
-        for (var file in _newImages) {
-          String fileName = file.path.split('/').last;
-          FormData formData = FormData.fromMap({
-            "image": await MultipartFile.fromFile(file.path, filename: fileName),
-          });
-          
-          final response = await dio.post(uploadUrl, data: formData);
-          if (response.statusCode == 200) {
-            String relativePath = response.data['filePath'];
-            String fullUrl = "https://clotheline-api.onrender.com$relativePath"; 
-            finalImageUrls.add(fullUrl);
-          }
-        }
-      }
+      List<String> finalImageUrls = _uploadItems
+          .where((i) => i.status == UploadStatus.success && i.serverUrl != null)
+          .map((i) => i.serverUrl!)
+          .toList();
 
       // 2. Prepare Data & Calculate Prices
       double basePrice = double.tryParse(_basePriceController.text) ?? 0.0;
@@ -119,6 +192,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       final productData = {
         "name": _nameController.text,
         "description": _descController.text,
+        "brand": _brandController.text, // Added
         "price": sellingPrice, // Calculated Selling Price
         "originalPrice": basePrice, // Base Price
         "discountPercentage": discountPct,
@@ -135,7 +209,9 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
             "price": vSelling, 
             "originalPrice": vBase 
           };
-        }).toList()
+
+        }).toList(),
+        "branchInfo": _branchInfo.map((e) => e.toJson()).toList(),
       };
 
       // 3. Send to Store Service
@@ -254,46 +330,90 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                           child: const Icon(Icons.add_a_photo, color: Colors.white54),
                         ),
                       ),
-                      // Existing Images
-                      ..._existingImages.map((url) => Stack(
-                        children: [
-                          Container(
-                            width: 100,
-                            margin: const EdgeInsets.only(right: 10),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15),
-                              image: DecorationImage(image: NetworkImage(url), fit: BoxFit.cover)
+                      // Upload Items
+                      ..._uploadItems.map((item) {
+                         return Stack(
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 100,
+                              margin: const EdgeInsets.only(right: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: item.status == UploadStatus.error 
+                                      ? Colors.red 
+                                      : item.status == UploadStatus.success 
+                                          ? Colors.green.withOpacity(0.5) 
+                                          : Colors.white12
+                                ),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: item.localFile != null
+                                  ? Image.file(item.localFile!, fit: BoxFit.cover)
+                                  : CustomCachedImage(
+                                      imageUrl: item.serverUrl!,
+                                      fit: BoxFit.cover,
+                                      borderRadius: 0,
+                                    ),
                             ),
-                          ),
-                          Positioned(
-                            top: 5, right: 15,
-                            child: GestureDetector(
-                              onTap: () => setState(() => _existingImages.remove(url)),
-                              child: const Icon(Icons.cancel, color: Colors.red, size: 20),
-                            ),
-                          )
-                        ],
-                      )),
-                      // New Images
-                      ..._newImages.map((file) => Stack(
-                        children: [
-                          Container(
-                            width: 100,
-                            margin: const EdgeInsets.only(right: 10),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15),
-                              image: DecorationImage(image: FileImage(file), fit: BoxFit.cover)
-                            ),
-                          ),
-                           Positioned(
-                            top: 5, right: 15,
-                            child: GestureDetector(
-                              onTap: () => setState(() => _newImages.remove(file)),
-                              child: const Icon(Icons.cancel, color: Colors.red, size: 20),
-                            ),
-                          )
-                        ],
-                      )),
+                            
+                            // Uploading Overlay
+                            if (item.status == UploadStatus.uploading)
+                              Positioned.fill(
+                                child: Container(
+                                  margin: const EdgeInsets.only(right: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black45,
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      value: item.progress > 0 ? item.progress : null, 
+                                      color: AppTheme.primaryColor,
+                                      strokeWidth: 3,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              
+                            // Error Overlay
+                            if (item.status == UploadStatus.error)
+                               Positioned.fill(
+                                child: GestureDetector(
+                                  onTap: () => _uploadFile(item), // Retry
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black45,
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    child: const Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.refresh, color: Colors.white),
+                                        Text("Retry", style: TextStyle(color: Colors.white, fontSize: 10))
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            // Remove Button
+                            Positioned(
+                              top: 5, right: 15,
+                              child: GestureDetector(
+                                onTap: () => setState(() => _uploadItems.remove(item)),
+                                child: const CircleAvatar(
+                                  radius: 10,
+                                  backgroundColor: Colors.black54,
+                                  child: Icon(Icons.close, color: Colors.white, size: 14),
+                                ),
+                              ),
+                            )
+                          ],
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -303,6 +423,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 _buildGlassTextField(controller: _nameController, label: "Product Name"),
                 const SizedBox(height: 15),
                 _buildGlassTextField(controller: _descController, label: "Description", maxLines: 3),
+                const SizedBox(height: 15),
+                _buildGlassTextField(controller: _brandController, label: "Brand (e.g. Rolex, Generic)"), // Added
                 const SizedBox(height: 15),
                 
                 Row(
@@ -401,6 +523,104 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                   );
                 }),
 
+                const SizedBox(height: 30),
+
+                // 6. Branch Inventory
+                GlassContainer(
+                   opacity: 0.1,
+                   child: Padding(
+                     padding: const EdgeInsets.all(15),
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                          const Text("Branch Inventory & Pricing", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          ...context.watch<BranchProvider>().branches.map((b) {
+                             final existing = _branchInfo.firstWhere(
+                               (bi) => bi.branchId == b.id, 
+                               orElse: () => BranchProductInfo(branchId: b.id, stock: 0, isAvailable: true, price: null)
+                             );
+
+                             return Container(
+                               margin: const EdgeInsets.only(bottom: 15),
+                               padding: const EdgeInsets.all(10),
+                               decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(10)),
+                               child: Column(
+                                 children: [
+                                   Row(
+                                     children: [
+                                       Expanded(child: Text(b.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                                       Switch(
+                                         value: existing.isAvailable, 
+                                         activeColor: AppTheme.primaryColor,
+                                         onChanged: (val) {
+                                            setState(() {
+                                              _branchInfo.removeWhere((x) => x.branchId == b.id);
+                                              _branchInfo.add(BranchProductInfo(
+                                                branchId: b.id,
+                                                isAvailable: val,
+                                                stock: existing.stock,
+                                                price: existing.price
+                                              ));
+                                            });
+                                         }
+                                       )
+                                     ],
+                                   ),
+                                   if (existing.isAvailable)
+                                     Row(
+                                       children: [
+                                          Expanded(
+                                            child: TextField(
+                                              controller: TextEditingController(text: existing.stock.toString()),
+                                              keyboardType: TextInputType.number,
+                                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                                              decoration: const InputDecoration(labelText: "Stock", labelStyle: TextStyle(color: Colors.white54, fontSize: 11), border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                                              onChanged: (val) {
+                                                setState(() {
+                                                  _branchInfo.removeWhere((x) => x.branchId == b.id);
+                                                  _branchInfo.add(BranchProductInfo(
+                                                    branchId: b.id,
+                                                    isAvailable: existing.isAvailable,
+                                                    stock: int.tryParse(val) ?? 0,
+                                                    price: existing.price
+                                                  ));
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: TextField(
+                                              controller: TextEditingController(text: existing.price?.toString() ?? ""),
+                                              keyboardType: TextInputType.number,
+                                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                                              decoration: const InputDecoration(labelText: "Price (Override)", labelStyle: TextStyle(color: Colors.white54, fontSize: 11), border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                                              onChanged: (val) {
+                                                setState(() {
+                                                  _branchInfo.removeWhere((x) => x.branchId == b.id);
+                                                  _branchInfo.add(BranchProductInfo(
+                                                    branchId: b.id,
+                                                    isAvailable: existing.isAvailable,
+                                                    stock: existing.stock,
+                                                    price: double.tryParse(val)
+                                                  ));
+                                                });
+                                              },
+                                            ),
+                                          )
+                                       ],
+                                     )
+                                 ],
+                               ),
+                             );
+                          }).toList(),
+                       ],
+                     ),
+                   )
+                ),
+
+
                 const SizedBox(height: 40),
 
                 // Save Button
@@ -471,4 +691,23 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       ],
     ));
   }
+
+}
+
+enum UploadStatus { uploading, success, error }
+
+class UploadItem {
+  final String id;
+  final File? localFile; // Null if existing image
+  String? serverUrl;     // Null until uploaded
+  UploadStatus status;
+  double progress;       // 0.0 to 1.0
+
+  UploadItem({
+    required this.id,
+    this.localFile,
+    this.serverUrl,
+    this.status = UploadStatus.uploading,
+    this.progress = 0.0,
+  });
 }

@@ -3,6 +3,7 @@ import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'admin_cms_content_screen.dart';
+import 'admin_cms_promotions_screen.dart';
 import '../services/admin_services_screen.dart';
 import '../products/admin_products_screen.dart';
 import 'admin_categories_screen.dart';
@@ -61,6 +62,14 @@ class AdminCMSScreen extends StatelessWidget {
                         subtitle: "Update brands and slogans.",
                         icon: Icons.text_fields,
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding'))),
+                      ),
+                      const SizedBox(height: 15),
+                      _buildCMSCard(
+                        title: "Promotions",
+                        subtitle: "Free shipping thresholds & global offers.",
+                        icon: Icons.local_offer,
+                        color: Colors.greenAccent,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSPromotionsScreen())),
                       ),
                       const SizedBox(height: 30),
                     ],

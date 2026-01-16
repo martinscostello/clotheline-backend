@@ -8,6 +8,7 @@ import 'package:laundry_app/models/app_content_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:laundry_app/widgets/common/color_picker_sheet.dart';
+import '../../../../widgets/custom_cached_image.dart';
 
 class AdminCMSContentScreen extends StatefulWidget {
   final String section; // 'home', 'ads', 'branding'
@@ -123,7 +124,8 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
       setState(() => _isUploading = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Saved Successfully")));
-        _fetchContent(); // Refresh to restore placeholders if needed
+        await _contentService.refreshAppContent(); // Force update cache from server
+        _fetchContent();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to save")));
       }
@@ -272,17 +274,21 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                         AspectRatio(
                           aspectRatio: 16/9,
                           child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black26,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.white24),
-                              image: item.imageUrl.isNotEmpty 
-                                  ? DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover)
-                                  : null
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                if (item.imageUrl.isNotEmpty)
+                                  Positioned.fill(
+                                    child: CustomCachedImage(
+                                      imageUrl: item.imageUrl,
+                                      fit: BoxFit.cover,
+                                      borderRadius: 8,
+                                    ),
+                                  ),
+                                if (item.imageUrl.isEmpty)
+                                  const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40)),
+                              ],
                             ),
-                            child: item.imageUrl.isEmpty 
-                                ? const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40))
-                                : null,
                           ),
                         ),
                         // Dimension Tag (Top Right)
@@ -479,17 +485,21 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                   AspectRatio(
                     aspectRatio: aspectRatio,
                     child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black26,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white24),
-                        image: item.imageUrl.isNotEmpty 
-                            ? DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover)
-                            : null
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (item.imageUrl.isNotEmpty)
+                            Positioned.fill(
+                              child: CustomCachedImage(
+                                imageUrl: item.imageUrl,
+                                fit: BoxFit.cover,
+                                borderRadius: 8,
+                              ),
+                            ),
+                          if (item.imageUrl.isEmpty)
+                            const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40)),
+                        ],
                       ),
-                      child: item.imageUrl.isEmpty 
-                          ? const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40))
-                          : null,
                     ),
                   ),
                    Positioned(

@@ -1,0 +1,118 @@
+Resolving dependencies...
+Downloading packages...
+  characters 1.4.0 (1.4.1 available)
+  flutter_launcher_icons 0.13.1 (0.14.4 available)
+  flutter_lints 3.0.2 (6.0.0 available)
+  flutter_riverpod 2.6.1 (3.1.0 available)
+  flutter_secure_storage 9.2.4 (10.0.0 available)
+  flutter_secure_storage_linux 1.2.3 (3.0.0 available)
+  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+  flutter_secure_storage_platform_interface 1.1.2 (2.0.1 available)
+  flutter_secure_storage_web 1.2.1 (2.1.0 available)
+  flutter_secure_storage_windows 3.1.2 (4.1.0 available)
+  intl 0.19.0 (0.20.2 available)
+  js 0.6.7 (0.7.2 available)
+  lints 3.0.0 (6.0.0 available)
+  matcher 0.12.17 (0.12.18 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  package_info_plus 8.3.1 (9.0.0 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  riverpod 2.6.1 (3.1.0 available)
+  test_api 0.7.7 (0.7.8 available)
+  unicode 0.3.1 (1.1.8 available)
+Got dependencies!
+21 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Running Gradle task 'assembleDebug'...                          
+lib/services/content_service.dart:88:5: Error: Expected a class member, but got 'return'.
+    return null;
+    ^^^^^^
+lib/services/content_service.dart:88:12: Error: Expected a class member, but got 'null'.
+    return null;
+           ^^^^
+lib/services/content_service.dart:88:16: Error: Expected a class member, but got ';'.
+    return null;
+               ^
+lib/services/content_service.dart:159:1: Error: Expected a declaration, but got '}'.
+}
+^
+lib/screens/user/products/products_screen.dart:38:43: Error: The method 'getAppContent' isn't defined for the type 'ContentService'.
+ - 'ContentService' is from 'package:laundry_app/services/content_service.dart' ('lib/services/content_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'getAppContent'.
+    final content = await _contentService.getAppContent();
+                                          ^^^^^^^^^^^^^
+lib/services/content_service.dart:94:27: Error: Method not found: 'loadFromCache'.
+     final cached = await loadFromCache();
+                          ^^^^^^^^^^^^^
+lib/services/content_service.dart:98:24: Error: Method not found: 'fetchFromApi'.
+     final api = await fetchFromApi();
+                       ^^^^^^^^^^^^
+lib/services/content_service.dart:106:8: Error: No named parameter with the name 'promotionalBanner'.
+       promotionalBanner: null
+       ^^^^^^^^^^^^^^^^^
+lib/models/app_content_model.dart:13:3: Context: Found this candidate, but the arguments don't match.
+  AppContentModel({
+  ^^^^^^^^^^^^^^^
+lib/services/content_service.dart:111:12: Error: Method not found: 'fetchFromApi'.
+    return fetchFromApi();
+           ^^^^^^^^^^^^
+lib/services/content_service.dart:116:30: Error: Undefined name '_apiService'.
+      final response = await _apiService.client.put('/content', data: updates);
+                             ^^^^^^^^^^^
+lib/services/content_service.dart:136:30: Error: Undefined name '_apiService'.
+      final response = await _apiService.client.post(
+                             ^^^^^^^^^^^
+lib/screens/user/products/product_detail_screen.dart:41:43: Error: The method 'getAppContent' isn't defined for the type 'ContentService'.
+ - 'ContentService' is from 'package:laundry_app/services/content_service.dart' ('lib/services/content_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'getAppContent'.
+    final content = await _contentService.getAppContent();
+                                          ^^^^^^^^^^^^^
+lib/screens/user/booking/checkout_screen.dart:77:43: Error: The method 'getAppContent' isn't defined for the type 'ContentService'.
+ - 'ContentService' is from 'package:laundry_app/services/content_service.dart' ('lib/services/content_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'getAppContent'.
+    final content = await _contentService.getAppContent();
+                                          ^^^^^^^^^^^^^
+lib/screens/admin/cms/admin_cms_content_screen.dart:54:45: Error: The method 'getAppContent' isn't defined for the type 'ContentService'.
+ - 'ContentService' is from 'package:laundry_app/services/content_service.dart' ('lib/services/content_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'getAppContent'.
+      final content = await _contentService.getAppContent();
+                                            ^^^^^^^^^^^^^
+lib/screens/admin/cms/admin_cms_content_screen.dart:120:43: Error: The method 'updateAppContent' isn't defined for the type 'ContentService'.
+ - 'ContentService' is from 'package:laundry_app/services/content_service.dart' ('lib/services/content_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'updateAppContent'.
+    final success = await _contentService.updateAppContent(updateData);
+                                          ^^^^^^^^^^^^^^^^
+lib/screens/admin/cms/admin_cms_content_screen.dart:160:41: Error: The method 'uploadImage' isn't defined for the type 'ContentService'.
+ - 'ContentService' is from 'package:laundry_app/services/content_service.dart' ('lib/services/content_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'uploadImage'.
+    String? url = await _contentService.uploadImage(croppedFile.path);
+                                        ^^^^^^^^^^^
+lib/screens/user/products/store_checkout_screen.dart:120:43: Error: The method 'getAppContent' isn't defined for the type 'ContentService'.
+ - 'ContentService' is from 'package:laundry_app/services/content_service.dart' ('lib/services/content_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'getAppContent'.
+    final content = await _contentService.getAppContent();
+                                          ^^^^^^^^^^^^^
+lib/screens/admin/services/admin_edit_service_screen.dart:73:46: Error: The method 'uploadImage' isn't defined for the type 'ContentService'.
+ - 'ContentService' is from 'package:laundry_app/services/content_service.dart' ('lib/services/content_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'uploadImage'.
+         String? url = await _contentService.uploadImage(croppedFile.path);
+                                             ^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/Users/directorm/Development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
+Running Gradle task 'assembleDebug'...                           2,672ms
+Gradle task assembleDebug failed with exit code 1

@@ -6,7 +6,10 @@ import 'dart:convert'; // Added for JSON encoding/decoding
 
 class AuthService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
 
   // Simple in-memory user cache for role checks
   Map<String, dynamic>? _currentUser;
@@ -41,53 +44,13 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> tryAutoLogin() async {
-    if (_isInitialized) return _currentUser != null;
-
+  // 1. Optimistic Local Load (Fast)
+  Future<bool> loadFromStorage() async {
     try {
       final token = await _storage.read(key: 'auth_token');
       if (token == null) {
         _isInitialized = true;
         return false;
-      }
-
-      // Verify Token with Backend (Self-Healing)
-      try {
-        // Set default header for this request or relying on interceptor?
-        // ApiService usually attaches token if it's in storage? 
-        // We might need to manually set it if ApiService doesn't know yet.
-        // Assuming ApiService reads from storage or we set it.
-        // Let's manually set it to be safe or assuming ApiServiceInterceptor works.
-        // Actually, ApiService likely reads token from storage.
-        
-        // Add header manually just in case for this specific startup call
-        final response = await _apiService.client.get(
-          '/auth/verify',
-          options: Options(headers: {'x-auth-token': token})
-        );
-
-        if (response.statusCode == 200) {
-          final user = response.data['user'];
-          
-          await _storage.write(key: 'user_role', value: user['role']?.toString() ?? 'user');
-          await _storage.write(key: 'user_id', value: user['id']?.toString() ?? '');
-          await _storage.write(key: 'is_master_admin', value: (user['isMasterAdmin'] ?? false).toString());
-          if (user['permissions'] != null) {
-            await _storage.write(key: 'user_permissions', value: jsonEncode(user['permissions']));
-          }
-
-          _currentUser = user;
-          _isInitialized = true;
-          notifyListeners();
-          return true;
-        }
-      } catch (e) {
-        // Verification failed (expired or revoked)
-        // Fallback to local data but it might be risky.
-        // Safer to force logout or just continue with local data?
-        // User asked for "Missing Tabs" fix. If verify fails, maybe token is bad.
-        // Let's try to load local data as fallback BUT if verify works it overwrites stale data.
-        print("Verify failed: $e. Falling back to local storage.");
       }
 
       final role = await _storage.read(key: 'user_role');
@@ -109,15 +72,69 @@ class AuthService extends ChangeNotifier {
            'isMasterAdmin': isMasterStr == 'true',
            'permissions': permissions
          };
+         
+         _isInitialized = true;
+         notifyListeners();
+         return true;
       }
       
       _isInitialized = true;
-      notifyListeners();
-      return true;
+      return false; 
     } catch (e) {
       _isInitialized = true;
       return false;
     }
+  }
+
+  // 2. Background Validation (Network)
+  Future<bool> validateSession() async {
+    try {
+      final token = await _storage.read(key: 'auth_token');
+      if (token == null) return false;
+
+      final response = await _apiService.client.get(
+        '/auth/verify',
+        options: Options(headers: {'x-auth-token': token})
+      );
+
+      if (response.statusCode == 200) {
+        final user = response.data['user'];
+        // Update local storage with fresh data
+        await _storage.write(key: 'user_role', value: user['role']?.toString() ?? 'user');
+        await _storage.write(key: 'user_id', value: user['id']?.toString() ?? '');
+        await _storage.write(key: 'is_master_admin', value: (user['isMasterAdmin'] ?? false).toString());
+        if (user['permissions'] != null) {
+          await _storage.write(key: 'user_permissions', value: jsonEncode(user['permissions']));
+        }
+        
+        // Update memory
+        _currentUser = user; 
+        notifyListeners();
+        return true;
+      } else {
+        // Token invalid - force logout
+        await logout();
+        return false;
+      }
+    } catch (e) {
+      print("Session Validation Failed: $e");
+      // If network error, KEEP user logged in (Optimistic).
+      // Only logout if 401/403
+      if (e is DioException && (e.response?.statusCode == 401 || e.response?.statusCode == 403)) {
+         await logout();
+         return false;
+      }
+      return true; // Assume valid if just offline
+    }
+  }
+
+  // Deprecated - kept for compatibility if needed, but implementation redirects to new flow
+  Future<bool> tryAutoLogin() async {
+    final loaded = await loadFromStorage();
+    if (loaded) {
+      validateSession(); // Fire and forget
+    }
+    return loaded;
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -128,37 +145,102 @@ class AuthService extends ChangeNotifier {
       });
 
       if (response.statusCode == 200) {
-        final data = response.data;
-        final token = data['token'];
-        final user = data['user'];
-
-        // Store Token securely
-        await _storage.write(key: 'auth_token', value: token);
-        await _storage.write(key: 'user_role', value: user['role']?.toString() ?? 'user');
-        await _storage.write(key: 'user_id', value: user['id']?.toString() ?? '');
-        
-        // Persist RBAC data
-        await _storage.write(key: 'is_master_admin', value: (user['isMasterAdmin'] ?? false).toString());
-        if (user['permissions'] != null) {
-          await _storage.write(key: 'user_permissions', value: jsonEncode(user['permissions']));
-        }
-
-        _currentUser = user;
-        notifyListeners();
-        return user;
+        return _processAuthResponse(response.data);
       } else {
         throw Exception('Login Failed: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      // Extract backend error message if available
-      String message = 'Login failed';
-      if (e.response != null && e.response!.data != null) {
-        message = e.response!.data['msg'] ?? e.response!.data.toString();
-      }
-      throw Exception(message);
+      _handleDioError(e);
+      rethrow;
     } catch (e) {
       throw Exception(e.toString());
     }
+  }
+
+  Future<Map<String, dynamic>> signup({
+    required String name,
+    required String email,
+    required String password,
+    required String phone,
+  }) async {
+    try {
+      final response = await _apiService.client.post('/auth/signup', data: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'phone': phone,
+        'role': 'user' // Default role
+      });
+
+      if (response.statusCode == 200) {
+        // DOES NOT AUTO-LOGIN ANYMORE
+        // Returns { msg: 'OTP sent', email: ... }
+        return response.data;
+      } else {
+        throw Exception('Signup Failed: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyEmail(String email, String otp) async {
+    try {
+      final response = await _apiService.client.post('/auth/verify-email', data: {
+        'email': email,
+        'otp': otp
+      });
+
+      if (response.statusCode == 200) {
+        // NOW we login and store tokens
+        return _processAuthResponse(response.data);
+      } else {
+         throw Exception('Verification Failed');
+      }
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  // Helper to store tokens and set user
+  Future<Map<String, dynamic>> _processAuthResponse(Map<String, dynamic> data) async {
+    final token = data['token'];
+    final user = data['user'];
+
+    // Store Token securely
+    await _storage.write(key: 'auth_token', value: token);
+    await _storage.write(key: 'user_role', value: user['role']?.toString() ?? 'user');
+    await _storage.write(key: 'user_id', value: user['id']?.toString() ?? '');
+    
+    // Persist RBAC data
+    await _storage.write(key: 'is_master_admin', value: (user['isMasterAdmin'] ?? false).toString());
+    if (user['permissions'] != null) {
+      await _storage.write(key: 'user_permissions', value: jsonEncode(user['permissions']));
+    }
+
+    _currentUser = user;
+    notifyListeners();
+    return user;
+  }
+
+  void _handleDioError(DioException e) {
+    String message = 'Authentication failed';
+    if (e.response != null && e.response!.data != null) {
+      // Handle both string and json error responses
+      final data = e.response!.data;
+      if (data is Map && data.containsKey('msg')) {
+        message = data['msg'];
+      } else {
+        message = data.toString();
+      }
+    }
+    throw Exception(message);
   }
 
   Future<void> logout() async {

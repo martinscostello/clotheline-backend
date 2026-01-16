@@ -6,6 +6,7 @@ import '../../../../models/order_model.dart';
 import '../../../../services/order_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../../services/api_service.dart';
 
 class AdminOrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -149,20 +150,60 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
 
               const SizedBox(height: 20),
 
+              const SizedBox(height: 20),
+
               // 4. Totals
               GlassContainer(
                 opacity: 0.1,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
                     children: [
-                      const Text("Total Amount", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text("₦${widget.order.totalAmount.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 22, fontWeight: FontWeight.bold)),
+                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Payment Status", style: TextStyle(color: Colors.white, fontSize: 16)),
+                           Text(widget.order.paymentStatus.name.toUpperCase(), 
+                            style: TextStyle(
+                              color: widget.order.paymentStatus == PaymentStatus.Paid ? Colors.green : Colors.orange, 
+                              fontWeight: FontWeight.bold
+                            )
+                          ),
+                        ],
+                      ),
+                      const Divider(color: Colors.white10, height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Total Amount", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text("₦${widget.order.totalAmount.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 22, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ),
+
+              const SizedBox(height: 30),
+
+              // Refund Action
+              if (widget.order.paymentStatus == PaymentStatus.Paid) 
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.withOpacity(0.2),
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent),
+                    ),
+                    icon: const Icon(Icons.undo),
+                    label: const Text("INITIATE REFUND"),
+                    onPressed: () {
+                      _showRefundDialog();
+                    },
+                  ),
+                ),
               
               const SizedBox(height: 50),
             ],
@@ -181,6 +222,68 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
           Icon(icon, color: Colors.white54, size: 16),
           const SizedBox(width: 10),
           Expanded(child: Text(text, style: TextStyle(color: Colors.white, fontSize: isSmall ? 13 : 14))),
+        ],
+      ),
+    );
+  }
+
+  void _showRefundDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF202020),
+        title: const Text("Confirm Refund", style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Are you sure you want to refund this order? This action will process via Paystack.",
+              style: TextStyle(color: Colors.white70)
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: controller,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: "Amount (Optional for Partial)",
+                hintText: "Leave empty for full refund",
+                labelStyle: TextStyle(color: Colors.white54),
+                hintStyle: TextStyle(color: Colors.white24),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+              ),
+              keyboardType: TextInputType.number,
+            )
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: const Text("CANCEL"),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text("REFUND", style: TextStyle(color: Colors.redAccent)),
+            onPressed: () async {
+               Navigator.pop(context);
+               
+               // Trigger Refund via ApiService
+               final api = ApiService();
+               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Processing Refund...")));
+               
+               try {
+                  final amount = double.tryParse(controller.text);
+                  await api.client.post('/payments/refund', data: {
+                    'orderId': widget.order.id,
+                    'amount': amount 
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Refund Initiated Successfully")));
+                  // Trigger Refresh?
+                  // setState/Init? For now snackbar is good confirmation.
+               } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Refund Failed: $e")));
+               }
+            },
+          )
         ],
       ),
     );

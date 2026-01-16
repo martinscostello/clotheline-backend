@@ -2,7 +2,44 @@ const Service = require('../models/Service');
 
 exports.getAllServices = async (req, res) => {
     try {
-        const services = await Service.find({ isActive: true });
+        const { branchId } = req.query;
+        let services = await Service.find({ isActive: true });
+
+        if (branchId) {
+            // Filter and Project for Branch
+            services = services.reduce((acc, service) => {
+                const s = service.toObject();
+
+                // 1. Check Service Availability for Branch
+                if (s.branchAvailability && s.branchAvailability.length > 0) {
+                    const branchAvail = s.branchAvailability.find(b => b.branchId.toString() === branchId);
+                    if (branchAvail && !branchAvail.isActive) {
+                        return acc; // Skip inactive service for this branch
+                    }
+                }
+
+                // 2. Project Item Prices
+                if (s.items && s.items.length > 0) {
+                    s.items = s.items.reduce((itemAcc, item) => {
+                        let finalItem = { ...item };
+
+                        if (item.branchPricing && item.branchPricing.length > 0) {
+                            const bPrice = item.branchPricing.find(bp => bp.branchId.toString() === branchId);
+                            if (bPrice) {
+                                if (!bPrice.isActive) return itemAcc; // Skip inactive item
+                                finalItem.price = bPrice.price; // Override price
+                            }
+                        }
+                        itemAcc.push(finalItem);
+                        return itemAcc;
+                    }, []);
+                }
+
+                acc.push(s);
+                return acc;
+            }, []);
+        }
+
         res.json(services);
     } catch (err) {
         console.error(err.message);

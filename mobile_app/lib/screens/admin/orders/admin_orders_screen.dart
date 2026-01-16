@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import '../../../../services/order_service.dart';
 import '../../../../models/order_model.dart';
 import 'package:intl/intl.dart';
+import '../../../../models/branch_model.dart';
+import '../../../../providers/branch_provider.dart';
 import 'admin_order_detail_screen.dart';
 
 class AdminOrdersScreen extends StatefulWidget {
@@ -17,17 +19,21 @@ class AdminOrdersScreen extends StatefulWidget {
 }
 
 class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTickerProviderStateMixin {
-  Timer? _refreshTimer;
+  // [Multi-Branch] Filter State
+  Branch? _selectedBranchFilter;
+  
   late TabController _tabController;
-  final List<String> _tabs = ["New", "InProgress", "Ready", "Completed", "Cancelled"];
+  Timer? _refreshTimer;
+  final List<String> _tabs = ['New', 'InProgress', 'Ready', 'Completed', 'Cancelled'];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
-    // Fetch orders on load
+    // Fetch orders & branches on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchOrders();
+      Provider.of<BranchProvider>(context, listen: false).fetchBranches();
     });
     // Auto-refresh every 15 seconds
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
@@ -43,7 +49,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   }
 
   Future<void> _fetchOrders({bool silent = false}) async {
-    // If not silent, we could show a loader, but for now we rely on Provider's internal state or just silent update
     await Provider.of<OrderService>(context, listen: false).fetchOrders();
   }
 
@@ -52,7 +57,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Manage Orders", style: TextStyle(color: Colors.white)),
+        title: _buildBranchFilterTitle(),
         backgroundColor: Colors.transparent,
         leading: const BackButton(color: Colors.white),
         bottom: TabBar(
@@ -74,19 +79,25 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
         child: Consumer<OrderService>(
           builder: (context, orderService, child) {
             if (orderService.orders.isEmpty) {
-              // Check if loading? OrderService doesn't expose loading state easily yet, assume empty if 0
-              // But we can just show empty state
               return const Center(child: Text("No orders found", style: TextStyle(color: Colors.white54)));
+            }
+            
+            // [Multi-Branch] Filter Logic
+            List<OrderModel> filteredList = orderService.orders;
+            if (_selectedBranchFilter != null) {
+              filteredList = filteredList.where((o) => o.branchId == _selectedBranchFilter!.id).toList();
             }
 
             return TabBarView(
               controller: _tabController,
               children: _tabs.map((status) {
-                // Filter Orders
-                final orders = orderService.orders.where((o) => o.status.name == status).toList();
+                // Filter Status
+                final orders = filteredList.where((o) => o.status.name == status).toList();
                 
                 if (orders.isEmpty) {
-                  return Center(child: Text("No $status orders", style: const TextStyle(color: Colors.white30)));
+                   String msg = "No $status orders";
+                   if (_selectedBranchFilter != null) msg += " in ${_selectedBranchFilter!.name}";
+                   return Center(child: Text(msg, style: const TextStyle(color: Colors.white30)));
                 }
 
                 return RefreshIndicator(
@@ -106,6 +117,34 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildBranchFilterTitle() {
+    return Consumer<BranchProvider>(
+       builder: (context, provider, _) {
+          return DropdownButton<Branch?>(
+            value: _selectedBranchFilter,
+            dropdownColor: Colors.black87,
+            icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+            underline: const SizedBox(), 
+            hint: const Text("All Branches", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            items: [
+              const DropdownMenuItem<Branch?>(
+                value: null,
+                child: Text("All Branches"), // Reset filter
+              ),
+              ...provider.branches.map((b) => DropdownMenuItem(
+                value: b,
+                child: Text(b.name),
+              ))
+            ],
+            onChanged: (Branch? value) {
+              setState(() => _selectedBranchFilter = value);
+            },
+          );
+       }
     );
   }
 

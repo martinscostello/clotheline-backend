@@ -1,15 +1,19 @@
 import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass/LaundryGlassBackground.dart';
-import 'package:liquid_glass_ui/liquid_glass_ui.dart';
+import '../../widgets/navigation/CrystalNavBar.dart'; // Fixed import
+import '../common/branch_selection_screen.dart'; // Fixed relative path
 import 'dashboard_screen.dart';
 import 'products/products_screen.dart';
 import 'orders/orders_screen.dart';
 import 'settings/settings_screen.dart';
 
 class MainLayout extends StatefulWidget {
-  const MainLayout({super.key});
+  final int initialIndex;
+  const MainLayout({super.key, this.initialIndex = 0});
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
@@ -23,14 +27,34 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void initState() {
     super.initState();
+    _loadPersistedTab();
     _screens = [
       DashboardScreen(
-        onSwitchToStore: () => setState(() => _currentIndex = 1),
+        onSwitchToStore: () => _updateIndex(1),
       ),
       const ProductsScreen(),
       const OrdersScreen(),
       const SettingsScreen(),
     ];
+  }
+
+  Future<void> _loadPersistedTab() async {
+    if (widget.initialIndex != 0) {
+       _currentIndex = widget.initialIndex;
+    } else {
+       // Only load persistence if no specific override provided
+       final prefs = await SharedPreferences.getInstance();
+       final savedIndex = prefs.getInt('last_tab_index') ?? 0;
+       if (savedIndex >= 0 && savedIndex < _screens.length) {
+         setState(() => _currentIndex = savedIndex);
+       }
+    }
+  }
+
+  Future<void> _updateIndex(int index) async {
+     setState(() => _currentIndex = index);
+     final prefs = await SharedPreferences.getInstance();
+     prefs.setInt('last_tab_index', index);
   }
 
   @override
@@ -63,92 +87,31 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildCustomNavBar(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // [FIX] Flush Layout: No Margins, Full Width
-    // Added SafeArea bottom padding handling manually or via LiquidGlassContainer padding if needed
-    // But since it's a fixed height container, we usually want to extend to bottom.
-    // Let's make it taller to cover Home Indicator on iOS.
-    
-    return LiquidGlassContainer(
-      color: Colors.white.withValues(alpha: 0.2),
-      blur: 20,
-      // [FIX] Custom shape: Rounded Top Only
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-      padding: EdgeInsets.only(
-        left: 20, 
-        right: 20, 
-        top: 10,
-        // Add padding for Home Indicator
-        bottom: MediaQuery.of(context).padding.bottom > 0 ? MediaQuery.of(context).padding.bottom : 10
-      ), 
-      // Auto-height based on content + padding
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem("Home", Icons.home_filled, 0, isDark),
-          _buildNavItem("Store", Icons.shopping_bag_outlined, 1, isDark),
-          _buildNavItem("Orders", Icons.receipt_long_outlined, 2, isDark),
-          _buildNavItem("Settings", Icons.person_outline, 3, isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(String label, IconData icon, int index, bool isDark) {
-    final isSelected = _currentIndex == index;
-    // Dynamic Colors
-    final selectedIconColor = isDark ? Colors.white : Colors.black;
-    final unselectedIconColor = isDark ? Colors.white60 : Colors.black54;
-    final selectedTextColor = isDark ? Colors.white : Colors.black;
-    final unselectedTextColor = isDark ? Colors.white70 : Colors.black54;
-
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 70, // Fixed width for touch target
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Animated Icon Container
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: EdgeInsets.all(isSelected ? 8 : 0),
-              decoration: isSelected 
-                  ? BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.2), 
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                         BoxShadow(color: AppTheme.primaryColor.withValues(alpha: 0.4), blurRadius: 12, spreadRadius: 1),
-                      ]
-                    ) 
-                  : const BoxDecoration(),
-              child: Icon(
-                icon, 
-                size: 26, 
-                color: isSelected ? selectedIconColor : unselectedIconColor,
-              ),
-            ),
-             const SizedBox(height: 4),
-             // Label
-             AnimatedOpacity(
-               duration: const Duration(milliseconds: 200),
-               opacity: isSelected ? 1.0 : 0.6,
-               child: Text(
-                 label,
-                 style: TextStyle(
-                   color: isSelected ? selectedTextColor : unselectedTextColor,
-                   fontSize: 10,
-                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                 ),
-               ),
-             ),
-          ],
+    return CrystalNavBar(
+      currentIndex: _currentIndex,
+      onTap: (index) => _updateIndex(index),
+      items: const [
+        CrystalNavItem(
+          label: "Home", 
+          unselectedIcon: CupertinoIcons.house, 
+          selectedIcon: CupertinoIcons.house_fill
         ),
-      ),
+        CrystalNavItem(
+          label: "Store", 
+          unselectedIcon: CupertinoIcons.bag, 
+          selectedIcon: CupertinoIcons.bag_fill
+        ),
+        CrystalNavItem(
+          label: "Orders", 
+          unselectedIcon: CupertinoIcons.ticket, 
+          selectedIcon: CupertinoIcons.ticket_fill
+        ),
+        CrystalNavItem(
+          label: "Settings", 
+          unselectedIcon: CupertinoIcons.person_crop_circle, 
+          selectedIcon: CupertinoIcons.person_crop_circle_fill
+        ),
+      ],
     );
   }
 }

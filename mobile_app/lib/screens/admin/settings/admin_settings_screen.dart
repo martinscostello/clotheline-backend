@@ -31,15 +31,21 @@ class AdminSettingsScreen extends StatelessWidget {
               const SizedBox(height: 10),
               GlassContainer(
                 opacity: 0.1,
-                child: Column(
-                  children: [
-                    _buildSettingTile(Icons.admin_panel_settings, "Manage Administrators", () {
-                       Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManageAdminsScreen()));
-                    }),
-                    _buildSettingTile(Icons.local_shipping, "Delivery Zones & Fees", () {
-                       Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
-                    }),
-                  ],
+                child: Consumer<AuthService>(
+                  builder: (context, auth, _) {
+                    final isMaster = auth.currentUser != null && auth.currentUser!['isMasterAdmin'] == true;
+                    return Column(
+                      children: [
+                        if (isMaster)
+                          _buildSettingTile(Icons.admin_panel_settings, "Manage Administrators", () {
+                             Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManageAdminsScreen()));
+                          }),
+                        _buildSettingTile(Icons.local_shipping, "Delivery Zones & Fees", () {
+                           Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
+                        }),
+                      ],
+                    );
+                  }
                 ),
               ),
 

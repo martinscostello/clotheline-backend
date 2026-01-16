@@ -32,6 +32,11 @@ const ServiceSchema = new mongoose.Schema({
         type: String, // e.g. "Coming Soon", "Under Maintenance"
         default: "Coming Soon"
     },
+    // Branch Specific Availability (Top Level)
+    branchAvailability: [{
+        branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+        isActive: { type: Boolean, default: true }
+    }],
     discountPercentage: {
         type: Number,
         default: 0
@@ -42,7 +47,12 @@ const ServiceSchema = new mongoose.Schema({
     // Sub-items (Cloth Types / Product Types)
     items: [{
         name: String, // e.g. "Shirt", "Trousers"
-        price: Number
+        price: Number, // Default/Base Price
+        branchPricing: [{
+            branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+            price: Number,
+            isActive: { type: Boolean, default: true }
+        }]
     }],
     // Service Variants (e.g. "Wash & Iron", "Steam Only")
     serviceTypes: [{

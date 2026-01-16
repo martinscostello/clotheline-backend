@@ -32,6 +32,14 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    notificationPreferences: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+        orderUpdates: { type: Boolean, default: true },
+        chatMessages: { type: Boolean, default: true },
+        adminBroadcasts: { type: Boolean, default: true },
+        bucketUpdates: { type: Boolean, default: true }
+    },
     permissions: {
         manageCMS: { type: Boolean, default: false }, // Home, Ads, Branding
         manageOrders: { type: Boolean, default: false },

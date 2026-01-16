@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:laundry_app/data/seed_data.dart'; // Added Import
 
 class ContentService {
   final ApiService _apiService = ApiService();
@@ -15,7 +16,7 @@ class ContentService {
       final response = await _apiService.client.get('/services');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        return data.map((json) => ServiceModel.fromJson(json)).toList();
+        return data.where((e) => e is Map).map((json) => ServiceModel.fromJson(Map<String, dynamic>.from(json))).toList();
       } else {
         throw Exception('Failed to load services');
       }
@@ -55,46 +56,24 @@ class ContentService {
     }
   }
 
-  // Defaults
-  static final Map<String, dynamic> _defaults = {
-    "_id": "default_content_id",
-    "brandText": "Good Morning",
-    "heroCarousel": [
-      {
-        "imageUrl": "https://images.unsplash.com/photo-1545173168-9f1947eebb8f?q=80&w=2971&auto=format&fit=crop", // Safe generic laundry img
-        "title": "Premium Laundry Service",
-        "tagLine": "We care for your clothes",
-        "titleColor": "white",
-        "tagLineColor": "white70"
-      },
-      {
-         "imageUrl": "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?q=80&w=2970&auto=format&fit=crop",
-         "title": "Fast Pickup & Delivery",
-         "tagLine": "Schedule in seconds",
-         "titleColor": "white",
-         "tagLineColor": "white70"
-      }
-    ]
-  };
+  // --- OFFLINE FIRST CONTENT LOGIC ---
 
-  // Fast Load: Cache -> Defaults
-  Future<AppContentModel> getAppContent() async {
+  // 1. Load Cache Only
+  Future<AppContentModel?> loadFromCache() async {
     final prefs = await SharedPreferences.getInstance();
-    
-    // 1. Try Cache
     try {
       final cachedString = prefs.getString('app_content_cache');
       if (cachedString != null) {
         return AppContentModel.fromJson(jsonDecode(cachedString));
       }
     } catch (_) {}
-
-    // 2. Return Defaults
-    return AppContentModel.fromJson(_defaults);
+    
+    // Fallback to Seed Data (First Launch)
+    return AppContentModel.fromJson(kDefaultContent); 
   }
   
-  // Background Refresh: Network -> Cache
-  Future<AppContentModel?> refreshAppContent() async {
+  // 2. Silent Sync
+  Future<AppContentModel?> fetchFromApi() async {
     final prefs = await SharedPreferences.getInstance();
      try {
       final response = await _apiService.client.get('/content');
@@ -104,9 +83,35 @@ class ContentService {
         return AppContentModel.fromJson(response.data);
       }
     } catch (e) {
-      debugPrint("Error fetching content from API: $e");
+      debugPrint("Error silently fetching content: $e");
     }
     return null;
+  }
+  
+  // COMPATIBILITY METHODS (Wrapper)
+  Future<AppContentModel> getAppContent() async {
+     // Try cache first
+     final cached = await loadFromCache();
+     if (cached != null) return cached;
+     
+     // Fallback to API
+     final api = await fetchFromApi();
+     if (api != null) return api;
+
+     return AppContentModel(
+       id: "empty", 
+       brandText: "Welcome", 
+       heroCarousel: [], 
+       homeGridServices: [],
+       productAds: [],
+       productCategories: [],
+       contactAddress: "",
+       contactPhone: ""
+     );
+  }
+
+  Future<AppContentModel?> refreshAppContent() async {
+    return fetchFromApi();
   }
 
   Future<bool> updateAppContent(Map<String, dynamic> updates) async {
@@ -118,16 +123,21 @@ class ContentService {
       return false;
     }
   }
+
   Future<String?> uploadImage(String filePath) async {
     try {
       String fileName = filePath.split('/').last;
-      
+      String mimeType = 'jpeg';
+      if (fileName.toLowerCase().endsWith('.png')) mimeType = 'png';
+      if (fileName.toLowerCase().endsWith('.gif')) mimeType = 'gif';
+      if (fileName.toLowerCase().endsWith('.jpg')) mimeType = 'jpeg';
+
       // Create FormData
       final formData = FormData.fromMap({
         'image': await MultipartFile.fromFile(
           filePath,
           filename: fileName,
-          contentType: MediaType('image', 'jpeg'), // Adjust if needed
+          contentType: MediaType('image', mimeType), 
         ),
       });
 
@@ -137,14 +147,11 @@ class ContentService {
       );
 
       if (response.statusCode == 200) {
-        // Construct full URL.
-        // Assuming backend returns relative path like "/uploads/filename.jpg"
-        // And ApiService baseUrl is "http://localhost:5001/api"
-        // We need "http://localhost:5001/uploads/filename.jpg"
+        final path = response.data['filePath'];
+        // Cloudinary returns full URL
+        if (path.toString().startsWith('http')) return path;
         
-        // This is a bit of a hack since ApiService might point to /api
-        // We want to strip /api and append the path
-        final relativePath = response.data['filePath'];
+        final relativePath = path;
         final baseUrl = ApiService.baseUrl.replaceAll('/api', '');
         return "$baseUrl$relativePath";
       }

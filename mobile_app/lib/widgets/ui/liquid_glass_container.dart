@@ -29,16 +29,7 @@ class LiquidGlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate Center for Refraction (Uniform Zoom)
-    // This ensures the zoom "inflates" from the center of the screen, not top-left.
-    final screenSize = MediaQuery.of(context).size;
-    final cx = screenSize.width / 2;
-    final cy = screenSize.height / 2;
-    
-    final Matrix4 zoomMatrix = Matrix4.identity()
-      ..translate(cx, cy)
-      ..scale(1.06) // 1.06x Zoom
-      ..translate(-cx, -cy);
+
 
     return SizedBox(
       width: width,
@@ -46,50 +37,52 @@ class LiquidGlassContainer extends StatelessWidget {
       child: Stack(
         fit: StackFit.loose,
         children: [
-          // 0. Shadow Layer (Depth)
-          // A subtle shadow behind the glass to lift it off the background.
+          // Optimization: Cache the static background (Shadows + Glass + Rim) 
+          // so it doesn't repaint when the child (e.g. TextField cursor) updates.
           Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(radius),
-                boxShadow: [
-                  BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2), // Tuned Intensity
-                    blurRadius: 15,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 8), 
+            child: RepaintBoundary(
+              child: Stack(
+                children: [
+                   // 0. Shadow Layer (Depth)
+                   Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(radius),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2), // Tuned Intensity
+                            blurRadius: 15,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 8), 
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // 1. Liquid Glass Lens (Refraction)
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(radius),
+                      child: Container(color: Colors.white.withValues(alpha: 0.05)),
+                    ),
+                  ),
+
+                  // 2. Subtle Concave Rim (Inner Reflection)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _InnerShadowPainter(
+                          radius: radius,
+                          color: Colors.white.withValues(alpha: 0.2), // Tuned Opacity
+                          blur: 2, // Matches Lens Blur
+                          offset: const Offset(0, 0), // Uniform
+                          strokeWidth: 1.2, // Tuned Spread
+                        ),
+                      ),
+                    ),
                   ),
                 ],
-              ),
-            ),
-          ),
-
-          // 1. Liquid Glass Lens (Refraction)
-          // Applies the warp and blur effect to the ENTIRE container.
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(radius),
-              child: BackdropFilter(
-                filter: ImageFilter.compose(
-                  outer: ImageFilter.blur(sigmaX: blur, sigmaY: blur), // Tuned Blur
-                  inner: ImageFilter.matrix(zoomMatrix.storage), // Uniform Center Warp
-                ),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
-          ),
-
-          // 2. Subtle Concave Rim (Inner Reflection)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: _InnerShadowPainter(
-                  radius: radius,
-                  color: Colors.white.withValues(alpha: 0.2), // Tuned Opacity
-                  blur: 2, // Matches Lens Blur
-                  offset: const Offset(0, 0), // Uniform
-                  strokeWidth: 1.2, // Tuned Spread
-                ),
               ),
             ),
           ),

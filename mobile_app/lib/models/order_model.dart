@@ -18,6 +18,14 @@ class OrderModel {
   
   final DateTime date;
   
+  // Tax
+  final double subtotal;
+  final double taxAmount;
+  final double taxRate;
+
+  // Multi-Branch
+  final String? branchId;
+
   // Guest Info
   final String? guestName;
   final String? guestPhone;
@@ -26,6 +34,9 @@ class OrderModel {
     required this.id,
     required this.items,
     required this.totalAmount,
+    this.subtotal = 0,
+    this.taxAmount = 0,
+    this.taxRate = 0,
     required this.status,
     required this.paymentStatus,
     required this.pickupOption,
@@ -35,6 +46,7 @@ class OrderModel {
     this.deliveryAddress,
     this.deliveryPhone,
     required this.date,
+    this.branchId, // Optional/Nullable
     this.guestName,
     this.guestPhone
   });
@@ -44,6 +56,9 @@ class OrderModel {
       id: json['_id'],
       items: (json['items'] as List).map((i) => OrderItem.fromJson(i)).toList(),
       totalAmount: (json['totalAmount'] as num).toDouble(),
+      subtotal: (json['subtotal'] as num?)?.toDouble() ?? (json['totalAmount'] as num).toDouble(), // Fallback
+      taxAmount: (json['taxAmount'] as num?)?.toDouble() ?? 0.0,
+      taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0.0,
       status: OrderStatus.values.firstWhere((e) => e.name == json['status'], orElse: () => OrderStatus.New),
       paymentStatus: PaymentStatus.values.firstWhere((e) => e.name == json['paymentStatus'], orElse: () => PaymentStatus.Pending),
       pickupOption: json['pickupOption'],
@@ -53,6 +68,7 @@ class OrderModel {
       deliveryAddress: json['deliveryAddress'],
       deliveryPhone: json['deliveryPhone'],
       date: DateTime.parse(json['date']),
+      branchId: json['branchId'],
       guestName: json['guestInfo']?['name'],
       guestPhone: json['guestInfo']?['phone'],
     );

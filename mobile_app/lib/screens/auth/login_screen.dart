@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import 'signup_screen.dart'; // Added Import
 import 'package:laundry_app/widgets/branding/WashingMachineLogo.dart';
 import 'package:laundry_app/widgets/ui/liquid_glass_container.dart';
 import '../../widgets/medical/MedicalLogo.dart';
@@ -122,7 +123,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 children: [
                                   _buildPrimaryButton("Login", _handleLogin),
                                   const SizedBox(height: 12),
-                                  _buildOutlineButton("Sign Up", () {}),
+                                  _buildOutlineButton("Sign Up", () {
+                                     Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen()));
+                                  }),
                                 ],
                               ),
                           const SizedBox(height: 24),

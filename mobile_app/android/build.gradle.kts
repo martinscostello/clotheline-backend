@@ -17,6 +17,14 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    
+    // Workaround for flutter_paystack not having namespace in Gradle 8
+    if (project.name == "flutter_paystack") {
+        project.plugins.withId("com.android.library") {
+            val android = project.extensions.getByType(com.android.build.gradle.LibraryExtension::class.java)
+            android.namespace = "com.arttitude360.flutter_paystack"
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

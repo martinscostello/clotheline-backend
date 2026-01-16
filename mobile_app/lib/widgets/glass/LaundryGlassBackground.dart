@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'dart:ui';
+
 
 class LaundryGlassBackground extends StatelessWidget {
   final Widget child;
@@ -55,7 +54,7 @@ class LaundryGlassBackground extends StatelessWidget {
 
   Widget _buildBubble({required double size, required double left, required int speedMs, required Color color}) {
     return Positioned(
-      bottom: -150, // Start below screen
+      bottom: 20, // Static position near bottom
       left: left,
       child: Container(
         width: size,
@@ -72,11 +71,7 @@ class LaundryGlassBackground extends StatelessWidget {
           ),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
         ),
-      )
-      .animate(onPlay: (controller) => controller.repeat())
-      .moveY(begin: 0, end: -1000, duration: Duration(milliseconds: speedMs)) // Float Up
-      .fadeIn(duration: 500.ms)
-      .fadeOut(delay: (speedMs - 500).ms, duration: 500.ms), // Fade out at top
+      ),
     );
   }
 
@@ -88,10 +83,7 @@ class LaundryGlassBackground extends StatelessWidget {
         icon,
         size: 80, // Slightly smaller pattern
         color: color,
-      )
-      .animate(onPlay: (controller) => controller.repeat(reverse: true))
-      .moveY(begin: 0, end: 20, duration: 4.seconds, curve: Curves.easeInOut)
-      .rotate(begin: -0.05, end: 0.05, duration: 5.seconds),
+      ),
     );
   }
 }

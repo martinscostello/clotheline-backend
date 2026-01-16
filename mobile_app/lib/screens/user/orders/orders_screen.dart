@@ -10,6 +10,7 @@ import '../../../services/order_service.dart';
 import '../../../models/order_model.dart';
 import '../booking/checkout_screen.dart';
 import 'package:intl/intl.dart';
+import 'order_detail_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -287,7 +288,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         onRefresh: () => _fetchOrders(),
         color: AppTheme.primaryColor,
         child: ListView.builder(
-          padding: const EdgeInsets.only(top: 150, bottom: 100, left: 20, right: 20),
+          padding: const EdgeInsets.only(top: 220, bottom: 100, left: 20, right: 20),
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final order = filtered[index];
@@ -310,21 +311,28 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ],
             );
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 15),
-              child: isDark 
-                ? GlassContainer(opacity: 0.1, child: content)
-                : Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                         BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
-                      ]
+            return GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => OrderDetailScreen(order: order)
+                ));
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 15),
+                child: isDark 
+                  ? GlassContainer(opacity: 0.1, child: content)
+                  : Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
+                        ]
+                      ),
+                      child: content,
                     ),
-                    child: content,
-                  ),
+              ),
             );
           },
         ),
