@@ -91,5 +91,36 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// PUT /branches/:id (Admin) - Update Branch
+router.put('/:id', auth, async (req, res) => {
+    try {
+        // Enforce Admin
+        const requestor = await User.findById(req.user.userId);
+        if (!requestor || requestor.role !== 'admin') {
+            return res.status(403).json({ msg: 'Admins only' });
+        }
+
+        const { name, address, phone, location, deliveryZones } = req.body;
+
+        // Find and Update
+        const branch = await Branch.findById(req.params.id);
+        if (!branch) return res.status(404).json({ msg: 'Branch not found' });
+
+        if (name) branch.name = name;
+        if (address) branch.address = address;
+        if (phone) branch.phone = phone;
+        if (location) branch.location = location;
+        if (deliveryZones) branch.deliveryZones = deliveryZones;
+
+        branch.locationLastUpdated = Date.now();
+
+        await branch.save();
+        res.json(branch);
+    } catch (err) {
+        console.error("Update Error:", err);
+        res.status(500).send('Server Error');
+    }
+});
+
 
 module.exports = router;
