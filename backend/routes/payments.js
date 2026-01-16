@@ -24,7 +24,14 @@ router.post('/initialize', auth, async (req, res) => {
         // Amount in Kobo
         const amountKobo = Math.round(order.totalAmount * 100);
         const reference = `REF_${Date.now()}_${order._id}`;
-        const email = order.guestInfo?.email || 'user@example.com';
+        // Resolve Email
+        let email = order.guestInfo?.email;
+        if (!email && order.user) {
+            const User = require('../models/User'); // Ensure Model is imported
+            const user = await User.findById(order.user);
+            if (user) email = user.email;
+        }
+        if (!email) email = 'user@example.com'; // Final fallback
 
         // 1. Initialize with Paystack (Server-Side)
         // This keeps the SECRET_KEY on the server.

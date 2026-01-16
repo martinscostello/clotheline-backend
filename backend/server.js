@@ -1,7 +1,11 @@
+const path = require('path');
+const fs = require('fs');
+
+
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -33,6 +37,12 @@ const connectDB = async () => {
             console.log(`In-Memory MongoDB started at ${mongoUri}`);
         } else {
             console.log(`Connecting to MongoDB at ${mongoUri}`);
+        }
+
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            console.log(`✅ Email Service: Enabled (${process.env.EMAIL_USER})`);
+        } else {
+            console.log(`⚠️  Email Service: Mock Mode (Missing Credentials) - CHECK .ENV`);
         }
 
         await mongoose.connect(mongoUri);
