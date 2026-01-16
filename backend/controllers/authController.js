@@ -47,13 +47,9 @@ exports.signup = async (req, res) => {
             console.log(`[Auth] OTP Email sent successfully to ${user.email}`);
         } catch (emailErr) {
             console.error("[Auth] FATAL: Email send failed:", emailErr);
-            // Optionally delete user if email fails so they can retry signup? 
-            // await User.findByIdAndDelete(user._id);
-            // return res.status(500).json({ msg: 'Failed to send verification email. Please try again.' });
-
-            // For now, keep user but invalid, allow resend logic if exists.
-            // But let's return error so frontend knows.
-            return res.status(500).json({ msg: 'User created but failed to send SMS/Email. Please contact support.', error: emailErr.message });
+            // Delete user so they can retry signup
+            await User.findByIdAndDelete(user._id);
+            return res.status(500).json({ msg: 'Failed to send verification email. Please try again.', error: emailErr.message });
         }
 
         res.json({ msg: 'OTP sent', email: user.email });
