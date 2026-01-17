@@ -92,6 +92,15 @@ exports.updateService = async (req, res) => {
                 } else {
                     service.branchAvailability.push({ branchId, isActive });
                 }
+            } else if (isLocked !== undefined) {
+                // [FIX] Map "Lock" (Frontend) to "Inactive" (Backend) for Branch
+                const activeState = !isLocked;
+                const availIndex = service.branchAvailability.findIndex(b => b.branchId.toString() === branchId);
+                if (availIndex > -1) {
+                    service.branchAvailability[availIndex].isActive = activeState;
+                } else {
+                    service.branchAvailability.push({ branchId, isActive: activeState });
+                }
             }
 
             // 2. Update Items Pricing (Scoped)
