@@ -129,6 +129,17 @@ exports.getUserOrders = async (req, res) => {
     }
 };
 
+// GET /orders (Admin/All) - Fix for Missing Handler
+exports.getAllOrders = async (req, res) => {
+    try {
+        const orders = await Order.find().sort({ createdAt: -1 });
+        res.json(orders);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
 // GET /orders/:id (User/Admin)
 exports.getOrderById = async (req, res) => {
     try {
