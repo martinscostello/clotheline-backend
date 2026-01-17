@@ -26,6 +26,17 @@ exports.getAllServices = async (req, res) => {
                         branchIsActive = config.isActive;
                         branchIsLocked = config.isLocked;
                         if (config.lockedLabel) branchLockedLabel = config.lockedLabel;
+
+                        // [PROJECT OVERRIDES]
+                        if (config.customName) s.name = config.customName;
+                        if (config.customDescription) s.description = config.customDescription;
+                        if (config.discountPercentage !== undefined) s.discountPercentage = config.discountPercentage;
+                        if (config.discountLabel) s.discountLabel = config.discountLabel;
+
+                        // Service Types Override (Complete Replacement)
+                        if (config.serviceTypes && config.serviceTypes.length > 0) {
+                            s.serviceTypes = config.serviceTypes;
+                        }
                     }
                 }
 
@@ -126,6 +137,17 @@ exports.updateService = async (req, res) => {
             // CRITICAL FIX: Locking does NOT affect isActive (Visibility)
             if (isLocked !== undefined) service.branchConfig[configIndex].isLocked = isLocked;
             if (lockedLabel !== undefined) service.branchConfig[configIndex].lockedLabel = lockedLabel;
+
+            // [BRANCH OVERRIDES UPDATE]
+            if (name) service.branchConfig[configIndex].customName = name;
+            if (description) service.branchConfig[configIndex].customDescription = description;
+            if (discountPercentage !== undefined) service.branchConfig[configIndex].discountPercentage = discountPercentage;
+            if (discountLabel !== undefined) service.branchConfig[configIndex].discountLabel = discountLabel;
+
+            // Update Service Types for Branch
+            if (serviceTypes && Array.isArray(serviceTypes)) {
+                service.branchConfig[configIndex].serviceTypes = serviceTypes;
+            }
 
             service.branchConfig[configIndex].lastUpdated = Date.now();
 

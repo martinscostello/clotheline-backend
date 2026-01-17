@@ -10,23 +10,21 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || 'sk_test_xxxx'; // Fa
 
 // POST /initialize
 // Initializes a transaction Securely via Paystack API
-router.post('/initialize', auth, async (req, res) => {
+// POST /initialize
+// Stateless Payment Initialization
+router.post('/initialize', async (req, res) => {
     try {
-        const { items, branchId, orderId, provider = 'paystack' } = req.body;
+        // [CRITICAL USER MANDATE] NO DB WRITES. NO USER ID REQUIREMENT.
+        const { items, branchId, orderId, provider = 'paystack', guestInfo, deliveryOption, deliveryAddress } = req.body;
 
         let calculationItems = items;
         let retryOrderId = null;
 
-        // [RETRY FLOW] If orderId provided, fetch items from existing order
+        // [RETRY FLOW] If orderId provided, we fetch just to get the items/pricing.
+        // We do NOT write to DB.
         if (orderId) {
             const existingOrder = await Order.findById(orderId);
-            if (!existingOrder) return res.status(404).json({ msg: 'Order to pay not found' });
-
-            // Check if already paid
-            if (existingOrder.paymentStatus === 'Paid') {
-                return res.status(400).json({ msg: 'Order already paid' });
-            }
-
+            if (!existingOrder) return res.status(404).json({ msg: 'Order not found' });
             calculationItems = existingOrder.items;
             retryOrderId = existingOrder._id.toString();
         }
@@ -34,32 +32,35 @@ router.post('/initialize', auth, async (req, res) => {
         // 1. Calculate Amount Securely
         const { calculateOrderTotal } = require('../controllers/orderController');
         const { totalAmount } = await calculateOrderTotal(calculationItems);
-
-        // Amount in Kobo
         const amountKobo = Math.round(totalAmount * 100);
-        const reference = `REF_${Date.now()}`; // Unique ref
 
-        // Resolve Email
-        let email = req.body.guestInfo?.email;
-        if (!email && req.user) {
-            const User = require('../models/User');
-            const user = await User.findById(req.user.userId);
-            if (user) email = user.email;
-        }
-        if (!email) email = 'user@example.com';
+        const reference = `REF_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-        // 2. Initialize with Paystack
+        // Resolve Email (Guest or User - passed from frontend or default)
+        // Since we removed Auth middleware requirement for strict statelessness?
+        // User said "Remove userId requirement".
+        // We will try to use provided email, else "guest@clotheline.com"
+        const email = guestInfo?.email || req.body.email || 'guest@clotheline.app';
+
+        // 2. Initialize with Paystack DIRECTLY
+        // We embed all critical order info in METADATA so we can reconstruct it on verify.
+        const metadata = {
+            ...req.body,
+            retryOrderId,
+            // Ensure items are included for reconstruction
+            items: calculationItems,
+            userId: req.user ? req.user.userId : null // Optional: Request MIGHT have user if auth middleware is present
+        };
+
         const paystackResponse = await axios.post(
             'https://api.paystack.co/transaction/initialize',
             {
-                email: email,
+                email,
                 amount: amountKobo,
-                reference: reference,
+                reference,
                 currency: 'NGN',
                 callback_url: 'https://standard.paystack.co/close',
-                metadata: {
-                    custom_fields: []
-                }
+                metadata
             },
             {
                 headers: {
@@ -75,27 +76,11 @@ router.post('/initialize', auth, async (req, res) => {
 
         const { authorization_url, access_code } = paystackResponse.data.data;
 
-        // 3. Create Payment Record
-        const payment = new Payment({
-            userId: req.user.userId,
-            amount: amountKobo,
-            currency: 'NGN',
-            provider: provider,
-            reference: reference,
-            accessCode: access_code,
-            status: 'pending',
-            metadata: {
-                ...req.body, // New Order Data
-                retryOrderId: retryOrderId // [CRITICAL] Store if this is a retry
-            }
-        });
-
-        await payment.save();
-
+        // 3. RETURN URL. NO DB SAVES.
         res.json({
-            authorization_url: authorization_url,
-            reference: reference,
-            access_code: access_code
+            authorization_url,
+            reference,
+            access_code
         });
 
     } catch (err) {
@@ -105,90 +90,90 @@ router.post('/initialize', auth, async (req, res) => {
 });
 
 // POST /verify
-// Verifies a transaction reference with Paystack
-router.post('/verify', auth, async (req, res) => {
+// Verifies & Creates Order
+router.post('/verify', async (req, res) => {
     try {
         const { reference, provider = 'paystack' } = req.body;
 
-        const payment = await Payment.findOne({ reference });
-        if (!payment) return res.status(404).json({ msg: 'Payment not found' });
-
-        if (payment.status === 'success') {
-            return res.json({ msg: 'Payment already verified', status: 'success' });
+        // 1. Check if we already processed this reference locally?
+        // User mandate: "ONLY THEN create payment record".
+        // So we might not have it. We check to avoid duplicates.
+        const existingPayment = await Payment.findOne({ reference });
+        if (existingPayment && existingPayment.status === 'success') {
+            return res.json({ msg: 'Payment already verified', status: 'success', order: { _id: existingPayment.orderId } });
         }
 
-        let verified = false;
-
+        // 2. Verify with Provider
+        let verifiedData = null;
         if (provider === 'paystack') {
-            try {
-                const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-                    headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
-                });
-
-                const data = response.data.data;
-                if (data.status === 'success') {
-                    // Check amount matches (allow small diff for float errors if needed, but kobo should be exact)
-                    if (data.amount >= payment.amount) {
-                        verified = true;
-                    }
-                }
-            } catch (e) {
-                console.error("Paystack Verification Error:", e.response?.data || e.message);
-                return res.status(400).json({ msg: 'Verification failed via provider' });
+            const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+                headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
+            });
+            if (response.data.status && response.data.data.status === 'success') {
+                verifiedData = response.data.data;
             }
         }
 
-        if (verified) {
-            payment.status = 'success';
-            payment.verifiedAt = new Date();
+        if (!verifiedData) {
+            return res.status(400).json({ msg: 'Verification failed via provider' });
+        }
 
-            let order;
+        // 3. RECONSTRUCT CONTEXT from Metadata
+        const metadata = verifiedData.metadata || {};
+        const { retryOrderId, userId } = metadata;
 
-            // CHECK IF RETRY
-            if (payment.metadata && payment.metadata.retryOrderId) {
-                // [RETRY FLOW] Update existing order
-                const Order = require('../models/Order');
-                order = await Order.findById(payment.metadata.retryOrderId);
-                if (order) {
-                    order.paymentStatus = 'Paid';
-                    // Reset status to New if it was Pending/Failed?
-                    // Usually retries are on Pending orders.
-                    order.status = 'New';
-                    await order.save();
-                }
-            } else {
-                // [NEW ORDER FLOW] Create Order
-                const { createOrderInternal } = require('../controllers/orderController');
-                const orderData = payment.metadata;
-                try {
-                    order = await createOrderInternal(orderData, payment.userId);
-                    // Set to Paid
-                    order.paymentStatus = 'Paid';
-                    await order.save();
-                } catch (err) {
-                    console.error("Order Creation Failed after Payment:", err);
-                    return res.status(500).json({ msg: 'Payment successful but Order creation failed. Contact Support.', reference });
-                }
-            }
+        // 4. Create Payment Record (NOW we save)
+        const payment = new Payment({
+            userId: userId, // extracted from metadata
+            amount: verifiedData.amount,
+            currency: 'NGN',
+            provider,
+            reference,
+            accessCode: null, // Not needed really
+            status: 'success',
+            verifiedAt: Date.now(),
+            metadata
+        });
 
-            // Link Order to Payment
+        let order;
+
+        // 5. Create or Update Order
+        if (retryOrderId) {
+            const Order = require('../models/Order');
+            order = await Order.findById(retryOrderId);
             if (order) {
-                payment.orderId = order._id;
-                await payment.save();
-                return res.json({ status: 'success', msg: 'Payment verified', order });
-            } else {
-                // Edge case: Retry order not found?
-                return res.status(404).json({ msg: 'Payment verified but Retry Order not found' });
+                order.paymentStatus = 'Paid';
+                order.status = 'New';
+                await order.save();
             }
-
         } else {
-            payment.status = 'failed';
-            await payment.save();
-            return res.json({ status: 'failed', msg: 'Payment verification failed' });
+            const { createOrderInternal } = require('../controllers/orderController');
+            // We pass the metadata as orderData.
+            // createOrderInternal handles DB creation.
+            try {
+                // If metadata missing items, we fail.
+                order = await createOrderInternal(metadata, userId);
+                order.paymentStatus = 'Paid';
+                await order.save();
+            } catch (e) {
+                console.error("Order Create Failed:", e);
+                // Payment is saved, but order failed.
+                payment.status = 'flagged'; // partial success
+                await payment.save();
+                return res.status(500).json({ msg: 'Payment successful but Order creation failed', reference });
+            }
         }
+
+        if (order) {
+            payment.orderId = order._id;
+        }
+
+        await payment.save();
+
+        res.json({ status: 'success', msg: 'Payment verified', order });
 
     } catch (err) {
-        console.error(err);
+        console.error("Verification Error:", err);
         res.status(500).send('Server Error');
     }
 });

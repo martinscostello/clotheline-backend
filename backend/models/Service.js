@@ -41,6 +41,20 @@ const ServiceSchema = new mongoose.Schema({
         isActive: { type: Boolean, default: true }, // Visibility
         isLocked: { type: Boolean, default: false }, // "Coming Soon" state
         lockedLabel: { type: String, default: "Coming Soon" },
+
+        // [OVERRIDES] Branch-Level Service Overrides
+        customName: { type: String }, // If set, overrides global name
+        customDescription: { type: String },
+        discountPercentage: { type: Number }, // Can differ from global
+        discountLabel: { type: String },
+
+        // [OVERRIDES] Service Types for this Branch
+        // If this array is populated, it REPLACES the global serviceTypes for this branch.
+        serviceTypes: [{
+            name: String,
+            priceMultiplier: { type: Number, default: 1.0 }
+        }],
+
         lastUpdated: { type: Date, default: Date.now }
     }],
 

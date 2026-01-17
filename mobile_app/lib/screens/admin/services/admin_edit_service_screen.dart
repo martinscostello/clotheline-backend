@@ -368,11 +368,8 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                          Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Service Types", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            if (widget.scopeBranch == null)
-                              IconButton(icon: const Icon(Icons.add, color: AppTheme.primaryColor), onPressed: () => _showVariantDialog())
-                            else
-                              const Text("Global Only", style: TextStyle(color: Colors.white38, fontSize: 10))
+                            Text(widget.scopeBranch != null ? "Service Types (${widget.scopeBranch!.name})" : "Service Types", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            IconButton(icon: const Icon(Icons.add, color: AppTheme.primaryColor), onPressed: () => _showVariantDialog())
                           ],
                         ),
                         if (_variants.isEmpty)
@@ -385,7 +382,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                             final index = entry.key;
                             final v = entry.value;
                             return GestureDetector(
-                              onTap: widget.scopeBranch == null ? () => _showVariantDialog(index) : null,
+                              onTap: () => _showVariantDialog(index),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
@@ -398,11 +395,10 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                                   children: [
                                     Text("${v.name} (${v.priceMultiplier}x)", style: const TextStyle(color: Colors.white, fontSize: 13)),
                                     const SizedBox(width: 8),
-                                    if (widget.scopeBranch == null)
-                                      GestureDetector(
-                                        onTap: () => setState(() => _variants.removeAt(index)),
-                                        child: const Icon(Icons.close, size: 16, color: Colors.white54),
-                                      ),
+                                    GestureDetector(
+                                      onTap: () => setState(() => _variants.removeAt(index)),
+                                      child: const Icon(Icons.close, size: 16, color: Colors.white54),
+                                    ),
                                   ],
                                 ),
                               ),
