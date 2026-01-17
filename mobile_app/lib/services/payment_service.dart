@@ -5,54 +5,45 @@ import 'api_service.dart';
 class PaymentService {
   final ApiService _api = ApiService();
   
-  // Ideally get this from backend init
-  String publicKey = "pk_test_xxxxxxxxxxxxxxxxxxxxxxxx"; 
-
-  // initialize method not needed for flutter_paystack_plus as it's static call
-  Future<void> initialize(String key) async {
-    publicKey = key;
-  }
-
-  Future<bool> processPayment(BuildContext context, {
-    required String orderId, 
-    required String email
-  }) async {
+  // 1. Initialize Payment (Returns URL and Reference)
+  Future<Map<String, dynamic>?> initializePayment(Map<String, dynamic> orderData) async {
     try {
-      // 1. Initialize on Backend (Securely)
-      final initResponse = await _api.client.post('/payments/initialize', data: {
-        'orderId': orderId,
-        'provider': 'paystack'
-      });
-
-      final data = initResponse.data;
-      final String authorizationUrl = data['authorization_url'];
-      final String reference = data['reference'];
-
-      if (authorizationUrl.isEmpty) {
-        throw Exception("Failed to get authorization URL");
-      }
-
-      // 2. Open WebView for Payment (Standard Checkout)
-      final bool success = await _openPaymentWebView(context, authorizationUrl, reference);
+      final response = await _api.client.post('/payments/initialize', data: orderData);
       
-      // 3. Verify on Backend (Always verify server side)
-      if (success) {
-        // Double check verification on backend just in case
-        return await _verifyPayment(reference);
-      } else {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Cancelled or Failed")));
-         return false;
+      if (response.data['authorization_url'] != null) {
+        return {
+          'authorization_url': response.data['authorization_url'],
+          'reference': response.data['reference']
+        };
       }
-
+      return null;
     } catch (e) {
-      print("Payment Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Payment Error: $e")));
-      return false;
+      print("Payment Init Error: $e");
+      return null;
     }
   }
 
-  Future<bool> _openPaymentWebView(BuildContext context, String url, String reference) async {
-    bool isVerified = false;
+  // 2. Verify Payment & Create Order
+  Future<Map<String, dynamic>?> verifyAndCreateOrder(String reference) async {
+    try {
+      final response = await _api.client.post('/payments/verify', data: {
+        'reference': reference
+      });
+      
+      if (response.data['status'] == 'success') {
+         // Return the created order
+         return response.data; // contains { status: 'success', order: ... }
+      }
+      return null;
+    } catch (e) {
+      print("Verification Error: $e");
+      return null;
+    }
+  }
+
+  // Helper: Open WebView
+  Future<bool> openPaymentWebView(BuildContext context, String url, String reference) async {
+    bool isCompleted = false;
     
     await Navigator.of(context).push(MaterialPageRoute(builder: (context) {
        return SafeArea(
@@ -68,7 +59,7 @@ class PaymentService {
              initialUrl: url,
              reference: reference,
              onComplete: (success) {
-                isVerified = success;
+                isCompleted = success;
                 Navigator.pop(context); // Close WebView
              },
            ),
@@ -76,23 +67,7 @@ class PaymentService {
        );
     }));
 
-    return isVerified;
-  }
-
-  Future<bool> _verifyPayment(String reference) async {
-    try {
-      final response = await _api.client.post('/payments/verify', data: {
-        'reference': reference
-      });
-      
-      if (response.data['status'] == 'success') {
-        return true; 
-      }
-      return false;
-    } catch (e) {
-      print("Verification Error: $e");
-      return false;
-    }
+    return isCompleted;
   }
 }
 

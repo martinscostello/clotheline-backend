@@ -4,6 +4,7 @@ import 'package:laundry_app/widgets/branding/WashingMachineLogo.dart';
 import 'package:laundry_app/widgets/ui/liquid_glass_container.dart';
 import '../user/main_layout.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -103,18 +104,35 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                      const SizedBox(height: 20),
                      _isLoading 
                        ? const CircularProgressIndicator()
-                       : SizedBox(
-                           width: double.infinity,
-                           height: 50,
-                           child: ElevatedButton(
-                             onPressed: _handleVerify,
-                             style: ElevatedButton.styleFrom(
-                               backgroundColor: const Color(0xFF4A80F0),
-                               foregroundColor: Colors.white,
-                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                       : Column(
+                           children: [
+                             SizedBox(
+                               width: double.infinity,
+                               height: 50,
+                               child: ElevatedButton(
+                                 onPressed: _handleVerify,
+                                 style: ElevatedButton.styleFrom(
+                                   backgroundColor: const Color(0xFF4A80F0),
+                                   foregroundColor: Colors.white,
+                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                 ),
+                                 child: const Text("Verify & Login"),
+                               ),
                              ),
-                             child: const Text("Verify & Login"),
-                           ),
+                             const SizedBox(height: 16),
+                             TextButton(
+                               onPressed: _canResend && !_isLoading ? _handleResend : null, 
+                               child: Text(
+                                 _canResend 
+                                   ? "Resend Code" 
+                                   : "Resend in ${_resendSeconds}s",
+                                 style: TextStyle(
+                                   color: _canResend ? const Color(0xFF4A80F0) : Colors.grey,
+                                   fontWeight: FontWeight.bold
+                                 )
+                               ),
+                             )
+                           ],
                          ),
                    ],
                  ),
@@ -124,5 +142,57 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         ],
       ),
     );
+  }
+
+  // Timer Variables
+  int _resendSeconds = 60;
+  bool _canResend = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    setState(() {
+      _resendSeconds = 60;
+      _canResend = false;
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendSeconds > 0) {
+        if(mounted) setState(() => _resendSeconds--);
+      } else {
+        if(mounted) setState(() => _canResend = true);
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _handleResend() async {
+    setState(() => _isLoading = true);
+    try {
+      await Provider.of<AuthService>(context, listen: false).resendOtp(widget.email);
+       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Code sent!"), backgroundColor: Colors.green)
+      );
+      _startTimer();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Resend Failed: $e"), backgroundColor: Colors.redAccent)
+      );
+    } finally {
+      if(mounted) setState(() => _isLoading = false);
+    }
   }
 }

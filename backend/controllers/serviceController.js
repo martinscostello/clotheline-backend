@@ -2,42 +2,68 @@ const Service = require('../models/Service');
 
 exports.getAllServices = async (req, res) => {
     try {
-        const { branchId } = req.query;
-        let services = await Service.find({ isActive: true });
+        const { branchId, includeHidden } = req.query;
+
+        // 1. Fetch ALL Services (Global Record)
+        // We do NOT filter by 'isActive' here because:
+        // - Admin needs to see inactive services to manage them.
+        // - Branch logic might override 'isActive'.
+        let services = await Service.find();
 
         if (branchId) {
-            // Filter and Project for Branch
+            // STRICT BRANCH PROJECTION
             services = services.reduce((acc, service) => {
                 const s = service.toObject();
 
-                // 1. Check Service Availability for Branch
-                if (s.branchAvailability && s.branchAvailability.length > 0) {
-                    const branchAvail = s.branchAvailability.find(b => b.branchId.toString() === branchId);
-                    if (branchAvail && !branchAvail.isActive) {
-                        return acc; // Skip inactive service for this branch
+                // 2. Resolve Branch State
+                let branchIsActive = true;
+                let branchIsLocked = false;
+                let branchLockedLabel = s.lockedLabel || "Coming Soon";
+
+                if (s.branchConfig && s.branchConfig.length > 0) {
+                    const config = s.branchConfig.find(b => b.branchId.toString() === branchId);
+                    if (config) {
+                        branchIsActive = config.isActive;
+                        branchIsLocked = config.isLocked;
+                        if (config.lockedLabel) branchLockedLabel = config.lockedLabel;
                     }
                 }
 
-                // 2. Project Item Prices
+                // 3. User App Visibility Rule
+                // If NOT Admin (includeHidden != true) AND Service is Inactive for Branch -> Hide it.
+                if (!branchIsActive && includeHidden !== 'true') {
+                    return acc;
+                }
+
+                // 4. Apply State
+                s.isLocked = branchIsLocked;
+                s.lockedLabel = branchLockedLabel;
+                s.isActive = branchIsActive; // Reflect logical state
+
+                // 5. Project Pricing (Strict)
                 if (s.items && s.items.length > 0) {
-                    s.items = s.items.reduce((itemAcc, item) => {
-                        let finalItem = { ...item };
+                    s.items = s.items.map(item => {
+                        let finalPrice = item.price;
 
                         if (item.branchPricing && item.branchPricing.length > 0) {
                             const bPrice = item.branchPricing.find(bp => bp.branchId.toString() === branchId);
                             if (bPrice) {
-                                if (!bPrice.isActive) return itemAcc; // Skip inactive item
-                                finalItem.price = bPrice.price; // Override price
+                                finalPrice = bPrice.price;
                             }
                         }
-                        itemAcc.push(finalItem);
-                        return itemAcc;
-                    }, []);
+                        return { ...item, price: finalPrice, branchPricing: undefined };
+                    });
                 }
 
                 acc.push(s);
                 return acc;
             }, []);
+        } else {
+            // Global List (No Branch)
+            // If User App (includeHidden != true), only show globally active services.
+            if (includeHidden !== 'true') {
+                services = services.filter(s => s.isActive);
+            }
         }
 
         res.json(services);
@@ -73,73 +99,66 @@ exports.updateService = async (req, res) => {
             branchId // [NEW] Context
         } = req.body;
 
-        console.log('--- UPDATE SERVICE DEBUG ---');
-        console.log('Service ID:', req.params.id);
-        console.log('Branch Context:', branchId ? branchId : 'Global/Base');
+        console.log(`UPDATE SERVICE: ${req.params.id} | Branch: ${branchId || 'Global'}`);
 
         let service = await Service.findById(req.params.id);
         if (!service) return res.status(404).json({ msg: 'Service not found' });
 
-        // IF BRANCH CONTEXT EXISTS -> ONLY UPDATE BRANCH SPECIFIC DATA
+        // --- BRANCH SCOPED UPDATE ---
         if (branchId) {
-            console.log(`Scoped Update for Branch: ${branchId}`);
 
-            // 1. Update Top-Level Availability for Branch
-            if (isActive !== undefined) {
-                const availIndex = service.branchAvailability.findIndex(b => b.branchId.toString() === branchId);
-                if (availIndex > -1) {
-                    service.branchAvailability[availIndex].isActive = isActive;
-                } else {
-                    service.branchAvailability.push({ branchId, isActive });
-                }
-            } else if (isLocked !== undefined) {
-                // [FIX] Map "Lock" (Frontend) to "Inactive" (Backend) for Branch
-                const activeState = !isLocked;
-                const availIndex = service.branchAvailability.findIndex(b => b.branchId.toString() === branchId);
-                if (availIndex > -1) {
-                    service.branchAvailability[availIndex].isActive = activeState;
-                } else {
-                    service.branchAvailability.push({ branchId, isActive: activeState });
-                }
+            // 1. Update/Find Branch Config
+            let configIndex = service.branchConfig.findIndex(b => b.branchId.toString() === branchId);
+            if (configIndex === -1) {
+                // Init config from global defaults if missing
+                service.branchConfig.push({
+                    branchId,
+                    isActive: true,
+                    isLocked: false,
+                    lockedLabel: "Coming Soon"
+                });
+                configIndex = service.branchConfig.length - 1;
             }
 
-            // 2. Update Items Pricing (Scoped)
+            // 2. Update States (If provided)
+            if (isActive !== undefined) service.branchConfig[configIndex].isActive = isActive;
+
+            // CRITICAL FIX: Locking does NOT affect isActive (Visibility)
+            if (isLocked !== undefined) service.branchConfig[configIndex].isLocked = isLocked;
+            if (lockedLabel !== undefined) service.branchConfig[configIndex].lockedLabel = lockedLabel;
+
+            service.branchConfig[configIndex].lastUpdated = Date.now();
+
+
+            // 3. Update Item Pricing (Strictly for this branch)
             if (items && Array.isArray(items)) {
-                items.forEach(updatedItem => {
-                    // Find matching item in DB (by ID if possible, else Name)
-                    // Note: verifying by ID is safer if frontend sends it
-                    let dbItem = service.items.find(i =>
-                        (updatedItem._id && i._id.toString() === updatedItem._id) ||
-                        i.name === updatedItem.name
+                items.forEach(reqItem => {
+                    // Identify existing item by ID or Name
+                    const dbItem = service.items.find(i =>
+                        (reqItem._id && i._id.toString() === reqItem._id) ||
+                        i.name === reqItem.name
                     );
 
                     if (dbItem) {
-                        // We strictly update ONLY the pricing for this branch
-                        // We do NOT update the name or base price here
-
-                        const newPrice = updatedItem.price; // Admin sent this as "the price"
-
-                        const priceIndex = dbItem.branchPricing.findIndex(bp => bp.branchId.toString() === branchId);
-                        if (priceIndex > -1) {
-                            if (updatedItem.isActive !== undefined) dbItem.branchPricing[priceIndex].isActive = updatedItem.isActive;
-                            if (newPrice !== undefined) dbItem.branchPricing[priceIndex].price = newPrice;
-                        } else {
-                            // Create new override
-                            dbItem.branchPricing.push({
-                                branchId,
-                                price: newPrice !== undefined ? newPrice : dbItem.price, // Fallback to base if undefined, but unlikely
-                                isActive: updatedItem.isActive ?? true
-                            });
+                        // We are updating the PRICE for this branch.
+                        if (reqItem.price !== undefined) {
+                            const priceIndex = dbItem.branchPricing.findIndex(bp => bp.branchId.toString() === branchId);
+                            if (priceIndex > -1) {
+                                dbItem.branchPricing[priceIndex].price = reqItem.price;
+                            } else {
+                                dbItem.branchPricing.push({
+                                    branchId,
+                                    price: reqItem.price,
+                                    isActive: true
+                                });
+                            }
                         }
                     }
                 });
             }
 
-            // [NOTE] serviceTypes currently don't have branch scoping in schema (priceMultiplier is global).
-            // If needed, schema update required. For now, we assume Multipliers are Global.
-
         } else {
-            // GLOBAL UPDATE (Default Behavior) - Updates Base Values
+            // --- GLOBAL UPDATE ---
             if (name) service.name = name;
             if (icon) service.icon = icon;
             if (color) service.color = color;
@@ -151,21 +170,14 @@ exports.updateService = async (req, res) => {
             if (isLocked !== undefined) service.isLocked = isLocked;
             if (lockedLabel) service.lockedLabel = lockedLabel;
 
-            // For items, we replace/update logic needs care to not wipe branch pricing
-            // Simple approach: If items sent, we update basic fields, preserving branchPricing
+            // Handle Items (Global Base Price Update)
             if (items) {
-                // Check if we are replacing list or updating.
-                // Mongoose might replace existing array if we just do service.items = items;
-                // But newly sent items won't have branchPricing data usually.
-
-                // Smart Merge for Global Update:
-                // Map new items to existing to preserve branchPricing
                 const mergedItems = items.map(newItem => {
-                    const existing = service.items.find(i => i.name === newItem.name); // Match by name or ID
+                    const existing = service.items.find(i => i.name === newItem.name);
                     if (existing) {
                         return {
                             ...newItem,
-                            branchPricing: existing.branchPricing // PRESERVE THIS
+                            branchPricing: existing.branchPricing // Preserve Branch Overrides
                         };
                     }
                     return newItem;

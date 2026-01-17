@@ -196,7 +196,12 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF202020),
-        title: Text(index == null ? "Add Cloth Type" : "Edit Item", style: const TextStyle(color: Colors.white)),
+        title: Text(
+          widget.scopeBranch != null 
+             ? "Edit Price for ${widget.scopeBranch!.name}" 
+             : (index == null ? "Add Cloth Type" : "Edit Item"), 
+          style: const TextStyle(color: Colors.white)
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -420,7 +425,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                        children: [
                          SwitchListTile(
                            contentPadding: EdgeInsets.zero,
-                           title: const Text("Lock Service", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                           title: Text(widget.scopeBranch != null ? "Lock Service (${widget.scopeBranch!.name})" : "Global Lock", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                            subtitle: const Text("Prevent users from booking this service", style: TextStyle(color: Colors.white54, fontSize: 12)),
                            value: _isLocked,
                            activeColor: Colors.redAccent,
@@ -444,95 +449,17 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
 
                 const SizedBox(height: 20),
 
-                // 3.5 Branch Pricing
-                GlassContainer(
-                   opacity: 0.1,
-                   child: Padding(
-                     padding: const EdgeInsets.all(15),
-                     child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                          const Text("Branch Pricing Override", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 10),
-                          ...context.watch<BranchProvider>().branches.map((b) {
-                             final existing = _branchPricing.firstWhere(
-                               (bp) => bp.branchId == b.id, 
-                               orElse: () => BranchPrice(branchId: b.id, isAvailable: true, priceOverride: null)
-                             );
-
-                             return Padding(
-                               padding: const EdgeInsets.only(bottom: 10),
-                               child: Row(
-                                 children: [
-                                   Expanded(flex: 2, child: Text(b.name, style: const TextStyle(color: Colors.white70))),
-                                   Expanded(
-                                     flex: 2,
-                                     child: SizedBox(
-                                       height: 40,
-                                       child: TextField(
-                                         controller: TextEditingController(text: existing.priceOverride?.toString() ?? ""),
-                                         keyboardType: TextInputType.number,
-                                         style: const TextStyle(color: Colors.white),
-                                         decoration: const InputDecoration(
-                                           hintText: "Default",
-                                           hintStyle: TextStyle(color: Colors.white24),
-                                           contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                           enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
-                                         ),
-                                         onChanged: (val) {
-                                            // Live update local list
-                                            final price = double.tryParse(val);
-                                            setState(() {
-                                              _branchPricing.removeWhere((x) => x.branchId == b.id);
-                                              _branchPricing.add(BranchPrice(
-                                                branchId: b.id, 
-                                                isAvailable: existing.isAvailable, 
-                                                priceOverride: price
-                                              ));
-                                            });
-                                         },
-                                       ),
-                                     ),
-                                   ),
-                                   const SizedBox(width: 10),
-                                   Switch(
-                                     value: existing.isAvailable, 
-                                     activeColor: AppTheme.primaryColor,
-                                     onChanged: (val) {
-                                        setState(() {
-                                          _branchPricing.removeWhere((x) => x.branchId == b.id);
-                                          _branchPricing.add(BranchPrice(
-                                            branchId: b.id, 
-                                            isAvailable: val, 
-                                            priceOverride: existing.priceOverride
-                                          ));
-                                        });
-                                     }
-                                   )
-                                 ],
-                               ),
-                             );
-                          }).toList(),
-                       ],
-                     ),
-                   )
-                ),
-
                 const SizedBox(height: 20),
 
                 // 4. Manage Items (Cloth Types)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Cloth Types & Prices", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    // [Fix] Disable Adding items in Branch Scope (Must be done Globally)
+                    Text(widget.scopeBranch != null ? "Edit Prices (${widget.scopeBranch!.name})" : "Cloth Types & Prices", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    
+                    // Allow adding only if Global. If Scoped, we only edit pricing of existing items.
                     if (widget.scopeBranch == null)
                       IconButton(icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor), onPressed: _addItem)
-                    else 
-                      const Padding(
-                        padding: EdgeInsets.only(right: 8.0),
-                        child: Text("Read-Only (Edit Prices Only)", style: TextStyle(color: Colors.white38, fontSize: 10)),
-                      )
                   ],
                 ),
                 ListView.builder(

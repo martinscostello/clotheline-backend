@@ -140,17 +140,43 @@ class OrderDetailScreen extends StatelessWidget {
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () async {
-                    // Trigger Payment
+                    // Trigger Payment (Revised Flow)
                     final paymentService = PaymentService();
-                    // Need email. If guestInfo, use it. If user, likely in session but not in simple OrderModel yet.
-                    // Fallback to a placeholder or ask user. For MVP, we use guestInfo or default.
                     final email = order.guestName != null ? "guest@clotheline.com" : "user@clotheline.com"; 
                     
-                    bool success = await paymentService.processPayment(context, orderId: order.id, email: email);
-                    
-                    if (success) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Successful!")));
-                        Navigator.pop(context); // Pop to refresh (or implement auto-refresh)
+                    try {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Initializing Payment...")));
+                      
+                      // 1. Initialize (Retry Flow with Order ID)
+                      final initData = await paymentService.initializePayment({
+                        'orderId': order.id,
+                        'guestInfo': { 'email': email } // Fallback email logic
+                      });
+                      
+                      if (initData != null && context.mounted) {
+                         final url = initData['authorization_url'];
+                         final ref = initData['reference'];
+                         
+                         // 2. Open WebView
+                         await paymentService.openPaymentWebView(context, url, ref);
+                         
+                         // 3. Verify
+                         if (context.mounted) {
+                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Verifying Payment...")));
+                           final verifyResult = await paymentService.verifyAndCreateOrder(ref);
+                           
+                           if (verifyResult != null && verifyResult['status'] == 'success') {
+                               if (context.mounted) {
+                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Successful!")));
+                                 Navigator.pop(context); // Refresh
+                               }
+                           } else {
+                               if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Verification Failed")));
+                           }
+                         }
+                      }
+                    } catch (e) {
+                       if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Payment Error: $e")));
                     }
                   },
                   style: ElevatedButton.styleFrom(

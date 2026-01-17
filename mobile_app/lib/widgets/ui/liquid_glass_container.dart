@@ -64,7 +64,10 @@ class LiquidGlassContainer extends StatelessWidget {
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(radius),
-                      child: Container(color: Colors.white.withValues(alpha: 0.05)),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(color: Colors.white.withValues(alpha: 0.15)), // Increased Opacity
+                      ),
                     ),
                   ),
 

@@ -208,6 +208,24 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  // [NEW] Resend OTP
+  Future<void> resendOtp(String email) async {
+    try {
+      final response = await _apiService.client.post('/auth/resend-otp', data: {
+        'email': email
+      });
+      
+      if (response.statusCode != 200) {
+         throw Exception('Failed to resend OTP');
+      }
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
   // Helper to store tokens and set user
   Future<Map<String, dynamic>> _processAuthResponse(Map<String, dynamic> data) async {
     final token = data['token'];

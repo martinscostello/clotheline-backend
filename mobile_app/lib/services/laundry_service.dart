@@ -36,10 +36,14 @@ class LaundryService extends ChangeNotifier {
   }
 
   // 2. Silent Background Sync
-  Future<void> fetchFromApi({String? branchId}) async {
+  Future<void> fetchFromApi({String? branchId, bool includeHidden = false}) async {
     // Don't block UI. Just fetch and compare.
     try {
-      final String endpoint = branchId != null ? '/services?branchId=$branchId' : '/services';
+      String endpoint = branchId != null ? '/services?branchId=$branchId' : '/services';
+      if (includeHidden) {
+        endpoint += branchId != null ? '&includeHidden=true' : '?includeHidden=true';
+      }
+      
       final response = await _apiService.client.get(endpoint);
       
       if (response.statusCode == 200) {
@@ -72,8 +76,8 @@ class LaundryService extends ChangeNotifier {
   }
 
   // COMPATIBILITY METHOD
-  Future<void> fetchServices({String? branchId}) async {
-     await fetchFromApi(branchId: branchId);
+  Future<void> fetchServices({String? branchId, bool includeHidden = false}) async {
+     await fetchFromApi(branchId: branchId, includeHidden: includeHidden);
   }
 
   // Find a service by ID or Name (helper)

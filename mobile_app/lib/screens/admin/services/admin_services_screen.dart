@@ -43,11 +43,11 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
        branchProvider.selectBranch(branchProvider.branches.first);
     }
     
-    // Fetch Services for this Branch
+    // Fetch Services for this Branch (Include Hidden so we can Manage them)
     if (branchProvider.selectedBranch != null) {
-       await laundryService.fetchServices(branchId: branchProvider.selectedBranch!.id);
+       await laundryService.fetchServices(branchId: branchProvider.selectedBranch!.id, includeHidden: true);
     } else {
-       await laundryService.fetchServices(); // Global fallback
+       await laundryService.fetchServices(includeHidden: true); // Global fallback
     }
 
     if(mounted) setState(() => _isLoading = false);
@@ -65,7 +65,7 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
     branchProvider.selectBranch(branch);
     
     // Reload Services Scoped to Branch
-    await laundryService.fetchServices(branchId: newId);
+    await laundryService.fetchServices(branchId: newId, includeHidden: true);
     
     if(mounted) setState(() => _isLoading = false);
   }

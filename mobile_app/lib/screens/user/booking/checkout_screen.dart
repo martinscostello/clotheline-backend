@@ -617,86 +617,84 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       });
     }
 
-    double total = _cartService.serviceTotalAmount + _cartService.storeTotalAmount + _pickupFee + _deliveryFee;
-
     // [Multi-Branch] Get Selected Branch
     final branchProvider = Provider.of<BranchProvider>(context, listen: false);
     final selectedBranch = branchProvider.selectedBranch;
+    
+    // Get Email for Paystack
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final String email = auth.currentUser?['email'] ?? "guest@clotheline.com";
 
     final orderData = {
       'branchId': selectedBranch?.id,
       'items': items,
-      'totalAmount': total,
+      // 'totalAmount': total, // Backend calculates this now to be secure
       'pickupOption': _beforeWashOption == 1 ? 'Pickup' : 'Dropoff',
       'deliveryOption': _afterWashOption == 1 ? 'Deliver' : 'Pickup',
       'pickupAddress': _beforeWashOption == 1 ? _pickupAddressController.text : null,
       'pickupPhone': _beforeWashOption == 1 ? _pickupPhoneController.text : null,
       'deliveryAddress': _afterWashOption == 1 ? _deliveryAddressController.text : null,
       'deliveryPhone': _afterWashOption == 1 ? _deliveryPhoneController.text : null,
-      // Metadata for location
       'pickupCoordinates': _pickupLatLng != null ? {'lat': _pickupLatLng!.latitude, 'lng': _pickupLatLng!.longitude} : null,
       'deliveryCoordinates': _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
       'pickupFee': _pickupFee,
       'deliveryFee': _deliveryFee,
       'guestInfo': {
         'name': 'Guest User', 
+        'email': email, // Pass email for Paystack
         'phone': _pickupPhoneController.text.isNotEmpty ? _pickupPhoneController.text : _deliveryPhoneController.text
       }
     };
 
-    // 1. Create Order
-    final orderResult = await _orderService.createOrder(orderData);
-    
-    if (orderResult == null) {
-       setState(() => _isSubmitting = false);
-       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to place order")));
-       return;
-    }
+    try {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Initializing Payment...")));
 
-    // Handle string vs Map return just in case, but updated service returns Map or null
-    final String? orderId = orderResult is Map ? orderResult['_id'] : null;
-    
-    if (orderId == null) {
-        setState(() => _isSubmitting = false);
-        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order created but failed to get ID")));
-        // Fallback: still success but no payment?
-        return;
-    }
-    
-    // 2. Process Payment
-    if(mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order Created! Processing Payment...")));
-       
-       // Get Email
-       final auth = Provider.of<AuthService>(context, listen: false);
-       final String email = auth.currentUser?['email'] ?? "guest@clotheline.com"; // Fallback if guest
+      // 1. Initialize Payment (Get URL & Ref)
+      final initResult = await _paymentService.initializePayment(orderData);
+      
+      if (initResult == null) {
+        throw Exception("Failed to initialize payment");
+      }
 
-       // Await payment
-       final success = await _paymentService.processPayment(context, orderId: orderId, email: email);
-       
-       setState(() => _isSubmitting = false);
+      final String url = initResult['authorization_url'];
+      final String ref = initResult['reference'];
 
-       if (success) {
-          if(!mounted) return;
-          // 3. Clear Cart & Navigate
-          _cartService.clearCart(); 
-          
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)), 
-            (route) => false
-          );
-          
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Successful! Order Confirmed."), backgroundColor: Colors.green));
-       } else {
-          // Payment failed, but order created as Pending Payment usually.
-          if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment failed. Order saved in pending state."), backgroundColor: Colors.orange));
-          
-          // Still navigate to Orders because Order IS created
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)), 
-            (route) => false
-          );
-       }
+      // 2. Open WebView
+      if (!mounted) return;
+      final bool paymentCompleted = await _paymentService.openPaymentWebView(context, url, ref);
+
+      if (paymentCompleted) {
+         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Verifying Payment...")));
+         
+         // 3. Verify & Create Order
+         final verifyResult = await _paymentService.verifyAndCreateOrder(ref);
+         
+         if (verifyResult != null && verifyResult['status'] == 'success') {
+            // Success!
+            setState(() => _isSubmitting = false);
+            
+            if(!mounted) return;
+            _cartService.clearCart(); 
+            
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)), 
+              (route) => false
+            );
+            
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Successful! Order Confirmed."), backgroundColor: Colors.green));
+         } else {
+             // Verification failed
+             throw Exception("Payment verification failed");
+         }
+      } else {
+          // User closed webview
+          if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment cancelled")));
+          setState(() => _isSubmitting = false);
+      }
+
+    } catch (e) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+      setState(() => _isSubmitting = false);
     }
   }
 

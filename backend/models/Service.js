@@ -20,10 +20,12 @@ const ServiceSchema = new mongoose.Schema({
         type: String,
         default: 'assets/images/service_laundry.png'
     },
+    // Global State
     isActive: {
         type: Boolean,
         default: true
     },
+    // Global Lock (Deprecated for Branch logic, but kept for "System Wide Lock")
     isLocked: {
         type: Boolean,
         default: false
@@ -32,11 +34,22 @@ const ServiceSchema = new mongoose.Schema({
         type: String, // e.g. "Coming Soon", "Under Maintenance"
         default: "Coming Soon"
     },
-    // Branch Specific Availability (Top Level)
+
+    // [NEW] Branch Specific Configuration (The Source of Truth for Branch State)
+    branchConfig: [{
+        branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+        isActive: { type: Boolean, default: true }, // Visibility
+        isLocked: { type: Boolean, default: false }, // "Coming Soon" state
+        lockedLabel: { type: String, default: "Coming Soon" },
+        lastUpdated: { type: Date, default: Date.now }
+    }],
+
+    // Legacy / Deprecated (Mapped to branchConfig.isActive in logic if needed)
     branchAvailability: [{
         branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
         isActive: { type: Boolean, default: true }
     }],
+
     discountPercentage: {
         type: Number,
         default: 0

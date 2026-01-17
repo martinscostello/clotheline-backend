@@ -532,15 +532,19 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Branch mismatch. Please clear cart or switch branch back.")));
        return;
     }
+    
+    // Get Email for Paystack
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final String email = auth.currentUser?['email'] ?? "guest@clotheline.com";
 
     final orderData = {
       'branchId': selectedBranch?.id, 
       'items': items,
-      'totalAmount': _cartService.totalAmount + _deliveryFee, // [FIX] Use totalAmount (includes discount & tax)
+      // 'totalAmount': _cartService.totalAmount + _deliveryFee, // Calculated on backend
       'subtotal': _cartService.subtotal,
       'discountAmount': _cartService.discountAmount,
       'taxAmount': _cartService.taxAmount,
-      'appliedPromotion': _cartService.appliedPromotion, // [NEW] Snapshot Promo
+      'appliedPromotion': _cartService.appliedPromotion, // Snapshot Promo
       'pickupOption': _deliveryOption == 2 ? 'Pickup' : 'None', 
       'deliveryOption': _deliveryOption == 1 ? 'Deliver' : 'Pickup',
       'deliveryAddress': _deliveryOption == 1 ? _deliveryAddressController.text : null,
@@ -549,73 +553,76 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       'deliveryFee': _deliveryOption == 1 ? _deliveryFee : 0,
       'guestInfo': {
          'name': 'Guest User',
+         'email': email,
          'phone': _contactPhoneController.text
       }
     };
 
-    // 1. Create Order
-    final orderResult = await _orderService.createOrder(orderData);
-    
-    if (orderResult == null) {
-       setState(() => _isSubmitting = false);
-       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to place order")));
-       return;
-    }
+    try {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Initializing Payment...")));
 
-    final String? orderId = orderResult is Map ? orderResult['_id'] : null;
-    
-    if (orderId == null) {
-        setState(() => _isSubmitting = false);
-        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order created but failed to get ID")));
-        return;
-    }
+      // 1. Initialize & Get URL
+      final initResult = await _paymentService().initializePayment(orderData); // Use instance or singleton? _paymentService instantiation
+      // Correction: _paymentService is not field in StoreCheckoutScreenState? Ah, it was instantiated in submitOrder locally in previous code.
+      // I need to instantiate it.
+      
+      if (initResult == null) {
+         throw Exception("Failed to initialize payment");
+      }
+      
+      final String url = initResult['authorization_url'];
+      final String ref = initResult['reference'];
 
-    // 2. Process Payment
-    if(mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Processing Payment...")));
-       
-       // Get Email (FIX: Fetch from Auth or use Guest default)
-       final auth = Provider.of<AuthService>(context, listen: false);
-       // Check if user is logged in, otherwise explicit guest email or generic
-       final String email = auth.currentUser?['email'] ?? "guest@clotheline.com"; 
+      // 2. Open WebView
+      if (!mounted) return;
+      // final paymentService = PaymentService(); // Instantiate if needed
+      final bool paymentCompleted = await PaymentService().openPaymentWebView(context, url, ref); // Static or new instance
 
-       final paymentService = PaymentService(); // Instantiate locally or inject
-       final success = await paymentService.processPayment(context, orderId: orderId, email: email);
-       
-       setState(() => _isSubmitting = false);
-
-       if (success) {
-          if(!mounted) return;
-          _cartService.clearStoreItems();
-          
-          showDialog(
-            context: context, 
-            barrierDismissible: false,
-            builder: (ctx) => AlertDialog(
-              title: const Text("Order Placed & Paid!"),
-              content: const Text("Your store order has been successfully placed."),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop(); 
-                    Navigator.of(context).pop(); 
-                    Navigator.of(context).pop(); 
-                  }, 
-                  child: const Text("OK")
-                )
-              ],
-            )
-          );
-       } else {
-         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment failed. Order saved as Pending.")));
-         // Optional: Still navigate back or allow retry?
-         // For now, clear cart and exit to prevent double order
-          _cartService.clearStoreItems();
-          Navigator.of(context).pop(); 
-          Navigator.of(context).pop(); 
-       }
+      if (paymentCompleted) {
+         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Verifying Payment...")));
+         
+         // 3. Verify & Create
+         final verifyResult = await PaymentService().verifyAndCreateOrder(ref);
+         
+         if (verifyResult != null && verifyResult['status'] == 'success') {
+            setState(() => _isSubmitting = false);
+            
+            if(!mounted) return;
+            _cartService.clearStoreItems();
+            
+            showDialog(
+              context: context, 
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                title: const Text("Order Placed & Paid!"),
+                content: const Text("Your store order has been successfully placed."),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop(); 
+                      Navigator.of(context).pop(); 
+                      Navigator.of(context).pop(); 
+                    }, 
+                    child: const Text("OK")
+                  )
+                ],
+              )
+            );
+         } else {
+             throw Exception("Payment verification failed");
+         }
+      } else {
+         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment cancelled")));
+         setState(() => _isSubmitting = false);
+      }
+    } catch (e) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+      setState(() => _isSubmitting = false);
     }
   }
+  
+  // Helper for PaymentService access if not defined in State
+  PaymentService _paymentService() => PaymentService();
 
   Widget _buildBottomBar(bool isDark) {
     return Container(
