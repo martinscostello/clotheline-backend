@@ -210,7 +210,7 @@ exports.verifyEmail = async (req, res) => {
 
         jwt.sign(payload, process.env.JWT_SECRET || 'secret123', { expiresIn: '7d' }, (err, token) => {
             if (err) throw err;
-            res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
+            res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
         });
 
     } catch (err) {
@@ -256,6 +256,7 @@ exports.login = async (req, res) => {
                 user: {
                     id: user.id,
                     name: user.name,
+                    email: user.email,
                     role: user.role,
                     isMasterAdmin: user.isMasterAdmin,
                     permissions: user.permissions

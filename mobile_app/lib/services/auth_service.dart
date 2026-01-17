@@ -58,6 +58,10 @@ class AuthService extends ChangeNotifier {
       final isMasterStr = await _storage.read(key: 'is_master_admin');
       final permissionsStr = await _storage.read(key: 'user_permissions');
       
+      // [FIX] Load Profile
+      final name = await _storage.read(key: 'user_name');
+      final email = await _storage.read(key: 'user_email');
+      
       if (role != null) {
          Map<String, dynamic> permissions = {};
          if (permissionsStr != null) {
@@ -69,6 +73,8 @@ class AuthService extends ChangeNotifier {
          _currentUser = {
            'id': id, 
            'role': role,
+           'name': name ?? '',
+           'email': email ?? '',
            'isMasterAdmin': isMasterStr == 'true',
            'permissions': permissions
          };
@@ -236,6 +242,10 @@ class AuthService extends ChangeNotifier {
     await _storage.write(key: 'user_role', value: user['role']?.toString() ?? 'user');
     await _storage.write(key: 'user_id', value: user['id']?.toString() ?? '');
     
+    // [FIX] Persist Profile Data
+    await _storage.write(key: 'user_name', value: user['name']?.toString() ?? '');
+    await _storage.write(key: 'user_email', value: user['email']?.toString() ?? '');
+
     // Persist RBAC data
     await _storage.write(key: 'is_master_admin', value: (user['isMasterAdmin'] ?? false).toString());
     if (user['permissions'] != null) {
