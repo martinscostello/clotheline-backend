@@ -3,143 +3,68 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
 
-exports.signup = async (req, res) => {
-    try {
-        console.log('Signup Request Body:', req.body);
-        const { name, email, password, phone, role } = req.body;
+// Helper: Rate Limit Check
+const checkRateLimit = (user, type) => {
+    const limits = { resend: 5 }; // Max 5 resends per window (e.g. 1 hour)
+    const windowMs = 60 * 60 * 1000; // 1 Hour
 
-        // 1. Check if user exists
-        let user = await User.findOne({ email });
+    if (!user.otpLastSentAt) return true; // First time is always ok
 
-        if (user) {
-            if (user.isVerified) {
-                return res.status(400).json({ msg: 'User already exists' });
-            } else {
-                // User exists but is unverified - RESEND OTP
-                console.log(`[Auth] Unverified user ${email} found. Resending OTP.`);
+    const timeDiff = Date.now() - new Date(user.otpLastSentAt).getTime();
 
-                // Generate New OTP
-                const otp = Math.floor(100000 + Math.random() * 900000).toString();
-                const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 Minutes
+    // Cooldown check (60s absolute)
+    if (timeDiff < 60 * 1000) return 'Please wait 60 seconds before trying again.';
 
-                user.otp = otp;
-                user.otpExpires = otpExpires;
-                // Update other fields if changed? Maybe password? 
-                // For safety, let's keep it simple.
-                // If they forgot password, they should use forgot password content.
-                // But for signup retry, we can update basic info if needed.
-
-                await user.save();
-
-                try {
-                    await sendEmail({
-                        email: user.email,
-                        subject: 'Clotheline: Your New Verification Code',
-                        message: `Your new verification code is: ${otp}. It expires in 10 minutes.`
-                    });
-                    console.log(`[Auth] OTP Resent to ${user.email}`);
-                    return res.json({ msg: 'OTP sent (Resend)', email: user.email }); // No debug_otp needed for verified email flow
-                } catch (emailErr) {
-                    console.error("[Auth] Resend Failed:", emailErr);
-                    // Fallback Bypass for Dev
-                    return res.status(200).json({
-                        msg: 'Failed to resend email. Use Debug OTP.',
-                        debug_otp: otp,
-                        email_error: emailErr.message
-                    });
-                }
-            }
-        }
-
-        // 2. New User - Generate Credential Data
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Generate OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 Minutes
-        console.log(`[OTP DEBUG] Key Generated for ${email}: ${otp}`);
-
-        // 3. SEND EMAIL FIRST (Transactional Logic)
-        try {
-            console.log(`[Auth] Attempting to send OTP email to ${email}...`);
-            await sendEmail({
-                email: email,
-                subject: 'Clotheline: Your Verification Code',
-                message: `Welcome to Clotheline! Your verification code is: ${otp}. It expires in 10 minutes.`
-            });
-            console.log(`[Auth] OTP Email sent successfully to ${email}`);
-        } catch (emailErr) {
-            console.error("[Auth] FATAL: Email send failed BEFORE user creation:", emailErr);
-            // DO NOT CREATE USER
-            // Return Error (or Bypass for Dev)
-
-            // DEV MODE: Allow creation anyway if we want to test without email?
-            // "Fix #2: If OTP email fails, DO NOT create the user"
-            // But we need a bypass for Dev. 
-            // Let's create the user ONLY if we want to allow Bypass. 
-            // Given the recent trouble, let's allow "Manual OTP" fallback for now, 
-            // BUT we must inform the user clearly.
-
-            /* STRICT PRODUCTION MODE (Uncomment to enforce)
-            return res.status(500).json({ 
-                msg: 'Failed to send verification email. Please try again later.', 
-                error: emailErr.message 
-            });
-            */
-        }
-
-        // 4. Create User (Only reached if email sent OR if we proceed with fallback)
-        // Since we want to fix specific "Ghost User" issues, let's create the user now.
-        // If email failed, we can either ABORT or Proceed with Debug OTP.
-        // If we Abort, we fix the issue.
-        // Let's Stick to the Plan: "If OTP email fails, DO NOT create the user"
-        // WAIT: The user specifically asked to fix broken flow.
-        // I will fail broadly if email fails, unless it's a specific SendGrid error which we might catch.
-
-        // Re-reading Plan: "Attempt Send Email -> If Fail: Return 500 (Do NOT create user)"
-        // Okay, I will implement Strict Mode.
-
-        // RE-ATTEMPT SEND IN STRICT BLOCK
-        // (Logic moved above inside Try/Catch, but if it failed, we should return)
-
-        // ... Wait, if I returned in the Catch block above, I wouldn't be here?
-        // Let's restructure cleaner.
-
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+    // Window limit check
+    if (timeDiff > windowMs) {
+        // Reset window
+        user.otpResendCount = 0;
+        return true;
     }
+
+    if (user.otpResendCount >= limits.resend) {
+        return 'Too many attempts. Please try again in an hour.';
+    }
+
+    return true;
 };
 
-// ... Wait, I need to rewrite the whole file carefully. 
-// I will provide the CLEAN implementation of the whole controller to avoid snippets errors.
-
 exports.signup = async (req, res) => {
     try {
         console.log('Signup Request Body:', req.body);
         const { name, email, password, phone, role } = req.body;
+
+        // Validation (Basic)
+        if (!email || !password || !name) return res.status(400).json({ msg: "Please fill all fields" });
 
         // 1. Check if user exists
         let existingUser = await User.findOne({ email });
+
         if (existingUser) {
             if (existingUser.isVerified) {
-                return res.status(400).json({ msg: 'User already exists' });
+                return res.status(400).json({ msg: 'Account already exists' });
             }
 
-            // Existing Unverified -> Resend OTP
-            console.log(`[Auth] Unverified user ${email} found. Resending OTP.`);
+            // Existing Unverified -> Treat as Resend
+            console.log(`[Auth] Unverified user ${email} found. treating as Reflow/Resend.`);
+
+            // Rate Limit Check
+            const canProceed = checkRateLimit(existingUser, 'resend');
+            if (canProceed !== true) return res.status(429).json({ msg: canProceed });
+
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             existingUser.otp = otp;
-            existingUser.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+            existingUser.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10m
+            existingUser.otpLastSentAt = Date.now();
+            existingUser.otpResendCount = (existingUser.otpResendCount || 0) + 1;
 
-            // Update password if provided (optional, helps if they forgot)
+            // Update info if provided
             if (password) {
                 const salt = await bcrypt.genSalt(10);
                 existingUser.password = await bcrypt.hash(password, salt);
             }
+            if (name) existingUser.name = name;
             if (phone) existingUser.phone = phone;
-            if (name) existingUser.name = name; // Update name too
 
             await existingUser.save();
 
@@ -149,40 +74,42 @@ exports.signup = async (req, res) => {
                     subject: 'Clotheline: Your New Verification Code',
                     message: `Your new verification code is: ${otp}`
                 });
-                return res.json({ msg: 'OTP sent (Resend)', email: existingUser.email });
+                return res.json({ msg: 'Verification code sent', email: existingUser.email });
             } catch (emailErr) {
-                // If email fails on resend, we give them the debug OTP for now
+                console.error("[Auth] Resend Email Failed:", emailErr);
+                // In Strict Mode, we might want to error out, 
+                // but since user exists, let's allow Debug OTP fallback for now to avoid total block
                 return res.status(200).json({
-                    msg: 'Email failed. Use Debug OTP.',
+                    msg: 'Email service error. Use Debug Code.',
                     debug_otp: otp
                 });
             }
         }
 
-        // 2. Generate OTP
+        // 2. New User - Generate Credential Data
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // 3. Attempt Email Send (CRITICAL STEP)
+        // 3. ATTEMPT EMAIL FIRST (Strict Transaction)
         try {
+            console.log(`[Auth] Attempting to send OTP email to ${email}...`);
             await sendEmail({
                 email: email,
                 subject: 'Clotheline: Verification Code',
-                message: `Your verification code is: ${otp}`
+                message: `Welcome to Clotheline! Your verification code is: ${otp}. Expires in 10 minutes.`
             });
-            console.log(`[Auth] Email sent to ${email}`);
+            console.log(`[Auth] OTP Email sent successfully to ${email}`);
         } catch (emailErr) {
             console.error("[Auth] FATAL: Email failed before creation:", emailErr);
-            // ABORT SIGNUP
+            // STRICT: Abort Signup. No Ghost User Created.
             return res.status(500).json({
-                msg: 'Failed to send email. Signup aborted.',
+                msg: 'Failed to send verification email. Please check your address or try again.',
                 error: emailErr.message
             });
         }
 
         // 4. Create User (Only if Email Succeeded)
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
         const newUser = new User({
             name,
             email,
@@ -191,11 +118,58 @@ exports.signup = async (req, res) => {
             role: role || 'user',
             otp,
             otpExpires: new Date(Date.now() + 10 * 60 * 1000),
+            otpLastSentAt: Date.now(),
+            otpResendCount: 1,
             isVerified: false
         });
 
         await newUser.save();
-        res.json({ msg: 'OTP sent', email: newUser.email });
+        res.json({ msg: 'Verification code sent', email: newUser.email });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.resendOtp = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ msg: "Email required" });
+
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ msg: "User not found" });
+        if (user.isVerified) return res.status(400).json({ msg: "Account already verified. Please login." });
+
+        // Rate Limit
+        const canProceed = checkRateLimit(user, 'resend');
+        if (canProceed !== true) return res.status(429).json({ msg: canProceed });
+
+        // Generate
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.otp = otp;
+        user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+        user.otpLastSentAt = Date.now();
+        user.otpResendCount = (user.otpResendCount || 0) + 1;
+
+        await user.save();
+
+        // Send
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Clotheline: Your New Verification Code',
+                message: `Your new verification code is: ${otp}`
+            });
+            res.json({ msg: 'Code resent successfully' });
+        } catch (err) {
+            console.error("[Auth] Resend Failed:", err);
+            // Allow Debug Fallback
+            return res.status(200).json({
+                msg: 'Email failed. Use Debug OTP.',
+                debug_otp: otp
+            });
+        }
 
     } catch (err) {
         console.error(err.message);
@@ -208,20 +182,22 @@ exports.verifyEmail = async (req, res) => {
         const { email, otp } = req.body;
 
         let user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ msg: 'Invalid Email' });
+        if (!user) return res.status(400).json({ msg: 'Invalid Email/Account not found' });
 
         if (user.otp !== otp) {
-            return res.status(400).json({ msg: 'Invalid OTP' });
+            // Potential: Increment failed attempts counter here if blocking brute force
+            return res.status(400).json({ msg: 'Invalid Code' });
         }
 
         if (user.otpExpires < Date.now()) {
-            return res.status(400).json({ msg: 'OTP Expired' });
+            return res.status(400).json({ msg: 'Code Expired. Please resend.' });
         }
 
         // Verify Success
         user.isVerified = true;
         user.otp = undefined;
         user.otpExpires = undefined;
+        user.otpResendCount = 0; // Reset limits on success
         await user.save();
 
         // Login (Generate Token)
@@ -248,20 +224,22 @@ exports.login = async (req, res) => {
         const { email, password } = req.body;
 
         let user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
-        }
+        if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
+        if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
+
+        // Strict Verification Check
+        if (!user.isVerified) {
+            return res.status(403).json({
+                msg: 'Email not verified. Please verify your account.',
+                requiresVerification: true,
+                email: user.email
+            });
         }
 
-        // Check verification (Optional - strict enforcement?)
-        // if (!user.isVerified) return res.status(400).json({ msg: 'Please verify your email first' });
-
         if (user.isRevoked) {
-            return res.status(403).json({ msg: 'Your access has been Revoked: Contact Master Admin for assistance' });
+            return res.status(403).json({ msg: 'Access Revoked. Contact Support.' });
         }
 
         const payload = {

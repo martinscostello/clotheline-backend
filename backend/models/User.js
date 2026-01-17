@@ -50,6 +50,8 @@ const UserSchema = new mongoose.Schema({
     // OTP / Verification
     otp: { type: String },
     otpExpires: { type: Date },
+    otpResendCount: { type: Number, default: 0 },
+    otpLastSentAt: { type: Date },
     isVerified: { type: Boolean, default: false },
     createdAt: {
         type: Date,
