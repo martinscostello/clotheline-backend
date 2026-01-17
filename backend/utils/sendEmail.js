@@ -43,8 +43,11 @@ const sendEmail = async (options) => {
     const transporter = nodemailer.createTransport(transporterOptions);
 
     // 2. Define Email Options
+    // SendGrid requires a verified sender. 'apikey' is not an email.
+    const senderEmail = process.env.EMAIL_USER === 'apikey' ? 'support@brimarcglobal.com' : process.env.EMAIL_USER;
+
     const mailOptions = {
-        from: `"Clotheline Laundry" <${process.env.EMAIL_USER}>`,
+        from: `"Clotheline Laundry" <${senderEmail}>`,
         to: options.email,
         subject: options.subject,
         text: options.message,
