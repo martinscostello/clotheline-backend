@@ -54,57 +54,11 @@ warning • Unused import: '../../../models/branch_model.dart' • lib/screens/a
    info • Unnecessary use of 'toList' in a spread • lib/screens/admin/products/admin_add_product_screen.dart:617:30 • unnecessary_to_list_in_spreads
 warning • Unused import: '../../../widgets/glass/GlassContainer.dart' • lib/screens/admin/products/admin_products_screen.dart:4:8 • unused_import
    info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/admin/products/admin_products_screen.dart:101:39 • use_build_context_synchronously
-  error • Undefined name '_formKey' • lib/screens/admin/services/admin_edit_service_screen.dart:39:10 • undefined_identifier
-  error • Undefined name '_isSaving' • lib/screens/admin/services/admin_edit_service_screen.dart:40:20 • undefined_identifier
-  error • Undefined name '_nameController' • lib/screens/admin/services/admin_edit_service_screen.dart:43:15 • undefined_identifier
-  error • Undefined name '_imageUrl' • lib/screens/admin/services/admin_edit_service_screen.dart:44:16 • undefined_identifier
-  error • Undefined name '_isLocked' • lib/screens/admin/services/admin_edit_service_screen.dart:45:19 • undefined_identifier
-  error • Undefined name '_bannerController' • lib/screens/admin/services/admin_edit_service_screen.dart:46:22 • undefined_identifier
-  error • Undefined name '_discountController' • lib/screens/admin/services/admin_edit_service_screen.dart:47:45 • undefined_identifier
-  error • Undefined name '_discountLabelController' • lib/screens/admin/services/admin_edit_service_screen.dart:48:24 • undefined_identifier
-  error • Undefined name '_items' • lib/screens/admin/services/admin_edit_service_screen.dart:49:16 • undefined_identifier
-  error • Undefined name '_variants' • lib/screens/admin/services/admin_edit_service_screen.dart:50:23 • undefined_identifier
-   info • Don't invoke 'print' in production code • lib/screens/admin/services/admin_edit_service_screen.dart:57:8 • avoid_print
-  error • Undefined name '_isSaving' • lib/screens/admin/services/admin_edit_service_screen.dart:82:34 • undefined_identifier
-  error • Undefined name '_variants' • lib/screens/admin/services/admin_edit_service_screen.dart:91:66 • undefined_identifier
-  error • Undefined name '_variants' • lib/screens/admin/services/admin_edit_service_screen.dart:92:66 • undefined_identifier
-  error • Undefined name '_variants' • lib/screens/admin/services/admin_edit_service_screen.dart:127:20 • undefined_identifier
-  error • Undefined name '_variants' • lib/screens/admin/services/admin_edit_service_screen.dart:129:20 • undefined_identifier
-  error • Undefined name '_items' • lib/screens/admin/services/admin_edit_service_screen.dart:141:66 • undefined_identifier
-  error • Undefined name '_items' • lib/screens/admin/services/admin_edit_service_screen.dart:142:67 • undefined_identifier
-  error • Undefined name '_items' • lib/screens/admin/services/admin_edit_service_screen.dart:168:21 • undefined_identifier
-  error • Undefined name '_items' • lib/screens/admin/services/admin_edit_service_screen.dart:170:21 • undefined_identifier
-  error • Undefined name '_isSaving' • lib/screens/admin/services/admin_edit_service_screen.dart:192:19 • undefined_identifier
-  error • Undefined name '_isSaving' • lib/screens/admin/services/admin_edit_service_screen.dart:193:24 • undefined_identifier
-  error • Undefined name '_formKey' • lib/screens/admin/services/admin_edit_service_screen.dart:201:18 • undefined_identifier
-  error • Undefined name '_pickImage' • lib/screens/admin/services/admin_edit_service_screen.dart:208:28 • undefined_identifier
-  error • Undefined name '_imageUrl' • lib/screens/admin/services/admin_edit_service_screen.dart:217:36 • undefined_identifier
-  error • Undefined name '_imageUrl' • lib/screens/admin/services/admin_edit_service_screen.dart:218:51 • undefined_identifier
-  error • Undefined name '_imageUrl' • lib/screens/admin/services/admin_edit_service_screen.dart:223:34 • undefined_identifier
-  error • Undefined name '_nameController' • lib/screens/admin/services/admin_edit_service_screen.dart:257:39 • undefined_identifier
-  error • Undefined name '_discountController' • lib/screens/admin/services/admin_edit_service_screen.dart:271:45 • undefined_identifier
-  error • Undefined name '_discountLabelController' • lib/screens/admin/services/admin_edit_service_screen.dart:285:45 • undefined_identifier
-  error • Undefined name '_variants' • lib/screens/admin/services/admin_edit_service_screen.dart:319:29 • undefined_identifier
-  error • Undefined name '_variants' • lib/screens/admin/services/admin_edit_service_screen.dart:325:37 • undefined_identifier
-  error • Undefined name '_variants' • lib/screens/admin/services/admin_edit_service_screen.dart:343:67 • undefined_identifier
-  error • Undefined name '_isLocked' • lib/screens/admin/services/admin_edit_service_screen.dart:370:35 • undefined_identifier
-   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/services/admin_edit_service_screen.dart:371:28 • deprecated_member_use
-  error • Undefined name '_isLocked' • lib/screens/admin/services/admin_edit_service_screen.dart:372:63 • undefined_identifier
-  error • Undefined name '_isLocked' • lib/screens/admin/services/admin_edit_service_screen.dart:374:30 • undefined_identifier
-  error • Undefined name '_bannerController' • lib/screens/admin/services/admin_edit_service_screen.dart:376:44 • undefined_identifier
-  error • Undefined name '_branchPricing' • lib/screens/admin/services/admin_edit_service_screen.dart:403:47 • undefined_identifier
-  error • Undefined name '_branchPricing' • lib/screens/admin/services/admin_edit_service_screen.dart:431:47 • undefined_identifier
-  error • Undefined name '_branchPricing' • lib/screens/admin/services/admin_edit_service_screen.dart:432:47 • undefined_identifier
-   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/services/admin_edit_service_screen.dart:445:38 • deprecated_member_use
-  error • Undefined name '_branchPricing' • lib/screens/admin/services/admin_edit_service_screen.dart:448:43 • undefined_identifier
-  error • Undefined name '_branchPricing' • lib/screens/admin/services/admin_edit_service_screen.dart:449:43 • undefined_identifier
-   info • Unnecessary use of 'toList' in a spread • lib/screens/admin/services/admin_edit_service_screen.dart:460:30 • unnecessary_to_list_in_spreads
-  error • Undefined name '_items' • lib/screens/admin/services/admin_edit_service_screen.dart:479:30 • undefined_identifier
-  error • Undefined name '_items' • lib/screens/admin/services/admin_edit_service_screen.dart:481:34 • undefined_identifier
-  error • Undefined name '_items' • lib/screens/admin/services/admin_edit_service_screen.dart:494:64 • undefined_identifier
+   info • Don't invoke 'print' in production code • lib/screens/admin/services/admin_edit_service_screen.dart:108:8 • avoid_print
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/services/admin_edit_service_screen.dart:422:28 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/services/admin_edit_service_screen.dart:496:38 • deprecated_member_use
+   info • Unnecessary use of 'toList' in a spread • lib/screens/admin/services/admin_edit_service_screen.dart:511:30 • unnecessary_to_list_in_spreads
 warning • Unused import: '../../../../models/service_model.dart' • lib/screens/admin/services/admin_services_screen.dart:3:8 • unused_import
-  error • The method 'setBranch' isn't defined for the type 'BranchProvider' • lib/screens/admin/services/admin_services_screen.dart:43:23 • undefined_method
-  error • The method 'setBranch' isn't defined for the type 'BranchProvider' • lib/screens/admin/services/admin_services_screen.dart:65:20 • undefined_method
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/services/admin_services_screen.dart:156:68 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/services/admin_services_screen.dart:169:96 • deprecated_member_use
 warning • The value of the local variable 'latCtrl' isn't used • lib/screens/admin/settings/admin_delivery_settings_screen.dart:33:13 • unused_local_variable
@@ -305,4 +259,4 @@ warning • The value of the local variable 'paint' isn't used • lib/widgets/m
    info • The file name 'RefractiveRingClipper.dart' isn't a lower_case_with_underscores identifier • lib/widgets/ui/RefractiveRingClipper.dart:1:1 • file_names
    info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/widgets/ui/liquid_glass_container.dart:1:8 • unnecessary_import
 
-304 issues found. (ran in 1.3s)
+258 issues found. (ran in 1.9s)

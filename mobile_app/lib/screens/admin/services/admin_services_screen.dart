@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../models/service_model.dart';
-import '../../../../services/api_service.dart';
+import '../../../../services/laundry_service.dart';
+import '../../../../providers/branch_provider.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'admin_edit_service_screen.dart'; // We will create this next
+import 'admin_edit_service_screen.dart';
 
 class AdminServicesScreen extends StatefulWidget {
   const AdminServicesScreen({super.key});
@@ -16,28 +16,58 @@ class AdminServicesScreen extends StatefulWidget {
 }
 
 class _AdminServicesScreenState extends State<AdminServicesScreen> {
-  List<ServiceModel> _services = [];
-  bool _isLoading = true;
+  // We listen to LaundryService for data
+  // We use BranchProvider for context
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchServices();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
-  Future<void> _fetchServices() async {
-    try {
-      final response = await http.get(Uri.parse('${ApiService.baseUrl}/services'));
-      if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        setState(() {
-          _services = data.map((e) => ServiceModel.fromJson(e)).toList();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final laundryService = Provider.of<LaundryService>(context, listen: false);
+
+    // Ensure branches are loaded
+    if (branchProvider.branches.isEmpty) {
+      await branchProvider.fetchBranches();
     }
+    
+    // Default to first branch if none selected
+    if (branchProvider.selectedBranch == null && branchProvider.branches.isNotEmpty) {
+       branchProvider.selectBranch(branchProvider.branches.first);
+    }
+    
+    // Fetch Services for this Branch
+    if (branchProvider.selectedBranch != null) {
+       await laundryService.fetchServices(branchId: branchProvider.selectedBranch!.id);
+    } else {
+       await laundryService.fetchServices(); // Global fallback
+    }
+
+    if(mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _onBranchChanged(String? newId) async {
+    if (newId == null) return;
+    
+    setState(() => _isLoading = true);
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final laundryService = Provider.of<LaundryService>(context, listen: false);
+    
+    // Use Provider to switch branch
+    final branch = branchProvider.branches.firstWhere((b) => b.id == newId);
+    branchProvider.selectBranch(branch);
+    
+    // Reload Services Scoped to Branch
+    await laundryService.fetchServices(branchId: newId);
+    
+    if(mounted) setState(() => _isLoading = false);
   }
 
   @override
@@ -48,11 +78,49 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
         title: const Text("Manage Services", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         leading: const BackButton(color: Colors.white),
+        actions: [
+          // BRANCH SELECTOR
+          Consumer<BranchProvider>(
+            builder: (context, branchProvider, _) {
+              if (branchProvider.branches.isEmpty) return const SizedBox();
+              
+              return Container(
+                margin: const EdgeInsets.only(right: 15),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(20)
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    dropdownColor: const Color(0xFF202020),
+                    value: branchProvider.selectedBranch?.id,
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    onChanged: _onBranchChanged,
+                    items: branchProvider.branches.map((b) {
+                      return DropdownMenuItem(
+                        value: b.id,
+                        child: Text(b.name, style: const TextStyle(color: Colors.white)),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            }
+          )
+        ],
       ),
       body: LiquidBackground(
-        child: _isLoading 
-            ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
-            : GridView.builder(
+        child: Consumer<LaundryService>(
+          builder: (context, laundryService, _) {
+            if (_isLoading) {
+               return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+            }
+            
+            final services = laundryService.services;
+            
+            return GridView.builder(
               padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -60,16 +128,24 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                 mainAxisSpacing: 15,
                 childAspectRatio: 0.85,
               ),
-              itemCount: _services.length,
+              itemCount: services.length,
               itemBuilder: (context, index) {
-                final service = _services[index];
+                final service = services[index];
                 return GestureDetector(
                   onTap: () async {
+                     final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+                     // Pass Scope!
                      await Navigator.push(
                        context, 
-                       MaterialPageRoute(builder: (_) => AdminEditServiceScreen(service: service))
+                       MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
+                         service: service, 
+                         scopeBranch: branchProvider.selectedBranch
+                       ))
                      );
-                     _fetchServices(); // Refresh on return
+                     // Refresh
+                     if(branchProvider.selectedBranch != null) {
+                        _loadData();
+                     }
                   },
                   child: Container(
                     decoration: BoxDecoration(
@@ -81,7 +157,7 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                       ) : null,
                     ),
                     child: GlassContainer(
-                      opacity: 0.05, // Lower opacity to see image
+                      opacity: 0.05, 
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -130,7 +206,9 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                   ),
                 );
               },
-            ),
+            );
+          }
+        ),
       ),
     );
   }

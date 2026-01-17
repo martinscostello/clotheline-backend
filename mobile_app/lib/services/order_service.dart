@@ -23,13 +23,16 @@ class OrderService extends ChangeNotifier {
   }
 
   // For User: Create Order
-  Future<bool> createOrder(Map<String, dynamic> orderData) async {
+  Future<Map<String, dynamic>?> createOrder(Map<String, dynamic> orderData) async {
     try {
       final response = await _apiService.client.post('/orders', data: orderData);
-      return response.statusCode == 200;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.data;
+      }
+      return null;
     } catch (e) {
       debugPrint("Error creating order: $e");
-      return false;
+      return null;
     }
   }
 

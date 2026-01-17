@@ -1,11 +1,6 @@
-import 'package:intl/intl.dart';
+
 
 class CurrencyFormatter {
-  static final NumberFormat _nairaFormat = NumberFormat.currency(
-    locale: 'en_NG',
-    symbol: '₦',
-    decimalDigits: 0, 
-  );
 
   static String format(num amount) {
     // If intl is not available or issues arise, use regex fallback

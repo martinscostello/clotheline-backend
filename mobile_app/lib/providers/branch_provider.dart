@@ -4,6 +4,8 @@ import 'dart:convert';
 import '../models/branch_model.dart';
 import '../services/api_service.dart';
 import '../services/cart_service.dart';
+import '../services/laundry_service.dart';
+import 'package:dio/dio.dart';
 
 class BranchProvider extends ChangeNotifier {
   Branch? _selectedBranch;
@@ -80,8 +82,9 @@ class BranchProvider extends ChangeNotifier {
     if (savedId != null) {
       try {
         _selectedBranch = _branches.firstWhere((b) => b.id == savedId);
-        // Sync CartService
-        CartService().setBranch(savedId); 
+        // Sync CartService & Data
+        CartService().setBranch(savedId);
+        LaundryService().fetchServices(branchId: savedId); 
       } catch (e) {
         // Saved branch might be deleted or not loaded yet
       }
@@ -95,6 +98,11 @@ class BranchProvider extends ChangeNotifier {
     _selectedBranch = branch;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selected_branch_id', branch.id);
+    
+    // Trigger Data Refresh for new Branch
+    await LaundryService().fetchServices(branchId: branch.id);
+    CartService().setBranch(branch.id); // Also sync Cart
+    
     notifyListeners();
   }
 
@@ -129,18 +137,33 @@ class BranchProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateBranch(String id, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> updateBranch(String id, Map<String, dynamic> data) async {
     try {
       final ApiService api = ApiService();
+      // Debug
+      print("Sending PUT to /branches/$id with data: $data");
+
       final response = await api.client.put('/branches/$id', data: data);
+      
+      print("Update Response: ${response.statusCode} - ${response.data}");
+
       if (response.statusCode == 200) {
         await fetchBranches(); // Refresh list to get updated data
-        return true;
+        return {'success': true};
       }
-      return false;
+      return {
+        'success': false, 
+        'message': "Failed: ${response.statusCode} - ${response.data['msg'] ?? response.data['message'] ?? 'Unknown Error'}"
+      };
     } catch (e) {
       print("Error updating branch: $e");
-      return false;
+      if (e is DioException) {
+         return {
+           'success': false,
+           'message': "DioError: ${e.response?.statusCode ?? 'NoStatus'} - ${e.response?.data ?? e.message}"
+         };
+      }
+      return {'success': false, 'message': "Exception: $e"};
     }
   }
 }

@@ -13,9 +13,12 @@ import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 
+import '../../../../models/branch_model.dart'; // [NEW]
+
 class AdminEditServiceScreen extends StatefulWidget {
   final ServiceModel service;
-  const AdminEditServiceScreen({super.key, required this.service});
+  final Branch? scopeBranch; // [NEW] Context
+  const AdminEditServiceScreen({super.key, required this.service, this.scopeBranch});
 
   @override
   State<AdminEditServiceScreen> createState() => _AdminEditServiceScreenState();
@@ -96,8 +99,14 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
       "discountLabel": _discountLabelController.text,
       "items": _items.map((e) => e.toJson()).toList(),
       "serviceTypes": _variants.map((e) => e.toJson()).toList(),
-      "branchPricing": _branchPricing.map((e) => e.toJson()).toList(),
+      // "branchPricing": _branchPricing.map((e) => e.toJson()).toList(), // Legacy - not needed if we iterate items
     };
+    
+    // [CRITICAL] Inject Branch Context
+    if (widget.scopeBranch != null) {
+       body['branchId'] = widget.scopeBranch!.id;
+       print("Saving with Branch Context: ${widget.scopeBranch!.name}");
+    }
 
     try {
       final response = await http.put(
@@ -107,8 +116,12 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
       );
 
       if (response.statusCode == 200) {
-        // Refresh Singleton for User App
-        LaundryService().fetchServices();
+        // Refresh 
+        if (widget.scopeBranch != null) {
+           LaundryService().fetchServices(branchId: widget.scopeBranch!.id);
+        } else {
+           LaundryService().fetchServices();
+        }
         
         if(mounted) Navigator.pop(context);
       } else {
@@ -351,7 +364,10 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text("Service Types", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            IconButton(icon: const Icon(Icons.add, color: AppTheme.primaryColor), onPressed: () => _showVariantDialog())
+                            if (widget.scopeBranch == null)
+                              IconButton(icon: const Icon(Icons.add, color: AppTheme.primaryColor), onPressed: () => _showVariantDialog())
+                            else
+                              const Text("Global Only", style: TextStyle(color: Colors.white38, fontSize: 10))
                           ],
                         ),
                         if (_variants.isEmpty)
@@ -364,7 +380,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                             final index = entry.key;
                             final v = entry.value;
                             return GestureDetector(
-                              onTap: () => _showVariantDialog(index),
+                              onTap: widget.scopeBranch == null ? () => _showVariantDialog(index) : null,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
@@ -377,10 +393,11 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                                   children: [
                                     Text("${v.name} (${v.priceMultiplier}x)", style: const TextStyle(color: Colors.white, fontSize: 13)),
                                     const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () => setState(() => _variants.removeAt(index)),
-                                      child: const Icon(Icons.close, size: 16, color: Colors.white54),
-                                    ),
+                                    if (widget.scopeBranch == null)
+                                      GestureDetector(
+                                        onTap: () => setState(() => _variants.removeAt(index)),
+                                        child: const Icon(Icons.close, size: 16, color: Colors.white54),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -508,7 +525,14 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text("Cloth Types & Prices", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    IconButton(icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor), onPressed: _addItem)
+                    // [Fix] Disable Adding items in Branch Scope (Must be done Globally)
+                    if (widget.scopeBranch == null)
+                      IconButton(icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor), onPressed: _addItem)
+                    else 
+                      const Padding(
+                        padding: EdgeInsets.only(right: 8.0),
+                        child: Text("Read-Only (Edit Prices Only)", style: TextStyle(color: Colors.white38, fontSize: 10)),
+                      )
                   ],
                 ),
                 ListView.builder(

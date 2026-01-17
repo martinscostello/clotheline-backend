@@ -100,19 +100,25 @@ class ServiceModel {
 }
 
 class ServiceItem {
+  final String? id; // Nullable for new items
   final String name;
   final double price;
 
-  ServiceItem({required this.name, required this.price});
+  ServiceItem({this.id, required this.name, required this.price});
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
     return ServiceItem(
+      id: json['_id'],
       name: json['name'],
       price: (json['price'] as num).toDouble(),
     );
   }
   
-  Map<String, dynamic> toJson() => {'name': name, 'price': price};
+  Map<String, dynamic> toJson() => {
+    if (id != null) '_id': id,
+    'name': name, 
+    'price': price
+  };
 }
 
 class ServiceVariant {

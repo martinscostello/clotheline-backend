@@ -53,12 +53,14 @@ class DeliveryZone {
   final String description;
   final double radiusKm;
   final double baseFee;
+  final String color; // Added for visualization
 
   DeliveryZone({
     required this.name,
     required this.description,
     required this.radiusKm,
     required this.baseFee,
+    this.color = '#4286f4', // Default blue
   });
 
   factory DeliveryZone.fromJson(Map<String, dynamic> json) {
@@ -67,6 +69,7 @@ class DeliveryZone {
       description: json['description'],
       radiusKm: (json['radiusKm'] as num).toDouble(),
       baseFee: (json['baseFee'] as num).toDouble(),
+      color: json['color'] ?? '#4286f4',
     );
   }
 }

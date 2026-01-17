@@ -43,6 +43,7 @@ dependencies:
   geolocator: ^14.0.2
   cached_network_image: ^3.4.1
   webview_flutter: ^4.13.1
+  url_launcher: ^6.2.2
 
   pdf: ^3.10.7
   printing: ^5.11.1

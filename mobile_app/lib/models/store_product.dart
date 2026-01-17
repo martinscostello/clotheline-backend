@@ -169,6 +169,20 @@ class StoreCartItem {
   
   double get price => variant?.price ?? product.price;
   double get totalPrice => price * quantity;
+
+  Map<String, dynamic> toJson() => {
+    'product': product.toJson(),
+    'variant': variant?.toJson(),
+    'quantity': quantity,
+  };
+
+  factory StoreCartItem.fromJson(Map<String, dynamic> json) {
+    return StoreCartItem(
+      product: StoreProduct.fromJson(json['product']),
+      variant: json['variant'] != null ? ProductVariant.fromJson(json['variant']) : null,
+      quantity: json['quantity'],
+    );
+  }
 }
 
 class BranchProductInfo {

@@ -36,10 +36,12 @@ class LaundryService extends ChangeNotifier {
   }
 
   // 2. Silent Background Sync
-  Future<void> fetchFromApi() async {
+  Future<void> fetchFromApi({String? branchId}) async {
     // Don't block UI. Just fetch and compare.
     try {
-      final response = await _apiService.client.get('/services');
+      final String endpoint = branchId != null ? '/services?branchId=$branchId' : '/services';
+      final response = await _apiService.client.get(endpoint);
+      
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         
@@ -48,10 +50,19 @@ class LaundryService extends ChangeNotifier {
         final newServices = data.map((json) => ServiceModel.fromJson(json)).toList();
         final newServicesJson = jsonEncode(newServices.map((e) => e.toJson()).toList());
 
-        if (currentJson != newServicesJson) {
+        // Always update if we are switching branches (branchId provided)
+        // Or if data changed
+        if (branchId != null || currentJson != newServicesJson) {
            _services = newServices;
            final prefs = await SharedPreferences.getInstance();
-           await prefs.setString('services_cache', jsonEncode(data));
+           // Only cache global (no branchId) or handle caching strategy later. 
+           // For now, let's strictly cache GLOBAL/Default. 
+           // If branchId is present, we might NOT want to overwrite the 'default' cache 
+           // unless we implement branch-aware caching keys.
+           
+           if (branchId == null) {
+              await prefs.setString('services_cache', jsonEncode(data));
+           }
            notifyListeners();
         }
       }
@@ -61,8 +72,8 @@ class LaundryService extends ChangeNotifier {
   }
 
   // COMPATIBILITY METHOD
-  Future<void> fetchServices() async {
-     await fetchFromApi();
+  Future<void> fetchServices({String? branchId}) async {
+     await fetchFromApi(branchId: branchId);
   }
 
   // Find a service by ID or Name (helper)

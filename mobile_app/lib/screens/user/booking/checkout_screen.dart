@@ -12,6 +12,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../main_layout.dart';
 import '../../../providers/branch_provider.dart';
+import '../../../services/payment_service.dart';
+import '../../../services/auth_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CheckoutScreen extends StatefulWidget {
   // Use Singleton instead of passing list
@@ -582,6 +585,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   final _orderService = OrderService();
+  final _paymentService = PaymentService();
   bool _isSubmitting = false;
 
   Future<void> _submitOrder() async {
@@ -602,14 +606,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       });
     }
 
-    double total = _cartService.serviceTotalAmount + _pickupFee + _deliveryFee;
+    // Also add Store Items if any
+    for (var i in _cartService.storeItems) {
+      items.add({
+        'itemType': 'Product',
+        'itemId': i.product.id,
+        'name': i.product.name + (i.variant != null ? " (${i.variant!.name})" : ""),
+        'quantity': i.quantity,
+        'price': i.price
+      });
+    }
+
+    double total = _cartService.serviceTotalAmount + _cartService.storeTotalAmount + _pickupFee + _deliveryFee;
 
     // [Multi-Branch] Get Selected Branch
     final branchProvider = Provider.of<BranchProvider>(context, listen: false);
     final selectedBranch = branchProvider.selectedBranch;
 
     final orderData = {
-      'branchId': selectedBranch?.id, // [New]
+      'branchId': selectedBranch?.id,
       'items': items,
       'totalAmount': total,
       'pickupOption': _beforeWashOption == 1 ? 'Pickup' : 'Dropoff',
@@ -629,25 +644,75 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       }
     };
 
-    final success = await _orderService.createOrder(orderData);
+    // 1. Create Order
+    final orderResult = await _orderService.createOrder(orderData);
     
-    setState(() => _isSubmitting = false);
+    if (orderResult == null) {
+       setState(() => _isSubmitting = false);
+       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to place order")));
+       return;
+    }
 
-    if (success && mounted) {
-      _cartService.clearServiceItems();  
-      _cartService.clearServiceItems();  
-      
-      // Use pushAndRemoveUntil to clear stack and go fresh to Orders Tab
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)), // 2 = Orders
-        (route) => false
-      );
-      
-      // Optional: Show Toast/Snackbar on the new screen?
-      // Since we are changing context, we can't easily show it unless we pass arguments or use a global key.
-      // But clearing the cart and showing the "Pending" tab is validation enough.
+    // Handle string vs Map return just in case, but updated service returns Map or null
+    final String? orderId = orderResult is Map ? orderResult['_id'] : null;
+    
+    if (orderId == null) {
+        setState(() => _isSubmitting = false);
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order created but failed to get ID")));
+        // Fallback: still success but no payment?
+        return;
+    }
+    
+    // 2. Process Payment
+    if(mounted) {
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order Created! Processing Payment...")));
+       
+       // Get Email
+       final auth = Provider.of<AuthService>(context, listen: false);
+       final String email = auth.currentUser?['email'] ?? "guest@clotheline.com"; // Fallback if guest
+
+       // Await payment
+       final success = await _paymentService.processPayment(context, orderId: orderId, email: email);
+       
+       setState(() => _isSubmitting = false);
+
+       if (success) {
+          if(!mounted) return;
+          // 3. Clear Cart & Navigate
+          _cartService.clearCart(); 
+          
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)), 
+            (route) => false
+          );
+          
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Successful! Order Confirmed."), backgroundColor: Colors.green));
+       } else {
+          // Payment failed, but order created as Pending Payment usually.
+          if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment failed. Order saved in pending state."), backgroundColor: Colors.orange));
+          
+          // Still navigate to Orders because Order IS created
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)), 
+            (route) => false
+          );
+       }
+    }
+  }
+
+  // Dialer
+  Future<void> _callBranch() async {
+    final cleanPhone = _branchPhone.replaceAll(RegExp(r'[^\d+]'), ''); // Keep digits and +
+    if (cleanPhone.isEmpty) return;
+    
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: cleanPhone,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to place order")));
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not launch dialer")));
     }
   }
 
@@ -689,7 +754,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                   onPressed: _isSubmitting ? null : _submitOrder,
                   child: _isSubmitting 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text("PROCEED TO PAYMENT", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : const Text("CONFIRM & PAY", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 15),
@@ -697,16 +762,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.call),
-                  label: const Text("Call to Place Order"),
+                  label: Text("Call $_branchPhone to Place Order"),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: isDark ? Colors.white : Colors.black,
                     side: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
-                  onPressed: () {
-                    // Call logic
-                  },
+                  onPressed: _callBranch,
                 ),
               ),
             ],

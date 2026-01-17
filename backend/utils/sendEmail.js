@@ -1,62 +1,47 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 const sendEmail = async (options) => {
-    // 1. Create Transporter
-    // TIP: For development without real credentials, we can just log to console
-    // But we'll set up the structure for Gmail/SMTP
-
-    // If you want to use Gmail:
-    // service: 'gmail', auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-
-    // For now, if no credentials, we just log it (Dev Mode)
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    // 1. Check for API Key
+    if (!process.env.EMAIL_PASS || !process.env.EMAIL_PASS.startsWith('SG.')) {
         console.log("---------------------------------------------------");
         console.log(`[Mock Email] To: ${options.email}`);
         console.log(`[Mock Email] Subject: ${options.subject}`);
         console.log(`[Mock Email] Body: ${options.message}`);
+        console.log(`[Mock Email] WARNING: Real email disabled. EMAIL_PASS must start with 'SG.'`);
         console.log("---------------------------------------------------");
         return;
     }
 
-    // Check if using Gmail host explicitly, or fallback to it
-    const isGmail = process.env.EMAIL_HOST === 'smtp.gmail.com' || !process.env.EMAIL_HOST;
+    // 2. Configure SendGrid
+    // We reuse EMAIL_PASS for the API Key as per previous env config
+    sgMail.setApiKey(process.env.EMAIL_PASS);
 
-    const transporterOptions = !isGmail ? {
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT || 587,
-        secure: process.env.EMAIL_PORT == 465,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        },
-        tls: {
-            rejectUnauthorized: false
-        },
-        family: 4 // Force IPv4
-    } : {
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        }
-    };
+    // 3. Define Email Options
+    // SendGrid requires a strictly verified sender identity.
+    const senderEmail = 'support@brimarcglobal.com';
 
-    const transporter = nodemailer.createTransport(transporterOptions);
-
-    // 2. Define Email Options
-    // SendGrid requires a verified sender. 'apikey' is not an email.
-    const senderEmail = process.env.EMAIL_USER === 'apikey' ? 'support@brimarcglobal.com' : process.env.EMAIL_USER;
-
-    const mailOptions = {
-        from: `"Clotheline Laundry" <${senderEmail}>`,
+    const msg = {
         to: options.email,
+        from: {
+            email: senderEmail,
+            name: "Clotheline Laundry"
+        },
         subject: options.subject,
         text: options.message,
         // html: options.html // Optional
     };
 
-    // 3. Send Email
-    await transporter.sendMail(mailOptions);
+    // 4. Send Email via HTTP API
+    try {
+        await sgMail.send(msg);
+        console.log(`[SendGrid] Email sent to ${options.email}`);
+    } catch (error) {
+        console.error('[SendGrid] Error sending email:', error);
+        if (error.response) {
+            console.error(error.response.body);
+        }
+        throw new Error('Email sending failed via SendGrid API');
+    }
 };
 
 module.exports = sendEmail;

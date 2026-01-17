@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/booking_models.dart';
 import '../models/store_product.dart';
 import 'api_service.dart';
@@ -25,7 +27,60 @@ class CartService extends ChangeNotifier {
 
 
   CartService._internal() {
+    _loadCart();
     _fetchTaxSettings();
+  }
+
+  Future<void> _loadCart() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Load Laundry Items
+      final String? laundryJson = prefs.getString('cart_items');
+      if (laundryJson != null) {
+        final List<dynamic> decoded = json.decode(laundryJson);
+        _items.clear();
+        _items.addAll(decoded.map((e) => CartItem.fromJson(e)).toList());
+      }
+
+      // Load Store Items
+      final String? storeJson = prefs.getString('store_items');
+      if (storeJson != null) {
+         final List<dynamic> decoded = json.decode(storeJson);
+         _storeItems.clear();
+         _storeItems.addAll(decoded.map((e) => StoreCartItem.fromJson(e)).toList());
+      }
+
+      // Load Branch Context
+      _activeBranchId = prefs.getString('cart_branch_id');
+      
+      notifyListeners();
+    } catch (e) {
+      print("Error loading cart: $e");
+    }
+  }
+
+  Future<void> _saveCart() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Save Laundry Items
+      final String laundryJson = json.encode(_items.map((e) => e.toJson()).toList());
+      await prefs.setString('cart_items', laundryJson);
+
+      // Save Store Items
+      final String storeJson = json.encode(_storeItems.map((e) => e.toJson()).toList());
+      await prefs.setString('store_items', storeJson);
+
+      // Save Branch Context
+      if (_activeBranchId != null) {
+        await prefs.setString('cart_branch_id', _activeBranchId!);
+      } else {
+        await prefs.remove('cart_branch_id');
+      }
+    } catch (e) {
+       print("Error saving cart: $e");
+    }
   }
 
   Future<void> _fetchTaxSettings() async {
@@ -45,6 +100,7 @@ class CartService extends ChangeNotifier {
 
   void addItem(CartItem item) {
     _items.add(item);
+    _saveCart();
     notifyListeners();
   }
   
@@ -57,6 +113,7 @@ class CartService extends ChangeNotifier {
     } else {
       _storeItems.add(item);
     }
+    _saveCart();
     notifyListeners();
   }
   
@@ -68,17 +125,20 @@ class CartService extends ChangeNotifier {
       } else {
         _storeItems[index] = StoreCartItem(product: item.product, variant: item.variant, quantity: newQuantity);
       }
+      _saveCart();
       notifyListeners();
     }
   }
 
   void removeItem(CartItem item) {
     _items.remove(item);
+    _saveCart();
     notifyListeners();
   }
   
   void removeStoreItem(StoreCartItem item) {
     _storeItems.remove(item);
+    _saveCart();
     notifyListeners();
   }
 
@@ -124,11 +184,8 @@ class CartService extends ChangeNotifier {
 
   // Base Subtotal (Before Discount)
   double get subtotal => serviceTotalAmount + storeTotalAmount; 
-
   double get subtotalAfterDiscount => (subtotal - discountAmount) < 0 ? 0 : (subtotal - discountAmount);
-
   double get taxAmount => (subtotalAfterDiscount * (taxRate / 100));
-  
   double get totalAmount => subtotalAfterDiscount + taxAmount;
 
   // Apply Promo
@@ -151,9 +208,7 @@ class CartService extends ChangeNotifier {
         return response.data['message'] ?? "Invalid code";
       }
     } catch (e) {
-      // Handle 400s etc
-      if (e.toString().contains("400") || e.toString().contains("404")) { // Simplified dio error check
-         // Try to parse error message if possible, otherwise generic
+      if (e.toString().contains("400") || e.toString().contains("404")) {
          return "Invalid or expired promotion";
       }
       return "Error validating code";
@@ -171,6 +226,7 @@ class CartService extends ChangeNotifier {
     _items.clear();
     _storeItems.clear();
     _appliedPromotion = null; // Clear Promo
+    _saveCart(); // Save emptiness
     notifyListeners();
   }
 
@@ -180,15 +236,18 @@ class CartService extends ChangeNotifier {
        _appliedPromotion = null; // Clear promo on branch switch
     }
     _activeBranchId = branchId;
+    _saveCart();
   }
 
   void clearServiceItems() {
     _items.clear();
+    _saveCart();
     notifyListeners();
   }
 
   void clearStoreItems() {
     _storeItems.clear();
+    _saveCart();
     notifyListeners();
   }
 }
