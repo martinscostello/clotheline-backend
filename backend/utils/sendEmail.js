@@ -31,7 +31,8 @@ const sendEmail = async (options) => {
         },
         tls: {
             rejectUnauthorized: false
-        }
+        },
+        family: 4 // Force IPv4
     } : {
         service: 'gmail',
         auth: {

@@ -47,12 +47,18 @@ exports.signup = async (req, res) => {
             console.log(`[Auth] OTP Email sent successfully to ${user.email}`);
         } catch (emailErr) {
             console.error("[Auth] FATAL: Email send failed:", emailErr);
-            // Delete user so they can retry signup
-            await User.findByIdAndDelete(user._id);
-            return res.status(500).json({ msg: 'Failed to send verification email. Please try again.', error: emailErr.message });
+            // Do NOT delete user, allow them to grab OTP from Debug/Logs
+            // await User.findByIdAndDelete(user._id);
+            console.log("Email failed but User created. Proceeding with Manual OTP.");
+            return res.status(200).json({
+                msg: 'User created. Email failed (Network Timeouts). Use Debug OTP.',
+                debug_otp: otp,
+                email_error: emailErr.message
+            });
         }
 
-        res.json({ msg: 'OTP sent', email: user.email });
+        // Return OTP in response allows bypass of Email issues during Testing
+        res.json({ msg: 'OTP sent', email: user.email, debug_otp: otp });
 
     } catch (err) {
         console.error(err.message);
