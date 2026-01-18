@@ -155,3 +155,28 @@ exports.seedProducts = async () => {
         console.error('Product Seeding Error:', err);
     }
 };
+exports.migrateLegacyProducts = async (req, res) => {
+    try {
+        // 1. Find Benin Branch
+        // We look for a branch with name containing "Benin"
+        const branch = await Branch.findOne({ name: { $regex: "Benin", $options: "i" } });
+        if (!branch) {
+            return res.status(404).json({ msg: "Benin branch not found for migration." });
+        }
+
+        // 2. Update all products without branchId
+        const result = await Product.updateMany(
+            { branchId: { $exists: false } },
+            { $set: { branchId: branch._id } }
+        );
+
+        res.json({
+            msg: "Migration Complete",
+            movedCount: result.modifiedCount,
+            targetBranch: branch.name
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Migration Error");
+    }
+};
