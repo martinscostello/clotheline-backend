@@ -309,6 +309,7 @@ exports.seedUsers = async () => {
     try {
         const adminEmail = 'admin@clotheline.com';
         let admin = await User.findOne({ email: adminEmail });
+
         if (!admin) {
             console.log('Seeding Master Admin...');
             const salt = await bcrypt.genSalt(10);
@@ -332,6 +333,22 @@ exports.seedUsers = async () => {
             });
             await admin.save();
             console.log('Master Admin Seeded');
+        } else {
+            // [FIX] Repair Legacy Admin (e.g. if unverified)
+            if (!admin.isVerified || !admin.isMasterAdmin) {
+                console.log('Repairing Master Admin State...');
+                admin.isVerified = true;
+                admin.isMasterAdmin = true;
+                // Ensure permissions exist
+                if (!admin.permissions) {
+                    admin.permissions = {
+                        manageOrders: true, manageUsers: true, manageCMS: true,
+                        manageServices: true, manageProducts: true, manageDelivery: true
+                    };
+                }
+                await admin.save();
+                console.log('Master Admin Repaired');
+            }
         }
     } catch (err) {
         console.error('User Seeding Error:', err);
