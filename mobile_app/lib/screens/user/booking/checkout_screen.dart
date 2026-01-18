@@ -15,6 +15,7 @@ import '../../../providers/branch_provider.dart';
 import '../../../services/payment_service.dart';
 import '../../../services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../utils/currency_formatter.dart';
 
 class CheckoutScreen extends StatefulWidget {
   // Use Singleton instead of passing list
@@ -518,7 +519,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(child: Text("${item.quantity}x ${item.item.name} (${item.serviceType.name})", style: TextStyle(color: textColor))),
-                Text("₦${item.totalPrice.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                Text(CurrencyFormatter.format(item.totalPrice), style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
               ],
             ),
           )),
@@ -530,7 +531,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
                  Text("Pickup Fee", style: TextStyle(color: textColor)),
-                 Text("₦${_pickupFee.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                 Text(CurrencyFormatter.format(_pickupFee), style: const TextStyle(fontWeight: FontWeight.bold)),
                ],
              ),
           
@@ -539,7 +540,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
                  Text("Delivery Fee", style: TextStyle(color: textColor)),
-                 Text("₦${_deliveryFee.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                 Text(CurrencyFormatter.format(_deliveryFee), style: const TextStyle(fontWeight: FontWeight.bold)),
                ],
              ),
           
@@ -548,7 +549,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("Total", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-              Text("₦${total.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
+              Text(CurrencyFormatter.format(total), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
             ],
           ),
         ],
@@ -591,10 +592,46 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   Future<void> _submitOrder() async {
     setState(() => _isSubmitting = true);
 
+    // 1. Check for Mixed Cart (Bucket + Store)
+    String scope = 'bucket';
+    bool includeStoreItems = false;
+
+    if (_cartService.storeItems.isNotEmpty) {
+      // Prompt User
+      final result = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Items in Cart"),
+          content: const Text("You have items in your Store Cart. How would you like to proceed?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'separate'),
+              child: const Text("Pay Laundry Only"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(ctx, 'combined'),
+              child: const Text("Pay All Together"),
+            ),
+          ],
+        ),
+      );
+
+      if (result == 'combined') {
+        scope = 'combined';
+        includeStoreItems = true;
+      } else {
+        // Default or 'separate'
+        scope = 'bucket';
+        includeStoreItems = false;
+      }
+    }
+
     // Prepare Items
     List<Map<String, dynamic>> items = [];
     
-    // Laundry Items
+    // Laundry Items (Always included in Bucket checkout)
     for (var i in _cartService.items) {
       items.add({
         'itemType': 'Service',
@@ -606,15 +643,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       });
     }
 
-    // Also add Store Items if any
-    for (var i in _cartService.storeItems) {
-      items.add({
-        'itemType': 'Product',
-        'itemId': i.product.id,
-        'name': i.product.name + (i.variant != null ? " (${i.variant!.name})" : ""),
-        'quantity': i.quantity,
-        'price': i.price
-      });
+    // Store Items (Conditional)
+    if (includeStoreItems) {
+      for (var i in _cartService.storeItems) {
+        items.add({
+          'itemType': 'Product',
+          'itemId': i.product.id,
+          'name': i.product.name + (i.variant != null ? " (${i.variant!.name})" : ""),
+          'quantity': i.quantity,
+          'price': i.price
+        });
+      }
     }
 
     // [Multi-Branch] Get Selected Branch
@@ -625,7 +664,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     final auth = Provider.of<AuthService>(context, listen: false);
     final String email = auth.currentUser?['email'] ?? "guest@clotheline.com";
 
+    // Debug: Ensure we don't send empty items (Standard logic)
+    if (items.isEmpty) {
+       setState(() => _isSubmitting = false);
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No items to checkout")));
+       return;
+    }
+
     final orderData = {
+      'scope': scope, // [STRICT SCOPE]
       'branchId': selectedBranch?.id,
       'items': items,
       // 'totalAmount': total, // Backend calculates this now to be secure
@@ -640,7 +687,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       'pickupFee': _pickupFee,
       'deliveryFee': _deliveryFee,
       'guestInfo': {
-        'name': 'Guest User', 
+        'name': auth.currentUser != null ? (auth.currentUser!['name'] ?? 'Guest User') : 'Guest User', 
         'email': email, // Pass email for Paystack
         'phone': _pickupPhoneController.text.isNotEmpty ? _pickupPhoneController.text : _deliveryPhoneController.text
       }
@@ -752,26 +799,65 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                   onPressed: _isSubmitting ? null : _submitOrder,
                   child: _isSubmitting 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text("CONFIRM & PAY", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : const Text("PAY NOW", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
-              const SizedBox(height: 15),
-               SizedBox(
+              const SizedBox(height: 10),
+              SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.call),
-                  label: Text("Call $_branchPhone to Place Order"),
+                child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: isDark ? Colors.white : Colors.black,
-                    side: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: AppTheme.primaryColor),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
-                  onPressed: _callBranch,
+                  onPressed: _showCallDialog, 
+                  child: const Text("Call to Place Order", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
                 ),
               ),
             ],
           ),
     );
+  }
+
+  // New Dialog Logic
+  void _showCallDialog() {
+    // Prefer Branch Phone
+    final branch = Provider.of<BranchProvider>(context, listen: false).selectedBranch;
+    final phoneToCall = branch?.phone ?? _branchPhone; 
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Call to Place Order"),
+        content: Text("Dial - $phoneToCall"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
+            onPressed: () {
+               Navigator.pop(ctx);
+               _launchIntenDialer(phoneToCall);
+            },
+            child: const Text("Call"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _launchIntenDialer(String phone) async {
+    final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), ''); 
+    if (cleanPhone.isEmpty) return;
+    
+    final Uri launchUri = Uri(scheme: 'tel', path: cleanPhone);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not launch dialer")));
+    }
   }
 }

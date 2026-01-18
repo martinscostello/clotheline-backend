@@ -140,7 +140,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 onRefresh: () => _fetchOrders(),
                 color: AppTheme.primaryColor,
                 child: ListView(
-                  padding: const EdgeInsets.only(top: 150, bottom: 20, left: 20, right: 20),
+                  padding: const EdgeInsets.only(top: 220, bottom: 20, left: 20, right: 20), // [FIX] Increased Padding
                   children: [
                     // Laundry Items
                     ..._cartService.items.map((item) => _buildBucketItem(
@@ -215,46 +215,58 @@ class _OrdersScreenState extends State<OrdersScreen> {
     required String title, required String subtitle, required int quantity, required double price, required VoidCallback onDelete,
     required bool isDark, required Color textColor, required Color secondaryTextColor
   }) {
+    final content = Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text("${quantity}x", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                Text(subtitle, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(CurrencyFormatter.format(price), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: onDelete,
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: GlassContainer(
-          opacity: isDark ? 0.1 : 0.05,
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Text("${quantity}x", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                    Text(subtitle, style: TextStyle(color: secondaryTextColor, fontSize: 12)),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(CurrencyFormatter.format(price), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: onDelete,
-                  ),
-                ],
-              )
-            ],
+      child: isDark 
+        ? GlassContainer(opacity: 0.1, padding: EdgeInsets.zero, child: content)
+        : Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 5), spreadRadius: 1)
+              ]
+            ),
+            child: content,
           ),
-      ),
     );
   }
 
@@ -284,31 +296,34 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return ListenableBuilder(
       listenable: _orderService,
       builder: (context, _) {
-       return RefreshIndicator(
+        return RefreshIndicator(
         onRefresh: () => _fetchOrders(),
         color: AppTheme.primaryColor,
         child: ListView.builder(
-          padding: const EdgeInsets.only(top: 220, bottom: 100, left: 20, right: 20),
+          padding: const EdgeInsets.only(top: 220, bottom: 100, left: 20, right: 20), // [FIX] Adjusted Padding
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final order = filtered[index];
             final dateStr = DateFormat('MMM d, h:mm a').format(order.date);
             
-            final content = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                    _buildStatusBadge(order.status),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                 Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 5),
-                Text(dateStr, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12)),
-              ],
+            final content = Padding(
+              padding: const EdgeInsets.all(16), // Padding inside card
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                      _buildStatusBadge(order.status),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                   Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
+                  Text(dateStr, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12)),
+                ],
+              ),
             );
 
             return GestureDetector(
@@ -322,12 +337,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 child: isDark 
                   ? GlassContainer(opacity: 0.1, child: content)
                   : Container(
-                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
-                           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
+                           // [FIX] Soft Shadow
+                           BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 5), spreadRadius: 1)
                         ]
                       ),
                       child: content,

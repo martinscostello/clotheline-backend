@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
-import '../../../models/booking_models.dart';
+import '../../../providers/branch_provider.dart';
+import '../../../utils/currency_formatter.dart';
+import '../../../models/booking_models.dart'; // [FIX] Added missing import
 // Will import CheckoutScreen later
 import 'checkout_screen.dart'; 
 import 'package:flutter/services.dart';
@@ -75,7 +77,7 @@ class MyBucketScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        "₦${item.totalPrice.toStringAsFixed(0)}",
+                        CurrencyFormatter.format(item.totalPrice),
                         style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ],
@@ -102,7 +104,7 @@ class MyBucketScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text("Total Amount", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
-                    Text("₦${grandTotal.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(CurrencyFormatter.format(grandTotal), style: const TextStyle(color: AppTheme.primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 20),

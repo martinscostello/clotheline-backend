@@ -53,6 +53,8 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             // Delivery
             pickupOption,
             deliveryOption,
+            pickupAddress, // [FIX] Added
+            pickupPhone,   // [FIX] Added
             deliveryAddress,
             deliveryPhone,
             deliveryCoordinates,
@@ -97,14 +99,14 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             // Logistics
             pickupOption: pickupOption || 'None',
             deliveryOption: deliveryOption || 'None',
+            pickupAddress, // [FIX] Added
+            pickupPhone,   // [FIX] Added
             deliveryAddress,
             deliveryPhone,
             deliveryCoordinates,
 
             // Guest
-            guestName: guestInfo?.name,
-            guestEmail: guestInfo?.email,
-            guestPhone: guestInfo?.phone,
+            guestInfo: guestInfo, // [FIX] Pass full object as per Schema
 
             createdAt: Date.now()
         });
@@ -137,7 +139,9 @@ exports.getUserOrders = async (req, res) => {
 // GET /orders (Admin/All) - Fix for Missing Handler
 exports.getAllOrders = async (req, res) => {
     try {
-        const orders = await Order.find().sort({ createdAt: -1 });
+        const orders = await Order.find()
+            .sort({ createdAt: -1 })
+            .populate('user', 'name email'); // Populate User Details
         res.json(orders);
     } catch (err) {
         console.error(err.message);

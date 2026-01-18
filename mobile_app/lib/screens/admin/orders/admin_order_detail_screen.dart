@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../services/api_service.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 class AdminOrderDetailScreen extends StatefulWidget {
   final OrderModel order;
   const AdminOrderDetailScreen({super.key, required this.order});
@@ -39,12 +41,26 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     }
   }
 
+  Future<void> _contactCustomer() async {
+    final phone = widget.order.guestPhone ?? "";
+    if (phone.isEmpty) return;
+    
+    final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
+    final Uri smsUri = Uri(scheme: 'sms', path: cleanPhone);
+    
+    if (await canLaunchUrl(smsUri)) {
+      await launchUrl(smsUri);
+    } else {
+       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not launch messaging app")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text("Order #${widget.order.id.substring(widget.order.id.length - 6)}", style: const TextStyle(color: Colors.white)),
+        title: Text("Order #${widget.order.id.substring(widget.order.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         leading: const BackButton(color: Colors.white),
       ),
@@ -101,13 +117,26 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Customer Info", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 15),
-                        _buildInfoRow(Icons.person, widget.order.guestName ?? "Guest"),
-                        _buildInfoRow(Icons.phone, widget.order.guestPhone ?? "N/A"),
+                         Row(
+                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                           children: [
+                             const Text("Customer Info", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                             IconButton(
+                               icon: const Icon(Icons.message_outlined, color: AppTheme.primaryColor),
+                               onPressed: _contactCustomer,
+                               tooltip: "Message User",
+                             )
+                           ],
+                         ),
+                        const SizedBox(height: 5),
+                        _buildInfoRow(Icons.person, widget.order.userName ?? widget.order.guestName ?? "Guest"),
+                        _buildInfoRow(Icons.email, widget.order.userEmail ?? widget.order.guestEmail ?? "No Email"),
+                        _buildInfoRow(Icons.phone, widget.order.guestPhone ?? "No Phone"),
+                        
                         const SizedBox(height: 10),
                         const Divider(color: Colors.white10),
                         const SizedBox(height: 10),
+                        
                         const Text("Logistics", style: TextStyle(color: Colors.white70, fontSize: 12)),
                         const SizedBox(height: 5),
                         _buildInfoRow(Icons.upload, "Pickup: ${widget.order.pickupOption}"),

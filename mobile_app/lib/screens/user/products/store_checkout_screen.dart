@@ -508,9 +508,46 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
 
   Future<void> _submitOrder() async {
     setState(() => _isSubmitting = true);
+    
+    // 1. Check for Mixed Cart (Bucket + Store)
+    String scope = 'cart';
+    bool includeLaundryItems = false;
+
+    if (_cartService.items.isNotEmpty) {
+      // Prompt User
+      final result = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Items in My Bucket"),
+          content: const Text("You have laundry items in your bucket. How would you like to proceed?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'separate'),
+              child: const Text("Pay Store Only"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(ctx, 'combined'),
+              child: const Text("Pay All Together"),
+            ),
+          ],
+        ),
+      );
+
+      if (result == 'combined') {
+        scope = 'combined';
+        includeLaundryItems = true;
+      } else {
+        // Default or 'separate'
+        scope = 'cart';
+        includeLaundryItems = false;
+      }
+    }
+
     List<Map<String, dynamic>> items = [];
     
-    // ONLY Store Items
+    // Store Items (Always included in Store checkout)
     for (var i in _cartService.storeItems) {
       items.add({
         'itemType': 'Product',
@@ -520,6 +557,20 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
         'quantity': i.quantity,
         'price': i.price
       });
+    }
+
+    // Laundry Items (Conditional)
+    if (includeLaundryItems) {
+      for (var i in _cartService.items) {
+        items.add({
+          'itemType': 'Service',
+          'itemId': i.item.id,
+          'name': i.item.name,
+          'serviceType': i.serviceType.name,
+          'quantity': i.quantity,
+          'price': i.totalPrice / i.quantity // Unit price
+        });
+      }
     }
 
     // [Multi-Branch] Get Selected Branch
@@ -537,7 +588,15 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     final auth = Provider.of<AuthService>(context, listen: false);
     final String email = auth.currentUser?['email'] ?? "guest@clotheline.com";
 
+    // Debug: Ensure we don't send empty items (Standard logic)
+    if (items.isEmpty) {
+       setState(() => _isSubmitting = false);
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No items to checkout")));
+       return;
+    }
+
     final orderData = {
+      'scope': scope, // [STRICT SCOPE]
       'branchId': selectedBranch?.id, 
       'items': items,
       // 'totalAmount': _cartService.totalAmount + _deliveryFee, // Calculated on backend

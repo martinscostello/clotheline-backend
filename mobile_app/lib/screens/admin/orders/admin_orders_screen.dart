@@ -166,21 +166,34 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("#${order.id.substring(order.id.length - 6)}", style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                    // Left Column: #ID, Name, Date
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("#${order.id.substring(order.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Text(order.userName ?? order.guestName ?? "Guest", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text(DateFormat('MMM dd, hh:mm a').format(order.date), style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    // Right: Status
                     _buildStatusBadge(order.status.name),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Text(order.guestName ?? "Guest", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                Text(DateFormat('MMM dd, hh:mm a').format(order.date), style: const TextStyle(color: Colors.white38, fontSize: 12)),
                 const Divider(color: Colors.white10, height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text("${order.items.length} Items", style: const TextStyle(color: Colors.white70)),
-                    Text("₦${order.totalAmount.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
+                    // Using CurrencyFormatter implicitly by importing or local helper? 
+                    // CurrencyFormatter is not imported in this file. I need to add import.
+                    // Actually, I'll use a local formatted string for now or import it.
+                    // Wait, I should import it.
+                    Text("₦${_formatCurrency(order.totalAmount)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
               ],
@@ -211,5 +224,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
       ),
       child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
+  }
+
+  String _formatCurrency(double amount) {
+    return NumberFormat("#,##0", "en_US").format(amount);
   }
 }

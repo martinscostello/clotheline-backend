@@ -22,9 +22,25 @@ router.post('/initialize', auth, async (req, res) => {
         }
         const userId = req.user.id;
 
-        const { items, branchId, orderId, provider = 'paystack', deliveryOption, deliveryAddress } = req.body;
+        const { items, scope, branchId, orderId, provider = 'paystack', deliveryOption, deliveryAddress } = req.body;
+
+        // [STRICT SCOPE ENFORCEMENT]
+        if (!scope || !['cart', 'bucket', 'combined'].includes(scope)) {
+            return res.status(400).json({ msg: 'Payment Scope (cart, bucket, combined) is required.' });
+        }
 
         let calculationItems = items;
+
+        // Filter based on Scope
+        if (scope === 'bucket') {
+            // Laundry Only
+            calculationItems = items.filter(i => i.itemType === 'Service');
+        } else if (scope === 'cart') {
+            // Store Only
+            calculationItems = items.filter(i => i.itemType === 'Product');
+        }
+        // 'combined' takes all items safely.
+
         let retryOrderId = null;
 
         // [RETRY FLOW]

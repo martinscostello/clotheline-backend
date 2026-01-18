@@ -14,7 +14,9 @@ import '../notifications/admin_notification_dashboard.dart';
 import '../reports/admin_financial_dashboard.dart';
 import '../settings/admin_tax_settings_screen.dart';
 import '../settings/admin_delivery_settings_screen.dart';
-// import '../orders/admin_orders_screen.dart'; // If needed for 'Create Order' or linking Recent Activity
+import '../orders/admin_orders_screen.dart'; 
+import 'admin_revenue_screen.dart';
+import '../users/admin_users_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -85,10 +87,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     mainAxisSpacing: 15,
                     childAspectRatio: 1.4,
                     children: [
-                       _buildStatCard("Active Orders", "$activeOrders", Icons.local_laundry_service, Colors.blue),
-                       _buildStatCard("Pending", "$pendingOrders", Icons.pending_actions, Colors.orange),
-                       _buildStatCard("Revenue", CurrencyFormatter.format(revenue), Icons.attach_money, Colors.green),
-                       _buildStatCard("New Users", "N/A", Icons.person_add, Colors.purple), // Placeholder
+                       _buildStatCard("Active Orders", "$activeOrders", Icons.local_laundry_service, Colors.blue, 
+                         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
+                       
+                       _buildStatCard("Pending", "$pendingOrders", Icons.pending_actions, Colors.orange, 
+                         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
+                       
+                       _buildStatCard("Revenue", CurrencyFormatter.format(revenue), Icons.attach_money, Colors.green, 
+                         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminRevenueScreen()))),
+                       
+                       _buildStatCard("Total Users", "View", Icons.group, Colors.purple, // Changed Title
+                         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUsersScreen()))),
                     ],
                   ),
                   const SizedBox(height: 30),
@@ -114,7 +123,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           const SizedBox(width: 15),
                         if (isMaster || permissions['manageCMS'] == true)
                            _buildQuickAction(context, "Ads & Banners", Icons.campaign, Colors.orangeAccent, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads')));
+                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads')));
                            }),
                         if (isMaster || permissions['manageUsers'] == true) ...[
                            const SizedBox(width: 15),
@@ -143,7 +152,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
                   // Recent Activity / Incoming Requests
                   const Text("Incoming Orders", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 5), // [UX] Reduced Spacing
                   
                   if (top5Orders.isEmpty)
                      const Padding(
@@ -228,25 +237,37 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return GlassContainer(
-      opacity: 0.15,
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-            ),
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, VoidCallback onTap) { // Added onTap
+    return Center( // Use Center/Container to ensure tap area
+     child: Material(
+       color: Colors.transparent,
+       child: InkWell( // Wrap with InkWell for interaction
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: GlassContainer(
+          opacity: 0.15,
+          padding: const EdgeInsets.all(12),
+          child: SizedBox( // Ensure full width/height within Grid
+           width: double.infinity,
+           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 28),
+              const SizedBox(height: 8),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(title, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(title, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-        ],
-      ),
+         ),
+        ),
+       ),
+     ),
     );
   }
 

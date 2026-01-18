@@ -29,6 +29,9 @@ class OrderModel {
   // Guest Info
   final String? guestName;
   final String? guestPhone;
+  final String? guestEmail; // [Added]
+  final String? userName;
+  final String? userEmail;
 
   OrderModel({
     required this.id,
@@ -46,9 +49,12 @@ class OrderModel {
     this.deliveryAddress,
     this.deliveryPhone,
     required this.date,
-    this.branchId, // Optional/Nullable
+    this.branchId, 
     this.guestName,
-    this.guestPhone
+    this.guestPhone,
+    this.guestEmail, // [Added]
+    this.userName,
+    this.userEmail
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -56,7 +62,7 @@ class OrderModel {
       id: json['_id'],
       items: (json['items'] as List).map((i) => OrderItem.fromJson(i)).toList(),
       totalAmount: (json['totalAmount'] as num).toDouble(),
-      subtotal: (json['subtotal'] as num?)?.toDouble() ?? (json['totalAmount'] as num).toDouble(), // Fallback
+      subtotal: (json['subtotal'] as num?)?.toDouble() ?? (json['totalAmount'] as num).toDouble(),
       taxAmount: (json['taxAmount'] as num?)?.toDouble() ?? 0.0,
       taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0.0,
       status: OrderStatus.values.firstWhere((e) => e.name == json['status'], orElse: () => OrderStatus.New),
@@ -71,6 +77,9 @@ class OrderModel {
       branchId: json['branchId'],
       guestName: json['guestInfo']?['name'],
       guestPhone: json['guestInfo']?['phone'],
+      guestEmail: json['guestInfo']?['email'], // [Added]
+      userName: json['user'] is Map ? json['user']['name'] : null,
+      userEmail: json['user'] is Map ? json['user']['email'] : null,
     );
   }
 
@@ -88,7 +97,8 @@ class OrderModel {
       'deliveryPhone': deliveryPhone,
       'guestInfo': {
         'name': guestName,
-        'phone': guestPhone
+        'phone': guestPhone,
+        'email': guestEmail // [Added]
       }
     };
   }

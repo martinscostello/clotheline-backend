@@ -6,9 +6,11 @@ import '../../models/booking_models.dart';
 import '../../screens/user/booking/my_bucket_screen.dart';
 import '../../services/cart_service.dart';
 import '../../models/service_model.dart';
+import '../../utils/currency_formatter.dart';
 
 class BookingSheet extends StatefulWidget {
   final ServiceModel serviceModel;
+
 
   const BookingSheet({super.key, required this.serviceModel});
 
@@ -137,7 +139,7 @@ class _BookingSheetState extends State<BookingSheet> {
                          trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text("₦${item.price.toStringAsFixed(0)}", style: TextStyle(
+                            Text(CurrencyFormatter.format(item.price), style: TextStyle(
                               color: isDark ? Colors.white70 : Colors.black54,
                               fontWeight: FontWeight.bold
                             )),
@@ -206,7 +208,7 @@ class _BookingSheetState extends State<BookingSheet> {
                       String priceText = "${variant.priceMultiplier}x";
                       if (_selectedCloth != null) {
                          double price = _selectedCloth!.price * variant.priceMultiplier;
-                         priceText = "₦${price.toStringAsFixed(0)}";
+                         priceText = CurrencyFormatter.format(price);
                       }
 
                       return ListTile(
@@ -308,7 +310,7 @@ class _BookingSheetState extends State<BookingSheet> {
                         ),
                         if (_selectedCloth != null)
                           Text(
-                            "₦${_selectedCloth!.price.toStringAsFixed(0)}",
+                            CurrencyFormatter.format(_selectedCloth!.price),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                       ],
@@ -343,7 +345,7 @@ class _BookingSheetState extends State<BookingSheet> {
                         ),
                         Text(
                            _selectedCloth != null 
-                             ? "₦${(_selectedCloth!.price * (_selectedVariant?.priceMultiplier ?? 1.0)).toStringAsFixed(0)}"
+                             ? CurrencyFormatter.format(_selectedCloth!.price * (_selectedVariant?.priceMultiplier ?? 1.0))
                              : "${_selectedVariant?.priceMultiplier ?? 1.0}x",
                            style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
@@ -403,7 +405,7 @@ class _BookingSheetState extends State<BookingSheet> {
                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
                      Text("In Bucket (${cartItems.length})", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                     Text("Total: ₦${_cartService.totalAmount.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                     Text("Total: ${CurrencyFormatter.format(_cartService.totalAmount)}", style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
                    ],
                  ),
                  const SizedBox(height: 15),
