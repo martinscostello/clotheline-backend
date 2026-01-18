@@ -1,4 +1,4 @@
-enum OrderStatus { New, InProgress, Ready, Completed, Cancelled }
+enum OrderStatus { New, InProgress, Ready, Completed, Cancelled, Refunded }
 enum PaymentStatus { Pending, Paid }
 
 class OrderModel {

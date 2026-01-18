@@ -305,7 +305,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                     'orderId': widget.order.id,
                     'amount': amount 
                   });
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Refund Initiated Successfully")));
+                  Navigator.pop(context, true);
                   // Trigger Refresh?
                   // setState/Init? For now snackbar is good confirmation.
                } catch (e) {

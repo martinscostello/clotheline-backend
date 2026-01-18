@@ -24,7 +24,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   
   late TabController _tabController;
   Timer? _refreshTimer;
-  final List<String> _tabs = ['New', 'InProgress', 'Ready', 'Completed', 'Cancelled'];
+  final List<String> _tabs = ['New', 'InProgress', 'Ready', 'Completed', 'Cancelled', 'Refunded'];
 
   @override
   void initState() {
@@ -212,6 +212,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
       case 'Ready': color = Colors.purple; break;
       case 'Completed': color = Colors.green; break;
       case 'Cancelled': color = Colors.red; break;
+      case 'Refunded': color = Colors.pinkAccent; break;
       default: color = Colors.grey;
     }
 

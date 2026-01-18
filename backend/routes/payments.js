@@ -247,10 +247,25 @@ router.post('/refund', auth, async (req, res) => {
                     payment.refundReference = response.data.data.reference; // Refund reference? (Check API)
                     await payment.save();
 
-                    // Update Order Status?
-                    // "Refunded orders remain Cancelled or Completed (with refund tag)"
-                    // Keep Order status as is, but maybe add a flag?
-                    // For now, relying on Payment Status.
+                    // Update Order Status
+                    const Order = require('../models/Order');
+                    const order = await Order.findById(payment.orderId || orderId);
+                    if (order) {
+                        order.status = 'Refunded'; // [FIX] Update Status
+                        // Optional: order.paymentStatus = 'Refunded'? Or keep 'Paid'? Usually 'Refunded' is better if enum allows. 
+                        // But Order status 'Refunded' is sufficient for UI.
+                        await order.save();
+
+                        // Notify User
+                        const Notification = require('../models/Notification');
+                        await new Notification({
+                            userId: order.user,
+                            title: 'Order Refunded',
+                            message: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been refunded.`,
+                            type: 'order',
+                            branchId: order.branchId
+                        }).save();
+                    }
 
                     return res.json({ msg: 'Refund initiated successfully', refund: response.data.data });
                 } else {

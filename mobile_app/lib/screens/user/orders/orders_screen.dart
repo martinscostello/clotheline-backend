@@ -111,7 +111,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         _buildBucketTab(isDark, textColor, secondaryTextColor),
         _buildOrderList([OrderStatus.New, OrderStatus.InProgress], isDark, textColor, secondaryTextColor), 
         _buildOrderList([OrderStatus.Ready, OrderStatus.Completed], isDark, textColor, secondaryTextColor),
-        _buildOrderList([OrderStatus.Cancelled], isDark, textColor, secondaryTextColor),
+        _buildOrderList([OrderStatus.Cancelled, OrderStatus.Refunded], isDark, textColor, secondaryTextColor),
       ],
     );
   }
@@ -364,6 +364,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       case OrderStatus.Ready: 
       case OrderStatus.Completed: color = Colors.green; break;
       case OrderStatus.Cancelled: color = Colors.red; break;
+      case OrderStatus.Refunded: color = Colors.pinkAccent; break; // [Added]
       default: color = Colors.grey;
     }
 
