@@ -2,14 +2,14 @@ const mongoose = require('mongoose');
 
 const PaymentSchema = new mongoose.Schema({
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: false }, // Optional initially (Order Intent)
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false }, // [Changed] Optional to support Guest Checkout
     amount: { type: Number, required: true }, // in Kobo (or base currency unit)
     currency: { type: String, default: 'NGN' },
     provider: { type: String, enum: ['paystack', 'flutterwave'], default: 'paystack' },
     reference: { type: String, required: true, unique: true },
     status: {
         type: String,
-        enum: ['pending', 'success', 'failed', 'cancelled'],
+        enum: ['pending', 'success', 'failed', 'cancelled', 'flagged'], // [Changed] Added 'flagged'
         default: 'pending'
     },
     refundStatus: {

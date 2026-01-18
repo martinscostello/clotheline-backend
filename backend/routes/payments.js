@@ -44,12 +44,21 @@ router.post('/initialize', async (req, res) => {
 
         // 2. Initialize with Paystack DIRECTLY
         // We embed all critical order info in METADATA so we can reconstruct it on verify.
+
+        // [Sanitization] Ensure userId is null if not provided or empty string
+        let validUserId = null;
+        if (req.body.userId && req.body.userId.length > 0) {
+            validUserId = req.body.userId;
+        } else if (req.user && req.user.userId) {
+            validUserId = req.user.userId;
+        }
+
         const metadata = {
             ...req.body,
             retryOrderId,
             // Ensure items are included for reconstruction
             items: calculationItems,
-            userId: req.user ? req.user.userId : null // Optional: Request MIGHT have user if auth middleware is present
+            userId: validUserId
         };
 
         const paystackResponse = await axios.post(
