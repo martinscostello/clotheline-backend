@@ -8,6 +8,7 @@ const AppContentSchema = new mongoose.Schema({
         tagLine: String,
         tagLineColor: { type: String, default: "0xFFFFFFFF" },
         actionUrl: String,
+        mediaType: { type: String, default: 'image', enum: ['image', 'video'] },
         active: { type: Boolean, default: true }
     }],
     homeGridServices: [{

@@ -17,7 +17,8 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'clotheline_uploads', // Folder in Cloudinary
-        allowed_formats: ['jpg', 'png', 'jpeg', 'gif'],
+        allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'mp4', 'mov', 'avi'],
+        resource_type: 'auto', // Auto-detect image vs video
         public_id: (req, file) => file.fieldname + '-' + Date.now(), // Unique filename
     },
 });
@@ -25,7 +26,7 @@ const storage = new CloudinaryStorage({
 // Init Upload
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5000000 }, // 5MB limit
+    limits: { fileSize: 50000000 }, // 50MB limit
 }).single('image');
 
 // Upload Route
