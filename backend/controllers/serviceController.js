@@ -4,80 +4,99 @@ exports.getAllServices = async (req, res) => {
     try {
         const { branchId, includeHidden } = req.query;
 
-        // 1. Fetch ALL Services (Global Record)
-        // We do NOT filter by 'isActive' here because:
-        // - Admin needs to see inactive services to manage them.
-        // - Branch logic might override 'isActive'.
         let services = await Service.find();
 
         if (branchId) {
-            // STRICT BRANCH PROJECTION
-            services = services.reduce((acc, service) => {
-                const s = service.toObject();
+            // STRICT BRANCH ISOLATION
+            // Logic:
+            // 1. Check if Branch Config exists.
+            // 2. [MIGRATION] If Branch Config has NO items, COPY Global Items to this Branch (One-time init).
+            // 3. Return Branch Config state (Name, Items, Prices, Types) as the "Truth".
 
-                // 2. Resolve Branch State
-                let branchIsActive = true;
-                let branchIsLocked = false;
-                let branchLockedLabel = s.lockedLabel || "Coming Soon";
+            const processedServices = [];
 
-                if (s.branchConfig && s.branchConfig.length > 0) {
-                    const config = s.branchConfig.find(b => b.branchId.toString() === branchId);
-                    if (config) {
-                        branchIsActive = config.isActive;
-                        branchIsLocked = config.isLocked;
-                        if (config.lockedLabel) branchLockedLabel = config.lockedLabel;
+            for (let s of services) {
+                // Determine Branch Config
+                let configIndex = s.branchConfig.findIndex(b => b.branchId.toString() === branchId);
 
-                        // [PROJECT OVERRIDES]
-                        if (config.customName) s.name = config.customName;
-                        if (config.customDescription) s.description = config.customDescription;
-                        if (config.discountPercentage !== undefined) s.discountPercentage = config.discountPercentage;
-                        if (config.discountLabel) s.discountLabel = config.discountLabel;
-
-                        // Service Types Override (Complete Replacement)
-                        if (config.serviceTypes && config.serviceTypes.length > 0) {
-                            s.serviceTypes = config.serviceTypes;
-                        }
+                // [AUTO-INIT / LAZY MIGRATION]
+                // If this branch has never "owned" this service, claim ownership now by cloning global state.
+                let needsSave = false;
+                if (configIndex === -1) {
+                    s.branchConfig.push({
+                        branchId,
+                        isActive: s.isActive,
+                        isLocked: s.isLocked,
+                        lockedLabel: s.lockedLabel || "Coming Soon",
+                        // Clone Global Items
+                        items: s.items.map(i => ({ name: i.name, price: i.price, isActive: true })),
+                        // Clone Global Service Types
+                        serviceTypes: s.serviceTypes.map(t => ({ name: t.name, priceMultiplier: t.priceMultiplier }))
+                    });
+                    configIndex = s.branchConfig.length - 1;
+                    needsSave = true; // We modified the DB document
+                } else {
+                    // Check if existing config lacks items (Migration from "Override Mode" to "Independent Mode")
+                    if (!s.branchConfig[configIndex].items || s.branchConfig[configIndex].items.length === 0) {
+                        s.branchConfig[configIndex].items = s.items.map(i => {
+                            // Try to find if we had a legacy price override?
+                            const legacyOverride = i.branchPricing?.find(bp => bp.branchId.toString() === branchId);
+                            return {
+                                name: i.name,
+                                price: legacyOverride ? legacyOverride.price : i.price,
+                                isActive: true
+                            };
+                        });
+                        needsSave = true;
+                    }
+                    // Same for Service Types if missing
+                    if (!s.branchConfig[configIndex].serviceTypes || s.branchConfig[configIndex].serviceTypes.length === 0) {
+                        s.branchConfig[configIndex].serviceTypes = s.serviceTypes.map(t => ({ name: t.name, priceMultiplier: t.priceMultiplier }));
+                        needsSave = true;
                     }
                 }
 
-                // 3. User App Visibility Rule
-                // If NOT Admin (includeHidden != true) AND Service is Inactive for Branch -> Hide it.
-                if (!branchIsActive && includeHidden !== 'true') {
-                    return acc;
+                if (needsSave) {
+                    await s.save();
                 }
 
-                // 4. Apply State
-                s.isLocked = branchIsLocked;
-                s.lockedLabel = branchLockedLabel;
-                s.isActive = branchIsActive; // Reflect logical state
+                // NOW Read from Branch Config Source of Truth
+                const config = s.branchConfig[configIndex];
 
-                // 5. Project Pricing (Strict)
-                if (s.items && s.items.length > 0) {
-                    s.items = s.items.map(item => {
-                        let finalPrice = item.price;
-
-                        if (item.branchPricing && item.branchPricing.length > 0) {
-                            const bPrice = item.branchPricing.find(bp => bp.branchId.toString() === branchId);
-                            if (bPrice) {
-                                finalPrice = bPrice.price;
-                            }
-                        }
-                        return { ...item, price: finalPrice, branchPricing: undefined };
-                    });
+                // Admin Visibility Rule (or App Rule)
+                if (!config.isActive && includeHidden !== 'true') {
+                    continue;
                 }
 
-                acc.push(s);
-                return acc;
-            }, []);
+                // Project Branch Data to Root for Client
+                const serviceObj = s.toObject();
+                serviceObj.name = config.customName || s.name;
+                serviceObj.description = config.customDescription || s.description;
+                serviceObj.isLocked = config.isLocked;
+                serviceObj.lockedLabel = config.lockedLabel;
+                serviceObj.isActive = config.isActive;
+                serviceObj.discountPercentage = config.discountPercentage !== undefined ? config.discountPercentage : s.discountPercentage;
+                serviceObj.discountLabel = config.discountLabel || s.discountLabel;
+
+                // CRITICAL: Replace Items & Types with Branch Copy
+                serviceObj.items = config.items;
+                serviceObj.serviceTypes = config.serviceTypes;
+
+                // Scrub internal config to avoid confusion
+                serviceObj.branchConfig = undefined;
+
+                processedServices.push(serviceObj);
+            }
+            return res.json(processedServices);
+
         } else {
-            // Global List (No Branch)
-            // If User App (includeHidden != true), only show globally active services.
+            // Global List (Legacy / Admin Global View)
             if (includeHidden !== 'true') {
                 services = services.filter(s => s.isActive);
             }
+            res.json(services);
         }
 
-        res.json(services);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -152,31 +171,17 @@ exports.updateService = async (req, res) => {
             service.branchConfig[configIndex].lastUpdated = Date.now();
 
 
-            // 3. Update Item Pricing (Strictly for this branch)
+            // 3. Update Items (STRICT INDEPENDENCE)
+            // We now accept the FULL list of items from the frontend and replace the branch's item list.
             if (items && Array.isArray(items)) {
-                items.forEach(reqItem => {
-                    // Identify existing item by ID or Name
-                    const dbItem = service.items.find(i =>
-                        (reqItem._id && i._id.toString() === reqItem._id) ||
-                        i.name === reqItem.name
-                    );
-
-                    if (dbItem) {
-                        // We are updating the PRICE for this branch.
-                        if (reqItem.price !== undefined) {
-                            const priceIndex = dbItem.branchPricing.findIndex(bp => bp.branchId.toString() === branchId);
-                            if (priceIndex > -1) {
-                                dbItem.branchPricing[priceIndex].price = reqItem.price;
-                            } else {
-                                dbItem.branchPricing.push({
-                                    branchId,
-                                    price: reqItem.price,
-                                    isActive: true
-                                });
-                            }
-                        }
-                    }
-                });
+                // Map frontend items to Schema structure
+                // We trust the frontend list as the "New Truth" for this branch.
+                service.branchConfig[configIndex].items = items.map(i => ({
+                    // Generate new ID if missing (Mongoose might do this auto, but let's be safe if needed, though usually subdoc array handles it)
+                    name: i.name,
+                    price: i.price,
+                    isActive: i.isActive !== undefined ? i.isActive : true
+                }));
             }
 
         } else {

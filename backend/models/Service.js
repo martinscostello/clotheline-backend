@@ -55,6 +55,14 @@ const ServiceSchema = new mongoose.Schema({
             priceMultiplier: { type: Number, default: 1.0 }
         }],
 
+        // [STRICT BRANCH INDEPENDENCE]
+        // Items here REPLACE the global items list for this branch.
+        items: [{
+            name: String,
+            price: Number,
+            isActive: { type: Boolean, default: true }
+        }],
+
         lastUpdated: { type: Date, default: Date.now }
     }],
 
