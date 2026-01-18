@@ -23,6 +23,7 @@ import 'chat/chat_screen.dart';
 import 'notifications/notifications_screen.dart';
 import '../../providers/branch_provider.dart';
 import '../common/branch_selection_screen.dart';
+import 'hero_video_player.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onSwitchToStore;
@@ -61,7 +62,10 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     
     // Rotate featured products every 60s
     _rotationTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-       if (mounted) StoreService().rotateFeaturedProducts();
+       if (mounted) {
+         final branchId = Provider.of<BranchProvider>(context, listen: false).selectedBranch?.id;
+         StoreService().fetchFeaturedProducts(branchId: branchId);
+       }
     });
   }
 
@@ -142,10 +146,11 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     });
 
     // B. Sync Laundry (Service handles diffing internally)
-    _laundryService.fetchFromApi();
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    _laundryService.fetchFromApi(branchId: branchProvider.selectedBranch?.id);
 
     // C. Sync Store (Service handles diffing internally)
-    StoreService().fetchFeaturedProducts();
+    StoreService().fetchFeaturedProducts(branchId: branchProvider.selectedBranch?.id);
   }
   
   // Pull-to-Refresh action
@@ -166,23 +171,45 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   }
 
   void _startCarouselTimer() {
-    _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      final items = _getItems();
+    _scheduleNextSlide();
+  }
+
+  void _scheduleNextSlide() async {
+    _carouselTimer?.cancel();
+    if (!mounted) return;
+
+    final items = _getItems();
+    if (items.isEmpty) return;
+
+    // Determine Duration based on CURRENT item type
+    final currentItem = items[_currentHeroIndex];
+    final isVideo = currentItem.mediaType == 'video';
+    final duration = isVideo ? const Duration(seconds: 10) : const Duration(seconds: 5);
+
+    _carouselTimer = Timer(duration, () {
+      if (!mounted) return;
+      final items = _getItems(); // Re-fetch
       if (items.isEmpty) return;
 
-      if (_currentHeroIndex < items.length - 1) {
-        _currentHeroIndex++;
-      } else {
-        _currentHeroIndex = 0;
-      }
-      
+      int nextIndex = _currentHeroIndex + 1;
+      if (nextIndex >= items.length) nextIndex = 0;
+
       if (_pageController.hasClients) {
         _pageController.animateToPage(
-          _currentHeroIndex,
+          nextIndex,
           duration: const Duration(milliseconds: 600),
           curve: Curves.easeInOutCubic,
         );
       }
+      // Recursively schedule next
+      // Note: onPageChanged updates _currentHeroIndex, which we usually rely on.
+      // But animateToPage triggers onPageChanged.
+      // So we just fire animation, and on next cycle (after delay), we check index again.
+      // Actually, to be safe, we schedule AFTER animation completes or just let recursion handle it.
+      // Better pattern: _startCarouselTimer() is called once. 
+      // Inside: wait X seconds -> animate -> wait Y seconds.
+      // But we need to update the delay based on the NEW item.
+      _scheduleNextSlide();
     });
   }
 
@@ -429,20 +456,26 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       width: double.infinity,
       child: PageView.builder(
         controller: _pageController,
+        clipBehavior: Clip.none, // Allow shadows to overflow
         onPageChanged: (index) => setState(() => _currentHeroIndex = index),
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
+          final bool isActive = _currentHeroIndex == index;
           return Container(
             margin: const EdgeInsets.only(right: 10, left: 20),
-            child: _buildHeroCard(item, items.length),
+            child: _buildHeroCard(item, items.length, isActive: isActive),
           );
         },
       ),
     );
   }
 
-  Widget _buildHeroCard(HeroCarouselItem item, int totalItems) {
+
+
+// ... (existing imports)
+
+  Widget _buildHeroCard(HeroCarouselItem item, int totalItems, {bool isActive = false}) {
     // Parse Colors
     Color titleClr = Colors.white;
     Color tagClr = Colors.white70;
@@ -460,17 +493,34 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     } catch (_) {}
 
     return Container(
-      key: ValueKey("${item.imageUrl}${item.titleColor}${item.tagLineColor}${item.tagLine}"), // Force rebuild on any property change
+      key: ValueKey("${item.imageUrl}${item.mediaType}"), // Force rebuild if media changes
       decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2C), // Fallback background
         borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 15,
+            spreadRadius: 2,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Stack(
         children: [
             Positioned.fill(
-              child: CustomCachedImage(
-                imageUrl: item.imageUrl,
-                fit: BoxFit.cover,
-                borderRadius: 24,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: item.mediaType == 'video' 
+                    ? HeroVideoPlayer(
+                        videoUrl: item.imageUrl,
+                        isActive: isActive, 
+                      )
+                    : CustomCachedImage(
+                        imageUrl: item.imageUrl,
+                        fit: BoxFit.cover,
+                        borderRadius: 24,
+                      ),
               ),
             ),
             Positioned.fill(
@@ -631,11 +681,26 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
           return GestureDetector(
             onTap: () {
               if (s.isLocked) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("${s.name} is coming soon!"),
-                    backgroundColor: isDark ? Colors.white10 : Colors.black87,
-                    behavior: SnackBarBehavior.floating,
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                     backgroundColor: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                     title: Text(
+                       s.lockedLabel.isNotEmpty ? s.lockedLabel : "Coming Soon", 
+                       style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)
+                     ),
+                     content: Text(
+                       "${s.name} is currently unavailable in this location.", 
+                       style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)
+                     ),
+                     actions: [
+                       TextButton(
+                         onPressed: () => Navigator.pop(ctx),
+                         child: const Text("Okay", style: TextStyle(color: AppTheme.primaryColor)),
+                       ),
+                       // Future: Add "Notify Me" here
+                     ],
                   )
                 );
                 return;

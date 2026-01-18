@@ -67,6 +67,7 @@ class HeroCarouselItem {
   String? tagLine;
   String? tagLineColor;
   String? actionUrl;
+  String mediaType;
 
   HeroCarouselItem({
     required this.imageUrl, 
@@ -74,7 +75,8 @@ class HeroCarouselItem {
     this.titleColor = "0xFFFFFFFF",
     this.tagLine,
     this.tagLineColor = "0xFFFFFFFF",
-    this.actionUrl
+    this.actionUrl,
+    this.mediaType = 'image',
   });
 
   factory HeroCarouselItem.fromJson(Map<String, dynamic> json) {
@@ -85,6 +87,7 @@ class HeroCarouselItem {
       tagLine: json['tagLine'],
       tagLineColor: json['tagLineColor'] ?? "0xFFFFFFFF",
       actionUrl: json['actionUrl'],
+      mediaType: json['mediaType'] ?? 'image',
     );
   }
 
@@ -95,6 +98,7 @@ class HeroCarouselItem {
     'tagLine': tagLine,
     'tagLineColor': tagLineColor,
     'actionUrl': actionUrl,
+    'mediaType': mediaType,
   };
 }
 

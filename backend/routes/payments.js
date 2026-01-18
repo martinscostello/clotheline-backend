@@ -12,19 +12,29 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || 'sk_test_xxxx'; // Fa
 // Initializes a transaction Securely via Paystack API
 // POST /initialize
 // Stateless Payment Initialization
-router.post('/initialize', async (req, res) => {
+// POST /initialize
+// Initializes a transaction Securely via Paystack API
+router.post('/initialize', auth, async (req, res) => {
     try {
-        // [CRITICAL USER MANDATE] NO DB WRITES. NO USER ID REQUIREMENT.
-        const { items, branchId, orderId, provider = 'paystack', guestInfo, deliveryOption, deliveryAddress } = req.body;
+        // [CRITICAL AUTH] User must be logged in.
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ msg: 'Authentication required for payment' });
+        }
+        const userId = req.user.id;
+
+        const { items, branchId, orderId, provider = 'paystack', deliveryOption, deliveryAddress } = req.body;
 
         let calculationItems = items;
         let retryOrderId = null;
 
-        // [RETRY FLOW] If orderId provided, we fetch just to get the items/pricing.
-        // We do NOT write to DB.
+        // [RETRY FLOW]
         if (orderId) {
             const existingOrder = await Order.findById(orderId);
             if (!existingOrder) return res.status(404).json({ msg: 'Order not found' });
+            // Ensure user owns this order
+            if (existingOrder.user.toString() !== userId) {
+                return res.status(403).json({ msg: 'Access denied to this order' });
+            }
             calculationItems = existingOrder.items;
             retryOrderId = existingOrder._id.toString();
         }
@@ -36,29 +46,17 @@ router.post('/initialize', async (req, res) => {
 
         const reference = `REF_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-        // Resolve Email (Guest or User - passed from frontend or default)
-        // Since we removed Auth middleware requirement for strict statelessness?
-        // User said "Remove userId requirement".
-        // We will try to use provided email, else "guest@clotheline.com"
-        const email = guestInfo?.email || req.body.email || 'guest@clotheline.app';
+        // Use User's email from DB or Request (Validation?)
+        // Better to fetch user email from DB to be safe, but req.body.email often used for receipt.
+        const user = await require('../models/User').findById(userId);
+        const email = user ? user.email : (req.body.email || 'user@clotheline.app');
 
         // 2. Initialize with Paystack DIRECTLY
-        // We embed all critical order info in METADATA so we can reconstruct it on verify.
-
-        // [Sanitization] Ensure userId is null if not provided or empty string
-        let validUserId = null;
-        if (req.body.userId && req.body.userId.length > 0) {
-            validUserId = req.body.userId;
-        } else if (req.user && req.user.userId) {
-            validUserId = req.user.userId;
-        }
-
         const metadata = {
             ...req.body,
             retryOrderId,
-            // Ensure items are included for reconstruction
             items: calculationItems,
-            userId: validUserId
+            userId: userId // STRICT: From Auth Token
         };
 
         const paystackResponse = await axios.post(
@@ -100,13 +98,16 @@ router.post('/initialize', async (req, res) => {
 
 // POST /verify
 // Verifies & Creates Order
-router.post('/verify', async (req, res) => {
+router.post('/verify', auth, async (req, res) => {
     try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ msg: 'Authentication required for verification' });
+        }
+        // Strict: Logged in user should match the one who initiated? 
+        // We will trust the metadata's userId but ensure valid context.
+
         const { reference, provider = 'paystack' } = req.body;
 
-        // 1. Check if we already processed this reference locally?
-        // User mandate: "ONLY THEN create payment record".
-        // So we might not have it. We check to avoid duplicates.
         const existingPayment = await Payment.findOne({ reference });
         if (existingPayment && existingPayment.status === 'success') {
             return res.json({ msg: 'Payment already verified', status: 'success', order: { _id: existingPayment.orderId } });
@@ -131,14 +132,18 @@ router.post('/verify', async (req, res) => {
         const metadata = verifiedData.metadata || {};
         const { retryOrderId, userId } = metadata;
 
-        // 4. Create Payment Record (NOW we save)
+        if (!userId) {
+            return res.status(400).json({ msg: 'Invalid Transaction: Missing User Context' });
+        }
+
+        // 4. Create Payment Record
         const payment = new Payment({
-            userId: userId, // extracted from metadata
+            userId: userId,
             amount: verifiedData.amount,
             currency: 'NGN',
             provider,
             reference,
-            accessCode: null, // Not needed really
+            accessCode: null,
             status: 'success',
             verifiedAt: Date.now(),
             metadata
@@ -157,19 +162,16 @@ router.post('/verify', async (req, res) => {
             }
         } else {
             const { createOrderInternal } = require('../controllers/orderController');
-            // We pass the metadata as orderData.
-            // createOrderInternal handles DB creation.
             try {
-                // If metadata missing items, we fail.
+                // Strict: Pass userId explicitly
                 order = await createOrderInternal(metadata, userId);
                 order.paymentStatus = 'Paid';
                 await order.save();
             } catch (e) {
                 console.error("Order Create Failed:", e);
-                // Payment is saved, but order failed.
-                payment.status = 'flagged'; // partial success
+                payment.status = 'flagged';
                 await payment.save();
-                return res.status(500).json({ msg: 'Payment successful but Order creation failed', reference });
+                return res.status(500).json({ msg: 'Payment successful but Order creation failed', error: e.message });
             }
         }
 

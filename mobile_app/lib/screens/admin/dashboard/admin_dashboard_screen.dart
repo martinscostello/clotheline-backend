@@ -8,7 +8,7 @@ import '../../../services/order_service.dart';
 import '../../../models/order_model.dart';
 import '../../../utils/currency_formatter.dart';
 import '../services/admin_services_screen.dart';
-import '../products/admin_add_product_screen.dart';
+import '../products/admin_products_screen.dart'; // [FIXED] Navigate to list, not add
 import '../cms/admin_cms_content_screen.dart';
 import '../notifications/admin_notification_dashboard.dart';
 import '../reports/admin_financial_dashboard.dart';
@@ -107,8 +107,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         if ((isMaster || permissions['manageServices'] == true) && (isMaster || permissions['manageProducts'] == true || permissions['manageCMS'] == true))
                           const SizedBox(width: 15),
                         if (isMaster || permissions['manageProducts'] == true)
-                           _buildQuickAction(context, "Add Product", Icons.add_shopping_cart, Colors.purpleAccent, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAddProductScreen()));
+                           _buildQuickAction(context, "Manage Products", Icons.inventory_2, Colors.purpleAccent, () {
+                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen()));
                            }),
                         if ((isMaster || permissions['manageProducts'] == true) && (isMaster || permissions['manageCMS'] == true))
                           const SizedBox(width: 15),

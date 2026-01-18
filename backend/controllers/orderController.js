@@ -73,8 +73,13 @@ exports.createOrderInternal = async (orderData, userId = null) => {
         const finalDiscount = discountAmount || 0;
         const finalTotal = finalSubtotal + finalTax + finalDelivery - finalDiscount;
 
+        // [STRICT AUTH]
+        if (!userId) {
+            throw new Error("Order creation failed: Missing Authenticated User ID");
+        }
+
         const newOrder = new Order({
-            user: userId, // Can be null for Guest
+            user: userId,
             branchId,
             items,
 

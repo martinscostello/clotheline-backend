@@ -11,7 +11,9 @@ import 'store_cart_screen.dart';
 import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/models/app_content_model.dart';
 import '../../../widgets/custom_cached_image.dart'; 
-import '../favorites_screen.dart'; // Fixed Import
+import '../favorites_screen.dart'; 
+import '../../../providers/branch_provider.dart'; // Corrected Path
+import 'package:provider/provider.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -43,6 +45,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     });
 
     // 2. Load Product Cache
+    // Note: Ideally loadFromCache should also be branch-aware or just generic cache
     await _storeService.loadFromCache();
 
     if (mounted) {
@@ -57,7 +60,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
      _contentService.fetchFromApi().then((c) {
         if (mounted && c != null) setState(() => _appContent = c);
      });
-     _storeService.fetchFromApi();
+     
+     if (mounted) {
+       final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+       _storeService.fetchFromApi(branchId: branchProvider.selectedBranch?.id);
+     }
   }
 
   List<StoreProduct> get _filteredProducts {

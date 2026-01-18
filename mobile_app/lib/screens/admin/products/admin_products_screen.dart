@@ -6,7 +6,9 @@ import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../services/store_service.dart';
 import '../../../models/store_product.dart';
 import '../../../utils/currency_formatter.dart';
-import '../../../widgets/custom_cached_image.dart'; // Added Import
+import '../../../widgets/custom_cached_image.dart';
+import '../../admin/services/admin_edit_service_screen.dart'; // Just in case
+import '../../../providers/branch_provider.dart'; // [FIXED] Added Import
 import 'admin_add_product_screen.dart';
 
 class AdminProductsScreen extends StatefulWidget {
@@ -20,10 +22,34 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch products on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<StoreService>(context, listen: false).fetchProducts();
+      _loadData();
     });
+  }
+
+  Future<void> _loadData() async {
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final storeService = Provider.of<StoreService>(context, listen: false);
+    
+    // Auto Select first branch if none
+    if (branchProvider.selectedBranch == null && branchProvider.branches.isNotEmpty) {
+      branchProvider.selectBranch(branchProvider.branches.first);
+    }
+
+    if (branchProvider.selectedBranch != null) {
+      await storeService.fetchProducts(branchId: branchProvider.selectedBranch!.id);
+    }
+  }
+
+  Future<void> _onBranchChanged(String? newId) async {
+    if (newId == null) return;
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final storeService = Provider.of<StoreService>(context, listen: false);
+    
+    final branch = branchProvider.branches.firstWhere((b) => b.id == newId);
+    branchProvider.selectBranch(branch); // Update Context
+    
+    storeService.fetchProducts(branchId: newId); // Fetch for new Branch
   }
 
   @override
@@ -35,39 +61,89 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
         backgroundColor: Colors.transparent,
         leading: const BackButton(color: Colors.white),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => Provider.of<StoreService>(context, listen: false).fetchProducts(),
-          )
+            // BRANCH SELECTOR
+           Consumer<BranchProvider>(
+             builder: (context, branchProvider, _) {
+               if (branchProvider.branches.isEmpty) return const SizedBox();
+              
+               return Container(
+                 margin: const EdgeInsets.only(right: 15),
+                 padding: const EdgeInsets.symmetric(horizontal: 10),
+                 decoration: BoxDecoration(
+                   color: Colors.white24,
+                   borderRadius: BorderRadius.circular(20)
+                 ),
+                 child: DropdownButtonHideUnderline(
+                   child: DropdownButton<String>(
+                     dropdownColor: const Color(0xFF202020),
+                     value: branchProvider.selectedBranch?.id,
+                     icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                     onChanged: _onBranchChanged,
+                     items: branchProvider.branches.map((b) {
+                       return DropdownMenuItem(
+                         value: b.id,
+                         child: Text(b.name, style: const TextStyle(color: Colors.white)),
+                       );
+                     }).toList(),
+                   ),
+                 ),
+               );
+             }
+           )
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminAddProductScreen()),
+      floatingActionButton: Consumer<BranchProvider>(
+        builder: (context, branchProvider, _) {
+          // Hide Add button if no branch selected
+          if (branchProvider.selectedBranch == null) return const SizedBox();
+
+          return FloatingActionButton.extended(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AdminAddProductScreen(
+                  branchId: branchProvider.selectedBranch!.id, // [STRICT SCOPE]
+                  product: null
+                )),
+              );
+              if (context.mounted && branchProvider.selectedBranch != null) {
+                Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchProvider.selectedBranch!.id, forceRefresh: true);
+              }
+            },
+            backgroundColor: AppTheme.primaryColor,
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: Text("Add to ${branchProvider.selectedBranch!.name}", style: const TextStyle(color: Colors.white)),
           );
-          if (context.mounted) {
-            Provider.of<StoreService>(context, listen: false).fetchProducts(forceRefresh: true);
-          }
-        },
-        backgroundColor: AppTheme.primaryColor,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text("Add Product", style: TextStyle(color: Colors.white)),
+        }
       ),
       body: LiquidBackground(
-        child: Consumer<StoreService>(
-          builder: (context, storeService, child) {
+        child: Consumer2<StoreService, BranchProvider>(
+          builder: (context, storeService, branchProvider, child) {
+            
+            if (branchProvider.selectedBranch == null) {
+               return const Center(child: Text("Please select a branch to manage products", style: TextStyle(color: Colors.white54, fontSize: 16)));
+            }
+
             if (storeService.isLoading && storeService.products.isEmpty) {
               return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
             }
 
             if (storeService.products.isEmpty) {
-              return const Center(child: Text("No products found", style: TextStyle(color: Colors.white54)));
+              return Center(child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.inventory_2_outlined, size: 60, color: Colors.white24),
+                  const SizedBox(height: 10),
+                  Text("No products in ${branchProvider.selectedBranch!.name}", style: const TextStyle(color: Colors.white54)),
+                  const SizedBox(height: 5),
+                  const Text("Click 'Add' to start stocking inventory", style: TextStyle(color: Colors.white30, fontSize: 12)),
+                ],
+              ));
             }
 
             return RefreshIndicator(
-              onRefresh: () => storeService.fetchProducts(),
+              onRefresh: () => storeService.fetchProducts(branchId: branchProvider.selectedBranch!.id),
               color: AppTheme.primaryColor,
               child: GridView.builder(
                 padding: const EdgeInsets.fromLTRB(20, 100, 20, 80),
@@ -75,12 +151,12 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 15,
                   mainAxisSpacing: 15,
-                  childAspectRatio: 0.75, // Taller for price/stock info
+                  childAspectRatio: 0.70, // Optimized
                 ),
                 itemCount: storeService.products.length,
                 itemBuilder: (context, index) {
                   final product = storeService.products[index];
-                  return _buildProductCard(product);
+                  return _buildProductCard(product, branchProvider.selectedBranch!.id);
                 },
               ),
             );
@@ -90,15 +166,18 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
     );
   }
 
-  Widget _buildProductCard(StoreProduct product) {
+  Widget _buildProductCard(StoreProduct product, String branchId) {
     return GestureDetector(
       onTap: () async {
         await Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => AdminAddProductScreen(product: product)), // Edit Mode
+          MaterialPageRoute(builder: (_) => AdminAddProductScreen(
+            product: product,
+            branchId: branchId // [STRICT SCOPE]
+          )), 
         );
         if (context.mounted) {
-            Provider.of<StoreService>(context, listen: false).fetchProducts(forceRefresh: true);
+            Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchId, forceRefresh: true);
         }
       },
       child: Container(
@@ -117,17 +196,17 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                   borderRadius: 20,
                 ),
               ),
-            // Gradient for text visibility at bottom
+            // Gradient
             Positioned(
               bottom: 0, left: 0, right: 0,
-              height: 100,
+              height: 120,
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)]
+                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.9)]
                   )
                 ),
               ),
@@ -169,21 +248,16 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                         product.name, 
                         maxLines: 2, 
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)
                       ),
-                      
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            CurrencyFormatter.format(product.price), 
-                            style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)
-                          ),
-                          Text(
-                            "Qty: ${product.stockLevel}", 
-                            style: const TextStyle(color: Colors.white70, fontSize: 12)
-                          ),
-                        ],
+                      const SizedBox(height: 4),
+                       Text(
+                        CurrencyFormatter.format(product.price), 
+                        style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)
+                      ),
+                      Text(
+                        "Qty: ${product.stockLevel}", 
+                        style: const TextStyle(color: Colors.white70, fontSize: 11)
                       ),
                     ],
                   ),

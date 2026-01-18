@@ -210,6 +210,22 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
           }
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppTheme.primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () async {
+          final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+          await Navigator.push(
+             context, 
+             MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
+               service: null, // Create Mode
+               scopeBranch: branchProvider.selectedBranch
+             ))
+           );
+           // Refresh
+           _loadData(); // Reloads all
+        },
+      ),
     );
   }
 

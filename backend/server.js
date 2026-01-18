@@ -55,6 +55,7 @@ const connectDB = async () => {
 connectDB().then(() => {
     require('./controllers/serviceController').seedServices();
     require('./controllers/productController').seedProducts();
+    require('./controllers/categoryController').seedCategories();
     require('./controllers/authController').seedUsers();
 });
 

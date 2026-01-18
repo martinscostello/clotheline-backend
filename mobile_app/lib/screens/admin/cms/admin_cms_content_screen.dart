@@ -170,6 +170,26 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     }
   }
 
+  Future<void> _pickAndUploadVideo(Function(String) onUrlReady) async {
+    final picker = ImagePicker();
+    final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
+    
+    if (video == null) return;
+
+    setState(() => _isUploading = true);
+    
+    // Upload (Same endpoint handles videos now)
+    String? url = await _contentService.uploadImage(video.path);
+    
+    setState(() => _isUploading = false);
+    
+    if (url != null) {
+      onUrlReady(url);
+    } else {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Video Upload Failed")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     String title = "Edit Content";
@@ -260,24 +280,57 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                   Text("Slide ${idx + 1}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   
-                  // Image & Dimension Tag
+                  // Image/Video & Dimension Tag
                   GestureDetector(
                     onTap: () {
-                      _pickAndUploadImage((url) {
-                        setState(() {
-                          _content!.heroCarousel[idx].imageUrl = url;
-                        });
-                      }, preset: CropAspectRatioPreset.ratio16x9);
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (ctx) => Container(
+                          height: 150,
+                          color: Colors.white,
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.image),
+                                title: const Text("Upload Image"),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  _pickAndUploadImage((url) {
+                                    setState(() {
+                                      _content!.heroCarousel[idx].imageUrl = url;
+                                      _content!.heroCarousel[idx].mediaType = 'image';
+                                    });
+                                  }, preset: CropAspectRatioPreset.ratio16x9);
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.videocam),
+                                title: const Text("Upload Video (Short)"),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  _pickAndUploadVideo((url) {
+                                    setState(() {
+                                      _content!.heroCarousel[idx].imageUrl = url;
+                                      _content!.heroCarousel[idx].mediaType = 'video';
+                                    });
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        )
+                      );
                     },
                     child: Stack(
                       children: [
                         AspectRatio(
                           aspectRatio: 16/9,
                           child: Container(
+                            color: Colors.black12,
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                if (item.imageUrl.isNotEmpty)
+                                if (item.imageUrl.isNotEmpty && item.mediaType == 'image')
                                   Positioned.fill(
                                     child: CustomCachedImage(
                                       imageUrl: item.imageUrl,
@@ -285,6 +338,9 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                                       borderRadius: 8,
                                     ),
                                   ),
+                                if (item.imageUrl.isNotEmpty && item.mediaType == 'video')
+                                  const Center(child: Icon(Icons.play_circle_fill, color: Colors.white, size: 50)),
+                                
                                 if (item.imageUrl.isEmpty)
                                   const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40)),
                               ],
@@ -298,7 +354,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
-                            child: const Text("800x600", style: TextStyle(color: Colors.white, fontSize: 10)),
+                            child: Text(item.mediaType == 'video' ? "VIDEO" : "800x600", style: const TextStyle(color: Colors.white, fontSize: 10)),
                           ),
                         )
                       ],

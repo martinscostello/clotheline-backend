@@ -16,7 +16,8 @@ import '../../../models/branch_model.dart';
 
 class AdminAddProductScreen extends StatefulWidget {
   final StoreProduct? product; // If provided, we are editing
-  const AdminAddProductScreen({super.key, this.product});
+  final String branchId; // [STRICT SCOPE] Required
+  const AdminAddProductScreen({super.key, this.product, required this.branchId});
 
   @override
   State<AdminAddProductScreen> createState() => _AdminAddProductScreenState();
@@ -190,18 +191,18 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       double sellingPrice = basePrice * (1 - (discountPct / 100));
 
       final productData = {
+        "branchId": widget.branchId, // [STRICT SCOPE] Required
         "name": _nameController.text,
         "description": _descController.text,
-        "brand": _brandController.text, // Added
-        "price": sellingPrice, // Calculated Selling Price
-        "originalPrice": basePrice, // Base Price
+        "brand": _brandController.text, 
+        "price": sellingPrice,
+        "originalPrice": basePrice,
         "discountPercentage": discountPct,
         "stock": int.tryParse(_stockController.text) ?? 0,
         "category": _selectedCategory,
         "isFreeShipping": _isFreeShipping,
         "imageUrls": finalImageUrls,
         "variations": _variants.map((v) {
-          // Re-calculate variant prices based on the global discount
           double vBase = v.originalPrice > 0 ? v.originalPrice : v.price;
           double vSelling = vBase * (1 - (discountPct / 100));
           return {
@@ -209,9 +210,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
             "price": vSelling, 
             "originalPrice": vBase 
           };
-
         }).toList(),
-        "branchInfo": _branchInfo.map((e) => e.toJson()).toList(),
+        // Removed Legacy "branchInfo" override
       };
 
       // 3. Send to Store Service
@@ -522,104 +522,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                     ),
                   );
                 }),
-
-                const SizedBox(height: 30),
-
-                // 6. Branch Inventory
-                GlassContainer(
-                   opacity: 0.1,
-                   child: Padding(
-                     padding: const EdgeInsets.all(15),
-                     child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                          const Text("Branch Inventory & Pricing", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 10),
-                          ...context.watch<BranchProvider>().branches.map((b) {
-                             final existing = _branchInfo.firstWhere(
-                               (bi) => bi.branchId == b.id, 
-                               orElse: () => BranchProductInfo(branchId: b.id, stock: 0, isAvailable: true, price: null)
-                             );
-
-                             return Container(
-                               margin: const EdgeInsets.only(bottom: 15),
-                               padding: const EdgeInsets.all(10),
-                               decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(10)),
-                               child: Column(
-                                 children: [
-                                   Row(
-                                     children: [
-                                       Expanded(child: Text(b.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                                       Switch(
-                                         value: existing.isAvailable, 
-                                         activeColor: AppTheme.primaryColor,
-                                         onChanged: (val) {
-                                            setState(() {
-                                              _branchInfo.removeWhere((x) => x.branchId == b.id);
-                                              _branchInfo.add(BranchProductInfo(
-                                                branchId: b.id,
-                                                isAvailable: val,
-                                                stock: existing.stock,
-                                                price: existing.price
-                                              ));
-                                            });
-                                         }
-                                       )
-                                     ],
-                                   ),
-                                   if (existing.isAvailable)
-                                     Row(
-                                       children: [
-                                          Expanded(
-                                            child: TextField(
-                                              controller: TextEditingController(text: existing.stock.toString()),
-                                              keyboardType: TextInputType.number,
-                                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                                              decoration: const InputDecoration(labelText: "Stock", labelStyle: TextStyle(color: Colors.white54, fontSize: 11), border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                                              onChanged: (val) {
-                                                setState(() {
-                                                  _branchInfo.removeWhere((x) => x.branchId == b.id);
-                                                  _branchInfo.add(BranchProductInfo(
-                                                    branchId: b.id,
-                                                    isAvailable: existing.isAvailable,
-                                                    stock: int.tryParse(val) ?? 0,
-                                                    price: existing.price
-                                                  ));
-                                                });
-                                              },
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: TextField(
-                                              controller: TextEditingController(text: existing.price?.toString() ?? ""),
-                                              keyboardType: TextInputType.number,
-                                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                                              decoration: const InputDecoration(labelText: "Price (Override)", labelStyle: TextStyle(color: Colors.white54, fontSize: 11), border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                                              onChanged: (val) {
-                                                setState(() {
-                                                  _branchInfo.removeWhere((x) => x.branchId == b.id);
-                                                  _branchInfo.add(BranchProductInfo(
-                                                    branchId: b.id,
-                                                    isAvailable: existing.isAvailable,
-                                                    stock: existing.stock,
-                                                    price: double.tryParse(val)
-                                                  ));
-                                                });
-                                              },
-                                            ),
-                                          )
-                                       ],
-                                     )
-                                 ],
-                               ),
-                             );
-                          }).toList(),
-                       ],
-                     ),
-                   )
-                ),
-
 
                 const SizedBox(height: 40),
 

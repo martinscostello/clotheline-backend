@@ -16,9 +16,9 @@ import 'package:image_cropper/image_cropper.dart';
 import '../../../../models/branch_model.dart'; // [NEW]
 
 class AdminEditServiceScreen extends StatefulWidget {
-  final ServiceModel service;
-  final Branch? scopeBranch; // [NEW] Context
-  const AdminEditServiceScreen({super.key, required this.service, this.scopeBranch});
+  final ServiceModel? service; // [CHANGED] Nullable for Creation Mode
+  final Branch? scopeBranch;
+  const AdminEditServiceScreen({super.key, this.service, this.scopeBranch});
 
   @override
   State<AdminEditServiceScreen> createState() => _AdminEditServiceScreenState();
@@ -36,22 +36,28 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
   bool _isLocked = false;
   List<ServiceItem> _items = [];
   List<ServiceVariant> _variants = [];
-  List<BranchPrice> _branchPricing = [];
-  String _imageUrl = "";
+  String _imageUrl = "assets/images/service_laundry.png"; // Default
+  String _color = "0xFF2196F3"; // Default Blue
+  String _icon = "local_laundry_service"; // Default
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.service.name);
-    _bannerController = TextEditingController(text: widget.service.lockedLabel);
-    _discountController = TextEditingController(text: widget.service.discountPercentage.toString());
-    _discountLabelController = TextEditingController(text: widget.service.discountLabel);
-    _isLocked = widget.service.isLocked;
-    _items = List.from(widget.service.items);
-    _variants = List.from(widget.service.serviceTypes);
-    _branchPricing = List.from(widget.service.branchPricing);
-    _imageUrl = widget.service.image;
+    final s = widget.service;
+    _nameController = TextEditingController(text: s?.name ?? "");
+    _bannerController = TextEditingController(text: s?.lockedLabel ?? "Coming Soon");
+    _discountController = TextEditingController(text: s?.discountPercentage.toString() ?? "0");
+    _discountLabelController = TextEditingController(text: s?.discountLabel ?? "");
+    
+    _isLocked = s?.isLocked ?? false;
+    _items = s != null ? List.from(s.items) : [];
+    _variants = s != null ? List.from(s.serviceTypes) : [];
+    if (s != null) {
+        _imageUrl = s.image;
+        _color = s.color;
+        _icon = s.icon;
+    }
   }
 
   Future<void> _pickImage() async {
@@ -93,29 +99,31 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
     final Map<String, dynamic> body = {
       "name": _nameController.text,
       "image": _imageUrl,
+      "icon": _icon, // Ensure these are sent
+      "color": _color,
       "isLocked": _isLocked,
       "lockedLabel": _bannerController.text,
       "discountPercentage": double.tryParse(_discountController.text) ?? 0,
       "discountLabel": _discountLabelController.text,
       "items": _items.map((e) => e.toJson()).toList(),
       "serviceTypes": _variants.map((e) => e.toJson()).toList(),
-      // "branchPricing": _branchPricing.map((e) => e.toJson()).toList(), // Legacy - not needed if we iterate items
     };
     
-    // [CRITICAL] Inject Branch Context
     if (widget.scopeBranch != null) {
        body['branchId'] = widget.scopeBranch!.id;
-       print("Saving with Branch Context: ${widget.scopeBranch!.name}");
     }
 
     try {
-      final response = await http.put(
-        Uri.parse('${ApiService.baseUrl}/services/${widget.service.id}'),
-        headers: {"Content-Type": "application/json"},
-        body: json.encode(body),
-      );
+      final isNew = widget.service == null;
+      final url = isNew 
+         ? Uri.parse('${ApiService.baseUrl}/services/') // [FIXED] Correct Route
+         : Uri.parse('${ApiService.baseUrl}/services/${widget.service!.id}');
+         
+      final response = isNew 
+         ? await http.post(url, headers: {"Content-Type": "application/json"}, body: json.encode(body))
+         : await http.put(url, headers: {"Content-Type": "application/json"}, body: json.encode(body));
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         // Refresh 
         if (widget.scopeBranch != null) {
            LaundryService().fetchServices(branchId: widget.scopeBranch!.id);
@@ -125,7 +133,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
         
         if(mounted) Navigator.pop(context);
       } else {
-        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to save changes")));
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to save: ${response.statusCode}")));
       }
     } catch (e) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
@@ -205,7 +213,13 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Name", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24))), style: const TextStyle(color: Colors.white)),
+            TextField(
+              controller: nameCtrl, 
+              // [Stict Branch Independence] Name editing is allowed everywhere
+              enabled: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(labelText: "Name", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)))
+            ),
             TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Price (₦)", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24))), style: const TextStyle(color: Colors.white)),
           ],
         ),
@@ -219,7 +233,12 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
             onPressed: () {
               if (nameCtrl.text.isNotEmpty && priceCtrl.text.isNotEmpty) {
                 setState(() {
-                  final newItem = ServiceItem(name: nameCtrl.text, price: double.tryParse(priceCtrl.text) ?? 0);
+                  // [FIX] Preserve ID if editing existing item
+                  final newItem = ServiceItem(
+                    id: index != null ? _items[index].id : null,
+                    name: nameCtrl.text, 
+                    price: double.tryParse(priceCtrl.text) ?? 0
+                  );
                   if (index != null) {
                     _items[index] = newItem;
                   } else {
@@ -240,7 +259,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text("Edit ${widget.service.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
+        title: Text(widget.service == null ? "Create Service" : "Edit ${widget.service!.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
         backgroundColor: Colors.transparent,
         leading: const BackButton(color: Colors.white),
         actions: [
@@ -453,9 +472,11 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                   children: [
                     Text(widget.scopeBranch != null ? "Edit Prices (${widget.scopeBranch!.name})" : "Cloth Types & Prices", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                     
-                    // Allow adding only if Global. If Scoped, we only edit pricing of existing items.
-                    if (widget.scopeBranch == null)
-                      IconButton(icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor), onPressed: _addItem)
+                    // [Branch Independence] ALWAYS Allow Adding Items.
+                    IconButton(
+                      icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor), 
+                      onPressed: _addItem
+                    )
                   ],
                 ),
                 ListView.builder(

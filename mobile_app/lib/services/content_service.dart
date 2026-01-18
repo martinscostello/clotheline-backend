@@ -128,16 +128,22 @@ class ContentService {
     try {
       String fileName = filePath.split('/').last;
       String mimeType = 'jpeg';
-      if (fileName.toLowerCase().endsWith('.png')) mimeType = 'png';
-      if (fileName.toLowerCase().endsWith('.gif')) mimeType = 'gif';
-      if (fileName.toLowerCase().endsWith('.jpg')) mimeType = 'jpeg';
+      String type = 'image';
+      
+      final lowerName = fileName.toLowerCase();
+      if (lowerName.endsWith('.png')) mimeType = 'png';
+      else if (lowerName.endsWith('.gif')) mimeType = 'gif';
+      else if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) mimeType = 'jpeg';
+      else if (lowerName.endsWith('.mp4')) { type = 'video'; mimeType = 'mp4'; }
+      else if (lowerName.endsWith('.mov')) { type = 'video'; mimeType = 'quicktime'; }
+      else if (lowerName.endsWith('.avi')) { type = 'video'; mimeType = 'x-msvideo'; }
 
       // Create FormData
       final formData = FormData.fromMap({
         'image': await MultipartFile.fromFile(
           filePath,
           filename: fileName,
-          contentType: MediaType('image', mimeType), 
+          contentType: MediaType(type, mimeType), 
         ),
       });
 

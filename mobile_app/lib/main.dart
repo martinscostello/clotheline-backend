@@ -98,16 +98,23 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
     if (!mounted) return;
 
     if (hasSession) {
+       // [anti-ghost] Self-Healing: Check if profile data is actually present
+       final isValidProfile = await authService.hasValidProfile();
+       
+       if (!isValidProfile) {
+          debugPrint("[Main] Ghost Account Detected (Missing Name/Email). Forcing Wipe.");
+          await authService.logout(); // Clears all storage
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const LoginScreen())
+          );
+          return;
+       }
+
       // 2. Trigger Background Validation (Fire & Forget)
-      // If fails, AuthService will logout/updater state, causing a redirect or requiring handler
-      // Ideally, we just let it run. If it fails, AuthService might need a way to signal "Logout".
-      // Since we are pushing Replacement, if logout happens later, the app needs to handle it (e.g., via a global listener or just next API call 401).
       authService.validateSession().then((isValid) {
          if (!isValid && mounted) {
-            // Late failure catch - redirect to login if we are still here? 
-            // Better: let the listener in MyApp or Screen handle 401s, OR
-            // just let it go. If validateSession fails, authService.currentUser becomes null/invalid?
-            // Actually validateSession calls logout() on strict fail.
+            // If session is actually invalid on server, redirect.
             Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
          }
       });
@@ -166,18 +173,12 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
              (route) => false
            );
         } else {
-           // 1. Always start at MainLayout (Home) logic
-           // But check if we need to restore a specific screen on TOP of it
-           final navService = NavigationPersistenceService();
-           final restoredRoute = await navService.getRestorableRoute();
-
-           // Reset stack to MainLayout
+           // 1. Force Home Page (User Request: "Landing page is home")
+           // We do NOT restore the last route (e.g. Settings) to avoid confusion.
            Navigator.of(context).pushAndRemoveUntil(
              MaterialPageRoute(builder: (_) => const MainLayout()), 
              (route) => false
            );
-           
-           // Restore route logic (simplified)
         }
       }
   }

@@ -60,13 +60,13 @@ class StoreService extends ChangeNotifier {
   }
 
   // 2. Silent Sync
-  Future<void> fetchFromApi() async {
+  Future<void> fetchFromApi({String? branchId}) async {
     _isLoading = true;
-    // notifyListeners(); // Don't notify here to avoid flickering if we are hydrating silently
     
     // Fetch Products
     try {
-      final response = await _apiService.client.get('/products');
+      final endpoint = branchId != null ? '/products?branchId=$branchId' : '/products'; // Strict Scope
+      final response = await _apiService.client.get(endpoint);
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         final newProducts = data.where((e) => e is Map).map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
@@ -74,7 +74,7 @@ class StoreService extends ChangeNotifier {
         // Cache Logic (Simple overwrite for now, optimized diffing can be added if needed)
         _products = newProducts;
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('products_cache', jsonEncode(data));
+        await prefs.setString('products_cache_$branchId', jsonEncode(data)); // Branch-aware cache key
         notifyListeners();
       }
     } catch (e) {
@@ -82,29 +82,28 @@ class StoreService extends ChangeNotifier {
     }
 
     // Fetch Categories (Parallel or sequential doesn't matter much here, sequential safer)
+    // Fetch Global Categories
     try {
        final response = await _apiService.client.get('/categories');
        if (response.statusCode == 200) {
           final List<dynamic> data = response.data;
-           _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
-           _categories = ["All", ..._categoryObjects.map((c) => c.name).toList()];
-           
-           final prefs = await SharedPreferences.getInstance();
-           await prefs.setString('categories_cache', jsonEncode(data));
-           notifyListeners();
+          // data is list of objects {name, image...}
+          _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
+          _categories = ["All", ..._categoryObjects.map((c) => c.name).toList()];
+          notifyListeners();
        }
     } catch(e) {
        debugPrint("Error fetching categories: $e");
     }
 
     _isLoading = false;
-    // notifyListeners(); 
   }
 
   // COMPATIBILITY (Wraps silent sync)
-  Future<void> fetchProducts({bool forceRefresh = false}) async {
-    if (!_isHydrated) await loadFromCache();
-    await fetchFromApi();
+  Future<void> fetchProducts({String? branchId, bool forceRefresh = false}) async {
+    // Note: We might want separate cache keys for Separate branches.
+    if (!_isHydrated && branchId == null) await loadFromCache();
+    await fetchFromApi(branchId: branchId);
   }
   
   // Categories Helper
@@ -157,10 +156,11 @@ class StoreService extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchFeaturedProducts({bool onlyCache = false}) async {
+  Future<void> fetchFeaturedProducts({String? branchId, bool onlyCache = false}) async {
     final prefs = await SharedPreferences.getInstance();
 
     // 1. Load from cache first
+    // Note: We might want branch-specific cache key, but for now global is okay as it rotates
     if (_featuredProducts.isEmpty) {
       try {
         final cached = prefs.getString('featured_products_cache');
@@ -175,13 +175,17 @@ class StoreService extends ChangeNotifier {
     if (onlyCache) return;
 
     // 2. Fetch ALL products then random select 5
-    // This supports the "Random at intervals" requirement better than backend limit
     try {
-      final response = await _apiService.client.get('/products'); // Get ALL
+      final endpoint = branchId != null ? '/products?branchId=$branchId' : '/products'; 
+      final response = await _apiService.client.get(endpoint);
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         final allProducts = data.where((e) => e is Map).map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
-        _products = allProducts; // Update main list too while we are at it
+        
+         // Only update main products if we are in the "Active Branch" context
+         // But StoreService is singleton, so be careful. 
+         // For now, let's NOT overwrite _products here to avoid state thrashing if just fetching featured for Home.
+         // _products = allProducts; 
 
         if (allProducts.isNotEmpty) {
            final shuffled = List<StoreProduct>.from(allProducts)..shuffle();
@@ -192,6 +196,10 @@ class StoreService extends ChangeNotifier {
            
            // Cache THIS selection
            await prefs.setString('featured_products_cache', jsonEncode(newFeatured.map((e)=>e.toJson()).toList()));
+        } else {
+           // If branch has no products, clear featured
+           _featuredProducts = [];
+           notifyListeners();
         }
       }
     } catch (e) {

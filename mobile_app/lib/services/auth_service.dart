@@ -286,6 +286,14 @@ class AuthService extends ChangeNotifier {
     return await _storage.read(key: 'user_role');
   }
 
+  // [Check for Ghost Account]
+  Future<bool> hasValidProfile() async {
+    final name = await _storage.read(key: 'user_name');
+    final email = await _storage.read(key: 'user_email');
+    // If either is missing/empty, profile is invalid (Ghost)
+    return name != null && name.isNotEmpty && email != null && email.isNotEmpty;
+  }
+
   Future<List<dynamic>> fetchAllUsers() async {
     try {
       final response = await _apiService.client.get('/auth/users');
