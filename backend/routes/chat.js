@@ -1,105 +1,149 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const Chat = require('../models/Chat');
+const ChatThread = require('../models/ChatThread');
+const ChatMessage = require('../models/ChatMessage');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
-// GET / - Get my chat history
+// GET / - Get or Create thread for User + Branch
 router.get('/', auth, async (req, res) => {
     try {
-        let chat = await Chat.findOne({ userId: req.user.id });
-        if (!chat) {
-            // Create empty chat if none exists
-            chat = new Chat({ userId: req.user.id, messages: [] });
-            await chat.save();
+        const { branchId } = req.query;
+        if (!branchId) return res.status(400).json({ msg: 'Branch ID is required' });
+
+        let thread = await ChatThread.findOne({ userId: req.user.id, branchId });
+        if (!thread) {
+            thread = new ChatThread({ userId: req.user.id, branchId });
+            await thread.save();
         }
-        res.json(chat);
+        res.json(thread);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// POST / - Send message
-router.post('/', auth, async (req, res) => {
+// GET /messages/:threadId - Get message history
+router.get('/messages/:threadId', auth, async (req, res) => {
     try {
-        const { text, sender, branchId } = req.body; // Accept branchId from client
-        const senderRole = sender || 'user';
+        const thread = await ChatThread.findById(req.params.threadId);
+        if (!thread) return res.status(404).json({ msg: 'Thread not found' });
 
-        let chat = await Chat.findOne({ userId: req.user.id });
-        if (!chat) {
-            chat = new Chat({ userId: req.user.id, branchId, messages: [] });
-        } else if (branchId && !chat.branchId) {
-            chat.branchId = branchId;
+        const user = await User.findById(req.user.id);
+        if (user.role !== 'admin' && thread.userId.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'Access denied' });
         }
 
-        chat.messages.push({
-            sender: senderRole,
-            text
+        const messages = await ChatMessage.find({ threadId: req.params.threadId }).sort({ createdAt: 1 });
+
+        // Reset unread count
+        if (user.role === 'admin') {
+            thread.unreadCountAdmin = 0;
+        } else {
+            thread.unreadCountUser = 0;
+        }
+        await thread.save();
+
+        res.json(messages);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// POST /send - Send message
+router.post('/send', auth, async (req, res) => {
+    try {
+        const { threadId, messageText } = req.body;
+        const thread = await ChatThread.findById(threadId);
+        if (!thread) return res.status(404).json({ msg: 'Thread not found' });
+
+        const user = await User.findById(req.user.id);
+        const isAdmin = user.role === 'admin';
+
+        if (!isAdmin && thread.userId.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'Access denied' });
+        }
+
+        const newMessage = new ChatMessage({
+            threadId,
+            senderType: isAdmin ? 'admin' : 'user',
+            senderId: req.user.id,
+            messageText
         });
-        chat.lastUpdated = Date.now();
-        await chat.save();
 
-        // --- NOTIFICATION TRIGGERS ---
-        if (senderRole === 'user') {
-            // Notify Admins
-            const admins = await User.find({ role: 'admin' }).select('_id');
-            const adminNotifications = admins.map(admin => ({
-                userId: admin._id,
-                title: "New Customer Message",
-                message: `User sent: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`,
-                title: "New Customer Message",
-                message: `User sent: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`,
-                type: 'chat', // Should direct to chat
-                branchId: chat.branchId // Tag with Branch
-            }));
-            if (adminNotifications.length > 0) {
-                await Notification.insertMany(adminNotifications);
-            }
+        await newMessage.save();
 
-            // SIMULATED ADMIN RESPONSE (For Demo)
-            if (text.toLowerCase().includes('help')) {
-                setTimeout(async () => {
-                    chat.messages.push({
-                        sender: 'admin',
-                        text: "Hi there! An agent will be with you shortly. How can I help?",
-                        timestamp: new Date()
-                    });
-                    await chat.save();
-
-                    // Notify User of Reply
-                    await new Notification({
-                        userId: req.user.id, // The original user
-                        title: "New Message",
-                        message: "Clotheline Support sent you a message.",
-                        type: 'chat'
-                    }).save();
-
-                }, 1000);
-            }
-
-        } else if (senderRole === 'admin') {
-            // If an Admin sends via this route (not typical, but possible if they login as themselves but acting on user chat?)
-            // Usually Admin has a separate route or uses userId param. 
-            // Assuming this route is for the currently logged in user context.
-            // If admin is talking to themselves? Unlikely. 
-            // Skipping this case for valid User->Admin flow primarily.
+        thread.lastMessageText = messageText;
+        thread.lastMessageAt = Date.now();
+        if (isAdmin) {
+            thread.unreadCountUser += 1;
+        } else {
+            thread.unreadCountAdmin += 1;
         }
+        await thread.save();
 
-        res.json(chat);
+        // Push Alert
+        try {
+            if (!isAdmin) {
+                const admins = await User.find({ role: 'admin' }).select('_id');
+                const adminNotifications = admins.map(adm => ({
+                    userId: adm._id,
+                    title: "New Message",
+                    message: "New message from customer",
+                    type: 'chat',
+                    branchId: thread.branchId
+                }));
+                if (adminNotifications.length > 0) await Notification.insertMany(adminNotifications);
+            } else {
+                await new Notification({
+                    userId: thread.userId,
+                    title: "Support Replied",
+                    message: "New message from support",
+                    type: 'chat',
+                    branchId: thread.branchId
+                }).save();
+            }
+        } catch (e) { }
+
+        res.json(newMessage);
     } catch (err) {
-        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// GET /admin/:userId - Get chat for specific user (For Admin)
-// Needs Admin Middleware ideally
-router.get('/admin/:userId', auth, async (req, res) => {
+// ADMIN Routes
+router.get('/admin/threads', auth, async (req, res) => {
     try {
-        const chat = await Chat.findOne({ userId: req.params.userId });
-        res.json(chat || { messages: [] });
+        const { branchId, status } = req.query;
+        const user = await User.findById(req.user.id);
+        if (user.role !== 'admin') return res.status(403).json({ msg: 'Admins only' });
+
+        const query = { branchId };
+        if (status && status !== 'All') query.status = status.toLowerCase();
+
+        const threads = await ChatThread.find(query)
+            .populate('userId', 'name email')
+            .sort({ lastMessageAt: -1 });
+        res.json(threads);
+    } catch (err) {
+        res.status(500).send('Server Error');
+    }
+});
+
+router.put('/admin/status/:threadId', auth, async (req, res) => {
+    try {
+        const { status } = req.body;
+        const user = await User.findById(req.user.id);
+        if (user.role !== 'admin') return res.status(403).json({ msg: 'Admins only' });
+
+        const thread = await ChatThread.findById(req.params.threadId);
+        if (!thread) return res.status(404).json({ msg: 'Thread not found' });
+
+        thread.status = status;
+        await thread.save();
+        res.json(thread);
     } catch (err) {
         res.status(500).send('Server Error');
     }
