@@ -502,7 +502,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   Widget _buildSummaryCard(bool isDark, Color textColor) {
-    double total = _cartService.serviceTotalAmount + _pickupFee + _deliveryFee;
+    // Correct Total Calculation incl Tax and Logistics
+    double subtotal = _cartService.subtotal;
+    double tax = _cartService.taxAmount;
+    double logistics = _pickupFee + _deliveryFee;
+    double total = _cartService.totalAmount + logistics; 
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -525,6 +529,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           )),
           
           const Divider(),
+          
+          // Subtotal Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Subtotal", style: TextStyle(color: textColor)),
+              Text(CurrencyFormatter.format(subtotal), style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+            ],
+          ),
+          const SizedBox(height: 5),
+
+           // VAT Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("VAT (${_cartService.taxRate}%)", style: TextStyle(color: textColor)),
+              Text(CurrencyFormatter.format(tax), style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+            ],
+          ),
+
+          if (_beforeWashOption == 1 || _afterWashOption == 1) const Divider(),
+
           
           if (_beforeWashOption == 1) // Pickup selected
              Row(
