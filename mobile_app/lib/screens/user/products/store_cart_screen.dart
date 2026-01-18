@@ -262,13 +262,13 @@ class StoreCartScreen extends StatelessWidget {
              _row("Subtotal", CurrencyFormatter.format(service.storeTotalAmount), isDark),
              if (service.discountAmount > 0)
                 _row("Discount", "-${CurrencyFormatter.format(service.discountAmount)}", isDark, color: Colors.green),
-             _row("Tax (${service.taxRate}%)", CurrencyFormatter.format(service.taxAmount), isDark),
+             _row("Tax (${service.taxRate}%)", CurrencyFormatter.format(service.storeTaxAmount), isDark),
              const Divider(height: 20),
              Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
                  const Text("Total", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                 Text(CurrencyFormatter.format(service.totalAmount), style: const TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.bold, fontSize: 20)),
+                 Text(CurrencyFormatter.format(service.storeTotalAmount + service.storeTaxAmount - service.discountAmount), style: const TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.bold, fontSize: 20)),
                ],
              ),
              const SizedBox(height: 16),

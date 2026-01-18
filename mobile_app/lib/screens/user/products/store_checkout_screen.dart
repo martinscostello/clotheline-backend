@@ -385,12 +385,21 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
             ),
           ],
 
+          const SizedBox(height: 10),
+           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("VAT (${_cartService.taxRate}%)", style: TextStyle(color: textColor)),
+              Text(CurrencyFormatter.format(_cartService.storeTaxAmount), style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+
           const Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("Total Amount", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-              Text(CurrencyFormatter.format(_cartService.storeTotalAmount + _deliveryFee), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
+              Text(CurrencyFormatter.format(_cartService.storeTotalAmount + _cartService.storeTaxAmount + _deliveryFee), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
             ],
           ),
         ],

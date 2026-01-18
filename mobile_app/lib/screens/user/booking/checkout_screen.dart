@@ -16,6 +16,7 @@ import '../../../services/payment_service.dart';
 import '../../../services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../utils/currency_formatter.dart';
+import 'combined_order_summary_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   // Use Singleton instead of passing list
@@ -503,10 +504,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
   Widget _buildSummaryCard(bool isDark, Color textColor) {
     // Correct Total Calculation incl Tax and Logistics
-    double subtotal = _cartService.subtotal;
-    double tax = _cartService.taxAmount;
+    // Correct Total Calculation incl Tax and Logistics (Service Only)
+    double subtotal = _cartService.serviceTotalAmount;
+    double tax = _cartService.serviceTaxAmount; // Use granular service tax
     double logistics = _pickupFee + _deliveryFee;
-    double total = _cartService.totalAmount + logistics; 
+    double total = subtotal + tax + logistics; // Calculate locally to ensure isolation 
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -619,9 +621,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     setState(() => _isSubmitting = true);
 
     // 1. Check for Mixed Cart (Bucket + Store)
-    String scope = 'bucket';
-    bool includeStoreItems = false;
-
     if (_cartService.storeItems.isNotEmpty) {
       // Prompt User
       final result = await showDialog<String>(
@@ -637,22 +636,37 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
-              onPressed: () => Navigator.pop(ctx, 'combined'),
+              onPressed: () {
+                Navigator.pop(ctx, 'combined');
+                // Navigate to Combined Summary
+                Navigator.push(context, MaterialPageRoute(builder: (_) => CombinedOrderSummaryScreen(
+                  logisticsData: {'deliveryFee': _deliveryFee, 'pickupFee': _pickupFee},
+                  onProceed: (logistics) async {
+                    Navigator.pop(context); // Close summary
+                    await _processPayment(scope: 'combined', includeStoreItems: true);
+                  },
+                )));
+              },
               child: const Text("Pay All Together"),
             ),
           ],
         ),
       );
 
-      if (result == 'combined') {
-        scope = 'combined';
-        includeStoreItems = true;
-      } else {
-        // Default or 'separate'
-        scope = 'bucket';
-        includeStoreItems = false;
+      // If user chose Separate, continue as Bucket. If Combined, the dialog action handled it.
+      if (result == 'separate') {
+         await _processPayment(scope: 'bucket', includeStoreItems: false);
       }
+      // If combined, it was handled in the dialog callback.
+      setState(() => _isSubmitting = false); // Reset if handled externally or cancelled
+    } else {
+      // Standard Bucket Checkout
+      await _processPayment(scope: 'bucket', includeStoreItems: false);
     }
+  }
+
+  Future<void> _processPayment({required String scope, required bool includeStoreItems}) async {
+    setState(() => _isSubmitting = true);
 
     // Prepare Items
     List<Map<String, dynamic>> items = [];

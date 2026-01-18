@@ -185,7 +185,15 @@ class CartService extends ChangeNotifier {
   // Base Subtotal (Before Discount)
   double get subtotal => serviceTotalAmount + storeTotalAmount; 
   double get subtotalAfterDiscount => (subtotal - discountAmount) < 0 ? 0 : (subtotal - discountAmount);
-  double get taxAmount => (subtotalAfterDiscount * (taxRate / 100));
+  
+  // Tax Calculations
+  double get taxAmount => (subtotalAfterDiscount * (taxRate / 100)); // Combined Tax
+  
+  // Granular Tax (assuming discount applies proportionally or to total? implementation varies, assuming discount is general)
+  // For granular display, if we ignore discount splitting for now:
+  double get storeTaxAmount => (storeTotalAmount * (taxRate / 100));
+  double get serviceTaxAmount => (serviceTotalAmount * (taxRate / 100));
+
   double get totalAmount => subtotalAfterDiscount + taxAmount;
 
   // Apply Promo
