@@ -3,18 +3,6 @@ Analyzing mobile_app...
 warning • Duplicate import • lib/main.dart:15:8 • duplicate_import
 warning • Unused import: 'screens/common/branch_selection_screen.dart' • lib/main.dart:19:8 • unused_import
 warning • Unused import: 'screens/admin/dashboard/admin_dashboard_screen.dart' • lib/main.dart:20:8 • unused_import
-  error • 'NotificationService' doesn't conform to the bound 'ChangeNotifier?' of the type parameter 'T' • lib/main.dart:50:9 • type_argument_not_matching_bounds
-  error • Couldn't infer type parameter 'T'.
-
-Tried to infer 'NotificationService' for 'T' which doesn't work:
-  Type parameter 'T' is declared to extend 'ChangeNotifier?' producing 'ChangeNotifier?'.
-The type 'NotificationService' was inferred from:
-  Parameter 'create' declared as     'T Function(BuildContext)'
-                     but argument is 'NotificationService Function(BuildContext)'.
-
-Consider passing explicit type argument(s) to the generic.
-
- • lib/main.dart:50:9 • could_not_infer
    info • Use 'const' with the constructor to improve performance • lib/main.dart:188:12 • prefer_const_constructors
    info • Use 'const' with the constructor to improve performance • lib/main.dart:190:13 • prefer_const_constructors
    info • Use 'const' with the constructor to improve performance • lib/main.dart:191:16 • prefer_const_constructors
@@ -37,7 +25,9 @@ warning • Unused import: 'package:flutter/material.dart' • lib/models/store_
    info • Don't invoke 'print' in production code • lib/providers/branch_provider.dart:144:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/providers/branch_provider.dart:148:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/providers/branch_provider.dart:159:7 • avoid_print
+   info • The import of '../../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../utils/toast_utils.dart' • lib/screens/admin/cms/admin_categories_screen.dart:8:8 • unnecessary_import
 warning • Unused import: 'dart:io' • lib/screens/admin/cms/admin_cms_content_screen.dart:1:8 • unused_import
+   info • The import of 'package:laundry_app/widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of 'package:laundry_app/utils/toast_utils.dart' • lib/screens/admin/cms/admin_cms_content_screen.dart:13:8 • unnecessary_import
 warning • The value of the field '_formKey' isn't used • lib/screens/admin/cms/admin_cms_content_screen.dart:27:9 • unused_field
    info • Statements in a for should be enclosed in a block • lib/screens/admin/cms/admin_cms_content_screen.dart:49:42 • curly_braces_in_flow_control_structures
    info • Statements in a for should be enclosed in a block • lib/screens/admin/cms/admin_cms_content_screen.dart:50:40 • curly_braces_in_flow_control_structures
@@ -46,13 +36,16 @@ warning • The operand can't be 'null', so the condition is always 'true' • l
    info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/cms/admin_cms_content_screen.dart:534:70 • deprecated_member_use
    info • Unnecessary instance of 'Container' • lib/screens/admin/cms/admin_cms_content_screen.dart:545:28 • avoid_unnecessary_containers
 warning • Unused import: 'package:laundry_app/utils/currency_formatter.dart' • lib/screens/admin/cms/admin_cms_promotions_screen.dart:7:8 • unused_import
+   info • The import of 'package:laundry_app/widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of 'package:laundry_app/utils/toast_utils.dart' • lib/screens/admin/cms/admin_cms_promotions_screen.dart:9:8 • unnecessary_import
 warning • The operand can't be 'null', so the condition is always 'true' • lib/screens/admin/cms/admin_cms_promotions_screen.dart:34:30 • unnecessary_null_comparison
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/cms/admin_cms_screen.dart:162:59 • deprecated_member_use
 warning • Unused import: 'package:provider/provider.dart' • lib/screens/admin/notifications/admin_notification_dashboard.dart:2:8 • unused_import
 warning • Unused import: 'package:liquid_glass_ui/liquid_glass_ui.dart' • lib/screens/admin/notifications/admin_notification_dashboard.dart:4:8 • unused_import
+   info • The import of 'package:laundry_app/widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of 'package:laundry_app/utils/toast_utils.dart' • lib/screens/admin/notifications/admin_notification_dashboard.dart:8:8 • unnecessary_import
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/notifications/admin_notification_dashboard.dart:146:41 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/notifications/admin_notification_dashboard.dart:207:31 • deprecated_member_use
 warning • Unused import: 'package:intl/intl.dart' • lib/screens/admin/orders/admin_order_detail_screen.dart:8:8 • unused_import
+   info • The import of '../../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../utils/toast_utils.dart' • lib/screens/admin/orders/admin_order_detail_screen.dart:13:8 • unnecessary_import
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/orders/admin_order_detail_screen.dart:227:51 • deprecated_member_use
   error • 'status' can't be used as a setter because it's final • lib/screens/admin/orders/admin_order_detail_screen.dart:314:36 • assignment_to_final
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/orders/admin_orders_screen.dart:225:22 • deprecated_member_use
@@ -60,17 +53,22 @@ warning • Unused import: 'package:intl/intl.dart' • lib/screens/admin/orders
 warning • Unused import: '../../../widgets/glass/GlassContainer.dart' • lib/screens/admin/products/admin_add_product_screen.dart:9:8 • unused_import
 warning • Unused import: '../../../providers/branch_provider.dart' • lib/screens/admin/products/admin_add_product_screen.dart:14:8 • unused_import
 warning • Unused import: '../../../models/branch_model.dart' • lib/screens/admin/products/admin_add_product_screen.dart:15:8 • unused_import
+   info • The import of '../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../utils/toast_utils.dart' • lib/screens/admin/products/admin_add_product_screen.dart:17:8 • unnecessary_import
 warning • The value of the field '_branchInfo' isn't used • lib/screens/admin/products/admin_add_product_screen.dart:48:27 • unused_field
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/products/admin_add_product_screen.dart:345:58 • deprecated_member_use
+   info • The import of '../../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../utils/toast_utils.dart' • lib/screens/admin/products/admin_product_categories_screen.dart:8:8 • unnecessary_import
 warning • Unused import: '../../../widgets/glass/GlassContainer.dart' • lib/screens/admin/products/admin_products_screen.dart:4:8 • unused_import
 warning • Unused import: '../../admin/services/admin_edit_service_screen.dart' • lib/screens/admin/products/admin_products_screen.dart:10:8 • unused_import
    info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/admin/products/admin_products_screen.dart:180:39 • use_build_context_synchronously
+   info • The import of '../../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../utils/toast_utils.dart' • lib/screens/admin/reports/admin_financial_dashboard.dart:8:8 • unnecessary_import
 warning • Unused import: 'package:provider/provider.dart' • lib/screens/admin/services/admin_edit_service_screen.dart:6:8 • unused_import
 warning • Unused import: '../../../../providers/branch_provider.dart' • lib/screens/admin/services/admin_edit_service_screen.dart:7:8 • unused_import
+   info • The import of '../../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../utils/toast_utils.dart' • lib/screens/admin/services/admin_edit_service_screen.dart:18:8 • unnecessary_import
    info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/services/admin_edit_service_screen.dart:448:28 • deprecated_member_use
 warning • Unused import: '../../../../models/service_model.dart' • lib/screens/admin/services/admin_services_screen.dart:3:8 • unused_import
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/services/admin_services_screen.dart:156:68 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/services/admin_services_screen.dart:169:96 • deprecated_member_use
+   info • The import of '../../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../utils/toast_utils.dart' • lib/screens/admin/settings/admin_delivery_settings_screen.dart:11:8 • unnecessary_import
 warning • The value of the local variable 'latCtrl' isn't used • lib/screens/admin/settings/admin_delivery_settings_screen.dart:35:13 • unused_local_variable
 warning • The value of the local variable 'lngCtrl' isn't used • lib/screens/admin/settings/admin_delivery_settings_screen.dart:36:13 • unused_local_variable
    info • Don't use 'BuildContext's across async gaps • lib/screens/admin/settings/admin_delivery_settings_screen.dart:126:47 • use_build_context_synchronously
@@ -83,16 +81,19 @@ warning • The declaration '_parseColor' isn't referenced • lib/screens/admin
    info • Use 'const' literals as arguments to constructors of '@immutable' classes • lib/screens/admin/settings/admin_delivery_settings_screen.dart:541:40 • prefer_const_literals_to_create_immutables
    info • The 'child' argument should be last in widget constructor invocations • lib/screens/admin/settings/admin_delivery_settings_screen.dart:586:35 • sort_child_properties_last
    info • Unnecessary use of 'toList' in a spread • lib/screens/admin/settings/admin_delivery_settings_screen.dart:627:32 • unnecessary_to_list_in_spreads
+   info • The import of '../../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../utils/toast_utils.dart' • lib/screens/admin/settings/admin_edit_admin_screen.dart:8:8 • unnecessary_import
    info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/settings/admin_edit_admin_screen.dart:159:27 • deprecated_member_use
    info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/settings/admin_edit_admin_screen.dart:209:11 • deprecated_member_use
 warning • Unused import: '../../../../utils/toast_utils.dart' • lib/screens/admin/settings/admin_manage_admins_screen.dart:8:8 • unused_import
 warning • Unused import: '../../../../widgets/toast/top_toast.dart' • lib/screens/admin/settings/admin_manage_admins_screen.dart:9:8 • unused_import
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/settings/admin_manage_admins_screen.dart:82:69 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/settings/admin_settings_screen.dart:74:49 • deprecated_member_use
+   info • The import of '../../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../utils/toast_utils.dart' • lib/screens/admin/settings/admin_tax_settings_screen.dart:7:8 • unnecessary_import
    info • Use 'const' with the constructor to improve performance • lib/screens/admin/settings/admin_tax_settings_screen.dart:96:20 • prefer_const_constructors
    info • Use 'const' with the constructor to improve performance • lib/screens/admin/settings/admin_tax_settings_screen.dart:99:29 • prefer_const_constructors
    info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/settings/admin_tax_settings_screen.dart:125:28 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/settings/admin_tax_settings_screen.dart:143:54 • deprecated_member_use
+   info • The import of '../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../utils/toast_utils.dart' • lib/screens/admin/users/admin_users_screen.dart:9:8 • unnecessary_import
   error • Undefined name 'ToastUtils' • lib/screens/auth/login_screen.dart:46:7 • undefined_identifier
   error • Undefined name 'ToastType' • lib/screens/auth/login_screen.dart:46:64 • undefined_identifier
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/login_screen.dart:165:37 • deprecated_member_use
@@ -123,6 +124,7 @@ warning • Unused import: '../../models/branch_model.dart' • lib/screens/comm
    info • Don't use 'BuildContext's across async gaps • lib/screens/common/branch_selection_screen.dart:54:41 • use_build_context_synchronously
 warning • Unused import: '../../../models/booking_models.dart' • lib/screens/user/booking/checkout_screen.dart:4:8 • unused_import
 warning • Unused import: '../../../models/app_content_model.dart' • lib/screens/user/booking/checkout_screen.dart:8:8 • unused_import
+   info • The import of '../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../utils/toast_utils.dart' • lib/screens/user/booking/checkout_screen.dart:20:8 • unnecessary_import
 warning • The value of the field '_isLocating' isn't used • lib/screens/user/booking/checkout_screen.dart:50:8 • unused_field
 warning • The operand can't be 'null', so the condition is always 'true' • lib/screens/user/booking/checkout_screen.dart:87:27 • unnecessary_null_comparison
    info • Don't use 'BuildContext's across async gaps • lib/screens/user/booking/checkout_screen.dart:134:60 • use_build_context_synchronously
@@ -134,13 +136,9 @@ warning • The operand can't be 'null', so the condition is always 'true' • l
 warning • The value of the field '_orderService' isn't used • lib/screens/user/booking/checkout_screen.dart:618:9 • unused_field
 warning • The declaration '_callBranch' isn't referenced • lib/screens/user/booking/checkout_screen.dart:791:16 • unused_element
 warning • Unused import: '../../../services/payment_service.dart' • lib/screens/user/booking/combined_order_summary_screen.dart:8:8 • unused_import
-  error • The named parameter 'color' isn't defined • lib/screens/user/booking/combined_order_summary_screen.dart:58:15 • undefined_named_parameter
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/booking/combined_order_summary_screen.dart:58:51 • deprecated_member_use
-  error • The named parameter 'color' isn't defined • lib/screens/user/booking/combined_order_summary_screen.dart:82:15 • undefined_named_parameter
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/booking/combined_order_summary_screen.dart:82:51 • deprecated_member_use
-  error • The named parameter 'color' isn't defined • lib/screens/user/booking/combined_order_summary_screen.dart:105:13 • undefined_named_parameter
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/booking/combined_order_summary_screen.dart:105:49 • deprecated_member_use
-  error • The named parameter 'color' isn't defined • lib/screens/user/booking/combined_order_summary_screen.dart:125:13 • undefined_named_parameter
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/booking/combined_order_summary_screen.dart:125:49 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/booking/combined_order_summary_screen.dart:169:46 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/booking/combined_order_summary_screen.dart:169:78 • deprecated_member_use
@@ -165,6 +163,7 @@ warning • Unused import: '../common/branch_selection_screen.dart' • lib/scre
    info • Don't use 'BuildContext's across async gaps • lib/screens/user/notifications/notifications_screen.dart:20:40 • use_build_context_synchronously
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/notifications/notifications_screen.dart:133:72 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/notifications/notifications_screen.dart:199:70 • deprecated_member_use
+   info • The import of '../../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../../utils/toast_utils.dart' • lib/screens/user/orders/order_detail_screen.dart:10:8 • unnecessary_import
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/orders/order_detail_screen.dart:50:60 • deprecated_member_use
 warning • This default clause is covered by the previous cases • lib/screens/user/orders/order_detail_screen.dart:254:7 • unreachable_switch_default
 warning • This default clause is covered by the previous cases • lib/screens/user/orders/order_detail_screen.dart:266:7 • unreachable_switch_default
@@ -190,8 +189,10 @@ warning • The value of the local variable 'priceColor' isn't used • lib/scre
 warning • The '!' will have no effect because the receiver can't be null • lib/screens/user/products/product_detail_screen.dart:544:33 • unnecessary_non_null_assertion
 warning • Unused import: 'package:laundry_app/theme/app_theme.dart' • lib/screens/user/products/product_selection_sheet.dart:4:8 • unused_import
 warning • Unused import: 'package:laundry_app/theme/app_theme.dart' • lib/screens/user/products/products_screen.dart:4:8 • unused_import
+   info • The import of '../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../utils/toast_utils.dart' • lib/screens/user/products/products_screen.dart:18:8 • unnecessary_import
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/products/products_screen.dart:351:35 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/products/products_screen.dart:460:69 • deprecated_member_use
+   info • The import of '../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../utils/toast_utils.dart' • lib/screens/user/products/store_cart_screen.dart:10:8 • unnecessary_import
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/products/store_cart_screen.dart:44:83 • deprecated_member_use
    info • Use 'const' with the constructor to improve performance • lib/screens/user/products/store_cart_screen.dart:46:19 • prefer_const_constructors
    info • Use 'const' with the constructor to improve performance • lib/screens/user/products/store_cart_screen.dart:46:53 • prefer_const_constructors
@@ -212,6 +213,7 @@ warning • Unused import: 'package:laundry_app/theme/app_theme.dart' • lib/sc
    info • Statements in an if should be enclosed in a block • lib/screens/user/products/store_cart_screen.dart:224:34 • curly_braces_in_flow_control_structures
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/products/store_cart_screen.dart:257:41 • deprecated_member_use
 warning • Unused import: '../../../models/booking_models.dart' • lib/screens/user/products/store_checkout_screen.dart:3:8 • unused_import
+   info • The import of '../../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../../utils/toast_utils.dart' • lib/screens/user/products/store_checkout_screen.dart:18:8 • unnecessary_import
 warning • The value of the field '_isLocating' isn't used • lib/screens/user/products/store_checkout_screen.dart:41:8 • unused_field
    info • Don't use 'BuildContext's across async gaps • lib/screens/user/products/store_checkout_screen.dart:108:60 • use_build_context_synchronously
    info • Don't use 'BuildContext's across async gaps • lib/screens/user/products/store_checkout_screen.dart:109:58 • use_build_context_synchronously
@@ -224,7 +226,6 @@ warning • The value of the field '_orderService' isn't used • lib/screens/us
    info • Don't use 'BuildContext's across async gaps • lib/screens/user/products/store_checkout_screen.dart:594:24 • use_build_context_synchronously
    info • Don't use 'BuildContext's across async gaps • lib/screens/user/products/store_checkout_screen.dart:599:43 • use_build_context_synchronously
    info • Don't use 'BuildContext's across async gaps • lib/screens/user/products/store_checkout_screen.dart:605:24 • use_build_context_synchronously
-  error • There's no constant named 'warning' in 'ToastType' • lib/screens/user/products/store_checkout_screen.dart:720:98 • undefined_enum_constant
 warning • Unused import: 'package:liquid_glass_ui/liquid_glass_ui.dart' • lib/screens/user/settings/notification_settings_screen.dart:4:8 • unused_import
 warning • Unused import: 'package:laundry_app/widgets/glass/GlassContainer.dart' • lib/screens/user/settings/notification_settings_screen.dart:5:8 • unused_import
    info • Use 'const' with the constructor to improve performance • lib/screens/user/settings/notification_settings_screen.dart:46:22 • prefer_const_constructors
@@ -257,24 +258,11 @@ warning • The value of the field '_isInitialized' isn't used • lib/services/
    info • The 'if' statement could be replaced by a null-aware assignment • lib/services/delivery_service.dart:124:7 • prefer_conditional_assignment
    info • Use 'const' for final variables initialized to a constant value • lib/services/delivery_service.dart:132:5 • prefer_const_declarations
    info • Don't invoke 'print' in production code • lib/services/navigation_persistence_service.dart:60:7 • avoid_print
-  error • Classes can only extend other classes • lib/services/notification_service.dart:4:35 • extends_non_class
-  error • Undefined class 'ApiService' • lib/services/notification_service.dart:5:9 • undefined_class
-  error • The method 'ApiService' isn't defined for the type 'NotificationService' • lib/services/notification_service.dart:5:34 • undefined_method
-   info • The private field _knownNotificationIds could be 'final' • lib/services/notification_service.dart:17:15 • prefer_final_fields
-warning • The method doesn't override an inherited method • lib/services/notification_service.dart:36:8 • override_on_non_overriding_member
-  error • The method 'dispose' isn't defined in a superclass of 'NotificationService' • lib/services/notification_service.dart:38:11 • undefined_super_member
-  error • The method 'notifyListeners' isn't defined for the type 'NotificationService' • lib/services/notification_service.dart:61:8 • undefined_method
-   info • Don't invoke 'print' in production code • lib/services/notification_service.dart:99:7 • avoid_print
-  error • The method 'notifyListeners' isn't defined for the type 'NotificationService' • lib/services/notification_service.dart:103:9 • undefined_method
-  error • The method 'notifyListeners' isn't defined for the type 'NotificationService' • lib/services/notification_service.dart:106:9 • undefined_method
-  error • The method 'notifyListeners' isn't defined for the type 'NotificationService' • lib/services/notification_service.dart:142:9 • undefined_method
-   info • Don't invoke 'print' in production code • lib/services/notification_service.dart:145:7 • avoid_print
-  error • The method 'notifyListeners' isn't defined for the type 'NotificationService' • lib/services/notification_service.dart:151:5 • undefined_method
-   info • Don't invoke 'print' in production code • lib/services/notification_service.dart:155:7 • avoid_print
-  error • The method 'notifyListeners' isn't defined for the type 'NotificationService' • lib/services/notification_service.dart:165:7 • undefined_method
-   info • Don't invoke 'print' in production code • lib/services/notification_service.dart:168:7 • avoid_print
-warning • The value of the local variable 'data' isn't used • lib/services/order_service.dart:17:29 • unused_local_variable
-  error • The name 'data' is already defined • lib/services/order_service.dart:17:29 • duplicate_definition
+   info • The private field _knownNotificationIds could be 'final' • lib/services/notification_service.dart:19:15 • prefer_final_fields
+   info • Don't invoke 'print' in production code • lib/services/notification_service.dart:101:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/notification_service.dart:147:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/notification_service.dart:157:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/notification_service.dart:170:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/services/payment_service.dart:21:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/services/payment_service.dart:39:7 • avoid_print
    info • Parameter 'key' could be a super parameter • lib/services/payment_service.dart:79:9 • use_super_parameters
@@ -286,6 +274,7 @@ warning • The value of the local variable 'data' isn't used • lib/services/o
    info • Use 'whereType' to select elements of a given type • lib/services/store_service.dart:169:36 • prefer_iterable_wheretype
    info • Empty catch block • lib/services/store_service.dart:172:19 • empty_catches
    info • Use 'whereType' to select elements of a given type • lib/services/store_service.dart:183:34 • prefer_iterable_wheretype
+   info • The import of '../../widgets/toast/top_toast.dart' is unnecessary because all of the used elements are also provided by the import of '../../utils/toast_utils.dart' • lib/widgets/booking/booking_sheet.dart:11:8 • unnecessary_import
    info • The 'child' argument should be last in widget constructor invocations • lib/widgets/booking/booking_sheet.dart:419:22 • sort_child_properties_last
    info • The file name 'WashingMachineLogo.dart' isn't a lower_case_with_underscores identifier • lib/widgets/branding/WashingMachineLogo.dart:1:1 • file_names
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/branding/WashingMachineLogo.dart:18:33 • deprecated_member_use
@@ -310,10 +299,11 @@ warning • The value of the local variable 'paint' isn't used • lib/widgets/m
 warning • Unused import: '../../theme/app_theme.dart' • lib/widgets/toast/top_toast.dart:3:8 • unused_import
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:29:32 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:34:36 • deprecated_member_use
-warning • This default clause is covered by the previous cases • lib/widgets/toast/top_toast.dart:39:7 • unreachable_switch_default
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:40:41 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:40:84 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:57:37 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:80:59 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:39:33 • deprecated_member_use
+warning • This default clause is covered by the previous cases • lib/widgets/toast/top_toast.dart:44:7 • unreachable_switch_default
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:45:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:45:84 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:62:37 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/toast/top_toast.dart:85:59 • deprecated_member_use
    info • The file name 'RefractiveRingClipper.dart' isn't a lower_case_with_underscores identifier • lib/widgets/ui/RefractiveRingClipper.dart:1:1 • file_names
 

@@ -3,6 +3,7 @@ import '../../../theme/app_theme.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../models/booking_models.dart'; // [FIX] Added missing import
+import '../../../services/cart_service.dart';
 // Will import CheckoutScreen later
 import 'checkout_screen.dart'; 
 import 'package:flutter/services.dart';
@@ -24,7 +25,10 @@ class MyBucketScreen extends StatelessWidget {
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
 
-    double grandTotal = cart.fold(0, (sum, item) => sum + item.totalPrice);
+    final cartService = CartService();
+    double subtotal = cart.fold(0, (sum, item) => sum + item.totalPrice);
+    double tax = subtotal * (cartService.taxRate / 100);
+    double grandTotal = subtotal + tax;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -103,7 +107,34 @@ class MyBucketScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Total Amount", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
+                    Text("Subtotal", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
+                    Text(CurrencyFormatter.format(subtotal), style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // [NEW] Itemized Discounts
+                ...cartService.laundryDiscounts.entries.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 16)),
+                      Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                )),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("VAT (${cartService.taxRate}%)", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
+                    Text(CurrencyFormatter.format(tax), style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+                const Divider(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Total Amount", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
                     Text(CurrencyFormatter.format(grandTotal), style: const TextStyle(color: AppTheme.primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
                   ],
                 ),

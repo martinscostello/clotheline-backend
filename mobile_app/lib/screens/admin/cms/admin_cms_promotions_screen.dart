@@ -5,7 +5,8 @@ import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/models/app_content_model.dart';
 import 'package:laundry_app/utils/currency_formatter.dart';
-
+import 'package:laundry_app/utils/toast_utils.dart';
+import 'package:laundry_app/widgets/toast/top_toast.dart';
 class AdminCMSPromotionsScreen extends StatefulWidget {
   const AdminCMSPromotionsScreen({super.key});
 
@@ -47,7 +48,7 @@ class _AdminCMSPromotionsScreenState extends State<AdminCMSPromotionsScreen> {
 
     double? threshold = double.tryParse(_shippingThresholdCtrl.text);
     if (threshold == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid threshold amount")));
+      ToastUtils.show(context, "Invalid threshold amount", type: ToastType.info);
       return;
     }
 
@@ -64,9 +65,9 @@ class _AdminCMSPromotionsScreenState extends State<AdminCMSPromotionsScreen> {
     if (mounted) {
       setState(() => _isSaving = false);
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Promotions updated successfully!")));
+        ToastUtils.show(context, "Promotions updated successfully!", type: ToastType.success);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to update promotions")));
+        ToastUtils.show(context, "Failed to update promotions", type: ToastType.error);
       }
     }
   }

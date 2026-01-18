@@ -57,12 +57,13 @@ class AdminCMSScreen extends StatelessWidget {
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads'))),
                       ),
                       const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Branding Text",
-                        subtitle: "Update brands and slogans.",
-                        icon: Icons.text_fields,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding'))),
-                      ),
+                      const SizedBox(height: 15),
+                      // _buildCMSCard(
+                      //   title: "Branding Text",
+                      //   subtitle: "Update brands and slogans.",
+                      //   icon: Icons.text_fields,
+                      //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding'))),
+                      // ),
                       const SizedBox(height: 15),
                       _buildCMSCard(
                         title: "Promotions",
@@ -125,12 +126,12 @@ class AdminCMSScreen extends StatelessWidget {
 
                     if (canManageServices) ...[
                       const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Delivery Fees",
-                        subtitle: "Set delivery charges.",
-                        icon: Icons.local_shipping,
-                        onTap: () {},
-                      ),
+                      // _buildCMSCard(
+                      //   title: "Delivery Fees",
+                      //   subtitle: "Set delivery charges.",
+                      //   icon: Icons.local_shipping,
+                      //   onTap: () {},
+                      // ),
                     ],
                   ],
                 ),

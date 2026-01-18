@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/chat_service.dart';
+import '../../../providers/branch_provider.dart';
 import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -17,8 +18,13 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
     final service = Provider.of<ChatService>(context, listen: false);
-    service.startPolling();
+    
+    if (branchProvider.selectedBranch != null) {
+      service.startPolling(branchProvider.selectedBranch!.id);
+    }
+    
     // Scroll to bottom after init
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
@@ -74,6 +80,13 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Consumer<ChatService>(
         builder: (context, chat, _) {
+          if (chat.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (chat.currentThread == null) {
+            return const Center(child: Text("Could not initialize chat.", style: TextStyle(color: Colors.white54)));
+          }
+
           return Column(
             children: [
               Expanded(
@@ -85,10 +98,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       itemCount: chat.messages.length,
                       itemBuilder: (context, index) {
                         final msg = chat.messages[index];
-                        final isMe = msg['sender'] == 'user';
-                        final showTime = true; // Simplified for now
+                        final isMe = msg['senderType'] == 'user';
                         
-                        return _buildMessageBubble(msg['text'] ?? "", isMe, isDark, showTime);
+                        return _buildMessageBubble(msg['messageText'] ?? "", isMe, isDark, true);
                       },
                     ),
               ),

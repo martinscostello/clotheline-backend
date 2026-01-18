@@ -16,6 +16,8 @@ import '../../../services/payment_service.dart';
 import '../../../services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../utils/currency_formatter.dart';
+import '../../../utils/toast_utils.dart';
+import '../../../widgets/toast/top_toast.dart';
 import 'combined_order_summary_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -106,7 +108,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location services are disabled.")));
+      if(mounted) ToastUtils.show(context, "Location services are disabled.", type: ToastType.error);
       setState(() => _isLocating = false);
       return;
     }
@@ -115,14 +117,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location permissions are denied")));
+        if(mounted) ToastUtils.show(context, "Location permissions are denied", type: ToastType.error);
         setState(() => _isLocating = false);
         return;
       }
     }
     
     if (permission == LocationPermission.deniedForever) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location permissions are permanently denied, we cannot request permissions.")));
+      if(mounted) ToastUtils.show(context, "Location permissions are permanently denied, we cannot request permissions.", type: ToastType.error);
       setState(() => _isLocating = false);
       return;
     } 
@@ -151,7 +153,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       });
       
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error getting location: $e")));
+      if(mounted) ToastUtils.show(context, "Error getting location: $e", type: ToastType.error);
     } finally {
       setState(() => _isLocating = false);
     }
@@ -542,6 +544,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           ),
           const SizedBox(height: 5),
 
+          // [NEW] Itemized Discounts
+          ..._cartService.laundryDiscounts.entries.map((e) => Padding(
+            padding: const EdgeInsets.only(bottom: 5.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 13)),
+                Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          )),
+
            // VAT Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -707,7 +721,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     // Debug: Ensure we don't send empty items (Standard logic)
     if (items.isEmpty) {
        setState(() => _isSubmitting = false);
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No items to checkout")));
+       ToastUtils.show(context, "No items to checkout", type: ToastType.info);
        return;
     }
 
@@ -734,7 +748,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     };
 
     try {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Initializing Payment...")));
+      if(mounted) ToastUtils.show(context, "Initializing Payment...", type: ToastType.info);
 
       // 1. Initialize Payment (Get URL & Ref)
       final initResult = await _paymentService.initializePayment(orderData);
@@ -751,7 +765,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       final bool paymentCompleted = await _paymentService.openPaymentWebView(context, url, ref);
 
       if (paymentCompleted) {
-         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Verifying Payment...")));
+         if(mounted) ToastUtils.show(context, "Verifying Payment...", type: ToastType.info);
          
          // 3. Verify & Create Order
          final verifyResult = await _paymentService.verifyAndCreateOrder(ref);
@@ -768,19 +782,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
               (route) => false
             );
             
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Successful! Order Confirmed."), backgroundColor: Colors.green));
+            ToastUtils.show(context, "Payment Successful! Order Confirmed.", type: ToastType.success);
          } else {
              // Verification failed
              throw Exception("Payment verification failed");
          }
       } else {
           // User closed webview
-          if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment cancelled")));
+          if(mounted) ToastUtils.show(context, "Payment cancelled", type: ToastType.info);
           setState(() => _isSubmitting = false);
       }
 
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+      if(mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
       setState(() => _isSubmitting = false);
     }
   }
@@ -797,7 +811,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
     } else {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not launch dialer")));
+      if(mounted) ToastUtils.show(context, "Could not launch dialer", type: ToastType.error);
     }
   }
 
@@ -897,7 +911,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
     } else {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not launch dialer")));
+      if(mounted) ToastUtils.show(context, "Could not launch dialer", type: ToastType.error);
     }
   }
 }

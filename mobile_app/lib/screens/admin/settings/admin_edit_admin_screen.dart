@@ -4,6 +4,8 @@ import '../../../services/auth_service.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../widgets/glass/GlassContainer.dart';
 import '../../../theme/app_theme.dart';
+import '../../../../utils/toast_utils.dart';
+import '../../../../widgets/toast/top_toast.dart';
 
 class AdminEditAdminScreen extends StatefulWidget {
   final Map<String, dynamic>? admin; // If null, we are creating a new admin
@@ -75,7 +77,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ToastUtils.show(context, 'Error: $e', type: ToastType.error);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

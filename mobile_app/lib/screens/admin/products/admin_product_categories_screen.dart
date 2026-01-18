@@ -4,6 +4,8 @@ import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
+import '../../../../utils/toast_utils.dart';
+import '../../../../widgets/toast/top_toast.dart';
 
 class AdminProductCategoriesScreen extends StatefulWidget {
   const AdminProductCategoriesScreen({super.key});
@@ -38,7 +40,7 @@ class _AdminProductCategoriesScreenState extends State<AdminProductCategoriesScr
     if (_content == null) return;
     final success = await _contentService.updateAppContent(_content!.toJson());
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Categories Saved")));
+      ToastUtils.show(context, "Categories Saved", type: ToastType.success);
     }
   }
 

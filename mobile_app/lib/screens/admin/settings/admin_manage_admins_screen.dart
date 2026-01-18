@@ -5,6 +5,8 @@ import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../widgets/glass/GlassContainer.dart';
 import '../../../theme/app_theme.dart';
 import 'admin_edit_admin_screen.dart';
+import '../../../../utils/toast_utils.dart';
+import '../../../../widgets/toast/top_toast.dart';
 
 class AdminManageAdminsScreen extends StatefulWidget {
   const AdminManageAdminsScreen({super.key});
@@ -35,7 +37,7 @@ class _AdminManageAdminsScreenState extends State<AdminManageAdminsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        // ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        // ToastUtils.show(context, 'Error: $e', type: ToastType.error);
       }
     }
   }

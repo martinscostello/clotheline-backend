@@ -7,6 +7,8 @@ import '../../screens/user/booking/my_bucket_screen.dart';
 import '../../services/cart_service.dart';
 import '../../models/service_model.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/toast_utils.dart';
+import '../../widgets/toast/top_toast.dart';
 
 class BookingSheet extends StatefulWidget {
   final ServiceModel serviceModel;
@@ -38,6 +40,9 @@ class _BookingSheetState extends State<BookingSheet> {
     if (widget.serviceModel.serviceTypes.isNotEmpty) {
       _selectedVariant = widget.serviceModel.serviceTypes.first;
     } 
+    
+    // Refresh tax settings from backend (includes 50% safety cap)
+    _cartService.fetchTaxSettings();
   }
 
   void _addToBucket() {
@@ -74,7 +79,7 @@ class _BookingSheetState extends State<BookingSheet> {
       setState(() {
         _quantity = 1;
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Added to bucket"), duration: Duration(seconds: 1)));
+      ToastUtils.show(context, "Added to bucket", type: ToastType.success);
     }
   }
 
@@ -401,13 +406,13 @@ class _BookingSheetState extends State<BookingSheet> {
                  const SizedBox(height: 30),
                  Divider(color: secondaryTextColor.withValues(alpha: 0.2)),
                  const SizedBox(height: 10),
-                 Row(
-                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                   children: [
-                     Text("In Bucket (${cartItems.length})", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                     Text("Total: ${CurrencyFormatter.format(_cartService.totalAmount)}", style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
-                   ],
-                 ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Total (inc. VAT)", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                      Text(CurrencyFormatter.format(_cartService.serviceTotalWithTax), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                  const SizedBox(height: 15),
                  
                  // Proceed Button

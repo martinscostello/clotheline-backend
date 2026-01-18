@@ -5,6 +5,7 @@ import 'package:laundry_app/widgets/ui/liquid_glass_container.dart';
 import '../user/main_layout.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import '../../utils/toast_utils.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -21,9 +22,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   Future<void> _handleVerify() async {
     final otp = _otpController.text.trim();
     if (otp.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a valid 6-digit OTP"), backgroundColor: Colors.orange)
-      );
+      ToastUtils.show(context, "Please enter a valid 6-digit OTP", type: ToastType.info);
       return;
     }
 
@@ -41,9 +40,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Verification Failed: $e"), backgroundColor: Colors.redAccent)
-      );
+      ToastUtils.show(context, "Verification Failed: $e", type: ToastType.error);
     } finally {
        if (mounted) setState(() => _isLoading = false);
     }
@@ -182,15 +179,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     try {
       await Provider.of<AuthService>(context, listen: false).resendOtp(widget.email);
        if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Code sent!"), backgroundColor: Colors.green)
-      );
+      ToastUtils.show(context, "Code sent!", type: ToastType.success);
       _startTimer();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Resend Failed: $e"), backgroundColor: Colors.redAccent)
-      );
+      ToastUtils.show(context, "Resend Failed: $e", type: ToastType.error);
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }

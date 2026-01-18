@@ -13,6 +13,8 @@ import '../../../utils/currency_formatter.dart';
 import '../../../widgets/custom_cached_image.dart'; // Added Import
 import '../../../providers/branch_provider.dart';
 import '../../../models/branch_model.dart';
+import '../../../utils/toast_utils.dart';
+import '../../../widgets/toast/top_toast.dart';
 
 class AdminAddProductScreen extends StatefulWidget {
   final StoreProduct? product; // If provided, we are editing
@@ -165,13 +167,13 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     
     // Check if any uploads are pending
     if (_uploadItems.any((i) => i.status == UploadStatus.uploading)) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please wait for images to finish uploading")));
+       ToastUtils.show(context, "Please wait for images to finish uploading", type: ToastType.info);
        return;
     }
 
     // Check if any failed
     if (_uploadItems.any((i) => i.status == UploadStatus.error)) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Some images failed to upload. Please remove or retry them.")));
+       ToastUtils.show(context, "Some images failed to upload. Please remove or retry them.", type: ToastType.error);
        return;
     }
 
@@ -229,7 +231,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
         if (success) {
           Navigator.pop(context);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to save product")));
+          ToastUtils.show(context, "Failed to save product", type: ToastType.error);
         }
       }
     } catch (e) {
@@ -243,11 +245,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
              errorMsg = "Network Error: ${e.message}";
           }
         }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(errorMsg),
-          duration: const Duration(seconds: 5),
-          backgroundColor: Colors.red,
-        ));
+        ToastUtils.show(context, errorMsg, type: ToastType.error);
       }
     }
   }

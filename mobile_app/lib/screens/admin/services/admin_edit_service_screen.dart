@@ -14,6 +14,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 
 import '../../../../models/branch_model.dart'; // [NEW]
+import '../../../../utils/toast_utils.dart';
+import '../../../../widgets/toast/top_toast.dart';
 
 class AdminEditServiceScreen extends StatefulWidget {
   final ServiceModel? service; // [CHANGED] Nullable for Creation Mode
@@ -133,10 +135,10 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
         
         if(mounted) Navigator.pop(context);
       } else {
-        if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to save: ${response.statusCode}")));
+        if(mounted) ToastUtils.show(context, "Failed to save: ${response.statusCode}", type: ToastType.error);
       }
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if(mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
     } finally {
       if(mounted) setState(() => _isSaving = false);
     }

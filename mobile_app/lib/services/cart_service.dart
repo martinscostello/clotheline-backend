@@ -28,7 +28,7 @@ class CartService extends ChangeNotifier {
 
   CartService._internal() {
     _loadCart();
-    _fetchTaxSettings();
+    fetchTaxSettings();
   }
 
   Future<void> _loadCart() async {
@@ -83,14 +83,17 @@ class CartService extends ChangeNotifier {
     }
   }
 
-  Future<void> _fetchTaxSettings() async {
+  Future<void> fetchTaxSettings() async {
     try {
       // Lazy import to avoid circular dep if any (ApiService is safe)
       final ApiService api = ApiService(); 
       final response = await api.client.get('/settings');
       if (response.data != null) {
         _taxEnabled = response.data['taxEnabled'] ?? true;
-        _taxRate = (response.data['taxRate'] ?? 7.5).toDouble();
+        double rate = (response.data['taxRate'] ?? 7.5).toDouble();
+        // [FIX] Safety Cap - Never trust a tax rate > 50%
+        if (rate > 50) rate = 7.5;
+        _taxRate = rate;
         notifyListeners();
       }
     } catch (e) {
@@ -195,6 +198,28 @@ class CartService extends ChangeNotifier {
   double get serviceTaxAmount => (serviceTotalAmount * (taxRate / 100));
 
   double get totalAmount => subtotalAfterDiscount + taxAmount;
+
+  // [NEW] Scoped totals for Laundry flow to prevent confusion with Store Cart
+  double get serviceSubtotalBeforeDiscount => _items.fold(0, (sum, item) => sum + (item.item.basePrice * item.serviceType.priceMultiplier * item.quantity));
+  double get serviceTotalDiscount => _items.fold(0, (sum, item) => sum + (item.item.basePrice * item.serviceType.priceMultiplier * item.quantity * (item.discountPercentage / 100)));
+  
+  double get serviceSubtotal => serviceSubtotalBeforeDiscount; // Using raw subtotal for display
+  double get serviceTax => ((serviceSubtotalBeforeDiscount - serviceTotalDiscount) * (taxRate / 100));
+  double get serviceTotalWithTax => (serviceSubtotalBeforeDiscount - serviceTotalDiscount) + serviceTax;
+
+  // [NEW] Itemized Laundry Discounts
+  Map<String, double> get laundryDiscounts {
+    final Map<String, double> discounts = {};
+    for (var item in _items) {
+      if (item.discountPercentage > 0) {
+        double base = item.item.basePrice * item.serviceType.priceMultiplier * item.quantity;
+        double discountVal = base * (item.discountPercentage / 100);
+        String label = "${item.item.name} (${item.discountPercentage.toInt()}% Off)";
+        discounts[label] = (discounts[label] ?? 0.0) + discountVal;
+      }
+    }
+    return discounts;
+  }
 
   // Apply Promo
   Future<String?> applyPromoCode(String code) async {

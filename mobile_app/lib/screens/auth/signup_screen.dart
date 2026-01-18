@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'verify_email_screen.dart'; // Added Import
 import '../../providers/branch_provider.dart';
 import '../../models/branch_model.dart';
+import '../../utils/toast_utils.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -35,9 +36,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _handleSignup() async {
     if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all fields"), backgroundColor: Colors.orange)
-      );
+       ToastUtils.show(context, "Please fill in all fields", type: ToastType.info);
       return;
     }
 
@@ -63,9 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
       
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}"), backgroundColor: Colors.redAccent)
-      );
+      ToastUtils.show(context, "Error: ${e.toString()}", type: ToastType.error);
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }

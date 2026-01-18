@@ -7,6 +7,7 @@ import 'dashboard/admin_dashboard_screen.dart';
 import 'orders/admin_orders_screen.dart';
 import 'cms/admin_cms_screen.dart';
 import 'users/admin_users_screen.dart';
+import 'chat/admin_chat_screen.dart';
 import 'settings/admin_settings_screen.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 
@@ -63,7 +64,11 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
       navItems.add({'icon': Icons.people_outline, 'label': "Users"});
     }
 
-    // 5. Settings (Always)
+    // 5. Chat (Always for Admins)
+    screens.add(const AdminChatScreen());
+    navItems.add({'icon': Icons.chat_outlined, 'label': "Chat"});
+
+    // 6. Settings (Always)
     screens.add(const AdminSettingsScreen());
     navItems.add({'icon': Icons.settings_outlined, 'label': "Settings"});
     

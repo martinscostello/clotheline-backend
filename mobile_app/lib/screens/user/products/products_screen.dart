@@ -14,6 +14,8 @@ import '../../../widgets/custom_cached_image.dart';
 import '../favorites_screen.dart'; 
 import '../../../providers/branch_provider.dart'; // Corrected Path
 import 'package:provider/provider.dart';
+import '../../../utils/toast_utils.dart';
+import '../../../widgets/toast/top_toast.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -514,13 +516,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           // Quick Add to Cart
                           final cart = CartService();
                           cart.addStoreItem(StoreCartItem(product: product, quantity: 1));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Added to cart!"), 
-                              duration: Duration(seconds: 1),
-                              behavior: SnackBarBehavior.floating,
-                            )
-                          );
+                          ToastUtils.show(context, "Added to cart!", type: ToastType.success);
                         },
                         child: Container(
                           padding: const EdgeInsets.all(6),

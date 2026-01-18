@@ -4,6 +4,8 @@ import 'package:laundry_app/theme/app_theme.dart';
 import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/services/api_service.dart';
+import 'package:laundry_app/utils/toast_utils.dart';
+import 'package:laundry_app/widgets/toast/top_toast.dart';
 
 class AdminNotificationDashboard extends StatefulWidget {
   const AdminNotificationDashboard({super.key});
@@ -35,7 +37,7 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
 
   Future<void> _sendBroadcast() async {
     if (_titleController.text.isEmpty || _messageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Title and Message are required")));
+      ToastUtils.show(context, "Title and Message are required", type: ToastType.info);
       return;
     }
 
@@ -50,14 +52,14 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Broadcast Sent Successfully")));
+        ToastUtils.show(context, "Broadcast Sent Successfully", type: ToastType.success);
         _titleController.clear();
         _messageController.clear();
         setState(() => _targetAudience = 'all');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to send: $e")));
+        ToastUtils.show(context, "Failed to send: $e", type: ToastType.error);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

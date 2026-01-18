@@ -54,7 +54,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
 
     return DefaultTabController(
-      length: 4, 
+      length: 6, 
       child: Scaffold(
         backgroundColor: isDark ? Colors.transparent : const Color(0xFFF8F9FF),
         extendBodyBehindAppBar: true,
@@ -82,9 +82,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
             unselectedLabelColor: isDark ? Colors.white54 : Colors.black45,
             tabs: const [
               Tab(text: "My Bucket"),
-              Tab(text: "Pending"), // New + InProgress
-              Tab(text: "Delivered"), // Ready + Completed
-              Tab(text: "Cancelled"), // Cancelled
+              Tab(text: "New"),
+              Tab(text: "In Progress"),
+              Tab(text: "Ready"),
+              Tab(text: "Completed"),
+              Tab(text: "Cancelled"),
             ],
           ),
         ),
@@ -109,8 +111,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return TabBarView(
       children: [
         _buildBucketTab(isDark, textColor, secondaryTextColor),
-        _buildOrderList([OrderStatus.New, OrderStatus.InProgress], isDark, textColor, secondaryTextColor), 
-        _buildOrderList([OrderStatus.Ready, OrderStatus.Completed], isDark, textColor, secondaryTextColor),
+        _buildOrderList([OrderStatus.New], isDark, textColor, secondaryTextColor), 
+        _buildOrderList([OrderStatus.InProgress], isDark, textColor, secondaryTextColor),
+        _buildOrderList([OrderStatus.Ready], isDark, textColor, secondaryTextColor),
+        _buildOrderList([OrderStatus.Completed], isDark, textColor, secondaryTextColor),
         _buildOrderList([OrderStatus.Cancelled, OrderStatus.Refunded], isDark, textColor, secondaryTextColor),
       ],
     );
@@ -304,7 +308,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final order = filtered[index];
-            final dateStr = DateFormat('MMM d, h:mm a').format(order.date);
+            final dateStr = DateFormat('MMM d, h:mm a').format(order.date.toLocal());
             
             final content = Padding(
               padding: const EdgeInsets.all(16), // Padding inside card
@@ -359,12 +363,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget _buildStatusBadge(OrderStatus status) {
     Color color;
     switch (status) {
-      case OrderStatus.New: 
+      case OrderStatus.New: color = Colors.blue; break;
       case OrderStatus.InProgress: color = Colors.orange; break;
-      case OrderStatus.Ready: 
+      case OrderStatus.Ready: color = Colors.cyan; break;
       case OrderStatus.Completed: color = Colors.green; break;
       case OrderStatus.Cancelled: color = Colors.red; break;
-      case OrderStatus.Refunded: color = Colors.pinkAccent; break; // [Added]
+      case OrderStatus.Refunded: color = Colors.pinkAccent; break;
       default: color = Colors.grey;
     }
 

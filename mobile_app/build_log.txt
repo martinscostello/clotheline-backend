@@ -1,68 +1,24 @@
-Warning: Building for device with codesigning disabled. You will have to manually codesign before deploying to device.
-Building com.directorm.clotheline for device (ios-release)...
-Warning: CocoaPods recommended version 1.16.2 or greater not installed.
-Pods handling may fail on some projects involving plugins.
-To update CocoaPods, see https://guides.cocoapods.org/using/getting-started.html#updating-cocoapods
+Running Gradle task 'assembleDebug'...                          
 
-Running pod install...                                             811ms
-Upgrading Pods-Runner.release.xcconfig
-Upgrading Pods-Runner.profile.xcconfig
-Upgrading Pods-Runner.debug.xcconfig
-Running Xcode build...                                          
-Xcode build done.                                           10.0s
-Failed to build iOS app
-Error output from Xcode build:
-↳
-    ** BUILD FAILED **
+FAILURE: Build failed with an exception.
 
+* What went wrong:
+Execution failed for task ':app:checkDebugAarMetadata'.
+> A failure occurred while executing com.android.build.gradle.internal.tasks.CheckAarMetadataWorkAction
+   > An issue was found when checking AAR metadata:
 
-Xcode's output:
-↳
-    Writing result bundle at path:
-    	/var/folders/7f/msc9mlg16rb5819f3vt5trl80000gn/T/flutter_tools.1svV8p/flutter_ios_build_temp_dirEwJvq3/temporary_xcresult_bundle
+       1.  Dependency ':flutter_local_notifications' requires core library desugaring to be enabled
+           for :app.
 
-    lib/screens/user/orders/order_detail_screen.dart:6:8: Error: Error when reading 'lib/glass/GlassContainer.dart': No such file or directory
-    import '../../../glass/GlassContainer.dart';
-           ^
-    lib/screens/user/orders/order_detail_screen.dart:38:13: Error: The method 'GlassContainer' isn't defined for the type 'OrderDetailScreen'.
-     - 'OrderDetailScreen' is from 'package:laundry_app/screens/user/orders/order_detail_screen.dart' ('lib/screens/user/orders/order_detail_screen.dart').
-    Try correcting the name to the name of an existing method, or defining a method named 'GlassContainer'.
-                GlassContainer(
-                ^^^^^^^^^^^^^^
-    lib/screens/user/orders/order_detail_screen.dart:91:42: Error: The operator '[]' isn't defined for the type 'OrderItem'.
-     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
-    Try correcting the operator to an existing operator, or defining a '[]' operator.
-                          child: Text("${item['quantity']}x", style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
-                                             ^
-    lib/screens/user/orders/order_detail_screen.dart:98:36: Error: The operator '[]' isn't defined for the type 'OrderItem'.
-     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
-    Try correcting the operator to an existing operator, or defining a '[]' operator.
-                              Text(item['name'] ?? 'Unknown Item', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                                       ^
-    lib/screens/user/orders/order_detail_screen.dart:99:36: Error: The operator '[]' isn't defined for the type 'OrderItem'.
-     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
-    Try correcting the operator to an existing operator, or defining a '[]' operator.
-                              Text(item['serviceType'] ?? 'Standard', style: TextStyle(color: secondaryTextColor, fontSize: 12)),
-                                       ^
-    lib/screens/user/orders/order_detail_screen.dart:103:56: Error: The operator '[]' isn't defined for the type 'OrderItem'.
-     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
-    Try correcting the operator to an existing operator, or defining a '[]' operator.
-                        Text(CurrencyFormatter.format((item['price'] ?? 0.0) * (item['quantity'] ?? 1)), 
-                                                           ^
-    lib/screens/user/orders/order_detail_screen.dart:103:81: Error: The operator '[]' isn't defined for the type 'OrderItem'.
-     - 'OrderItem' is from 'package:laundry_app/models/order_model.dart' ('lib/models/order_model.dart').
-    Try correcting the operator to an existing operator, or defining a '[]' operator.
-                        Text(CurrencyFormatter.format((item['price'] ?? 0.0) * (item['quantity'] ?? 1)), 
-                                                                                    ^
-    lib/screens/user/orders/order_detail_screen.dart:115:13: Error: The method 'GlassContainer' isn't defined for the type 'OrderDetailScreen'.
-     - 'OrderDetailScreen' is from 'package:laundry_app/screens/user/orders/order_detail_screen.dart' ('lib/screens/user/orders/order_detail_screen.dart').
-    Try correcting the name to the name of an existing method, or defining a method named 'GlassContainer'.
-                GlassContainer(
-                ^^^^^^^^^^^^^^
-    Target kernel_snapshot_program failed: Exception
-    Failed to package /Users/directorm/Anti_Gravity/Clotheline/mobile_app.
-    Command PhaseScriptExecution failed with a nonzero exit code
-    note: Run script build phase 'Run Script' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Runner' from project 'Runner')
-    note: Run script build phase 'Thin Binary' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Runner' from project 'Runner')
+           See https://developer.android.com/studio/write/java8-support.html for more
+           details.
 
-Encountered error while building for device.
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 13s
+Running Gradle task 'assembleDebug'...                             13.3s
+Gradle task assembleDebug failed with exit code 1

@@ -71,7 +71,7 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/delivery', require('./routes/delivery'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/chat', require('./routes/chat'));
+app.use('/api/chat', require('./routes/chat_routes'));
 app.use('/api/broadcast', require('./routes/broadcast'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/reports', require('./routes/reports'));

@@ -9,7 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:laundry_app/widgets/common/color_picker_sheet.dart';
 import '../../../../widgets/custom_cached_image.dart';
-
+import 'package:laundry_app/utils/toast_utils.dart';
+import 'package:laundry_app/widgets/toast/top_toast.dart';
 class AdminCMSContentScreen extends StatefulWidget {
   final String section; // 'home', 'ads', 'branding'
   const AdminCMSContentScreen({super.key, required this.section});
@@ -84,7 +85,8 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
       debugPrint("Error fetching content: $e");
       if (mounted) {
          setState(() => _isLoading = false);
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+         ScaffoldMessenger.of(context).hideCurrentSnackBar(); // Clean up if any
+         ToastUtils.show(context, "Error: $e", type: ToastType.error);
       }
     }
   }
@@ -123,11 +125,11 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     if (mounted) {
       setState(() => _isUploading = false);
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Saved Successfully")));
+        ToastUtils.show(context, "Saved Successfully", type: ToastType.success);
         await _contentService.refreshAppContent(); // Force update cache from server
         _fetchContent();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to save")));
+        ToastUtils.show(context, "Failed to save", type: ToastType.error);
       }
     }
   }
@@ -166,7 +168,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     if (url != null) {
       onUrlReady(url);
     } else {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Upload Failed")));
+      if(mounted) ToastUtils.show(context, "Upload Failed", type: ToastType.error);
     }
   }
 
@@ -186,7 +188,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     if (url != null) {
       onUrlReady(url);
     } else {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Video Upload Failed")));
+      if(mounted) ToastUtils.show(context, "Video Upload Failed", type: ToastType.error);
     }
   }
 

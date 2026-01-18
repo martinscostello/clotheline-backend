@@ -8,6 +8,7 @@ import '../../widgets/medical/MedicalLogo.dart';
 import '../user/main_layout.dart';
 import '../admin/admin_main_layout.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/toast_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   final Function(ThemeMode)? onThemeChanged;
@@ -43,9 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}"), backgroundColor: Colors.redAccent)
-      );
+      ToastUtils.show(context, "Error: ${e.toString()}", type: ToastType.error);
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }

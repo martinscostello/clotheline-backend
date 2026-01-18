@@ -6,6 +6,8 @@ import 'package:laundry_app/theme/app_theme.dart';
 import 'store_checkout_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/branch_provider.dart';
+import '../../../utils/toast_utils.dart';
+import '../../../widgets/toast/top_toast.dart';
 
 class StoreCartScreen extends StatelessWidget {
   const StoreCartScreen({super.key});
@@ -142,10 +144,10 @@ class StoreCartScreen extends StatelessWidget {
                     if (promoController.text.isEmpty) return;
                     final error = await service.applyPromoCode(promoController.text);
                     if (error != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                      ToastUtils.show(context, error, type: ToastType.error);
                     } else {
                       promoController.clear();
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Promotion Applied!"), backgroundColor: Colors.green));
+                      ToastUtils.show(context, "Promotion Applied!", type: ToastType.success);
                     }
                   },
                   child: const Text("Apply"),
@@ -212,7 +214,35 @@ class StoreCartScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(CurrencyFormatter.format(item.price), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722), fontSize: 16)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(CurrencyFormatter.format(item.price), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722), fontSize: 16)),
+                            if (item.product.originalPrice > item.price) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                CurrencyFormatter.format(item.product.originalPrice),
+                                style: TextStyle(
+                                  decoration: TextDecoration.lineThrough,
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (item.product.savedAmount > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              "Saved ${CurrencyFormatter.format(item.product.savedAmount)} extra",
+                              style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
+                    ),
                     Container(
                       decoration: BoxDecoration(border: Border.all(color: Colors.grey.withOpacity(0.3)), borderRadius: BorderRadius.circular(4)),
                       child: Row(

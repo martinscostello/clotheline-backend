@@ -3,6 +3,8 @@ import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
 import '../../../../services/api_service.dart';
+import '../../../../utils/toast_utils.dart';
+import '../../../../widgets/toast/top_toast.dart';
 
 class AdminTaxSettingsScreen extends StatefulWidget {
   const AdminTaxSettingsScreen({super.key});
@@ -62,13 +64,13 @@ class _AdminTaxSettingsScreenState extends State<AdminTaxSettingsScreen> {
            _taxRate = rate;
            _isSaving = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tax Settings Saved")));
+        ToastUtils.show(context, "Tax Settings Saved", type: ToastType.success);
         Navigator.pop(context); // Optional: close screen on save
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error saving settings: $e")));
+        ToastUtils.show(context, "Error saving settings: $e", type: ToastType.error);
       }
     }
   }

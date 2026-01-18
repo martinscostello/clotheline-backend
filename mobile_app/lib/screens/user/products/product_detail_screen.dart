@@ -199,7 +199,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 double currentOriginalPrice = _selectedVariant?.originalPrice ?? widget.product.originalPrice;
                                 bool hasDiscount = currentOriginalPrice > currentPrice;
                                 
-                                return Row(
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     if (hasDiscount) ...[
@@ -218,12 +221,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     if (hasDiscount) ...[
                                       const SizedBox(width: 8),
                                       Text(
-                                        "${widget.product.discountPercentage.toInt()}% OFF", 
+                                        "${((currentOriginalPrice - currentPrice) / currentOriginalPrice * 100).round()}% OFF", 
                                         style: const TextStyle(color: Color(0xFFFF5722), fontSize: 14, fontWeight: FontWeight.bold)
                                       ),
                                     ]
                                   ],
-                                );
+                                ),
+                                if (hasDiscount)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        "Saved ${CurrencyFormatter.format(currentOriginalPrice - currentPrice)} extra",
+                                        style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
                               }
                             ),
                            const SizedBox(height: 12),

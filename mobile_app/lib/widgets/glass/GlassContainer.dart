@@ -10,6 +10,7 @@ class GlassContainer extends StatelessWidget {
   final double borderRadius;
   final EdgeInsetsGeometry? padding;
   final BoxBorder? border;
+  final Color? color;
 
   const GlassContainer({
     super.key,
@@ -21,6 +22,7 @@ class GlassContainer extends StatelessWidget {
     this.borderRadius = 20.0, // Medical/Tech roundness (not too round)
     this.padding,
     this.border,
+    this.color,
   });
 
   @override
@@ -37,7 +39,7 @@ class GlassContainer extends StatelessWidget {
       height: height,
       padding: padding ?? const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: (isDark ? Colors.black : Colors.white).withValues(alpha: opacity * 2), // Double opacity for visibility since blur is gone
+        color: color ?? (isDark ? Colors.black : Colors.white).withValues(alpha: opacity * 2), // Double opacity for visibility since blur is gone
         borderRadius: BorderRadius.circular(borderRadius),
         // Crisp, single-line border for dimensions
         border: border ?? Border.all(

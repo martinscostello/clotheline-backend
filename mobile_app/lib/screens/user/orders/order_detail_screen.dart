@@ -6,6 +6,8 @@ import '../../../../utils/currency_formatter.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../services/payment_service.dart';
 import '../../../../services/receipt_service.dart';
+import '../../../../utils/toast_utils.dart';
+import '../../../../widgets/toast/top_toast.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final OrderModel order;
@@ -145,7 +147,7 @@ class OrderDetailScreen extends StatelessWidget {
                     final email = order.guestName != null ? "guest@clotheline.com" : "user@clotheline.com"; 
                     
                     try {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Initializing Payment...")));
+                      ToastUtils.show(context, "Initializing Payment...", type: ToastType.info);
                       
                       // 1. Initialize (Retry Flow with Order ID)
                       final initData = await paymentService.initializePayment({
@@ -162,21 +164,21 @@ class OrderDetailScreen extends StatelessWidget {
                          
                          // 3. Verify
                          if (context.mounted) {
-                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Verifying Payment...")));
+                           ToastUtils.show(context, "Verifying Payment...", type: ToastType.info);
                            final verifyResult = await paymentService.verifyAndCreateOrder(ref);
                            
                            if (verifyResult != null && verifyResult['status'] == 'success') {
                                if (context.mounted) {
-                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Successful!")));
+                                 ToastUtils.show(context, "Payment Successful!", type: ToastType.success);
                                  Navigator.pop(context); // Refresh
                                }
                            } else {
-                               if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment Verification Failed")));
+                               if (context.mounted) ToastUtils.show(context, "Payment Verification Failed", type: ToastType.error);
                            }
                          }
                       }
                     } catch (e) {
-                       if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Payment Error: $e")));
+                       if (context.mounted) ToastUtils.show(context, "Payment Error: $e", type: ToastType.error);
                     }
                   },
                   style: ElevatedButton.styleFrom(

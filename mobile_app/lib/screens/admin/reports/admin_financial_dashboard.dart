@@ -4,6 +4,8 @@ import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
 import '../../../../services/report_service.dart';
 import '../../../../utils/currency_formatter.dart';
+import '../../../../utils/toast_utils.dart';
+import '../../../../widgets/toast/top_toast.dart';
 
 class AdminFinancialDashboard extends StatefulWidget {
   const AdminFinancialDashboard({super.key});
@@ -37,7 +39,7 @@ class _AdminFinancialDashboardState extends State<AdminFinancialDashboard> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+        ToastUtils.show(context, "Error: $e", type: ToastType.error);
       }
     }
   }

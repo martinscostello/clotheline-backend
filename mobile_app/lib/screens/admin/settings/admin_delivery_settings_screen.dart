@@ -7,6 +7,8 @@ import '../../../../models/branch_model.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
+import '../../../../utils/toast_utils.dart';
+import '../../../../widgets/toast/top_toast.dart';
 
 class AdminDeliverySettingsScreen extends StatefulWidget {
   const AdminDeliverySettingsScreen({super.key});
@@ -68,7 +70,7 @@ class _AdminDeliverySettingsScreenState extends State<AdminDeliverySettingsScree
                    });
                    
                    if (success && mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Branch Created! Tap to Edit.")));
+                      ToastUtils.show(context, "Branch Created! Tap to Edit.", type: ToastType.success);
                    }
                 }
               }, 
@@ -121,9 +123,9 @@ class _AdminDeliverySettingsScreenState extends State<AdminDeliverySettingsScree
                             // Note: We need to add seedBranches method to provider first
                             final success = await provider.seedBranches();
                             if (success) {
-                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Branches Initialized!")));
+                              ToastUtils.show(context, "Branches Initialized!", type: ToastType.success);
                             } else {
-                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to Initialize. Check Connection.")));
+                               ToastUtils.show(context, "Failed to Initialize. Check Connection.", type: ToastType.error);
                             }
                          }
                        ),
@@ -353,7 +355,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
     final double? lng = double.tryParse(_lngCtrl.text);
 
     if (lat == null || lng == null) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid Coordinates")));
+       ToastUtils.show(context, "Invalid Coordinates", type: ToastType.error);
        return;
     }
 
@@ -383,20 +385,15 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
       if (result['success'] == true) {
         setState(() => _isDirty = false); // Clear dirty flag on success
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(
-               content: Text("Delivery zones updated successfully"), 
-               backgroundColor: Colors.green
-             )
-           );
+           ToastUtils.show(context, "Delivery zones updated successfully", type: ToastType.success);
         }
       } else {
          final msg = result['message'] ?? "Failed to save changes.";
-         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+         if (mounted) ToastUtils.show(context, msg, type: ToastType.error);
       }
     } catch (e) {
       setState(() => _isSaving = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
     }
   }
   
@@ -499,7 +496,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
         appBar: AppBar(
           leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () {
             if (_isDirty) {
-               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please save or discard changes.")));
+               ToastUtils.show(context, "Please save or discard changes.", type: ToastType.info);
             } else {
                widget.onClose();
             }

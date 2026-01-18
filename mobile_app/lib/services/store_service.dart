@@ -108,8 +108,8 @@ class StoreService extends ChangeNotifier {
   
   // Categories Helper
   Future<void> fetchCategories() async {
-     // Managed by fetchFromApi now, but kept for specific calls
-     // No-op or alias to fetchFromApi if we want to sync everything
+     // Explicitly fetch global data from API to ensure fresh list
+     await fetchFromApi();
   }
 
 

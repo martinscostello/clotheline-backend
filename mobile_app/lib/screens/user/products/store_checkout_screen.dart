@@ -14,6 +14,8 @@ import '../../../utils/currency_formatter.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../services/payment_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../utils/toast_utils.dart';
+import '../../../widgets/toast/top_toast.dart';
 
 class StoreCheckoutScreen extends StatefulWidget {
   const StoreCheckoutScreen({super.key});
@@ -80,7 +82,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location services are disabled.")));
+      if(mounted) ToastUtils.show(context, "Location services are disabled.", type: ToastType.error);
       setState(() => _isLocating = false);
       return;
     }
@@ -89,14 +91,14 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location permissions are denied")));
+        if(mounted) ToastUtils.show(context, "Location permissions are denied", type: ToastType.error);
         setState(() => _isLocating = false);
         return;
       }
     }
     
     if (permission == LocationPermission.deniedForever) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Location permissions are permanently denied.")));
+      if(mounted) ToastUtils.show(context, "Location permissions are permanently denied.", type: ToastType.error);
       setState(() => _isLocating = false);
       return;
     } 
@@ -119,7 +121,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       });
       
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error getting location: $e")));
+      if(mounted) ToastUtils.show(context, "Error getting location: $e", type: ToastType.error);
     } finally {
       setState(() => _isLocating = false);
     }
@@ -589,7 +591,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     // [Safeguard] Ensure Checkout Branch matches Cart Branch
     if (selectedBranch?.id != _cartService.activeBranchId && _cartService.activeBranchId != null) {
        setState(() => _isSubmitting = false);
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Branch mismatch. Please clear cart or switch branch back.")));
+       ToastUtils.show(context, "Branch mismatch. Please clear cart or switch branch back.", type: ToastType.error);
        return;
     }
     
@@ -600,7 +602,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     // Debug: Ensure we don't send empty items (Standard logic)
     if (items.isEmpty) {
        setState(() => _isSubmitting = false);
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No items to checkout")));
+       ToastUtils.show(context, "No items to checkout", type: ToastType.info);
        return;
     }
 
@@ -627,7 +629,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     };
 
     try {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Initializing Payment...")));
+      if(mounted) ToastUtils.show(context, "Initializing Payment...", type: ToastType.info);
 
       // 1. Initialize & Get URL
       final initResult = await _paymentService().initializePayment(orderData); // Use instance or singleton? _paymentService instantiation
@@ -647,7 +649,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       final bool paymentCompleted = await PaymentService().openPaymentWebView(context, url, ref); // Static or new instance
 
       if (paymentCompleted) {
-         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Verifying Payment...")));
+         if(mounted) ToastUtils.show(context, "Verifying Payment...", type: ToastType.info);
          
          // 3. Verify & Create
          final verifyResult = await PaymentService().verifyAndCreateOrder(ref);
@@ -680,11 +682,11 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
              throw Exception("Payment verification failed");
          }
       } else {
-         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Payment cancelled")));
+         if(mounted) ToastUtils.show(context, "Payment cancelled", type: ToastType.info);
          setState(() => _isSubmitting = false);
       }
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+      if(mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
       setState(() => _isSubmitting = false);
     }
   }
@@ -715,7 +717,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
               onPressed: () {
                  // Validation
                  if(_deliveryOption==1 && (_deliveryAddressController.text.isEmpty || _contactPhoneController.text.isEmpty)) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill in address and phone")));
+                    ToastUtils.show(context, "Please fill in address and phone", type: ToastType.warning);
                     return;
                  }
                  setState(() => _currentStage = 2);

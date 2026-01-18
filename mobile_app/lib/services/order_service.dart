@@ -15,6 +15,8 @@ class OrderService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         _orders = data.map((json) => OrderModel.fromJson(json)).toList();
+        // Enforce Descending Sort (Newest First)
+        _orders.sort((a, b) => b.date.compareTo(a.date));
         notifyListeners();
       }
     } catch (e) {

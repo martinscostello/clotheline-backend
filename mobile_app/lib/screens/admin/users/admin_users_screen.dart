@@ -5,6 +5,8 @@ import 'package:laundry_app/theme/app_theme.dart';
 
 import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
+import '../../../utils/toast_utils.dart';
+import '../../../widgets/toast/top_toast.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -35,7 +37,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error fetching users: $e")));
+        ToastUtils.show(context, "Error fetching users: $e", type: ToastType.error);
       }
     }
   }
@@ -108,7 +110,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                           IconButton(
                             icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primaryColor),
                             onPressed: () {
-                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Chat feature coming soon!")));
+                               ToastUtils.show(context, "Chat feature coming soon!", type: ToastType.info);
                             },
                           ),
                         ],

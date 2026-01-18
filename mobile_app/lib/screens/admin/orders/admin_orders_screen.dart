@@ -150,11 +150,14 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
 
   Widget _buildOrderCard(OrderModel order) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => AdminOrderDetailScreen(order: order)),
         );
+        if (result == true && context.mounted) {
+           _fetchOrders();
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
@@ -176,7 +179,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                           Text("#${order.id.substring(order.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
                           Text(order.userName ?? order.guestName ?? "Guest", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                          Text(DateFormat('MMM dd, hh:mm a').format(order.date), style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                          Text(DateFormat('MMM dd, hh:mm a').format(order.date.toLocal()), style: const TextStyle(color: Colors.white38, fontSize: 12)),
                         ],
                       ),
                     ),

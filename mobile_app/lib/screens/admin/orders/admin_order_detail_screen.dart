@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 import '../../../../services/api_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../utils/toast_utils.dart';
+import '../../../../widgets/toast/top_toast.dart';
 
 class AdminOrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -35,9 +37,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     
     if (success) {
       setState(() => _currentStatus = newStatus);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Status updated to $newStatus")));
+      if (mounted) ToastUtils.show(context, "Status updated to $newStatus", type: ToastType.success);
     } else {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to update status")));
+      if (mounted) ToastUtils.show(context, "Failed to update status", type: ToastType.error);
     }
   }
 
@@ -51,7 +53,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     if (await canLaunchUrl(smsUri)) {
       await launchUrl(smsUri);
     } else {
-       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not launch messaging app")));
+       if (mounted) ToastUtils.show(context, "Could not launch messaging app", type: ToastType.error);
     }
   }
 
@@ -93,7 +95,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                               onChanged: _isUpdating ? null : (val) {
                                 if (val != null && val != _currentStatus) _updateStatus(val);
                               },
-                              items: ["New", "InProgress", "Ready", "Completed", "Cancelled"].map((s) => DropdownMenuItem(
+                              items: _getAvailableStatuses().map((s) => DropdownMenuItem(
                                 value: s,
                                 child: Text(s),
                               )).toList(),
@@ -256,6 +258,21 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     );
   }
 
+  List<String> _getAvailableStatuses() {
+    final all = ["New", "InProgress", "Ready", "Completed", "Cancelled", "Refunded"];
+    if (_currentStatus == 'Refunded') return ['Refunded'];
+    if (_currentStatus == 'Cancelled') return ['Cancelled'];
+    
+    // Admins can move forward through the lifecycle or Cancel
+    List<String> valid = [_currentStatus, "Cancelled"];
+    
+    if (_currentStatus == 'New') valid.add("InProgress");
+    if (_currentStatus == 'InProgress') valid.add("Ready");
+    if (_currentStatus == 'Ready') valid.add("Completed");
+    
+    return all.where((s) => valid.contains(s) || s == _currentStatus).toSet().toList();
+  }
+
   void _showRefundDialog() {
     final controller = TextEditingController();
     showDialog(
@@ -297,7 +314,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                
                // Trigger Refund via ApiService
                final api = ApiService();
-               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Processing Refund...")));
+               ToastUtils.show(context, "Processing Refund...", type: ToastType.info);
                
                try {
                   final amount = double.tryParse(controller.text);
@@ -305,13 +322,15 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                     'orderId': widget.order.id,
                     'amount': amount 
                   });
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Refund Initiated Successfully")));
-                  Navigator.pop(context, true);
-                  // Trigger Refresh?
-                  // setState/Init? For now snackbar is good confirmation.
+                   if (!context.mounted) return;
+                   ToastUtils.show(context, "Refund Initiated Successfully", type: ToastType.success);
+                   // Update Local Status immediately
+                   setState(() {
+                      _currentStatus = 'Refunded';
+                   });
+                   Navigator.pop(context, true);
                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Refund Failed: $e")));
+                   ToastUtils.show(context, "Refund Failed: $e", type: ToastType.error);
                }
             },
           )
