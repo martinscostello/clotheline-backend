@@ -25,13 +25,14 @@ const ProductSchema = new mongoose.Schema({
         date: { type: Date, default: Date.now }
     }],
     isActive: { type: Boolean, default: true },
-    // Branch Specific Pricing & Stock
-    branchInfo: [{
-        branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
-        price: Number,
-        stock: { type: Number, default: 0 },
-        isActive: { type: Boolean, default: true }
-    }]
+
+    // [STRICT BRANCH OWNERSHIP]
+    // Every product belongs to exactly ONE branch.
+    branchId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch',
+        required: true
+    }
 });
 
 module.exports = mongoose.model('Product', ProductSchema);
