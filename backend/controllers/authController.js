@@ -229,8 +229,8 @@ exports.login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
 
-        // Strict Verification Check
-        if (!user.isVerified) {
+        // Strict Verification Check (Exempt Admins)
+        if (!user.isVerified && user.role !== 'admin') {
             return res.status(403).json({
                 msg: 'Email not verified. Please verify your account.',
                 requiresVerification: true,

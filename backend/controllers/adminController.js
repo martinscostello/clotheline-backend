@@ -20,7 +20,8 @@ exports.createAdmin = async (req, res) => {
             password: hashedPassword,
             phone,
             role: 'admin',
-            isMasterAdmin: isMasterAdmin || false, // Only Master Admin can create another Master? Logic to be refined if needed.
+            isVerified: true, // [FIX] Admins created by Master Admin are auto-verified
+            isMasterAdmin: isMasterAdmin || false,
             permissions: permissions || {}
         });
 
