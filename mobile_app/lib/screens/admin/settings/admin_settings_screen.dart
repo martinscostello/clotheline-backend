@@ -8,6 +8,7 @@ import '../../../services/auth_service.dart';
 
 import 'admin_manage_admins_screen.dart';
 import 'admin_delivery_settings_screen.dart';
+import 'admin_tax_settings_screen.dart';
 
 class AdminSettingsScreen extends StatelessWidget {
   const AdminSettingsScreen({super.key});
@@ -42,6 +43,9 @@ class AdminSettingsScreen extends StatelessWidget {
                           }),
                         _buildSettingTile(Icons.local_shipping, "Delivery Zones & Fees", () {
                            Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
+                        }),
+                        _buildSettingTile(Icons.percent, "Tax Settings (VAT)", () {
+                           Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxSettingsScreen()));
                         }),
                       ],
                     );
