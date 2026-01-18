@@ -57,8 +57,14 @@ router.post('/initialize', auth, async (req, res) => {
 
         // 1. Calculate Amount Securely
         const { calculateOrderTotal } = require('../controllers/orderController');
-        const { totalAmount } = await calculateOrderTotal(calculationItems);
-        const amountKobo = Math.round(totalAmount * 100);
+        const { totalAmount: itemsTotal } = await calculateOrderTotal(calculationItems);
+
+        // Add Logistics Fees
+        const deliveryFee = Number(req.body.deliveryFee) || 0;
+        const pickupFee = Number(req.body.pickupFee) || 0;
+        const finalTotal = itemsTotal + deliveryFee + pickupFee;
+
+        const amountKobo = Math.round(finalTotal * 100);
 
         const reference = `REF_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 

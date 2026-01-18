@@ -224,6 +224,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case OrderStatus.Ready: return Icons.check_circle_outline;
       case OrderStatus.Completed: return Icons.done_all;
       case OrderStatus.Cancelled: return Icons.cancel;
+      case OrderStatus.Refunded: return Icons.money_off; // [Added]
     }
   }
 
@@ -234,6 +235,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case OrderStatus.Ready: return Colors.greenAccent;
       case OrderStatus.Completed: return Colors.grey;
       case OrderStatus.Cancelled: return Colors.redAccent;
+      case OrderStatus.Refunded: return Colors.pinkAccent; // [Added]
     }
   }
 

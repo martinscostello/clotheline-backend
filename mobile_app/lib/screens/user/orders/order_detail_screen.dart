@@ -248,6 +248,7 @@ class OrderDetailScreen extends StatelessWidget {
       case OrderStatus.Ready: 
       case OrderStatus.Completed: return Colors.green;
       case OrderStatus.Cancelled: return Colors.red;
+      case OrderStatus.Refunded: return Colors.pinkAccent; // [Added]
       default: return Colors.grey;
     }
   }
@@ -259,6 +260,7 @@ class OrderDetailScreen extends StatelessWidget {
       case OrderStatus.Ready: return Icons.check_circle_outline;
       case OrderStatus.Completed: return Icons.done_all;
       case OrderStatus.Cancelled: return Icons.cancel;
+      case OrderStatus.Refunded: return Icons.money_off; // [Added]
       default: return Icons.help_outline;
     }
   }
