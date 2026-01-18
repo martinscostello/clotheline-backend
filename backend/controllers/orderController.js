@@ -8,7 +8,13 @@ const Settings = require('../models/Settings');
 exports.calculateOrderTotal = async (items) => {
     // 1. Fetch Tax Settings
     const settings = await Settings.findOne() || { taxEnabled: true, taxRate: 7.5 };
-    const taxRate = settings.taxEnabled ? settings.taxRate : 0;
+    let taxRate = settings.taxEnabled ? settings.taxRate : 0;
+
+    // [FIX] Sanity Check for Tax Rate (Prevent 975% error)
+    if (taxRate > 50) {
+        console.warn(`[OrderTotal] Abnormal Tax Rate detected: ${taxRate}. Resetting to 7.5 temporarily.`);
+        taxRate = 7.5;
+    }
 
     // 2. Calculate Subtotal
     let subtotal = 0;
