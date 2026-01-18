@@ -26,8 +26,14 @@ exports.calculateOrderTotal = async (items) => {
         // which comes from DB in the Retry Flow, or from Frontend in Initialize flow.
         // Ideally we re-validate, but let's assume valid for now.
 
-        let price = item.price || 0;
-        let quantity = item.quantity || 1;
+        // Robust Parsing: Handle strings, commas, decimals safely
+        let rawPrice = item.price;
+        if (typeof rawPrice === 'string') {
+            rawPrice = rawPrice.replace(/,/g, ''); // Remove commas
+        }
+        let price = parseFloat(rawPrice) || 0;
+        let quantity = parseInt(item.quantity) || 1;
+
         subtotal += (price * quantity);
     });
 
