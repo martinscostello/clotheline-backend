@@ -79,7 +79,38 @@ exports.createProduct = async (req, res) => {
     }
 };
 
-// ... update and delete remain standard Mongoose updates ...
+exports.updateProduct = async (req, res) => {
+    try {
+        const fields = req.body;
+        let product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ msg: 'Product not found' });
+
+        // Update fields dynamically
+        Object.keys(fields).forEach(key => {
+            product[key] = fields[key];
+        });
+
+        await product.save();
+        res.json(product);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.deleteProduct = async (req, res) => {
+    try {
+        let product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ msg: 'Product not found' });
+
+        product.isActive = false;
+        await product.save();
+        res.json({ msg: 'Product removed' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
 
 exports.seedProducts = async () => {
     try {
