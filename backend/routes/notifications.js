@@ -6,7 +6,7 @@ const Notification = require('../models/Notification');
 // GET / - Fetch user notifications
 router.get('/', auth, async (req, res) => {
     try {
-        const notifications = await Notification.find({ userId: req.user.userId })
+        const notifications = await Notification.find({ userId: req.user.id })
             .sort({ createdAt: -1 });
         res.json(notifications);
     } catch (err) {
@@ -19,7 +19,7 @@ router.get('/', auth, async (req, res) => {
 router.post('/mark-read', auth, async (req, res) => {
     try {
         await Notification.updateMany(
-            { userId: req.user.userId, isRead: false },
+            { userId: req.user.id, isRead: false },
             { $set: { isRead: true } }
         );
         res.json({ msg: 'Notifications marked as read' });
@@ -56,7 +56,7 @@ const User = require('../models/User');
 // GET /preferences
 router.get('/preferences', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId).select('notificationPreferences');
+        const user = await User.findById(req.user.id).select('notificationPreferences');
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
         // Return defaults if not set (fallback)
@@ -74,7 +74,7 @@ router.get('/preferences', auth, async (req, res) => {
 // PUT /preferences
 router.put('/preferences', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId);
+        const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
         // Merge existing with new updates

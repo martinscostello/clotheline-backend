@@ -37,7 +37,7 @@ const OrderSchema = new mongoose.Schema({
         default: 'New'
     },
 
-    paymentStatus: { type: String, enum: ['Pending', 'Paid'], default: 'Pending' },
+    paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Refunded'], default: 'Pending' },
 
     // Logistics
     pickupOption: { type: String, enum: ['Pickup', 'Dropoff'], required: true },

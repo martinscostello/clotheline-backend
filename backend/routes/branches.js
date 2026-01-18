@@ -66,7 +66,7 @@ router.get('/', async (req, res) => {
 router.post('/', auth, async (req, res) => {
     try {
         // Enforce Admin is implied by logic usage, but strictly:
-        const requestor = await User.findById(req.user.userId);
+        const requestor = await User.findById(req.user.id);
         if (!requestor || requestor.role !== 'admin') {
             return res.status(403).json({ msg: 'Admins only' });
         }

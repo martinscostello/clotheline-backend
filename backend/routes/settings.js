@@ -11,13 +11,18 @@ const getSettings = async () => {
         settings = new Settings();
         await settings.save();
     }
+
+    // [FIX] Auto-Correct Abnormal Tax Rates (Prevent 10x Error)
+    if (settings.taxRate > 50) {
+        console.warn(`[Settings] Abnormal TaxRate ${settings.taxRate}% detected. Resetting to 7.5%.`);
+        settings.taxRate = 7.5;
+        await settings.save();
+    }
+
     return settings;
 };
 
-// GET /settings (Admin Only, or Public for Cart calculation?)
-// Probably need public access for Cart to see Tax Rate, but maybe restricted edit.
-// Let's make GET public (or user auth) so app can calculate tax. Post is Admin only.
-
+// GET /settings (Public/Auth for Cart)
 router.get('/', async (req, res) => {
     try {
         const settings = await getSettings();
@@ -32,7 +37,7 @@ router.get('/', async (req, res) => {
 router.post('/', auth, async (req, res) => {
     try {
         // Enforce Admin
-        const requestor = await User.findById(req.user.userId);
+        const requestor = await User.findById(req.user.id);
         if (!requestor || requestor.role !== 'admin') {
             return res.status(403).json({ msg: 'Access denied. Admins only.' });
         }
@@ -42,7 +47,13 @@ router.post('/', auth, async (req, res) => {
         let settings = await getSettings();
 
         if (taxEnabled !== undefined) settings.taxEnabled = taxEnabled;
-        if (taxRate !== undefined) settings.taxRate = taxRate;
+        if (taxRate !== undefined) {
+            // [FIX] Convert to number and Enforce Cap
+            let rate = Number(taxRate);
+            if (rate > 50) rate = 50; // Cap at 50%
+            if (rate < 0) rate = 0;
+            settings.taxRate = rate;
+        }
         if (taxName !== undefined) settings.taxName = taxName;
 
         settings.updatedAt = Date.now();

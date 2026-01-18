@@ -8,10 +8,10 @@ const User = require('../models/User');
 // GET / - Get my chat history
 router.get('/', auth, async (req, res) => {
     try {
-        let chat = await Chat.findOne({ userId: req.user.userId });
+        let chat = await Chat.findOne({ userId: req.user.id });
         if (!chat) {
             // Create empty chat if none exists
-            chat = new Chat({ userId: req.user.userId, messages: [] });
+            chat = new Chat({ userId: req.user.id, messages: [] });
             await chat.save();
         }
         res.json(chat);
@@ -27,9 +27,9 @@ router.post('/', auth, async (req, res) => {
         const { text, sender, branchId } = req.body; // Accept branchId from client
         const senderRole = sender || 'user';
 
-        let chat = await Chat.findOne({ userId: req.user.userId });
+        let chat = await Chat.findOne({ userId: req.user.id });
         if (!chat) {
-            chat = new Chat({ userId: req.user.userId, branchId, messages: [] });
+            chat = new Chat({ userId: req.user.id, branchId, messages: [] });
         } else if (branchId && !chat.branchId) {
             chat.branchId = branchId;
         }
@@ -70,7 +70,7 @@ router.post('/', auth, async (req, res) => {
 
                     // Notify User of Reply
                     await new Notification({
-                        userId: req.user.userId, // The original user
+                        userId: req.user.id, // The original user
                         title: "New Message",
                         message: "Clotheline Support sent you a message.",
                         type: 'chat'

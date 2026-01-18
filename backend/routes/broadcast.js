@@ -10,7 +10,7 @@ const Order = require('../models/Order');
 router.post('/', auth, async (req, res) => {
     try {
         // Enforce Admin Access
-        const requestor = await User.findById(req.user.userId);
+        const requestor = await User.findById(req.user.id);
         if (!requestor || requestor.role !== 'admin') {
             return res.status(403).json({ msg: 'Access denied. Admins only.' });
         }

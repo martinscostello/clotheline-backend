@@ -3,6 +3,7 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const Payment = require('../models/Payment');
 const Order = require('../models/Order');
+const User = require('../models/User');
 const axios = require('axios');
 
 // Paystack Config
@@ -69,8 +70,7 @@ router.post('/initialize', auth, async (req, res) => {
         const reference = `REF_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
         // Use User's email from DB or Request (Validation?)
-        // Better to fetch user email from DB to be safe, but req.body.email often used for receipt.
-        const user = await require('../models/User').findById(userId);
+        const user = await User.findById(userId);
         const email = user ? user.email : (req.body.email || 'user@clotheline.app');
 
         // 2. Initialize with Paystack DIRECTLY
@@ -214,7 +214,9 @@ router.post('/verify', auth, async (req, res) => {
 router.post('/refund', auth, async (req, res) => {
     try {
         // Enforce Admin
-        const requestor = await User.findById(req.user.userId);
+        // [FIX] req.user.id is the standard from auth middleware
+        const requestor = await User.findById(req.user.id);
+
         if (!requestor || requestor.role !== 'admin') {
             return res.status(403).json({ msg: 'Access denied. Admins only.' });
         }
@@ -241,36 +243,54 @@ router.post('/refund', auth, async (req, res) => {
                 const response = await axios.post('https://api.paystack.co/refund', {
                     transaction: payment.reference,
                     amount: refundAmount,
-                    merchant_note: "Admin initiated refund"
+                    customer_note: "Admin initiated refund",
+                    merchant_note: "Admin initiated refund via dashboard"
                 }, {
-                    headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
+                    headers: {
+                        Authorization: `Bearer ${PAYSTACK_SECRET}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
 
                 if (response.data.status) {
                     payment.refundStatus = 'processing'; // Paystack refunds are not instant
                     payment.refundedAmount = refundAmount;
-                    payment.refundReference = response.data.data.reference; // Refund reference? (Check API)
+                    payment.refundReference = response.data.data.reference;
                     await payment.save();
 
                     // Update Order Status
                     const Order = require('../models/Order');
                     const order = await Order.findById(payment.orderId || orderId);
                     if (order) {
-                        order.status = 'Refunded'; // [FIX] Update Status
-                        // Optional: order.paymentStatus = 'Refunded'? Or keep 'Paid'? Usually 'Refunded' is better if enum allows. 
-                        // But Order status 'Refunded' is sufficient for UI.
+                        order.status = 'Refunded';
+                        order.paymentStatus = 'Refunded'; // [NEW] Sync payment status
                         await order.save();
 
-                        // Notify User
+                        // Notify User via App Notification
                         const Notification = require('../models/Notification');
                         await new Notification({
                             userId: order.user,
                             title: 'Order Refunded',
                             message: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been refunded.`,
                             type: 'order',
-                            branchId: order.branchId
+                            branchId: (order.branchId || order.branch)?.toString()
                         }).save();
+
+                        // Notify User via Email (Instant)
+                        try {
+                            const sendEmail = require('../utils/sendEmail');
+                            const user = await User.findById(order.user);
+                            if (user) {
+                                await sendEmail({
+                                    email: user.email,
+                                    subject: 'Clotheline: Order Refunded',
+                                    message: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been refunded successfully. The amount should reflect in your account shortly.`
+                                });
+                            }
+                        } catch (emailErr) {
+                            console.error("Refund Email Failed:", emailErr);
+                        }
                     }
 
                     return res.json({ msg: 'Refund initiated successfully', refund: response.data.data });
@@ -279,15 +299,16 @@ router.post('/refund', auth, async (req, res) => {
                 }
 
             } catch (e) {
-                console.error("Refund API Error:", e.response?.data || e.message);
-                return res.status(500).json({ msg: 'Refund API Error' });
+                console.error("Refund API Error details:", e.response?.data || e.message);
+                const errorMsg = e.response?.data?.message || 'Refund API Error';
+                return res.status(500).json({ msg: errorMsg });
             }
         } else {
             return res.status(400).json({ msg: 'Provider not supported for auto-refund yet.' });
         }
 
     } catch (err) {
-        console.error(err);
+        console.error("Refund Route Error:", err);
         res.status(500).send('Server Error');
     }
 });

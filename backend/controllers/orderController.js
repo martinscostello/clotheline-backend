@@ -47,6 +47,7 @@ exports.calculateOrderTotal = async (items) => {
     const taxAmount = (subtotal * taxRate) / 100;
     const totalAmount = subtotal + taxAmount;
 
+    console.log(`[PriceDebug] Subtotal: ${subtotal}, TaxRate: ${taxRate}%, TaxAmt: ${taxAmount}, Total: ${totalAmount}. Items: ${items.length}`);
     return { subtotal, taxAmount, totalAmount };
 };
 
@@ -142,7 +143,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 // GET /orders (User)
 exports.getUserOrders = async (req, res) => {
     try {
-        const orders = await Order.find({ user: req.user.userId }).sort({ createdAt: -1 });
+        const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
         res.json(orders);
     } catch (err) {
         console.error(err.message);
@@ -170,7 +171,7 @@ exports.getOrderById = async (req, res) => {
         if (!order) return res.status(404).json({ msg: 'Order not found' });
 
         // Access Check
-        // if (order.user.toString() !== req.user.userId && req.user.role !== 'admin') ... 
+        // if (order.user.toString() !== req.user.id && req.user.role !== 'admin') ... 
 
         res.json(order);
     } catch (err) {
@@ -182,7 +183,7 @@ exports.getOrderById = async (req, res) => {
 // POST /orders (Manual Creation if needed, usually via Payment)
 exports.createOrder = async (req, res) => {
     try {
-        const order = await exports.createOrderInternal(req.body, req.user.userId);
+        const order = await exports.createOrderInternal(req.body, req.user.id);
         res.json(order);
     } catch (err) {
         console.error(err.message);
