@@ -6,6 +6,15 @@ const ChatMessageSchema = new mongoose.Schema({
         ref: 'ChatThread',
         required: true
     },
+    orderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order',
+        required: false
+    },
+    clientMessageId: {
+        type: String,
+        required: false
+    },
     senderType: {
         type: String,
         enum: ['user', 'admin'],
