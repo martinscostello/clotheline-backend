@@ -6,7 +6,7 @@ const ChatMessage = require('../models/ChatMessage');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Broadcast = require('../models/Broadcast');
-const ChatThread = require('../models/ChatThread');
+
 
 // GET / - Get or Create thread for User + Branch
 router.get('/', auth, async (req, res) => {
