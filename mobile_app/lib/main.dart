@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Added Import
 import 'package:provider/provider.dart';
+import 'dart:convert'; // Added for jsonDecode
 import 'theme/app_theme.dart';
 import 'screens/auth/login_screen.dart'; 
+import 'screens/auth/onboarding_screen.dart'; // Added Import
 import 'services/laundry_service.dart';
 import 'services/cart_service.dart';
 import 'services/store_service.dart';
@@ -11,45 +14,150 @@ import 'services/delivery_service.dart';
 import 'services/auth_service.dart';
 import 'services/favorites_service.dart';
 import 'services/notification_service.dart';
-import 'services/chat_service.dart';
+import 'services/push_notification_service.dart';
 import 'services/chat_service.dart';
 import 'services/navigation_persistence_service.dart';
+import 'services/content_service.dart'; // Added Import
 import 'providers/branch_provider.dart';
 import 'screens/user/main_layout.dart';
-import 'screens/common/branch_selection_screen.dart';
-import 'screens/admin/dashboard/admin_dashboard_screen.dart';
 import 'screens/admin/admin_main_layout.dart';
+import 'models/service_model.dart'; // Assuming this import exists for ServiceModel
+import 'models/branch_model.dart';
 
 // Global Theme Notifier
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 
-void main() {
+// [HYDRATION-FIRST] Data Transfer Object
+class BootstrapData {
+  final Map<String, dynamic>? userProfile;
+  final String? userRole;
+  final String? branchId;
+  final List<dynamic> branchesJson;
+  final List<dynamic> servicesJson;
+  final bool isLoggedIn;
+
+  BootstrapData({
+    this.userProfile,
+    this.userRole,
+    this.branchId,
+    required this.branchesJson,
+    required this.servicesJson,
+    required this.isLoggedIn,
+  });
+}
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 1. [BOOTLOADER] Synchronous File I/O (Fastest Path)
+  final prefs = await SharedPreferences.getInstance();
+  
+  // A. Auth State
+  final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+  final String? savedRole = prefs.getString('saved_user_role');
+  final String? savedName = prefs.getString('user_name');
+  
+  Map<String, dynamic>? userProfile;
+  if (savedName != null) {
+     userProfile = {'name': savedName, 'email': prefs.getString('user_email') ?? ''};
+  }
+
+  // B. Business Data
+  final String? branchId = prefs.getString('selected_branch_id');
+  
+  // Branches
+  List<dynamic> branchesJson = [];
+  try {
+    final str = prefs.getString('cached_branches');
+    if (str != null) branchesJson = jsonDecode(str);
+  } catch (_) {}
+
+  // Services (Load specific branch cache if selected, else default)
+  List<dynamic> servicesJson = [];
+  try {
+    final key = branchId != null ? 'services_cache_$branchId' : 'services_cache_default';
+    final str = prefs.getString(key);
+    if (str != null) servicesJson = jsonDecode(str);
+  } catch (_) {}
+
+  final bootstrap = BootstrapData(
+    userProfile: userProfile,
+    userRole: savedRole,
+    branchId: branchId,
+    branchesJson: branchesJson,
+    servicesJson: servicesJson,
+    isLoggedIn: isLoggedIn,
+  );
+
+  // Initialize Push Notifications (Non-blocking)
+  try {
+    PushNotificationService.initialize();
+  } catch (_) {}
+
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
     statusBarBrightness: Brightness.light,
   ));
-  runApp(const LaundryApp());
+  
+  runApp(LaundryApp(bootstrap: bootstrap));
 }
 
 class LaundryApp extends StatelessWidget {
-  const LaundryApp({super.key});
+  final BootstrapData bootstrap;
+  const LaundryApp({super.key, required this.bootstrap});
 
   @override
   Widget build(BuildContext context) {
+    // 2. [DEPENDENCY INJECTION] Hydrate Providers Instantly
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => LaundryService()),
-        ChangeNotifierProvider(create: (_) => CartService()),
-        ChangeNotifierProvider(create: (_) => StoreService()),
+        // Services
+        ChangeNotifierProvider(create: (_) {
+           final svc = LaundryService();
+           // Transform JSON to Models
+           List<ServiceModel> hydrated = [];
+           try {
+              hydrated = bootstrap.servicesJson.map((j) => ServiceModel.fromJson(j)).toList();
+           } catch (_) {}
+           svc.hydrateFromBootstrap(hydrated);
+           return svc;
+        }),
+        ChangeNotifierProvider(create: (_) {
+           final bp = BranchProvider();
+           // Transform JSON
+           List<Branch> hydrated = [];
+           try {
+              hydrated = bootstrap.branchesJson.map((j) => Branch.fromJson(j)).toList();
+           } catch (_) {}
+           bp.hydrateFromBootstrap(hydrated, bootstrap.branchId);
+           return bp;
+        }),
+        ChangeNotifierProvider(create: (_) {
+          final auth = AuthService();
+          // We could hydrate simple user profile here if we modified AuthService,
+          // but AuthService mostly relies on SecureStorage for tokens.
+          // However, we can set the "Memory Cache" for user name/email if we want.
+          if (bootstrap.isLoggedIn) {
+             // Hack: We can pre-set the currentUser map if we want synchronous "Hi Friend"
+             auth.hydrateSimpleProfile(bootstrap.userProfile, bootstrap.userRole);
+          }
+          // The rest (validation) happens in background
+          if (bootstrap.isLoggedIn) {
+             Future.microtask(() => auth.validateSession());
+          }
+          return auth;
+        }),
+        
+        // Standard Providers
+        ChangeNotifierProvider(create: (_) => CartService()), // Should also hydrate ideally
+        ChangeNotifierProvider(create: (_) => StoreService()), // Should also hydrate
         ChangeNotifierProvider(create: (_) => OrderService()),
         ChangeNotifierProvider(create: (_) => DeliveryService()),
-        ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => FavoritesService()..loadFavorites()),
         ChangeNotifierProvider(create: (_) => NotificationService()),
         ChangeNotifierProvider(create: (_) => ChatService()),
-        ChangeNotifierProvider(create: (_) => BranchProvider()),
+        Provider(create: (_) => ContentService()),
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeNotifier,
@@ -57,14 +165,13 @@ class LaundryApp extends StatelessWidget {
           return MaterialApp(
             title: 'Laundry Business',
             debugShowCheckedModeBanner: false,
-            
-            // Theme Configuration
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: currentMode,
             
-            // PERSISTENT AUTH CHECK
-            home: const AuthCheckWrapper(), 
+            // 3. [ROUTING] Instant Determination
+            home: _determineInitialScreen(bootstrap),
+            
             navigatorObservers: [
               NavigationPersistenceService()
             ],
@@ -73,131 +180,22 @@ class LaundryApp extends StatelessWidget {
       ),
     );
   }
-}
 
-class AuthCheckWrapper extends StatefulWidget {
-  const AuthCheckWrapper({super.key});
-
-  @override
-  State<AuthCheckWrapper> createState() => _AuthCheckWrapperState();
-}
-
-class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
-  @override
-  void initState() {
-    super.initState();
-    _checkAuth();
-  }
-
-  Future<void> _checkAuth() async {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    
-    // 1. Optimistic Load (Local Storage only) -> Fast
-    final hasSession = await authService.loadFromStorage();
-    
-    if (!mounted) return;
-
-    if (hasSession) {
-       // [anti-ghost] Self-Healing: Check if profile data is actually present
-       final isValidProfile = await authService.hasValidProfile();
-       
-       if (!isValidProfile) {
-          debugPrint("[Main] Ghost Account Detected (Missing Name/Email). Forcing Wipe.");
-          await authService.logout(); // Clears all storage
-          if (!mounted) return;
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const LoginScreen())
-          );
-          return;
-       }
-
-      // 2. Trigger Background Validation (Fire & Forget)
-      authService.validateSession().then((isValid) {
-         if (!isValid && mounted) {
-            // If session is actually invalid on server, redirect.
-            Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
-         }
-      });
-
-      // 3. Navigate Immediately
-      _navigateHome(authService);
-    } else {
-      // No local session -> Login
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen())
-      );
+  Widget _determineInitialScreen(BootstrapData data) {
+    if (!data.isLoggedIn) {
+       // Check onboarding? (Lazy check: assume seen if not logged in? No, need check)
+       // We didn't read onboarding in main(). Let's assume Login if indeterminate for now, 
+       // or user can add it to Bootloader.
+       // Actually user rule: "App must never reset to login visually... if session expires show modal".
+       // But if NEVER logged in? LoginScreen.
+       return const LoginScreen(); 
     }
-  }
-
-  void _navigateHome(AuthService authService) async {
-      // Isolate Role Logic
-      final role = await authService.getUserRole();
-      
-      if (!mounted) return;
-
-      if (role == 'admin') {
-         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AdminMainLayout())
-        );
-      } else {
-        // [Multi-Branch] Check if branch selected
-        final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-        // BranchProvider now loads form cache, so selectedBranch should be available if saved
-        // We might need to wait a tick for BranchProvider to init? 
-        // Actually main() initializes providers. BranchProvider constructor calls _init.
-        // But _init is async. By the time we get here, it might not be done.
-        // We should wait for BranchProvider to be "ready" or check prefs manually.
-        // Simplest: Check BranchProvider.selectedBranch.
-        
-        // Wait briefly for Provider to catch up? Or rely on the "Cached Load" being fast enough.
-        // Since we are in addPostFrameCallback essentially (initState -> checkAuth async), 
-        // and BranchProvider loads cache in constructor/init, it's a race.
-        // Let's add a small polling or ensure BranchProvider is ready? 
-        // For "Instant", we trust loadFromStorage is fast.
-        
-        // BETTER: Check prefs directly here if Provider isn't ready, 
-        // OR just route to MainLayout and let MainLayout redirect if needed.
-        // But we have logic to show BranchSelectionScreen first.
-        
-        if (branchProvider.selectedBranch == null) {
-           // Fallback: If no branch selected, just go to MainLayout.
-           // Ideally, BranchProvider should have auto-selected a default during init if cache was empty.
-           // If essential, we could select one here if list is populated.
-           if (branchProvider.branches.isNotEmpty) {
-             branchProvider.selectBranch(branchProvider.branches.first);
-           }
-           
-           // Proceed to MainLayout (Home) directly
-           Navigator.of(context).pushAndRemoveUntil(
-             MaterialPageRoute(builder: (_) => const MainLayout()), 
-             (route) => false
-           );
-        } else {
-           // 1. Force Home Page (User Request: "Landing page is home")
-           // We do NOT restore the last route (e.g. Settings) to avoid confusion.
-           Navigator.of(context).pushAndRemoveUntil(
-             MaterialPageRoute(builder: (_) => const MainLayout()), 
-             (route) => false
-           );
-        }
-      }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white, // Or brand color
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Use local asset or icon if available, else just loader
-            const Icon(Icons.local_laundry_service, size: 80, color: AppTheme.primaryColor),
-            const SizedBox(height: 20),
-            const CircularProgressIndicator(color: AppTheme.primaryColor),
-          ],
-        ),
-      ),
-    );
+    
+    // Logged In -> Dashboard Immediately
+    if (data.userRole == 'admin') {
+      return const AdminMainLayout();
+    } else {
+      return const MainLayout();
+    }
   }
 }

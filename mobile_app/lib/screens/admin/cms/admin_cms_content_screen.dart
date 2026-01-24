@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
@@ -10,7 +9,6 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:laundry_app/widgets/common/color_picker_sheet.dart';
 import '../../../../widgets/custom_cached_image.dart';
 import 'package:laundry_app/utils/toast_utils.dart';
-import 'package:laundry_app/widgets/toast/top_toast.dart';
 class AdminCMSContentScreen extends StatefulWidget {
   final String section; // 'home', 'ads', 'branding'
   const AdminCMSContentScreen({super.key, required this.section});
@@ -24,6 +22,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
   AppContentModel? _content;
   bool _isLoading = true;
   bool _isUploading = false;
+  double _uploadProgress = 0.0;
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -46,8 +45,12 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     _brandTextController.dispose();
     _contactAddressCtrl.dispose();
     _contactPhoneCtrl.dispose();
-    for (var c in _heroTitleControllers) c.dispose();
-    for (var c in _heroTagControllers) c.dispose();
+    for (var c in _heroTitleControllers) {
+      c.dispose();
+    }
+    for (var c in _heroTagControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -55,28 +58,26 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     try {
       final content = await _contentService.getAppContent();
       if (mounted) {
-        if (content != null) {
-          // Ensure minimum items for placeholders
-          while (content.heroCarousel.length < 3) {
-            content.heroCarousel.add(HeroCarouselItem(imageUrl: ""));
-          }
-          while (content.productAds.length < 2) {
-            content.productAds.add(ProductAd(imageUrl: "", active: true));
-          }
-
-          _brandTextController.text = content.brandText;
-          _contactAddressCtrl.text = content.contactAddress;
-          _contactPhoneCtrl.text = content.contactPhone;
-
-          // Init Controllers
-          _heroTitleControllers.clear();
-          _heroTagControllers.clear();
-          for (var item in content.heroCarousel) {
-            _heroTitleControllers.add(TextEditingController(text: item.title));
-            _heroTagControllers.add(TextEditingController(text: item.tagLine));
-          }
+        // Ensure minimum items for placeholders
+        while (content.heroCarousel.length < 3) {
+          content.heroCarousel.add(HeroCarouselItem(imageUrl: ""));
         }
-        setState(() {
+        while (content.productAds.length < 2) {
+          content.productAds.add(ProductAd(imageUrl: "", active: true));
+        }
+
+        _brandTextController.text = content.brandText;
+        _contactAddressCtrl.text = content.contactAddress;
+        _contactPhoneCtrl.text = content.contactPhone;
+
+        // Init Controllers
+        _heroTitleControllers.clear();
+        _heroTagControllers.clear();
+        for (var item in content.heroCarousel) {
+          _heroTitleControllers.add(TextEditingController(text: item.title));
+          _heroTagControllers.add(TextEditingController(text: item.tagLine));
+        }
+              setState(() {
           _content = content;
           _isLoading = false;
         });
@@ -158,10 +159,20 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
 
     if (croppedFile == null) return;
 
-    setState(() => _isUploading = true);
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.0;
+    });
     
     // Upload
-    String? url = await _contentService.uploadImage(croppedFile.path);
+    String? url = await _contentService.uploadImage(
+      croppedFile.path,
+      onProgress: (sent, total) {
+        if (total > 0) {
+          setState(() => _uploadProgress = sent / total);
+        }
+      }
+    );
     
     setState(() => _isUploading = false);
     
@@ -178,10 +189,20 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     
     if (video == null) return;
 
-    setState(() => _isUploading = true);
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.0;
+    });
     
     // Upload (Same endpoint handles videos now)
-    String? url = await _contentService.uploadImage(video.path);
+    String? url = await _contentService.uploadImage(
+      video.path,
+      onProgress: (sent, total) {
+        if (total > 0) {
+          setState(() => _uploadProgress = sent / total);
+        }
+      }
+    );
     
     setState(() => _isUploading = false);
     
@@ -205,9 +226,27 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
         title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        bottom: _isUploading 
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(4),
+              child: LinearProgressIndicator(
+                value: _uploadProgress, 
+                backgroundColor: Colors.white12,
+                valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.secondaryColor),
+              ),
+            )
+          : null,
         actions: [
           if (_isUploading)
-            const Padding(padding: EdgeInsets.all(10), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))))
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: Text(
+                  "${(_uploadProgress * 100).toInt()}%", 
+                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)
+                )
+              ),
+            )
           else
             IconButton(
               icon: const Icon(Icons.save, color: AppTheme.secondaryColor), 
@@ -287,14 +326,18 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
+                        backgroundColor: const Color(0xFF1A1A1A), // [DARK UI FIX]
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
                         builder: (ctx) => Container(
-                          height: 150,
-                          color: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 20),
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               ListTile(
-                                leading: const Icon(Icons.image),
-                                title: const Text("Upload Image"),
+                                leading: const Icon(Icons.image, color: Colors.white),
+                                title: const Text("Upload Image", style: TextStyle(color: Colors.white)),
                                 onTap: () {
                                   Navigator.pop(ctx);
                                   _pickAndUploadImage((url) {
@@ -306,8 +349,8 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                                 },
                               ),
                               ListTile(
-                                leading: const Icon(Icons.videocam),
-                                title: const Text("Upload Video (Short)"),
+                                leading: const Icon(Icons.videocam, color: Colors.white),
+                                title: const Text("Upload Video (Short)", style: TextStyle(color: Colors.white)),
                                 onTap: () {
                                   Navigator.pop(ctx);
                                   _pickAndUploadVideo((url) {
@@ -318,6 +361,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                                   });
                                 },
                               ),
+                              const SizedBox(height: 20),
                             ],
                           ),
                         )
@@ -531,7 +575,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              Switch(value: item.active, onChanged: onActiveChanged, activeColor: AppTheme.secondaryColor)
+              Switch(value: item.active, onChanged: onActiveChanged, activeThumbColor: AppTheme.secondaryColor)
             ],
           ),
           if (item.active) ...[

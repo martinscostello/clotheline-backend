@@ -35,15 +35,6 @@ class LiquidGlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final cx = screenSize.width / 2;
-    final cy = screenSize.height / 2;
-    
-    final Matrix4 zoomMatrix = Matrix4.identity()
-      ..translate(cx, cy)
-      ..scale(1.06) 
-      ..translate(-cx, -cy);
-
     // Determine effective border radius
     final effectiveBorderRadius = borderRadius ?? BorderRadius.circular(radius);
 
@@ -75,10 +66,7 @@ class LiquidGlassContainer extends StatelessWidget {
             child: ClipRRect(
               borderRadius: effectiveBorderRadius,
               child: BackdropFilter(
-                filter: ImageFilter.compose(
-                  outer: ImageFilter.blur(sigmaX: blur, sigmaY: blur), 
-                  inner: ImageFilter.matrix(zoomMatrix.storage), 
-                ),
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), 
                 child: Container(color: color ?? Colors.white.withValues(alpha: 0.02 * opacity)), 
               ),
             ),

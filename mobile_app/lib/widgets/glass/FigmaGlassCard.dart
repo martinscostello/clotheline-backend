@@ -10,7 +10,7 @@ class FigmaGlassCard extends StatelessWidget {
   const FigmaGlassCard({
     super.key,
     required this.child,
-    this.blur = 28.0,
+    this.blur = 12.0,
     this.radius = 32.0,
     this.border,
   });
@@ -43,73 +43,69 @@ class FigmaGlassCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: Stack(
-            children: [
-              Container(
+        // [FIX] Removed BackdropFilter (Blur) - Causes Tablet Noise
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: fillColor, // Double opacity? No, keep subtle
+                borderRadius: BorderRadius.circular(radius),
+              ),
+              child: CustomPaint(
+                painter: _GradientBorderPainter(
+                  radius: radius,
+                  strokeWidth: 1.5,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.6),
+                      Colors.cyanAccent.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.05),
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
+                child: child,
+              ),
+            ),
+            
+            // 2. Specular Highlight (Linear Safe)
+            Positioned(
+              top: 0, left: 0, right: 0,
+              height: 100,
+              child: Container(
                 decoration: BoxDecoration(
-                  color: fillColor,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // 3. Inner Shadow Simulation
+            IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(radius),
-                ),
-                child: CustomPaint(
-                  painter: _GradientBorderPainter(
-                    radius: radius,
-                    strokeWidth: 1.5,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.6),
-                        Colors.cyanAccent.withValues(alpha: 0.1),
-                        Colors.white.withValues(alpha: 0.05),
-                      ],
-                      stops: const [0.0, 0.5, 1.0],
-                    ),
-                  ),
-                  child: child,
-                ),
-              ),
-              
-              // 2. Specular Highlight (Top-Left Glint)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 150,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
-                    gradient: RadialGradient(
-                      center: Alignment.topLeft,
-                      radius: 1.5,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.3),
-                        Colors.transparent,
-                      ],
-                    ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      innerShadowColor,
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
-              
-              // 3. Inner Shadow Simulation (Container Overlay)
-              IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(radius),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        innerShadowColor,
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

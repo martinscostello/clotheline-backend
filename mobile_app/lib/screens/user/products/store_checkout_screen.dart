@@ -1,8 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
-import '../../../models/booking_models.dart';
 import '../../../services/cart_service.dart';
-import 'package:flutter/services.dart';
 import '../../../services/content_service.dart';
 // import '../../../models/app_content_model.dart';
 import '../../../services/order_service.dart';
@@ -15,7 +14,8 @@ import '../../../providers/branch_provider.dart';
 import '../../../services/payment_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../utils/toast_utils.dart';
-import '../../../widgets/toast/top_toast.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 
 class StoreCheckoutScreen extends StatefulWidget {
   const StoreCheckoutScreen({super.key});
@@ -29,7 +29,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
   int _currentStage = 1;
   
   // Logic Selections
-  int _deliveryOption = 1; // 1 = Deliver, 2 = Pickup
+  int _deliveryOption = 0; // 0 = Unselected, 1 = Deliver, 2 = Pickup
 
   // Controllers
   final _deliveryAddressController = TextEditingController();
@@ -129,7 +129,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
 
   Future<void> _fetchContent() async {
     final content = await _contentService.getAppContent();
-    if(mounted && content != null) {
+    if(mounted) {
       setState(() {
         _branchAddress = content.contactAddress;
         _branchPhone = content.contactPhone;
@@ -151,48 +151,58 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(_currentStage == 1 ? "Delivery Options" : "Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-          centerTitle: true,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: IconThemeData(color: textColor),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (_currentStage > 1) {
-                setState(() => _currentStage--);
-              } else {
-                Navigator.pop(context);
-              }
-            },
-          ),
-          systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-          ),
-        ),
-        body: ListenableBuilder(
-          listenable: _cartService,
-          builder: (context, _) {
-            if (_cartService.storeItems.isEmpty && _currentStage == 1) {
-               // Should verify valid state if accessed directly
-               return const Center(child: Text("Cart is empty"));
-            }
-            
-            return Column(
-              children: [
-                _buildStepIndicator(isDark),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: _buildStageContent(isDark, textColor),
-                  ),
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent,
+        body: LaundryGlassBackground(
+          child: Stack(
+            children: [
+              ListenableBuilder(
+                listenable: _cartService,
+                builder: (context, _) {
+                  if (_cartService.storeItems.isEmpty && _currentStage == 1) {
+                     return const Center(child: Text("Cart is empty"));
+                  }
+                  
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top + 90, 
+                      bottom: 180, // Space for bottom bar
+                      left: 20, 
+                      right: 20
+                    ),
+                    child: Column(
+                      children: [
+                        _buildStepIndicator(isDark),
+                        _buildStageContent(isDark, textColor),
+                      ],
+                    ),
+                  );
+                }
+              ),
+
+              // Bottom Bar overlay
+              Positioned(
+                bottom: 0, left: 0, right: 0,
+                child: _buildBottomBar(isDark),
+              ),
+              
+              // Header
+              Positioned(
+                top: 0, left: 0, right: 0,
+                child: UnifiedGlassHeader(
+                  isDark: isDark,
+                  title: Text(_currentStage == 1 ? "Delivery Options" : "Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                  onBack: () {
+                    if (_currentStage > 1) {
+                      setState(() => _currentStage--);
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
                 ),
-                 _buildBottomBar(isDark),
-              ],
-            );
-          }
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -317,50 +327,77 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Text("Order Details", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-           const SizedBox(height: 15),
-           _buildSummaryCard(isDark, textColor),
-           
-           const SizedBox(height: 30),
-            Text("Delivery Option", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white10 : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Row(
-                children: [
-                  Icon(_deliveryOption == 1 ? Icons.local_shipping : Icons.store, color: AppTheme.primaryColor),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(_deliveryOption == 1 ? "Delivery to Doorstep" : "Pickup at Branch", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
-                        if (_deliveryOption == 1)
-                          Text(_deliveryAddressController.text, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
-                        if (_deliveryOption == 2)
-                          Text("Our Branch: $_branchAddress", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
-                      ],
-                    ),
-                  )
-                ],
-              ),
-            )
+            Text("Order Details", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            _buildSummaryCard(isDark, textColor),
+            
+            const SizedBox(height: 30),
+             Text("Delivery Option", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+             const SizedBox(height: 10),
+             ClipRRect(
+               borderRadius: BorderRadius.circular(15),
+               child: BackdropFilter(
+                 filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                 child: Container(
+                   padding: const EdgeInsets.all(16),
+                   decoration: BoxDecoration(
+                     color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                     borderRadius: BorderRadius.circular(15),
+                     border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                   ),
+                   child: Row(
+                     children: [
+                       Icon(_deliveryOption == 1 ? Icons.local_shipping : Icons.store, color: AppTheme.primaryColor),
+                       const SizedBox(width: 15),
+                       Expanded(
+                         child: Column(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             Text(_deliveryOption == 1 ? "Delivery to Doorstep" : "Pickup at Branch", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+                             if (_deliveryOption == 1) ...[
+                               Text(_deliveryAddressController.text, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                               Text("Tel: ${_contactPhoneController.text}", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13)),
+                             ],
+                             if (_deliveryOption == 2)
+                               Consumer<BranchProvider>(
+                                 builder: (context, branchProvider, _) {
+                                   final branch = branchProvider.selectedBranch;
+                                   final displayAddress = branch?.address ?? _branchAddress;
+                                   final displayPhone = branch?.phone ?? _branchPhone;
+                                   return Column(
+                                     crossAxisAlignment: CrossAxisAlignment.start,
+                                     children: [
+                                       Text("Office: $displayAddress", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                                       Text("Tel: $displayPhone", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13)),
+                                     ],
+                                   );
+                                 }
+                               ),
+                           ],
+                         ),
+                       )
+                     ],
+                   ),
+                 ),
+               ),
+             )
         ],
       );
     }
   }
 
   Widget _buildSummaryCard(bool isDark, Color textColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white10 : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(15),
-      ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(15),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+          ),
       child: Column(
         children: [
           // ONLY Store Items
@@ -406,7 +443,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
           ),
         ],
       ),
-    );
+    ),),);
   }
 
   // ... (Helper widgets similar to CheckoutScreen) ...
@@ -485,14 +522,18 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     final displayAddress = branch?.address ?? _branchAddress;
     final displayPhone = branch?.phone ?? _branchPhone;
 
-    return Container(
-      margin: const EdgeInsets.only(left: 20, bottom: 20),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white10 : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300, style: BorderStyle.solid),
-      ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+        child: Container(
+          margin: const EdgeInsets.only(left: 20, bottom: 20),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05), style: BorderStyle.solid),
+          ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -511,7 +552,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
           ]),
         ],
       ),
-    );
+    ),),);
   }
 
   final _orderService = OrderService();
@@ -695,15 +736,8 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
   PaymentService _paymentService() => PaymentService();
 
   Widget _buildBottomBar(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.black26 : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        boxShadow: [
-           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))
-        ]
-      ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 10, 24, MediaQuery.of(context).padding.bottom + 20),
       child: _currentStage == 1 
         ? SizedBox(
             width: double.infinity,
@@ -712,15 +746,20 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
               ),
               onPressed: () {
-                 // Validation
-                 if(_deliveryOption==1 && (_deliveryAddressController.text.isEmpty || _contactPhoneController.text.isEmpty)) {
-                    ToastUtils.show(context, "Please fill in address and phone", type: ToastType.warning);
-                    return;
-                 }
-                 setState(() => _currentStage = 2);
+                // Validation
+                if (_deliveryOption == 0) {
+                  ToastUtils.show(context, "Please select a Delivery Option", type: ToastType.warning);
+                  return;
+                }
+                if (_deliveryOption == 1 && (_deliveryAddressController.text.isEmpty || _contactPhoneController.text.isEmpty)) {
+                   ToastUtils.show(context, "Address and Phone are required for delivery", type: ToastType.warning);
+                   return;
+                }
+                setState(() => _currentStage = 2);
               },
               child: const Text("PROCEED TO SUMMARY", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
@@ -732,7 +771,8 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
               ),
               onPressed: _isSubmitting ? null : _submitOrder,
               child: _isSubmitting 

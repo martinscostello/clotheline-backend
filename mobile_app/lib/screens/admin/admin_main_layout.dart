@@ -94,15 +94,17 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
 
         return Scaffold(
           extendBody: true,
+          resizeToAvoidBottomInset: false,
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: LaundryGlassBackground(
             child: Stack(
               children: [
                 Positioned.fill(child: _currentScreens[_currentIndex]),
-                Positioned(
-                  bottom: 0, left: 0, right: 0,
-                  child: _buildGlassNavBar(),
-                ),
+                if (MediaQuery.of(context).viewInsets.bottom == 0)
+                  Positioned(
+                    bottom: 0, left: 0, right: 0,
+                    child: _buildGlassNavBar(),
+                  ),
               ],
             ),
           ),

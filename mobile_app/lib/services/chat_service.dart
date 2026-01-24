@@ -15,11 +15,31 @@ class ChatService extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Timer? _pollTimer;
+  int _pollIntervalSeconds = 5;
+  bool _isAppActive = true;
+
+  void setAppState(bool active) {
+    _isAppActive = active;
+    _adjustPollingSpeed();
+  }
+
+  void _adjustPollingSpeed() {
+    if (!_isAppActive) {
+      _pollIntervalSeconds = 30; // Slow down when backgrounded
+    } else {
+      _pollIntervalSeconds = 5;
+    }
+    
+    if (_pollTimer != null && _pollTimer!.isActive) {
+       final branchId = _currentThread?['branchId'];
+       if (branchId != null) startPolling(branchId);
+    }
+  }
 
   void startPolling(String branchId) {
     _initThread(branchId);
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _sync());
+    _pollTimer = Timer.periodic(Duration(seconds: _pollIntervalSeconds), (_) => _sync());
   }
 
   void stopPolling() {
@@ -63,19 +83,74 @@ class ChatService extends ChangeNotifier {
     }
   }
 
-  Future<void> sendMessage(String text) async {
+  Future<void> sendMessage(String text, {String? orderId}) async {
     if (_currentThread == null) return;
+    
+    final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+    final optimisticMessage = {
+      '_id': 'temp_$tempId',
+      'threadId': _currentThread!['_id'],
+      'senderType': 'user', 
+      'senderId': 'current_user', 
+      'messageText': text,
+      'orderId': orderId,
+      'createdAt': DateTime.now().toIso8601String(),
+      'status': 'sending' 
+    };
+
+    _messages.add(optimisticMessage);
+    notifyListeners();
+
     try {
       final response = await _apiService.client.post('/chat/send', data: {
         'threadId': _currentThread!['_id'],
-        'messageText': text
+        'messageText': text,
+        'orderId': orderId,
+        'clientMessageId': tempId
       });
+      
       if (response.statusCode == 200) {
-         _messages.add(response.data);
+         final idx = _messages.indexWhere((m) => m['_id'] == 'temp_$tempId');
+         if (idx != -1) {
+           _messages[idx] = response.data;
+           _messages[idx]['status'] = 'sent';
+         }
          notifyListeners();
       }
     } catch (e) {
       print("Send error: $e");
+      final idx = _messages.indexWhere((m) => m['_id'] == 'temp_$tempId');
+      if (idx != -1) {
+        _messages[idx]['status'] = 'failed';
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> resendMessage(String tempId) async {
+    final idx = _messages.indexWhere((m) => m['_id'] == tempId);
+    if (idx == -1) return;
+
+    final msg = _messages[idx];
+    _messages[idx]['status'] = 'sending';
+    notifyListeners();
+
+    try {
+      final response = await _apiService.client.post('/chat/send', data: {
+        'threadId': _currentThread!['_id'],
+        'messageText': msg['messageText'],
+        'orderId': msg['orderId'],
+        'clientMessageId': tempId.replaceFirst('temp_', '')
+      });
+      
+      if (response.statusCode == 200) {
+         _messages[idx] = response.data;
+         _messages[idx]['status'] = 'sent';
+         notifyListeners();
+      }
+    } catch (e) {
+      _messages[idx]['status'] = 'failed';
+      notifyListeners();
     }
   }
 
@@ -102,7 +177,6 @@ class ChatService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Find thread in our list
       _currentThread = _threads.firstWhere((t) => t['_id'] == threadId);
       await _fetchMessages();
     } catch (e) {
@@ -120,13 +194,34 @@ class ChatService extends ChangeNotifier {
         if (_currentThread != null && _currentThread!['_id'] == threadId) {
           _currentThread!['status'] = status;
         }
-        // Update in list too
         final idx = _threads.indexWhere((t) => t['_id'] == threadId);
         if (idx != -1) _threads[idx]['status'] = status;
         notifyListeners();
       }
     } catch (e) {
        print("Update status error: $e");
+    }
+  }
+
+  Future<void> sendBroadcast({
+    required String branchId,
+    required String messageText,
+    required String audienceType,
+    List<String>? targetUserIds,
+  }) async {
+    try {
+      final response = await _apiService.client.post('/chat/admin/broadcast', data: {
+        'branchId': branchId,
+        'messageText': messageText,
+        'audienceType': audienceType,
+        'targetUserIds': targetUserIds
+      });
+      if (response.statusCode == 200) {
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Broadcast error: $e");
+      rethrow;
     }
   }
   

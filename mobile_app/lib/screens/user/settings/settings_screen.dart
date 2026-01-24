@@ -4,10 +4,16 @@ import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/screens/auth/login_screen.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:liquid_glass_ui/liquid_glass_ui.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
 import 'notification_settings_screen.dart';
+import 'faqs_screen.dart'; // Added Import
+import 'feedback_screen.dart'; // Added Import
+import 'manage_password_screen.dart'; // Added Import
+import 'about_screen.dart'; // Added Import
+import '../chat/chat_screen.dart'; // Added Import
+import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -26,135 +32,159 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text("Settings", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(top: 100, bottom: 140, left: 20, right: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+      body: LaundryGlassBackground(
+        child: Stack(
           children: [
-            // Profile Header
-            Consumer<AuthService>(
-              builder: (context, auth, _) {
-                final user = auth.currentUser;
-                final name = user?['name'] ?? 'User';
-                final email = user?['email'] ?? 'guest@clotheline.com';
-                
-                return Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
-                      child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                        style: TextStyle(fontSize: 30, color: isDark ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)
+            SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 130, bottom: 140, left: 20, right: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Profile Header
+                  Consumer<AuthService>(
+                    builder: (context, auth, _) {
+                      final user = auth.currentUser;
+                      // [FIX] No more hardcoded guest fallback. 
+                      // If data is missing despite being logged in, it means persistence failed or is loading.
+                      final name = user?['name'] ?? '';
+                      final email = user?['email'] ?? '';
+                      
+                      // Auto-Refresh if logged in but nameless (Ghost Fix)
+                      if (user != null && (name.isEmpty || email.isEmpty)) {
+                         WidgetsBinding.instance.addPostFrameCallback((_) {
+                           // Trigger background refresh if we haven't lately
+                           auth.validateSession(); 
+                         });
+                      }
+                      
+                      return Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                              style: TextStyle(fontSize: 30, color: isDark ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(name, style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(email, style: TextStyle(color: secondaryTextColor)),
+                        ]
+                      );
+                    }
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Appearance Section
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Text("Appearance", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: secondaryTextColor)),
+                    ),
+                  ),
+                  
+                  _buildSectionContainer(
+                    isDark: isDark,
+                    child: ListTile(
+                      leading: const Icon(Icons.palette_outlined, color: AppTheme.primaryColor),
+                      title: Text("Theme", style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+                      trailing: SizedBox(
+                        width: 140, // Fixed width for settings dropdown
+                        child: LiquidGlassDropdown<ThemeMode>(
+                          value: themeNotifier.value,
+                          isDark: isDark,
+                          items: const [
+                            DropdownMenuItem(value: ThemeMode.system, child: Text("System")),
+                            DropdownMenuItem(value: ThemeMode.light, child: Text("Light Mode")),
+                            DropdownMenuItem(value: ThemeMode.dark, child: Text("Dark Mode")),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              themeNotifier.value = val;
+                              setState(() {});
+                            }
+                          },
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Text(name, style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text(email, style: TextStyle(color: secondaryTextColor)),
-                  ]
-                );
-              }
-            ),
-            const SizedBox(height: 30),
-
-            // Appearance Section
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Text("Appearance", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: secondaryTextColor)),
-              ),
-            ),
-            
-            _buildSectionContainer(
-              isDark: isDark,
-              child: ListTile(
-                leading: const Icon(Icons.palette_outlined, color: AppTheme.primaryColor),
-                title: Text("Theme", style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
-                trailing: SizedBox(
-                  width: 140, // Fixed width for settings dropdown
-                  child: LiquidGlassDropdown<ThemeMode>(
-                    value: themeNotifier.value,
-                    isDark: isDark,
-                    items: const [
-                      DropdownMenuItem(value: ThemeMode.system, child: Text("System")),
-                      DropdownMenuItem(value: ThemeMode.light, child: Text("Light Mode")),
-                      DropdownMenuItem(value: ThemeMode.dark, child: Text("Dark Mode")),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        themeNotifier.value = val;
-                        setState(() {});
-                      }
-                    },
                   ),
-                ),
-              ),
-            ),
 
-            const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-            // Settings List
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Text("General", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: secondaryTextColor)),
-              ),
-            ),
+                  // Settings List
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Text("General", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: secondaryTextColor)),
+                    ),
+                  ),
 
-            _buildSectionContainer(
-              isDark: isDark,
-              child: Column(
-                children: [
-                  _buildSettingTile(Icons.notifications_outlined, "Notifications", textColor, isDark, () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()));
-                  }),
-                  _buildDivider(isDark),
-                  _buildSettingTile(Icons.question_answer_outlined, "FAQs", textColor, isDark, () {}),
-                  _buildDivider(isDark),
-                  _buildSettingTile(Icons.bug_report_outlined, "Report Bug / Feedback", textColor, isDark, () {}),
-                  _buildDivider(isDark),
-                  _buildSettingTile(Icons.lock_outline, "Manage Password", textColor, isDark, () {}),
-                  _buildDivider(isDark),
-                  _buildSettingTile(Icons.info_outline, "About Clotheline", textColor, isDark, () {}),
-                  _buildDivider(isDark),
-                  _buildSettingTile(Icons.star_outline, "Rate Clotheline", textColor, isDark, () {}),
+                  _buildSectionContainer(
+                    isDark: isDark,
+                    child: Column(
+                      children: [
+                        _buildSettingTile(Icons.notifications_outlined, "Notifications", textColor, isDark, () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()));
+                        }),
+                        _buildDivider(isDark),
+                        _buildSettingTile(Icons.question_answer_outlined, "FAQs", textColor, isDark, () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const FaqsScreen()));
+                        }),
+                        _buildDivider(isDark),
+                        _buildSettingTile(Icons.bug_report_outlined, "Report Bug / Feedback", textColor, isDark, () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const FeedbackScreen()));
+                        }),
+                        _buildDivider(isDark),
+                        _buildSettingTile(Icons.lock_outline, "Manage Password", textColor, isDark, () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagePasswordScreen()));
+                        }),
+                        _buildDivider(isDark),
+                        _buildSettingTile(Icons.support_agent_rounded, "Support", textColor, isDark, () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
+                        }),
+                        _buildDivider(isDark),
+                        _buildSettingTile(Icons.info_outline, "About Clotheline", textColor, isDark, () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen()));
+                        }),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: const BorderSide(color: Colors.redAccent),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          (Route<dynamic> route) => false,
+                        );
+                      }, 
+                      child: const Text("Log Out"),
+                    ),
+                  )
                 ],
               ),
             ),
 
-            const SizedBox(height: 30),
-            
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.redAccent,
-                  side: const BorderSide(color: Colors.redAccent),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => LoginScreen(
-                      onThemeChanged: (mode) => themeNotifier.value = mode,
-                    )),
-                    (Route<dynamic> route) => false,
-                  );
-                }, 
-                child: const Text("Log Out"),
+            Positioned(
+              top: 0, left: 0, right: 0,
+              child: UnifiedGlassHeader(
+                isDark: isDark,
+                height: 112,
+                title: Text("Settings", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 20)),
               ),
-            )
+            ),
           ],
         ),
       ),

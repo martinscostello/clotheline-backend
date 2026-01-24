@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../models/store_product.dart';
 import '../../../services/cart_service.dart';
-import 'package:laundry_app/theme/app_theme.dart';
 
 class ProductSelectionSheet extends StatefulWidget {
   final StoreProduct product;

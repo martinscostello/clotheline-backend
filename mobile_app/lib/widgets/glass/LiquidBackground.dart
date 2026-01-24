@@ -10,49 +10,41 @@ class LiquidBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background Color
-        Container(color: const Color(0xFF050510)),
-
-        // Animated Orbs (Simulating Liquid)
-        Positioned(
-          top: -100,
-          left: -100,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [Color(0xFF7000FF), Colors.transparent],
-              ),
+        // Robust Linear Background (Safe for Tablets/Old GPUs)
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF0F2027), // Deep Dark Blue
+                Color(0xFF203A43), // Tealish
+                Color(0xFF2C5364), // Cyanish
+              ],
             ),
           ),
         ),
-
+        
+        // Optional: Subtle Mesh Pattern Image if available, otherwise just gradient
+        // For now, keeping it clean to solve pixelation.
+        
+        // 2. Subtle Top-Right Glow (Linear, Safe)
         Positioned(
-          bottom: -100,
+          top: -150,
           right: -50,
           child: Container(
             width: 300,
             height: 300,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [Color(0xFF00F0FF), Colors.transparent],
-              ),
-            ),
-          ),
-        ),
-
-         Positioned(
-          top: 200,
-          right: 100,
-          child: Container(
-            width: 200,
-            height: 200,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF00F0FF).withOpacity(0.15)
+              gradient: LinearGradient( // Linear is safer than Radial on some SKIA versions
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF00C6FF).withValues(alpha: 0.1),
+                  Colors.transparent
+                ],
+              ),
             ),
           ),
         ),

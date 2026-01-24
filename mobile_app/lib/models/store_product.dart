@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 class StoreProduct {
   final String id;
@@ -87,7 +86,7 @@ class StoreProduct {
       isFreeShipping: json['isFreeShipping'] ?? false,
       variants: (json['variations'] as List?)?.map((e) => ProductVariant.fromJson(e)).toList() ?? [],
       branchInfo: (json['branchInfo'] is List) 
-          ? (json['branchInfo'] as List).where((e) => e is Map).map((e) => BranchProductInfo.fromJson(Map<String, dynamic>.from(e))).toList() 
+          ? (json['branchInfo'] as List).whereType<Map>().map((e) => BranchProductInfo.fromJson(Map<String, dynamic>.from(e))).toList() 
           : [],
     );
   }

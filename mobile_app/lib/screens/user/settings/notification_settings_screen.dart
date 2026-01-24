@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:laundry_app/theme/app_theme.dart';
-import 'package:liquid_glass_ui/liquid_glass_ui.dart';
-import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import '../../../services/notification_service.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
@@ -43,16 +41,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           bool get(String key) => prefs[key] == true;
 
           return SingleChildScrollView(
-            padding: EdgeInsets.only(top: 100, left: 20, right: 20),
+            padding: const EdgeInsets.only(top: 100, left: 20, right: 20),
             child: Column(
               children: [
                 _buildSection(isDark, [
                   SwitchListTile(
                     title: Text("Enable Notifications", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                    activeColor: AppTheme.primaryColor,
+                    activeThumbColor: AppTheme.primaryColor,
                     value: get('push'), // Mapping 'push' as master toggle for now
                     onChanged: (val) => notifService.updatePreference('push', val),
-                    secondary: Icon(Icons.notifications_active_outlined, color: AppTheme.primaryColor),
+                    secondary: const Icon(Icons.notifications_active_outlined, color: AppTheme.primaryColor),
                   ),
                 ]),
                 
@@ -69,7 +67,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     SwitchListTile(
                       title: Text("Admin Broadcasts", style: TextStyle(color: textColor)),
                       subtitle: Text("News and announcements", style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)),
-                      activeColor: Colors.purpleAccent,
+                      activeThumbColor: Colors.purpleAccent,
                       value: get('adminBroadcasts'),
                       onChanged: (val) => notifService.updatePreference('adminBroadcasts', val),
                     ),
@@ -77,7 +75,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     SwitchListTile(
                       title: Text("Order Updates", style: TextStyle(color: textColor)),
                       subtitle: Text("Status changes and delivery", style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)),
-                      activeColor: Colors.blueAccent,
+                      activeThumbColor: Colors.blueAccent,
                       value: get('orderUpdates'),
                       onChanged: (val) => notifService.updatePreference('orderUpdates', val),
                     ),
@@ -85,7 +83,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     SwitchListTile(
                       title: Text("Bucket Updates", style: TextStyle(color: textColor)),
                       subtitle: Text("Items added/removed", style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)),
-                      activeColor: Colors.orangeAccent,
+                      activeThumbColor: Colors.orangeAccent,
                       value: get('bucketUpdates'),
                       onChanged: (val) => notifService.updatePreference('bucketUpdates', val),
                     ),
@@ -106,11 +104,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                         dropdownColor: isDark ? Colors.grey[900] : Colors.white,
                         value: "Chime", // Mock for now or store in prefs
                         style: TextStyle(color: textColor),
-                        underline: SizedBox(),
+                        underline: const SizedBox(),
                         items: ["Default", "Chime", "Soft", "Alert"].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                         onChanged: (val) {}, // No backend field yet
                       ),
-                      leading: Icon(Icons.music_note_outlined, color: AppTheme.primaryColor),
+                      leading: const Icon(Icons.music_note_outlined, color: AppTheme.primaryColor),
                     ),
                   ]),
                 ]
@@ -128,7 +126,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: isDark ? [] : [
-           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: Offset(0, 4))
+           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
         ]
       ),
       child: Column(children: children),

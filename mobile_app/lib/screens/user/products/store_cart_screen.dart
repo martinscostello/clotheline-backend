@@ -7,7 +7,8 @@ import 'store_checkout_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../utils/toast_utils.dart';
-import '../../../widgets/toast/top_toast.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 
 class StoreCartScreen extends StatelessWidget {
   const StoreCartScreen({super.key});
@@ -18,62 +19,73 @@ class StoreCartScreen extends StatelessWidget {
     final cartService = CartService();
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: Consumer<BranchProvider>(
-          builder: (context, branchProvider, _) {
-            final branchName = branchProvider.selectedBranch?.name ?? "Global";
-            return Text("Cart · $branchName", 
-              style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 18)
-            );
-          }
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
-      ),
-      body: ListenableBuilder(
-        listenable: cartService,
-        builder: (context, _) {
-          if (cartService.storeItems.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey.withOpacity(0.3)),
-                  const SizedBox(height: 20),
-                  Text("Your cart is empty", style: TextStyle(color: Colors.grey, fontSize: 16)),
-                ],
-              ),
-            );
-          }
-
-          return Column(
-            children: [
-              // Cart Items List
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    ...cartService.storeItems.map((item) => 
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: _buildCartItem(context, item, isDark, cartService),
-                      )
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
+      body: LaundryGlassBackground(
+        child: Stack(
+          children: [
+            // 1. Content
+            ListenableBuilder(
+              listenable: cartService,
+              builder: (context, _) {
+                if (cartService.storeItems.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey.withOpacity(0.3)),
+                        const SizedBox(height: 20),
+                        const Text("Your cart is empty", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    // Promo Code Section
-                    _buildPromoSection(context, cartService, isDark),
+                  );
+                }
+      
+                return Column(
+                  children: [
+                    // Cart Items List
+                    Expanded(
+                      child: ListView(
+                        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 130, left: 16, right: 16, bottom: 20),
+                        children: [
+                          ...cartService.storeItems.map((item) => 
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _buildCartItem(context, item, isDark, cartService),
+                            )
+                          ),
+                          const SizedBox(height: 10),
+                          // Promo Code Section
+                          _buildPromoSection(context, cartService, isDark),
+                        ],
+                      ),
+                    ),
+      
+                    // Bottom Checkout Bar
+                    _buildCheckoutBar(context, cartService, isDark),
                   ],
-                ),
-              ),
+                );
+              }
+            ),
 
-              // Bottom Checkout Bar
-              _buildCheckoutBar(context, cartService, isDark),
-            ],
-          );
-        }
+            // 2. Header
+            Positioned(
+              top: 0, left: 0, right: 0,
+              child: UnifiedGlassHeader(
+                isDark: isDark,
+                title: Consumer<BranchProvider>(
+                  builder: (context, branchProvider, _) {
+                    final branchName = branchProvider.selectedBranch?.name ?? "Global";
+                    return Text("Cart · $branchName", 
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 18)
+                    );
+                  }
+                ),
+                onBack: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -91,7 +103,7 @@ class StoreCartScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.local_offer_outlined, color: AppTheme.primaryColor, size: 20),
+              const Icon(Icons.local_offer_outlined, color: AppTheme.primaryColor, size: 20),
               const SizedBox(width: 8),
               Text("Promotions", style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
             ],
@@ -107,7 +119,7 @@ class StoreCartScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, size: 16, color: Colors.green),
+                  const Icon(Icons.check_circle, size: 16, color: Colors.green),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -131,7 +143,7 @@ class StoreCartScreen extends StatelessWidget {
                     style: TextStyle(color: isDark ? Colors.white : Colors.black),
                     decoration: InputDecoration(
                       hintText: "Enter Promo Code",
-                      hintStyle: TextStyle(color: Colors.grey),
+                      hintStyle: const TextStyle(color: Colors.grey),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       isDense: true,
@@ -178,8 +190,8 @@ class StoreCartScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 20, right: 8),
+          const Padding(
+            padding: EdgeInsets.only(top: 20, right: 8),
             child: Icon(Icons.check_circle, color: AppTheme.primaryColor, size: 22),
           ),
           Container(
@@ -204,12 +216,12 @@ class StoreCartScreen extends StatelessWidget {
                     Expanded(child: Text(item.product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87))),
                     InkWell(
                       onTap: () => service.removeStoreItem(item),
-                      child: Icon(Icons.close, size: 18, color: Colors.grey),
+                      child: const Icon(Icons.close, size: 18, color: Colors.grey),
                     )
                   ],
                 ),
                 if (item.variant != null)
-                  Text(item.variant!.name, style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(item.variant!.name, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -224,7 +236,7 @@ class StoreCartScreen extends StatelessWidget {
                               const SizedBox(width: 8),
                               Text(
                                 CurrencyFormatter.format(item.product.originalPrice),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   decoration: TextDecoration.lineThrough,
                                   color: Colors.grey,
                                   fontSize: 12,
@@ -248,8 +260,11 @@ class StoreCartScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           _qtyButton(Icons.remove, () {
-                            if (item.quantity > 1) service.updateStoreItemQuantity(item, item.quantity - 1);
-                            else service.removeStoreItem(item);
+                            if (item.quantity > 1) {
+                              service.updateStoreItemQuantity(item, item.quantity - 1);
+                            } else {
+                              service.removeStoreItem(item);
+                            }
                           }, isDark),
                           Container(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text("${item.quantity}", style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black))),
                           _qtyButton(Icons.add, () => service.updateStoreItemQuantity(item, item.quantity + 1), isDark),
@@ -278,49 +293,53 @@ class StoreCartScreen extends StatelessWidget {
 
   Widget _buildCheckoutBar(BuildContext context, CartService service, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)), // Popup from below
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
+          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.05), blurRadius: 10, offset: const Offset(0, -5))
         ]
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-             // Breakdown
-             _row("Subtotal", CurrencyFormatter.format(service.storeTotalAmount), isDark),
-             if (service.discountAmount > 0)
-                _row("Discount", "-${CurrencyFormatter.format(service.discountAmount)}", isDark, color: Colors.green),
-             _row("Tax (${service.taxRate}%)", CurrencyFormatter.format(service.storeTaxAmount), isDark),
-             const Divider(height: 20),
-             Row(
-               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-               children: [
-                 const Text("Total", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                 Text(CurrencyFormatter.format(service.storeTotalAmount + service.storeTaxAmount - service.discountAmount), style: const TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.bold, fontSize: 20)),
-               ],
-             ),
-             const SizedBox(height: 16),
-             SizedBox(
-               width: double.infinity,
-               child: ElevatedButton(
-                 style: ElevatedButton.styleFrom(
-                   backgroundColor: const Color(0xFFFF5722),
-                   foregroundColor: Colors.white,
-                   padding: const EdgeInsets.symmetric(vertical: 12),
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                 ),
-                 onPressed: () {
-                   Navigator.of(context).push(MaterialPageRoute(
-                     builder: (context) => const StoreCheckoutScreen(),
-                   ));
-                 },
-                 child: const Text("Checkout", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min, // Wrap around text tightly
+        children: [
+           // Breakdown
+           _row("Subtotal", CurrencyFormatter.format(service.storeTotalAmount), isDark),
+           if (service.discountAmount > 0)
+              _row("Discount", "-${CurrencyFormatter.format(service.discountAmount)}", isDark, color: Colors.green),
+           _row("Tax (${service.taxRate}%)", CurrencyFormatter.format(service.storeTaxAmount), isDark),
+           const Divider(height: 20),
+           Row(
+             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               Text("Total", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: isDark ? Colors.white : Colors.black)),
+               Text(CurrencyFormatter.format(service.storeTotalAmount + service.storeTaxAmount - service.discountAmount), style: const TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.bold, fontSize: 20)),
+             ],
+           ),
+           const SizedBox(height: 16),
+           SizedBox(
+             width: double.infinity,
+             child: ElevatedButton(
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: const Color(0xFFFF5722),
+                 foregroundColor: Colors.white,
+                 padding: const EdgeInsets.symmetric(vertical: 14),
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Slightly less rounded for premium feel
+                 elevation: 0,
                ),
-             )
-          ],
-        ),
+               onPressed: () {
+                 if (service.storeItems.isEmpty) return;
+                 Navigator.of(context).push(MaterialPageRoute(
+                   builder: (context) => const StoreCheckoutScreen(),
+                 ));
+               },
+               child: const Text("Checkout Now", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+             ),
+           ),
+           // Add bottom safe area padding manually if needed, or rely on Container padding
+           SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? MediaQuery.of(context).padding.bottom / 2 : 0),
+        ],
       ),
     );
   }

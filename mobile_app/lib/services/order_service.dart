@@ -24,6 +24,25 @@ class OrderService extends ChangeNotifier {
     }
   }
 
+  // Fetch Single Order (Deep Link Support)
+  Future<OrderModel?> getOrderById(String id) async {
+    try {
+      // Check local cache first
+      try {
+        return _orders.firstWhere((o) => o.id == id);
+      } catch (_) {}
+
+      // Fetch from API
+      final response = await _apiService.client.get('/orders/$id');
+      if (response.statusCode == 200) {
+        return OrderModel.fromJson(response.data);
+      }
+    } catch (e) {
+      debugPrint("Error fetching order $id: $e");
+    }
+    return null;
+  }
+
   // For User: Create Order
   Future<Map<String, dynamic>?> createOrder(Map<String, dynamic> orderData) async {
     try {

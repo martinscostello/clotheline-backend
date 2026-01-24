@@ -27,8 +27,18 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    if pod.name == 'firebase_messaging'
+      def pod.build_type
+        Pod::BuildType.static_library
+      end
+    end
+  end
+end
+
 target 'Runner' do
-  use_frameworks!
+  use_frameworks! :linkage => :static
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
@@ -41,7 +51,27 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      
+      # Suppress non-modular header error
+      config.build_settings['OTHER_CFLAGS'] ||= '$(inherited)'
+      config.build_settings['OTHER_CFLAGS'] += ' -Wno-non-modular-include-in-framework-module'
+      
       config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+      
+      # Fix for Xcode 15 "DT_TOOLCHAIN_DIR" error
+      base_config = config.base_configuration_reference
+      if base_config
+        xcconfig_path = base_config.real_path
+        if File.exist?(xcconfig_path)
+          xcconfig = File.read(xcconfig_path)
+          if xcconfig.include?("DT_TOOLCHAIN_DIR")
+            xcconfig.gsub!("DT_TOOLCHAIN_DIR", "TOOLCHAIN_DIR")
+            File.open(xcconfig_path, "w") { |file| file << xcconfig }
+          end
+        end
+      end
     end
   end
 end

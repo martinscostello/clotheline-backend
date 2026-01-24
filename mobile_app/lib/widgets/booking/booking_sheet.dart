@@ -8,7 +8,6 @@ import '../../services/cart_service.dart';
 import '../../models/service_model.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/toast_utils.dart';
-import '../../widgets/toast/top_toast.dart';
 
 class BookingSheet extends StatefulWidget {
   final ServiceModel serviceModel;
@@ -419,8 +418,7 @@ class _BookingSheetState extends State<BookingSheet> {
                  SizedBox(
                    width: double.infinity,
                    child: ElevatedButton(
-                     child: const Text("PROCEED TO CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
+                     style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -429,6 +427,7 @@ class _BookingSheetState extends State<BookingSheet> {
                         elevation: 10,
                       ),
                      onPressed: _proceedToCheckout,
+                     child: const Text("PROCEED TO CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold)),
                    ),
                  ),
               ],

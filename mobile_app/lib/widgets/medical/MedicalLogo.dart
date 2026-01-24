@@ -17,7 +17,7 @@ class MedicalLogo extends StatelessWidget {
           Container(
             width: size,
             height: size,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.transparent,
             ),
             child: CustomPaint(
@@ -41,28 +41,11 @@ class MedicalLogo extends StatelessWidget {
 class _CrossPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF4A80F0)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.15
-      ..strokeCap = StrokeCap.round;
-
     final w = size.width;
     final h = size.height;
     
     // Draw Cross
-    final path = Path();
-    // Vertical bar
-    path.moveTo(w * 0.5, h * 0.1);
-    path.lineTo(w * 0.5, h * 0.9);
-    // Horizontal bar
-    path.moveTo(w * 0.1, h * 0.5);
-    path.lineTo(w * 0.9, h * 0.5);
-
-    // Actually, reference is a rounded outline cross. 
-    // Let's approximate the "Plus" shape.
-    
-    // canvas.drawPath(path, paint); // Simple line cross
+    // (Unused simple cross path logic removed for clarity as outline is used instead)
     
     // Better: Draw the outline shape
     final outlinePaint = Paint()

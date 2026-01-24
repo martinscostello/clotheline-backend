@@ -16,7 +16,7 @@ import '../settings/admin_tax_settings_screen.dart';
 import '../settings/admin_delivery_settings_screen.dart';
 import '../orders/admin_orders_screen.dart'; 
 import 'admin_revenue_screen.dart';
-import '../users/admin_users_screen.dart';
+import '../../../services/notification_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -93,11 +93,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                        _buildStatCard("Pending", "$pendingOrders", Icons.pending_actions, Colors.orange, 
                          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
                        
-                       _buildStatCard("Revenue", CurrencyFormatter.format(revenue), Icons.attach_money, Colors.green, 
+                       _buildStatCard("Revenue", CurrencyFormatter.format(revenue), 
+                         const Text("₦", style: TextStyle(color: Colors.green, fontSize: 28, fontWeight: FontWeight.w900)), // [FIX] Naira Icon 
+                         Colors.green, 
                          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminRevenueScreen()))),
                        
-                       _buildStatCard("Total Users", "View", Icons.group, Colors.purple, // Changed Title
-                         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminUsersScreen()))),
+                       Consumer<NotificationService>(
+                         builder: (context, notifService, _) {
+                           final count = notifService.unreadCount;
+                           return _buildStatCard(
+                             "Notifications", 
+                             "$count", 
+                             Icons.notifications_active, 
+                             count > 0 ? Colors.redAccent : Colors.purple, 
+                             () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminNotificationDashboard()))
+                           );
+                         }
+                       ),
                     ],
                   ),
                   const SizedBox(height: 30),
@@ -239,7 +251,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, VoidCallback onTap) { // Added onTap
+  Widget _buildStatCard(String title, String value, dynamic icon, Color color, VoidCallback onTap) { // Added onTap
     return Center( // Use Center/Container to ensure tap area
      child: Material(
        color: Colors.transparent,
@@ -254,7 +266,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
            child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 28),
+              icon is IconData 
+                  ? Icon(icon, color: color, size: 28)
+                  : icon,
               const SizedBox(height: 8),
               Flexible(
                 child: FittedBox(

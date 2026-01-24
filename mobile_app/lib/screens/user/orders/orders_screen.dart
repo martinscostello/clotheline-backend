@@ -1,8 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
-import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../services/cart_service.dart';
@@ -11,6 +10,7 @@ import '../../../models/order_model.dart';
 import '../booking/checkout_screen.dart';
 import 'package:intl/intl.dart';
 import 'order_detail_screen.dart';
+import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -56,53 +56,49 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return DefaultTabController(
       length: 6, 
       child: Scaffold(
-        backgroundColor: isDark ? Colors.transparent : const Color(0xFFF8F9FF),
+        backgroundColor: Colors.transparent, // Consistent Global Background
         extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          title: Text("My Orders", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.refresh, color: textColor),
-              onPressed: () {
-                setState(() => _isLoading = true);
-                _fetchOrders();
-              },
-            )
-          ],
-          bottom: TabBar(
-            isScrollable: true,
-            indicatorColor: AppTheme.primaryColor,
-            labelColor: AppTheme.primaryColor,
-            unselectedLabelColor: isDark ? Colors.white54 : Colors.black45,
-            tabs: const [
-              Tab(text: "My Bucket"),
-              Tab(text: "New"),
-              Tab(text: "In Progress"),
-              Tab(text: "Ready"),
-              Tab(text: "Completed"),
-              Tab(text: "Cancelled"),
-            ],
-          ),
-        ),
-        body: isDark 
-          ? LiquidBackground(
-              child: _buildTabBarView(isDark, textColor, secondaryTextColor),
-            )
-          : Padding(
-              // Add top padding only in light mode to account for transparent app bar if needed, 
-              // actually LiquidBackground does this implicitly or extended body?
-              // extendBodyBehindAppBar is true. So we need padding if we remove LiquidBackground?
-              // LiquidBackground usually handles full screen. 
-              // Let's just return the same child structure.
-              padding: EdgeInsets.zero, 
-              child: _buildTabBarView(isDark, textColor, secondaryTextColor),
+        body: Stack(
+          children: [
+            // 1. CONTENT
+            _buildTabBarView(isDark, textColor, secondaryTextColor),
+            
+            // 2. HEADER
+            Positioned(
+              top: 0, left: 0, right: 0,
+              child: UnifiedGlassHeader(
+                isDark: isDark,
+                height: 70, // [REDUCED] Move tabs up further
+                title: Text("My Orders", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                actions: [
+                  IconButton(
+                    icon: Icon(Icons.refresh, color: textColor, size: 24), // Slightly smaller for better circle fit
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      setState(() => _isLoading = true);
+                      _fetchOrders();
+                    },
+                  )
+                ],
+                bottom: TabBar(
+                  isScrollable: true,
+                  indicatorColor: AppTheme.primaryColor,
+                  labelColor: AppTheme.primaryColor,
+                  unselectedLabelColor: isDark ? Colors.white54 : Colors.black45,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  tabs: const [
+                    Tab(text: "My Bucket"),
+                    Tab(text: "New"),
+                    Tab(text: "In Progress"),
+                    Tab(text: "Ready"),
+                    Tab(text: "Completed"),
+                    Tab(text: "Cancelled"),
+                  ],
+                ),
+              ),
             ),
+          ],
+        ),
       ),
     );
   }
@@ -144,7 +140,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 onRefresh: () => _fetchOrders(),
                 color: AppTheme.primaryColor,
                 child: ListView(
-                  padding: const EdgeInsets.only(top: 220, bottom: 20, left: 20, right: 20), // [FIX] Increased Padding
+                  padding: const EdgeInsets.only(top: 190, bottom: 20, left: 20, right: 20), // [ADJUSTED] Padding for higher header
                   children: [
                     // Laundry Items
                     ..._cartService.items.map((item) => _buildBucketItem(
@@ -164,18 +160,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
             ),
             // Checkout Summary Area
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 3, 16, 12),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.black45 : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, -4))
-                ]
-              ),
-              child: SafeArea(
-                 top: false,
-                 child: Column(
+            ClipRRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 105), // Precise 105px to clear navbar closely
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF101010).withOpacity(0.7) : Colors.white.withOpacity(0.7),
+                    border: Border(
+                      top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
                    mainAxisSize: MainAxisSize.min,
                    children: [
                      Row(
@@ -196,19 +194,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), 
                          ),
                          onPressed: () {
-                           Navigator.of(context).push(MaterialPageRoute(
-                             builder: (context) => const CheckoutScreen()
-                           ));
-                         }, 
-                         child: const Text("RESUME CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                       ),
-                     )
-                   ],
-                 ),
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => const CheckoutScreen()
+                            ));
+                          }, 
+                          child: const Text("RESUME CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
               ),
             ),
+          ),
             // Floating padding restored to clear Navbar
-            const SizedBox(height: 90), 
+            // Floating padding removed to allow bottom bar to touch edge
           ],
         );
       },
@@ -304,7 +304,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         onRefresh: () => _fetchOrders(),
         color: AppTheme.primaryColor,
         child: ListView.builder(
-          padding: const EdgeInsets.only(top: 220, bottom: 100, left: 20, right: 20), // [FIX] Adjusted Padding
+          padding: const EdgeInsets.only(top: 190, bottom: 100, left: 20, right: 20), // [ADJUSTED] Padding for higher header
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final order = filtered[index];

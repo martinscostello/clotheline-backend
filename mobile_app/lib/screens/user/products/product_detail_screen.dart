@@ -8,10 +8,11 @@ import '../../../services/store_service.dart'; // [NEW]
 import '../../../services/favorites_service.dart'; // [NEW]
 import '../../../utils/add_to_cart_animation.dart';
 import 'store_cart_screen.dart';
-import 'package:liquid_glass_ui/liquid_glass_dropdown.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../widgets/fullscreen_gallery.dart';
-import '../../../widgets/custom_cached_image.dart'; // Added Import
+import '../../../widgets/custom_cached_image.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final StoreProduct product;
@@ -60,8 +61,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final isFav = favoritesService.isFavorite(widget.product.id); // [NEW]
 
     return Scaffold(
-      backgroundColor: bgColor,
-      body: ListenableBuilder(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
+      body: LaundryGlassBackground(
+        child: ListenableBuilder(
         listenable: cartService,
         builder: (context, _) {
           StoreCartItem? cartItem;
@@ -83,37 +86,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                    SliverAppBar(
                      expandedHeight: 400, 
                      pinned: true,
-                     backgroundColor: bgColor,
-                     leading: IconButton(
-                       icon: const CircleAvatar(backgroundColor: Colors.black26, child: Icon(Icons.arrow_back, color: Colors.white)),
-                       onPressed: () => Navigator.pop(context),
-                     ),
-                     actions: [
-                        CircleAvatar(
-                          backgroundColor: Colors.black26,
-                          child: IconButton(
-                            icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: isFav ? Colors.red : Colors.white),
-                            onPressed: () => favoritesService.toggleFavorite(widget.product.id),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        
-                        Stack(
-                          children: [
-                            CircleAvatar(
-                              key: _cartKey,
-                              backgroundColor: Colors.black26,
-                              child: IconButton(
-                                icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
-                                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StoreCartScreen())),
-                              ),
-                            ),
-                            if (cartService.storeItems.isNotEmpty)
-                              Positioned(right: 0, top: 0, child: CircleAvatar(radius: 8, backgroundColor: Colors.red, child: Text("${cartService.storeItems.fold(0, (s, i) => s + i.quantity)}", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white))))
-                          ],
-                        ),
-                        const SizedBox(width: 10),
-                     ],
+                     backgroundColor: Colors.transparent,
+                     elevation: 0,
+                     automaticallyImplyLeading: false, // Use UnifiedGlassHeader instead
                      flexibleSpace: FlexibleSpaceBar(
                        background: Stack(
                          children: [
@@ -376,12 +351,48 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: _buildActionButtons(context, cartService, cartItem),
                 ),
               ),
+
+              // 3. Header
+              Positioned(
+                top: 0, left: 0, right: 0,
+                child: UnifiedGlassHeader(
+                  isDark: true, // Product details look better with a dark header overlay on images
+                  title: const SizedBox.shrink(),
+                  onBack: () => Navigator.pop(context),
+                  actions: [
+                    IconButton(
+                      icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: isFav ? Colors.red : Colors.white),
+                      onPressed: () => favoritesService.toggleFavorite(widget.product.id),
+                    ),
+                    Stack(
+                       clipBehavior: Clip.none,
+                       children: [
+                         IconButton(
+                           key: _cartKey,
+                           icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StoreCartScreen())),
+                         ),
+                         if (cartService.storeItems.isNotEmpty)
+                           Positioned(
+                             right: 4, top: 4,
+                             child: Container(
+                               padding: const EdgeInsets.all(4),
+                               decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                               child: Text("${cartService.storeItems.fold(0, (s, i) => s + i.quantity)}", style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white))
+                             )
+                           )
+                       ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           );
         }
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildExpandableTitle(Color textColor) {
     return GestureDetector(
@@ -453,7 +464,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           children: [
             Row(
               children: [
-                Text("${widget.product.rating.toStringAsFixed(1)}", style: TextStyle(color: textColor, fontSize: 28, fontWeight: FontWeight.bold)),
+                Text(widget.product.rating.toStringAsFixed(1), style: TextStyle(color: textColor, fontSize: 28, fontWeight: FontWeight.bold)),
                 const SizedBox(width: 8),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,7 +572,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 IconButton(
                   icon: const Icon(Icons.remove),
                   onPressed: () {
-                    if (cartItem!.quantity > 1) {
+                    if (cartItem.quantity > 1) {
                       service.updateStoreItemQuantity(cartItem, cartItem.quantity - 1);
                     } else {
                       service.removeStoreItem(cartItem);

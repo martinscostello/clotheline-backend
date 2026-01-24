@@ -4,9 +4,7 @@ import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/models/app_content_model.dart';
-import 'package:laundry_app/utils/currency_formatter.dart';
 import 'package:laundry_app/utils/toast_utils.dart';
-import 'package:laundry_app/widgets/toast/top_toast.dart';
 class AdminCMSPromotionsScreen extends StatefulWidget {
   const AdminCMSPromotionsScreen({super.key});
 
@@ -31,7 +29,7 @@ class _AdminCMSPromotionsScreenState extends State<AdminCMSPromotionsScreen> {
   Future<void> _fetchContent() async {
     try {
       final content = await _contentService.getAppContent();
-      if (mounted && content != null) {
+      if (mounted) {
         setState(() {
           _content = content;
           _shippingThresholdCtrl.text = content.freeShippingThreshold.toInt().toString();

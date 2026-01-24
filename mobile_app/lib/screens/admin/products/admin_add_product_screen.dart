@@ -6,15 +6,12 @@ import 'package:dio/dio.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../services/store_service.dart';
-import '../../../widgets/glass/GlassContainer.dart'; // Added Import
+// Added Import
 import '../../../services/api_service.dart'; // For Base URL
 import '../../../models/store_product.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../widgets/custom_cached_image.dart'; // Added Import
-import '../../../providers/branch_provider.dart';
-import '../../../models/branch_model.dart';
 import '../../../utils/toast_utils.dart';
-import '../../../widgets/toast/top_toast.dart';
 
 class AdminAddProductScreen extends StatefulWidget {
   final StoreProduct? product; // If provided, we are editing

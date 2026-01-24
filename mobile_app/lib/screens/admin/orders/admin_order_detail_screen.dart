@@ -5,34 +5,58 @@ import '../../../../widgets/glass/LiquidBackground.dart';
 import '../../../../models/order_model.dart';
 import '../../../../services/order_service.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../../../services/api_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../utils/toast_utils.dart';
-import '../../../../widgets/toast/top_toast.dart';
 
 class AdminOrderDetailScreen extends StatefulWidget {
-  final OrderModel order;
-  const AdminOrderDetailScreen({super.key, required this.order});
+  final OrderModel? order;
+  final String? orderId;
+  const AdminOrderDetailScreen({super.key, this.order, this.orderId});
 
   @override
   State<AdminOrderDetailScreen> createState() => _AdminOrderDetailScreenState();
 }
 
 class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
+  OrderModel? _order;
+  bool _isLoading = true;
   late String _currentStatus;
   bool _isUpdating = false;
 
   @override
   void initState() {
     super.initState();
-    _currentStatus = widget.order.status.name;
+    if (widget.order != null) {
+      _order = widget.order;
+      _currentStatus = _order!.status.name;
+      _isLoading = false;
+    } else if (widget.orderId != null) {
+      _fetchOrder();
+    } else {
+      _isLoading = false; // Should not happen
+    }
   }
 
+  Future<void> _fetchOrder() async {
+    final service = Provider.of<OrderService>(context, listen: false);
+    final fetched = await service.getOrderById(widget.orderId!);
+    if (mounted) {
+      setState(() {
+        _order = fetched;
+        if (_order != null) _currentStatus = _order!.status.name;
+        _isLoading = false;
+      });
+    }
+  }
+
+  // ... Update Status & Contact methods ...
+
   Future<void> _updateStatus(String newStatus) async {
+    if (_order == null) return;
     setState(() => _isUpdating = true);
-    final success = await Provider.of<OrderService>(context, listen: false).updateStatus(widget.order.id, newStatus);
+    final success = await Provider.of<OrderService>(context, listen: false).updateStatus(_order!.id, newStatus);
     setState(() => _isUpdating = false);
     
     if (success) {
@@ -44,7 +68,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
   }
 
   Future<void> _contactCustomer() async {
-    final phone = widget.order.guestPhone ?? "";
+    if (_order == null) return;
+    final phone = _order!.guestPhone ?? "";
     if (phone.isEmpty) return;
     
     final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
@@ -59,10 +84,23 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_order == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Order Not Found"), backgroundColor: Colors.transparent),
+        body: const Center(child: Text("Order not found or deleted")),
+      );
+    }
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text("Order #${widget.order.id.substring(widget.order.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white)),
+        title: Text("Order #${_order!.id.substring(_order!.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         leading: const BackButton(color: Colors.white),
       ),
@@ -131,9 +169,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                            ],
                          ),
                         const SizedBox(height: 5),
-                        _buildInfoRow(Icons.person, widget.order.userName ?? widget.order.guestName ?? "Guest"),
-                        _buildInfoRow(Icons.email, widget.order.userEmail ?? widget.order.guestEmail ?? "No Email"),
-                        _buildInfoRow(Icons.phone, widget.order.guestPhone ?? "No Phone"),
+                        _buildInfoRow(Icons.person, _order!.userName ?? _order!.guestName ?? "Guest"),
+                        _buildInfoRow(Icons.email, _order!.userEmail ?? _order!.guestEmail ?? "No Email"),
+                        _buildInfoRow(Icons.phone, _order!.guestPhone ?? "No Phone"),
                         
                         const SizedBox(height: 10),
                         const Divider(color: Colors.white10),
@@ -141,11 +179,11 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                         
                         const Text("Logistics", style: TextStyle(color: Colors.white70, fontSize: 12)),
                         const SizedBox(height: 5),
-                        _buildInfoRow(Icons.upload, "Pickup: ${widget.order.pickupOption}"),
-                        if (widget.order.pickupOption == 'Pickup') _buildInfoRow(Icons.location_on, widget.order.pickupAddress ?? "N/A", isSmall: true),
+                        _buildInfoRow(Icons.upload, "Pickup: ${_order!.pickupOption}"),
+                        if (_order!.pickupOption == 'Pickup') _buildInfoRow(Icons.location_on, _order!.pickupAddress ?? "N/A", isSmall: true),
                         const SizedBox(height: 10),
-                        _buildInfoRow(Icons.download, "Delivery: ${widget.order.deliveryOption}"),
-                         if (widget.order.deliveryOption == 'Deliver') _buildInfoRow(Icons.location_on, widget.order.deliveryAddress ?? "N/A", isSmall: true),
+                        _buildInfoRow(Icons.download, "Delivery: ${_order!.deliveryOption}"),
+                         if (_order!.deliveryOption == 'Deliver') _buildInfoRow(Icons.location_on, _order!.deliveryAddress ?? "N/A", isSmall: true),
                       ],
                     ),
                   ),
@@ -155,7 +193,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               // 3. Items
               const Text("Items", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              ...widget.order.items.map((item) => Card(
+              ..._order!.items.map((item) => Card(
                 color: Colors.white10,
                 margin: const EdgeInsets.only(bottom: 10),
                 child: ListTile(
@@ -194,9 +232,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text("Payment Status", style: TextStyle(color: Colors.white, fontSize: 16)),
-                           Text(widget.order.paymentStatus.name.toUpperCase(), 
+                           Text(_order!.paymentStatus.name.toUpperCase(), 
                             style: TextStyle(
-                              color: widget.order.paymentStatus == PaymentStatus.Paid ? Colors.green : Colors.orange, 
+                              color: _order!.paymentStatus == PaymentStatus.Paid ? Colors.green : Colors.orange, 
                               fontWeight: FontWeight.bold
                             )
                           ),
@@ -207,7 +245,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text("Total Amount", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text("₦${widget.order.totalAmount.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 22, fontWeight: FontWeight.bold)),
+                          Text("₦${_order!.totalAmount.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 22, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ],
@@ -218,13 +256,13 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               const SizedBox(height: 30),
 
               // Refund Action
-              if (widget.order.paymentStatus == PaymentStatus.Paid) 
+              if (_order!.paymentStatus == PaymentStatus.Paid) 
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.withOpacity(0.2),
+                      backgroundColor: Colors.red.withValues(alpha: 0.2),
                       foregroundColor: Colors.redAccent,
                       side: const BorderSide(color: Colors.redAccent),
                     ),
@@ -319,7 +357,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                try {
                   final amount = double.tryParse(controller.text);
                   await api.client.post('/payments/refund', data: {
-                    'orderId': widget.order.id,
+                    'orderId': _order!.id,
                     'amount': amount 
                   });
                    if (!context.mounted) return;

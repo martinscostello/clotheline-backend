@@ -4,7 +4,6 @@ import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
 import '../../../../services/api_service.dart';
 import '../../../../utils/toast_utils.dart';
-import '../../../../widgets/toast/top_toast.dart';
 
 class AdminTaxSettingsScreen extends StatefulWidget {
   const AdminTaxSettingsScreen({super.key});
@@ -93,11 +92,11 @@ class _AdminTaxSettingsScreenState extends State<AdminTaxSettingsScreen> {
               child: Column(
                 children: [
                    // Notice Card
-                   GlassContainer(
+                   const GlassContainer(
                      opacity: 0.1,
-                     padding: const EdgeInsets.all(16),
+                     padding: EdgeInsets.all(16),
                      child: Row(
-                       children: const [
+                       children: [
                          Icon(Icons.info_outline, color: Colors.blueAccent),
                          SizedBox(width: 15),
                          Expanded(
@@ -122,7 +121,7 @@ class _AdminTaxSettingsScreenState extends State<AdminTaxSettingsScreen> {
                            title: const Text("Enable VAT", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                            subtitle: const Text("Apply Value Added Tax to all orders", style: TextStyle(color: Colors.white54)),
                            value: _taxEnabled,
-                           activeColor: AppTheme.primaryColor,
+                           activeThumbColor: AppTheme.primaryColor,
                            onChanged: (val) => setState(() => _taxEnabled = val),
                          ),
                          

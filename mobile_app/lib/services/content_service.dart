@@ -16,7 +16,7 @@ class ContentService {
       final response = await _apiService.client.get('/services');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        return data.where((e) => e is Map).map((json) => ServiceModel.fromJson(Map<String, dynamic>.from(json))).toList();
+        return data.whereType<Map>().map((json) => ServiceModel.fromJson(Map<String, dynamic>.from(json))).toList();
       } else {
         throw Exception('Failed to load services');
       }
@@ -124,15 +124,16 @@ class ContentService {
     }
   }
 
-  Future<String?> uploadImage(String filePath) async {
+  Future<String?> uploadImage(String filePath, {Function(int, int)? onProgress}) async {
     try {
       String fileName = filePath.split('/').last;
       String mimeType = 'jpeg';
       String type = 'image';
       
       final lowerName = fileName.toLowerCase();
-      if (lowerName.endsWith('.png')) mimeType = 'png';
-      else if (lowerName.endsWith('.gif')) mimeType = 'gif';
+      if (lowerName.endsWith('.png')) {
+        mimeType = 'png';
+      } else if (lowerName.endsWith('.gif')) mimeType = 'gif';
       else if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) mimeType = 'jpeg';
       else if (lowerName.endsWith('.mp4')) { type = 'video'; mimeType = 'mp4'; }
       else if (lowerName.endsWith('.mov')) { type = 'video'; mimeType = 'quicktime'; }
@@ -150,6 +151,7 @@ class ContentService {
       final response = await _apiService.client.post(
         '/upload',
         data: formData,
+        onSendProgress: onProgress,
       );
 
       if (response.statusCode == 200) {

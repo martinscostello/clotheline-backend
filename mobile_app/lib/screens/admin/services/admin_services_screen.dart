@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../models/service_model.dart';
 import '../../../../services/laundry_service.dart';
 import '../../../../providers/branch_provider.dart';
 import '../../../../theme/app_theme.dart';

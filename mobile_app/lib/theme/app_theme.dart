@@ -8,8 +8,8 @@ class AppTheme {
   static const Color lightTextPrimary = Color(0xFF0A2540);
 
   // Figma Spec: Dark Mode Colors
-  static const Color darkBgStart = Color(0xFF071C2D);
-  static const Color darkBgEnd = Color(0xFF0A3D62);
+  static const Color darkBgStart = Color(0xFF1E1E2C); // Softer Charcoal
+  static const Color darkBgEnd = Color(0xFF2D2D44);
   static const Color darkAccentCyan = Color(0xFF2ED9FF);
   static const Color darkTextPrimary = Color(0xFFEAF6FF);
   
@@ -46,6 +46,13 @@ class AppTheme {
         onSurface: lightTextPrimary,
       ),
       useMaterial3: true,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 
@@ -74,6 +81,13 @@ class AppTheme {
         onSurface: darkTextPrimary,
       ),
       useMaterial3: true,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 }

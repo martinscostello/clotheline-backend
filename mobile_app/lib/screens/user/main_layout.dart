@@ -1,15 +1,15 @@
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass/LaundryGlassBackground.dart';
 import '../../widgets/navigation/CrystalNavBar.dart'; // Fixed import
-import '../common/branch_selection_screen.dart'; // Fixed relative path
+// Fixed relative path
 import 'dashboard_screen.dart';
 import 'products/products_screen.dart';
 import 'orders/orders_screen.dart';
 import 'settings/settings_screen.dart';
+import '../../services/push_notification_service.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
@@ -21,6 +21,7 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
+  final ValueNotifier<int> _tabNotifier = ValueNotifier(0);
 
   late final List<Widget> _screens;
 
@@ -31,11 +32,18 @@ class _MainLayoutState extends State<MainLayout> {
     _screens = [
       DashboardScreen(
         onSwitchToStore: () => _updateIndex(1),
+        tabNotifier: _tabNotifier, // Pass Notifier
       ),
       const ProductsScreen(),
       const OrdersScreen(),
       const SettingsScreen(),
     ];
+    
+    // [DEAD-STATE] Handle Notification Deep Links
+    PushNotificationService.setupInteractedMessage(context);
+    
+    // [BATTERY] Request Optimization Ignore (Android)
+    PushNotificationService.checkBatteryOptimization(context);
   }
 
   Future<void> _loadPersistedTab() async {
@@ -53,6 +61,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   Future<void> _updateIndex(int index) async {
      setState(() => _currentIndex = index);
+     _tabNotifier.value = index; // Notify listeners
      final prefs = await SharedPreferences.getInstance();
      prefs.setInt('last_tab_index', index);
   }
@@ -61,6 +70,7 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
+      resizeToAvoidBottomInset: false, // Prevents keyboard from pushing nav bar
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: LaundryGlassBackground(
         child: Stack(
@@ -89,6 +99,13 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildCustomNavBar(BuildContext context) {
     return CrystalNavBar(
       currentIndex: _currentIndex,
+      height: 75, // Original
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), // Original floating
+      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+          ? Colors.black.withOpacity(0.8) 
+          : Colors.white.withOpacity(0.9),
+      indicatorColor: AppTheme.primaryColor,
+      unselectedItemColor: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Colors.black45,
       onTap: (index) => _updateIndex(index),
       items: const [
         CrystalNavItem(

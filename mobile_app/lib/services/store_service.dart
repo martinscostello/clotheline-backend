@@ -33,23 +33,26 @@ class StoreService extends ChangeNotifier {
   bool get isHydrated => _isHydrated;
 
   // 1. Load Cache Only
-  Future<void> loadFromCache() async {
+  Future<void> loadFromCache({String? branchId}) async {
     final prefs = await SharedPreferences.getInstance();
     try {
-      final cached = prefs.getString('products_cache');
+      // 1. Products Cache (Branch Aware)
+      final prodKey = branchId != null ? 'products_cache_$branchId' : 'products_cache';
+      final cached = prefs.getString(prodKey);
       if (cached != null) {
         final List<dynamic> data = jsonDecode(cached);
-        _products = data.map((json) => StoreProduct.fromJson(json)).toList();
-      } else {
-        // Fallback to Seed Data (First Launch)
+        _products = data.whereType<Map>().map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
+      } else if (branchId == null) {
+        // Fallback to Seed Data only for global context
         _products = kDefaultProducts.map((json) => StoreProduct.fromJson(json)).toList();
       }
       
+      // 2. Categories Cache (Global)
       final cachedCats = prefs.getString('categories_cache');
       if (cachedCats != null) {
          final List<dynamic> data = jsonDecode(cachedCats);
          _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
-         _categories = ["All", ..._categoryObjects.map((c) => c.name).toList()];
+         _categories = ["All", ..._categoryObjects.map((c) => c.name)];
       }
     } catch (e) {
       debugPrint("Error loading store cache: $e");
@@ -69,7 +72,7 @@ class StoreService extends ChangeNotifier {
       final response = await _apiService.client.get(endpoint);
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        final newProducts = data.where((e) => e is Map).map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
+        final newProducts = data.whereType<Map>().map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
         
         // Cache Logic (Simple overwrite for now, optimized diffing can be added if needed)
         _products = newProducts;
@@ -81,15 +84,18 @@ class StoreService extends ChangeNotifier {
       debugPrint("Error fetching products: $e");
     }
 
-    // Fetch Categories (Parallel or sequential doesn't matter much here, sequential safer)
-    // Fetch Global Categories
+    // Fetch Categories
     try {
        final response = await _apiService.client.get('/categories');
        if (response.statusCode == 200) {
           final List<dynamic> data = response.data;
-          // data is list of objects {name, image...}
           _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
-          _categories = ["All", ..._categoryObjects.map((c) => c.name).toList()];
+          _categories = ["All", ..._categoryObjects.map((c) => c.name)];
+          
+          // Persist Categories
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('categories_cache', jsonEncode(data));
+          
           notifyListeners();
        }
     } catch(e) {
@@ -166,7 +172,7 @@ class StoreService extends ChangeNotifier {
         final cached = prefs.getString('featured_products_cache');
         if (cached != null) {
           final List<dynamic> data = jsonDecode(cached);
-          _featuredProducts = data.where((e) => e is Map).map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
+          _featuredProducts = data.whereType<Map>().map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
           notifyListeners();
         }
       } catch (e) {}
@@ -180,7 +186,7 @@ class StoreService extends ChangeNotifier {
       final response = await _apiService.client.get(endpoint);
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        final allProducts = data.where((e) => e is Map).map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
+        final allProducts = data.whereType<Map>().map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
         
          // Only update main products if we are in the "Active Branch" context
          // But StoreService is singleton, so be careful. 

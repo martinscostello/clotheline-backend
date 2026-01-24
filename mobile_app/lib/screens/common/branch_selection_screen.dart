@@ -3,10 +3,9 @@ import 'package:provider/provider.dart';
 import '../../services/cart_service.dart';
 import '../../services/auth_service.dart';
 import '../../providers/branch_provider.dart';
-import '../../models/branch_model.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass/GlassContainer.dart';
-import '../../widgets/glass/LiquidBackground.dart';
+import '../../widgets/glass/LaundryGlassBackground.dart';
 import '../user/main_layout.dart';
 
 class BranchSelectionScreen extends StatelessWidget {
@@ -16,15 +15,20 @@ class BranchSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subtitleColor = isDark ? Colors.white54 : Colors.black54;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Select your City", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text("Select your City", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        iconTheme: IconThemeData(color: textColor), // Back button color
       ),
-      body: LiquidBackground(
+      body: LaundryGlassBackground(
         child: Consumer<BranchProvider>(
           builder: (context, provider, child) {
             if (provider.isLoading) {
@@ -36,9 +40,9 @@ class BranchSelectionScreen extends StatelessWidget {
                  child: Column(
                    mainAxisAlignment: MainAxisAlignment.center,
                    children: [
-                     const Icon(Icons.location_off, size: 60, color: Colors.white38),
+                     Icon(Icons.location_off, size: 60, color: isDark ? Colors.white38 : Colors.grey),
                      const SizedBox(height: 15),
-                     const Text("No branches found", style: TextStyle(color: Colors.white70)),
+                     Text("No branches found", style: TextStyle(color: subtitleColor)),
                      const SizedBox(height: 10),
                      TextButton.icon(
                        icon: const Icon(Icons.refresh, color: AppTheme.primaryColor),
@@ -91,8 +95,9 @@ class BranchSelectionScreen extends StatelessWidget {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text("Switch Branch?"),
-                              content: const Text("Switching branches will clear your current cart. Continue?"),
+                              backgroundColor: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+                              title: Text("Switch Branch?", style: TextStyle(color: textColor)),
+                              content: Text("Switching branches will clear your current cart. Continue?", style: TextStyle(color: subtitleColor)),
                               actions: [
                                 TextButton(
                                   child: const Text("Cancel"), 
@@ -115,17 +120,20 @@ class BranchSelectionScreen extends StatelessWidget {
                        }
                     },
                     child: GlassContainer(
-                      opacity: isSelected ? 0.15 : 0.05,
+                      // [FIX] Super App Glass Values
+                      opacity: isSelected ? (isDark ? 0.25 : 0.15) : (isDark ? 0.2 : 0.1),
                       padding: const EdgeInsets.all(20),
                       border: Border.all(
-                        color: isSelected ? AppTheme.primaryColor : Colors.white10,
+                        color: isSelected 
+                           ? AppTheme.primaryColor 
+                           : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1)),
                         width: 1
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.location_city, 
-                            color: isSelected ? AppTheme.primaryColor : Colors.white70,
+                            color: isSelected ? AppTheme.primaryColor : (isDark ? Colors.white54 : Colors.black45),
                             size: 30
                           ),
                           const SizedBox(width: 20),
@@ -135,12 +143,12 @@ class BranchSelectionScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   branch.name, 
-                                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)
+                                  style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
                                   branch.address,
-                                  style: const TextStyle(color: Colors.white54, fontSize: 12)
+                                  style: TextStyle(color: subtitleColor, fontSize: 12)
                                 ),
                               ],
                             ),

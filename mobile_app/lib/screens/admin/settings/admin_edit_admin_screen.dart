@@ -5,7 +5,6 @@ import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../widgets/glass/GlassContainer.dart';
 import '../../../theme/app_theme.dart';
 import '../../../../utils/toast_utils.dart';
-import '../../../../widgets/toast/top_toast.dart';
 
 class AdminEditAdminScreen extends StatefulWidget {
   final Map<String, dynamic>? admin; // If null, we are creating a new admin
@@ -156,7 +155,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
                         Switch(
                           value: _isRevoked,
                           onChanged: (val) => setState(() => _isRevoked = val),
-                          activeColor: Colors.red,
+                          activeThumbColor: Colors.red,
                         ),
                       ],
                     ),
@@ -206,7 +205,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
               _permissions[key] = val;
             });
           },
-          activeColor: AppTheme.primaryColor,
+          activeThumbColor: AppTheme.primaryColor,
         ),
       ],
     );

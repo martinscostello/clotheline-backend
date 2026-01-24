@@ -17,12 +17,27 @@ class BranchProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   BranchProvider() {
-    _init();
+    // defer init to avoid async constructor issues, or rely on bootstrap
+  }
+  
+  void hydrateFromBootstrap(List<Branch> branches, String? selectedId) {
+     _branches = branches;
+     if (selectedId != null && branches.isNotEmpty) {
+        try {
+           _selectedBranch = branches.firstWhere((b) => b.id == selectedId);
+           // Also sync sub-services immediately if possible, or let UI trigger it
+           // LaundryService().fetchServices(branchId: selectedId); // Careful with Singleton logic order
+        } catch (_) {}
+     }
+     _isLoading = false;
   }
 
   Future<void> _init() async {
-    await _loadCachedData(); // Fast local load
-    fetchBranches(); // Background refresh
+     // Legacy Fallback if no bootstrap
+     if (_branches.isEmpty) {
+        await _loadCachedData();
+        fetchBranches();
+     }
   }
 
   Future<void> _loadCachedData() async {
@@ -65,7 +80,7 @@ class BranchProvider extends ChangeNotifier {
         prefs.setString('cached_branches', jsonEncode(response.data));
 
         // Re-validate selection
-        await _loadSavedBranch(); 
+        await loadSavedBranch(); 
         
         _isLoading = false;
         notifyListeners();
@@ -75,7 +90,7 @@ class BranchProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadSavedBranch() async {
+  Future<void> loadSavedBranch() async {
     final prefs = await SharedPreferences.getInstance();
     final savedId = prefs.getString('selected_branch_id');
     

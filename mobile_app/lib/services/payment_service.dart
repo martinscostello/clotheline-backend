@@ -77,11 +77,10 @@ class _PaymentWebView extends StatefulWidget {
   final Function(bool) onComplete;
 
   const _PaymentWebView({
-    Key? key,
     required this.initialUrl,
     required this.reference,
     required this.onComplete,
-  }) : super(key: key);
+  });
 
   @override
   State<_PaymentWebView> createState() => _PaymentWebViewState();

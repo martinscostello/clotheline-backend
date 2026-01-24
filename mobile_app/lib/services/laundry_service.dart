@@ -6,8 +6,23 @@ import 'dart:convert';
 
 class LaundryService extends ChangeNotifier {
   static final LaundryService _instance = LaundryService._internal();
+  
+  // Factory with DI support (sort of - Singleton makes DI hard directly, but we can init instance)
+  // Actually, we should allow constructing with data for Provider.
+  // The singleton pattern here complicates Provider usage if we want unique instances per tree, 
+  // but usually Provider uses one. 
+  // Let's modify the factory to allow setting a default state if not initialized?
+  // Or better, just make the constructor accessible for Provider.
+  
   factory LaundryService() => _instance;
+  
   LaundryService._internal();
+
+  // Helper for Bootstrapping (Call this before Provider usage if using Singleton)
+  void hydrateFromBootstrap(List<ServiceModel> bootstrapData) {
+     _services = bootstrapData;
+     _isHydrated = true;
+  }
 
   final ApiService _apiService = ApiService();
 
@@ -19,10 +34,11 @@ class LaundryService extends ChangeNotifier {
   bool get isHydrated => _isHydrated;
 
   // 1. Load Local Cache ONLY
-  Future<void> loadFromCache() async {
+  Future<void> loadFromCache({String? branchId}) async {
     final prefs = await SharedPreferences.getInstance();
     try {
-      final cached = prefs.getString('services_cache');
+      final key = branchId != null ? 'services_cache_$branchId' : 'services_cache_default';
+      final cached = prefs.getString(key);
       if (cached != null) {
         final List<dynamic> data = jsonDecode(cached);
         _services = data.map((json) => ServiceModel.fromJson(json)).toList();
@@ -59,14 +75,11 @@ class LaundryService extends ChangeNotifier {
         if (branchId != null || currentJson != newServicesJson) {
            _services = newServices;
            final prefs = await SharedPreferences.getInstance();
-           // Only cache global (no branchId) or handle caching strategy later. 
-           // For now, let's strictly cache GLOBAL/Default. 
-           // If branchId is present, we might NOT want to overwrite the 'default' cache 
-           // unless we implement branch-aware caching keys.
            
-           if (branchId == null) {
-              await prefs.setString('services_cache', jsonEncode(data));
-           }
+           // Branch-Aware Caching
+           final key = branchId != null ? 'services_cache_$branchId' : 'services_cache_default';
+           await prefs.setString(key, jsonEncode(data));
+           
            notifyListeners();
         }
       }

@@ -1,11 +1,13 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:laundry_app/theme/app_theme.dart';
-import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:provider/provider.dart';
 import '../../../services/cart_service.dart'; // From task.md plan
 import '../../../utils/currency_formatter.dart';
-import '../../../services/payment_service.dart';
+import '../../../providers/branch_provider.dart';
 
 class CombinedOrderSummaryScreen extends StatefulWidget {
   final Map<String, dynamic> logisticsData;
@@ -22,7 +24,7 @@ class CombinedOrderSummaryScreen extends StatefulWidget {
 }
 
 class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen> {
-  bool _isProcessing = false;
+  final bool _isProcessing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +46,12 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
     double total = cart.totalAmount + deliveryFee + pickupFee;
 
     Widget content = SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 100, 20, 100),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 90, 
+        bottom: 200, // Increased to allow full scrolling past sticky button
+        left: 20, 
+        right: 20
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -110,7 +117,22 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
                 if (deliveryFee > 0)
                   _buildRow("Delivery Fee", deliveryFee, textColor),
                 if (pickupFee == 0 && deliveryFee == 0)
-                   Text("Drop-off / Pickup at Branch (No Fee)", style: TextStyle(color: secondaryTextColor)),
+                   Consumer<BranchProvider>(
+                     builder: (context, branchProvider, _) {
+                        final branch = branchProvider.selectedBranch;
+                        final displayAddress = branch?.address ?? "Branch Office";
+                        final displayPhone = branch?.phone ?? "";
+                        return Column(
+                          children: [
+                            Text("Drop-off / Pickup at Office", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text(displayAddress, style: TextStyle(color: secondaryTextColor, fontSize: 13), textAlign: TextAlign.center),
+                            if (displayPhone.isNotEmpty)
+                              Text("Tel: $displayPhone", style: TextStyle(color: secondaryTextColor, fontSize: 13)),
+                          ],
+                        );
+                     }
+                   ),
               ],
             ),
           ),
@@ -156,57 +178,29 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text("Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: BackButton(color: textColor),
-        centerTitle: true,
-      ),
-      body: Stack(
-        children: [
-          // Background: Liquid only in Dark Mode
-          if (isDark) const Positioned.fill(child: LiquidBackground(child: SizedBox())),
-          
-          // Content
-          content,
-          
-          // Bottom Action Bar
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.black.withOpacity(0.9) : Colors.white.withOpacity(0.95),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                boxShadow: [
-                   BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -4))
-                ]
-              ),
-              child: SafeArea(
-                child: SizedBox(
-                   width: double.infinity,
-                   height: 55,
-                   child: ElevatedButton(
-                     onPressed: _isProcessing ? null : () async {
-                       setState(() => _isProcessing = true);
-                       await widget.onProceed(widget.logisticsData); // Delegate back
-                       if(mounted) setState(() => _isProcessing = false);
-                     },
-                     style: ElevatedButton.styleFrom(
-                       backgroundColor: isDark ? AppTheme.primaryColor : Colors.black,
-                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                       disabledBackgroundColor: Colors.grey,
-                     ),
-                     child: _isProcessing
-                       ? const CircularProgressIndicator(color: Colors.white)
-                       : Text("PAY ${CurrencyFormatter.format(total)}", style: TextStyle(color: isDark ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                   ),
-                ),
+      backgroundColor: Colors.transparent,
+      body: LaundryGlassBackground(
+        child: Stack(
+          children: [
+            // Content
+            content,
+            
+            // Header
+            Positioned(
+              top: 0, left: 0, right: 0,
+              child: UnifiedGlassHeader(
+                isDark: isDark,
+                title: Text("Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                onBack: () => Navigator.pop(context),
               ),
             ),
-          )
-        ],
+
+            Positioned(
+              bottom: 0, left: 0, right: 0,
+              child: _buildBottomBar(isDark, total),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -218,6 +212,53 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
         Text(label, style: TextStyle(color: textColor.withOpacity(0.8))),
         Text(CurrencyFormatter.format(amount), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
       ],
+    );
+  }
+
+  Widget _buildBottomBar(bool isDark, double total) {
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF101010).withOpacity(0.7) : Colors.white.withOpacity(0.7),
+            border: Border(
+              top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("TOTAL DUE", style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text(CurrencyFormatter.format(total), style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 24, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  ElevatedButton(
+                    onPressed: _isProcessing ? null : () => widget.onProceed(widget.logisticsData),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: _isProcessing 
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text("Place Order", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

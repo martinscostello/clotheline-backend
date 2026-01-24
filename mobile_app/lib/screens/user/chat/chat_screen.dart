@@ -2,18 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/chat_service.dart';
 import '../../../providers/branch_provider.dart';
-import 'package:liquid_glass_ui/liquid_glass_ui.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final String? orderId;
+  const ChatScreen({super.key, this.orderId});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
-
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _msgController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _isSending = false;
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -25,18 +37,23 @@ class _ChatScreenState extends State<ChatScreen> {
       service.startPolling(branchProvider.selectedBranch!.id);
     }
     
+    _msgController.addListener(() {
+      setState(() {}); // Rebuild for send button state
+    });
+
+    // If orderId is provided, pre-fill or send automated message?
+    // Requirement says: "Attaches orderId as context"
+    if (widget.orderId != null) {
+      // Small delay to ensure thread is ready
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted && service.messages.isEmpty) {
+          service.sendMessage("I have a question about Order #${widget.orderId!.substring(widget.orderId!.length-6).toUpperCase()}", orderId: widget.orderId);
+        }
+      });
+    }
+
     // Scroll to bottom after init
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-  }
-  
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
   }
 
   @override
@@ -56,58 +73,74 @@ class _ChatScreenState extends State<ChatScreen> {
     // User asked for "full-height chat screen", so let's use a solid background.
     
     return Scaffold(
-      backgroundColor: isDark ? Colors.black : const Color(0xFFE6EBEF), // Telegram Web-ish bg
-      appBar: AppBar(
-        flexibleSpace: isDark ? null : Container(decoration: const BoxDecoration(color: Colors.white)), // White header in light mode
-        backgroundColor: isDark ? Colors.black : Colors.white,
-        elevation: 1,
-        shadowColor: Colors.black12,
-        leading: const BackButton(),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
+      body: LaundryGlassBackground(
+        child: Stack(
           children: [
-            Text("Laundry Support", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
-            const Text("Typically replies in minutes", style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.normal)),
+            // 1. Content
+            Column(
+              children: [
+                Expanded(
+                  child: Consumer<ChatService>(
+                    builder: (context, chat, _) {
+                      if (chat.isLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (chat.currentThread == null) {
+                        return const Center(child: Text("Could not initialize chat.", style: TextStyle(color: Colors.white54)));
+                      }
+            
+                      return Column(
+                        children: [
+                          Expanded(
+                            child: chat.messages.isEmpty 
+                              ? _buildEmptyState(isDark)
+                              : ListView.builder(
+                                  controller: _scrollController,
+                                  padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 110, bottom: 20, left: 16, right: 16),
+                                  itemCount: chat.messages.length,
+                                  itemBuilder: (context, index) {
+                                    final msg = chat.messages[index];
+                                    final isMe = msg['senderType'] == 'user';
+                                    
+                                    return _buildMessageBubble(msg['messageText'] ?? "", isMe, isDark, true);
+                                  },
+                                ),
+                          ),
+                          _buildInputArea(isDark),
+                        ],
+                      );
+                    }
+                  ),
+                ),
+              ],
+            ),
+
+            // 2. Header
+            Positioned(
+              top: 0, left: 0, right: 0,
+              child: UnifiedGlassHeader(
+                isDark: isDark,
+                onBack: () => Navigator.pop(context),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("Laundry Support", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Text("Typically replies in minutes", style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.normal)),
+                  ],
+                ),
+                actions: [
+                  IconButton(
+                    icon: Icon(Icons.info_outline, color: isDark ? Colors.white : Colors.black54),
+                    onPressed: () {},
+                  )
+                ],
+              ),
+            ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.info_outline, color: isDark ? Colors.white : Colors.black54),
-            onPressed: () {},
-          )
-        ],
-        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
-      ),
-      body: Consumer<ChatService>(
-        builder: (context, chat, _) {
-          if (chat.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (chat.currentThread == null) {
-            return const Center(child: Text("Could not initialize chat.", style: TextStyle(color: Colors.white54)));
-          }
-
-          return Column(
-            children: [
-              Expanded(
-                child: chat.messages.isEmpty 
-                  ? _buildEmptyState(isDark)
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                      itemCount: chat.messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = chat.messages[index];
-                        final isMe = msg['senderType'] == 'user';
-                        
-                        return _buildMessageBubble(msg['messageText'] ?? "", isMe, isDark, true);
-                      },
-                    ),
-              ),
-              _buildInputArea(isDark),
-            ],
-          );
-        }
       ),
     );
   }
@@ -177,8 +210,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildInputArea(bool isDark) {
+    final canSend = _msgController.text.trim().isNotEmpty && !_isSending;
+
     return Container(
-      color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2)
+          )
+        ]
+      ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).padding.bottom + 10,
         left: 10, 
@@ -188,13 +232,9 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          IconButton(
-            icon: Icon(Icons.attach_file, color: isDark ? Colors.white54 : Colors.grey),
-            onPressed: () {},
-          ),
           Expanded(
             child: Container(
-              constraints: const BoxConstraints(maxHeight: 100),
+              constraints: const BoxConstraints(maxHeight: 120),
               decoration: BoxDecoration(
                 color: isDark ? Colors.black26 : const Color(0xFFF2F2F5),
                 borderRadius: BorderRadius.circular(24),
@@ -202,6 +242,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child: TextField(
                 controller: _msgController,
                 maxLines: null,
+                keyboardType: TextInputType.multiline,
                 style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 decoration: InputDecoration(
                   hintText: "Message...",
@@ -214,21 +255,28 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(width: 8),
           GestureDetector(
-             onTap: () {
+             onTap: canSend ? () async {
                 final text = _msgController.text.trim();
-                if (text.isNotEmpty) {
-                  Provider.of<ChatService>(context, listen: false).sendMessage(text);
+                setState(() => _isSending = true);
+                await Provider.of<ChatService>(context, listen: false).sendMessage(text, orderId: widget.orderId);
+                if (mounted) {
                   _msgController.clear();
+                  setState(() => _isSending = false);
                   Future.delayed(const Duration(milliseconds: 100), () => _scrollToBottom());
                 }
-             },
-             child: const SizedBox(height: 48, width: 48, 
+             } : null,
+             child: AnimatedContainer(
+               duration: const Duration(milliseconds: 200),
+               height: 48, 
+               width: 48, 
+               decoration: BoxDecoration(
+                 shape: BoxShape.circle,
+                 color: canSend ? const Color(0xFF4A80F0) : Colors.grey.withOpacity(0.3),
+               ),
                child: Center(
-                 child: CircleAvatar(
-                   radius: 24,
-                   backgroundColor: Color(0xFF4A80F0),
-                   child: Icon(Icons.send_rounded, color: Colors.white, size: 20),
-                 ),
+                 child: _isSending 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Icon(Icons.send_rounded, color: canSend ? Colors.white : Colors.white54, size: 20),
                ),
              ),
           )

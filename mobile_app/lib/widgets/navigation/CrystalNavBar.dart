@@ -1,95 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 
 class CrystalNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
   final List<CrystalNavItem> items;
+  final double height;
+  final EdgeInsetsGeometry padding;
+  final Color? backgroundColor;
+  final Color? indicatorColor;
+  final Color? unselectedItemColor;
 
   const CrystalNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
     required this.items,
+    this.height = 75,
+    this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+    this.backgroundColor,
+    this.indicatorColor,
+    this.unselectedItemColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // The "Glass" Color Base - Refined Transparency
-    // Dark Mode: Deep Black with medium transparency
-    // Light Mode: Clear White with medium transparency
-    // Body Gradient Colors
-    final bodyStart = isDark ? const Color(0xFF202020).withValues(alpha: 0.85) : const Color(0xFFFFFFFF).withValues(alpha: 0.90);
-    final bodyEnd = isDark ? const Color(0xFF101010).withValues(alpha: 0.65) : const Color(0xFFFFFFFF).withValues(alpha: 0.75);
-
-    // Rim Light Colors (The fake refraction)
-    final rimTop = isDark ? Colors.white.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.60);
-    final rimBottom = isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.10);
-
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), // Float it
-      child: Container(
-        height: 75,
-        decoration: BoxDecoration(
-          // Body Gradient instead of flat color
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [bodyStart, bodyEnd],
-          ),
-          borderRadius: BorderRadius.circular(30), // Pill Shape
-          boxShadow: [
-            // 1. Deep Shadow (Lift)
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.25),
-              blurRadius: 30,
-              offset: const Offset(0, 15),
-              spreadRadius: -5,
+      padding: padding,
+      child: SizedBox(
+        height: height,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1), 
+              width: 1
             ),
-          ],
-          border: Border.all(
-            // Stronger Border
-            color: Colors.white.withValues(alpha: isDark ? 0.25 : 0.60),
-            width: 1.5,
-          )
-        ),
-        // INNER SHADOW SIMULATION (The "Thickness")
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: Stack(
-            children: [
-               // Rim Highlight Gradient (Top-Left shine)
-               Positioned.fill(
-                 child: Container(
-                   decoration: BoxDecoration(
-                     borderRadius: BorderRadius.circular(30),
-                     gradient: LinearGradient(
-                       begin: Alignment.topLeft,
-                       end: Alignment.bottomRight,
-                       colors: [
-                         rimTop,
-                         Colors.transparent,
-                         rimBottom,
-                       ],
-                       stops: const [0.0, 0.4, 1.0],
-                     ),
-                   ),
-                 ),
-               ),
-               
-               // Content
-               Row(
-                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                 children: items.asMap().entries.map((entry) {
-                   final index = entry.key;
-                   final item = entry.value;
-                   final isSelected = index == currentIndex;
+          ),
+          child: LiquidGlassContainer(
+            opacity: isDark ? 0.2 : 0.1, // Matches Notification Style
+            blur: 15,
+            borderRadius: BorderRadius.circular(30), // Pill Shape
+            child: Stack(
+              children: [
+                 // Content
+                 Row(
+                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                   children: items.asMap().entries.map((entry) {
+                     final index = entry.key;
+                     final item = entry.value;
+                     final isSelected = index == currentIndex;
 
-                   return _buildNavItem(context, item, isSelected, () => onTap(index));
-                 }).toList(),
-               ),
-            ],
+                     return _buildNavItem(context, item, isSelected, () => onTap(index));
+                   }).toList(),
+                 ),
+              ],
+            ),
           ),
         ),
       ),
@@ -99,7 +68,7 @@ class CrystalNavBar extends StatelessWidget {
   Widget _buildNavItem(BuildContext context, CrystalNavItem item, bool isSelected, VoidCallback onTap) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    final activeColor = const Color(0xFF0A84FF); // iOS Blue
+    const activeColor = Color(0xFF0A84FF); // iOS Blue
     final inactiveColor = isDark ? Colors.white : Colors.black; 
 
     return GestureDetector(
@@ -133,7 +102,7 @@ class CrystalNavBar extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(
                     item.label,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: activeColor,
                       fontSize: 10, 
                       fontWeight: FontWeight.w700,

@@ -1,7 +1,7 @@
 name: laundry_app
 description: "A new Flutter project for Laundry Business."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+8
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -23,6 +23,7 @@ dependencies:
   google_fonts: ^6.1.0
   flutter_animate: ^4.5.0
   glassmorphism: ^3.0.0
+  flutter_staggered_grid_view: ^0.7.0
   # For Shaders
   flutter_shaders: ^0.1.2 
 
@@ -44,11 +45,15 @@ dependencies:
   cached_network_image: ^3.4.1
   webview_flutter: ^4.13.1
   url_launcher: ^6.2.2
+  permission_handler: ^11.3.0
 
   pdf: ^3.10.7
-  printing: ^5.11.1
+  printing: ^5.14.2
   video_player: ^2.10.1
   flutter_local_notifications: ^19.5.0
+  firebase_core: ^2.24.2
+  firebase_messaging: ^14.7.9
+
 
 dev_dependencies:
   flutter_test:
@@ -58,8 +63,11 @@ dev_dependencies:
 
 flutter_icons:
   android: "launcher_icon"
+  adaptive_icon_background: "assets/images/adaptive_background.png"
+  adaptive_icon_foreground: "assets/images/adaptive_foreground.png"
   ios: true
-  image_path: "assets/images/app_icon.png"
+  image_path: "assets/images/final_clean_icon.jpg"
+  remove_alpha_ios: true
   min_sdk_android: 21 # android min sdk min:16, default 21
 
 flutter:

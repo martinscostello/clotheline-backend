@@ -16,7 +16,7 @@ class NotificationService extends ChangeNotifier {
   int get unreadCount => _notifications.where((n) => n['isRead'] == false).length;
 
   // Track known IDs to detect NEW ones
-  Set<String> _knownNotificationIds = {};
+  final Set<String> _knownNotificationIds = {};
 
   Map<String, dynamic> _preferences = {
     'email': true,
@@ -43,8 +43,8 @@ class NotificationService extends ChangeNotifier {
   void _startPolling() {
      // Fetch immediately
      fetchNotifications(silent: true);
-     // Poll every 15 seconds
-     _pollingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+     // Poll every 5 seconds (Quick Notifications)
+     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
         fetchNotifications(silent: true);
      });
   }
@@ -163,6 +163,21 @@ class NotificationService extends ChangeNotifier {
       await _apiService.client.put('/notifications/preferences', data: { key: value });
     } catch (e) {
       print("Error updating pref: $e");
+    }
+  }
+
+  Future<void> markAsRead(String id) async {
+    // Optimistic Update
+    final index = _notifications.indexWhere((n) => n['_id'] == id);
+    if (index != -1) {
+      _notifications[index]['isRead'] = true;
+      notifyListeners();
+    }
+    
+    try {
+      await _apiService.client.post('/notifications/$id/read');
+    } catch (e) {
+      print("Error marking read: $e");
     }
   }
 

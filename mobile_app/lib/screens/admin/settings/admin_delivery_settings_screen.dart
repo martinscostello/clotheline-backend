@@ -8,7 +8,6 @@ import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
 import '../../../../utils/toast_utils.dart';
-import '../../../../widgets/toast/top_toast.dart';
 
 class AdminDeliverySettingsScreen extends StatefulWidget {
   const AdminDeliverySettingsScreen({super.key});
@@ -182,7 +181,7 @@ class _BranchMapEditor extends StatefulWidget {
   final Branch branch;
   final VoidCallback onClose;
 
-  const _BranchMapEditor({super.key, required this.branch, required this.onClose});
+  const _BranchMapEditor({required this.branch, required this.onClose});
 
   @override
   State<_BranchMapEditor> createState() => _BranchMapEditorState();
@@ -441,9 +440,9 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                top: 40, left: 20,
                child: IconButton(icon: const Icon(Icons.close, color: Colors.black, size: 30), onPressed: () => Navigator.pop(ctx)),
             ),
-            Positioned(
+            const Positioned(
               bottom: 40, left: 20, right: 20,
-              child: GlassContainer(child: const Text("Tap anywhere to move Delivery Center", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))
+              child: GlassContainer(child: Text("Tap anywhere to move Delivery Center", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))
             )
           ],
         ),
@@ -538,7 +537,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: Colors.white24),
-                            boxShadow: [const BoxShadow(color: Colors.black26, blurRadius: 10)]
+                            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)]
                           ),
                           child: Stack(
                             children: [
@@ -583,8 +582,8 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                                 bottom: 10, right: 10,
                                 child: FloatingActionButton.small(
                                   backgroundColor: Colors.white,
-                                  child: const Icon(Icons.fullscreen, color: Colors.black),
                                   onPressed: _expandMap,
+                                  child: const Icon(Icons.fullscreen, color: Colors.black),
                                 )
                               )
                             ],
@@ -624,7 +623,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                             // STRICT: Only render exactly 4 zones (Index 0, 1, 2, 3)
                             ...[0, 1, 2, 3].map((i) {
                                return _buildZoneCard(i, _zones[i]);
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),

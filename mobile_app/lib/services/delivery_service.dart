@@ -10,7 +10,7 @@ class DeliveryService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   
   Map<String, dynamic>? _settings;
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   Map<String, dynamic>? get settings => _settings;
   bool get isLoading => _isLoading;
@@ -121,15 +121,13 @@ class DeliveryService extends ChangeNotifier {
       }).toList();
     } else {
       // Fallback to old global settings
-      if (_settings == null) {
-         _settings = Map.from(_defaults); 
-      }
+      _settings ??= Map.from(_defaults);
       final laundryLoc = _settings!['laundryLocation'];
        laundryPoint = LatLng(laundryLoc['lat'], laundryLoc['lng']);
        zones = List<Map<String, dynamic>>.from(_settings!['zones']);
     }
     
-    final Distance distanceCalc = const Distance();
+    const Distance distanceCalc = Distance();
     final userPoint = LatLng(userLat, userLng);
     
     // 1. Calculate Straight-Line Distance in Km

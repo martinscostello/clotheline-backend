@@ -1,14 +1,13 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import 'package:laundry_app/widgets/branding/WashingMachineLogo.dart';
-import 'package:laundry_app/widgets/ui/liquid_glass_container.dart';
-import '../user/main_layout.dart';
+import '../../utils/toast_utils.dart';
+import 'verify_email_screen.dart';
 import 'package:provider/provider.dart';
-import 'verify_email_screen.dart'; // Added Import
 import '../../providers/branch_provider.dart';
 import '../../models/branch_model.dart';
-import '../../utils/toast_utils.dart';
+import '../../widgets/dialogs/auth_error_dialog.dart';
+// For navigation back
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -23,6 +22,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
   Branch? _selectedBranch;
 
   @override
@@ -35,8 +35,10 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _handleSignup() async {
-    if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty) {
-       ToastUtils.show(context, "Please fill in all fields", type: ToastType.info);
+    if (_nameController.text.trim().isEmpty || 
+        _emailController.text.trim().isEmpty || 
+        _passwordController.text.trim().isEmpty) {
+       ToastUtils.show(context, "Please fill in all required fields", type: ToastType.info);
       return;
     }
 
@@ -62,7 +64,26 @@ class _SignupScreenState extends State<SignupScreen> {
       
     } catch (e) {
       if (!mounted) return;
-      ToastUtils.show(context, "Error: ${e.toString()}", type: ToastType.error);
+      
+      final err = e.toString().toLowerCase();
+      if (err.contains("exists") || err.contains("taken") || err.contains("email")) {
+         showDialog(
+           context: context,
+           builder: (ctx) => AuthErrorDialog(
+             title: "Email Already Exists",
+             message: "This email address is already being used. If you have an account, please log in.",
+             primaryButtonLabel: "Log In",
+             onPrimaryPressed: () {
+                Navigator.pop(ctx); // Close Dialog
+                Navigator.pop(context); // Go back to Login Screen
+             },
+             secondaryButtonLabel: "Cancel",
+           )
+         );
+      } else {
+         // Generic Error
+         ToastUtils.show(context, "Signup Failed: ${e.toString()}", type: ToastType.error);
+      }
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }
@@ -70,146 +91,213 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final bgImage = isDark ? 'assets/images/laundry_dark.png' : 'assets/images/laundry_light.png';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Background gradient colors (Same as LoginScreen)
+    final bgColors = isDark 
+      ? [const Color(0xFF0F172A), const Color(0xFF1E293B)] 
+      : [const Color(0xFFF8FAFC), const Color(0xFFE2E8F0)];
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: isDark ? Colors.white : Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: bgColors.first,
       body: Stack(
         children: [
-          // Background Image
-          Positioned.fill(
-            child: Image.asset(bgImage, fit: BoxFit.cover),
+          // 1. Soft Gradient Background
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: bgColors,
+              )
+            ),
           ),
           
-          // Scrollable Content
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  LiquidGlassContainer(
-                    radius: 24,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
-                    child: Consumer<BranchProvider>(
-                      builder: (context, branchProvider, _) {
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const WashingMachineLogo(size: 80),
-                            const SizedBox(height: 16),
-                            Text(
-                              "Create Account",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
-                                fontFamily: 'SF Pro Display',
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Join the freshest laundry community",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isDark ? Colors.white70 : Colors.black54,
-                                fontFamily: 'SF Pro Text',
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            
-                            _buildInput(label: "Full Name", hint: "John Doe", controller: _nameController, icon: Icons.person),
-                            const SizedBox(height: 12),
-                            _buildInput(label: "Email", hint: "john@example.com", controller: _emailController, icon: Icons.email),
-                            const SizedBox(height: 12),
-                            _buildInput(label: "Phone", hint: "123-456-7890", controller: _phoneController, icon: Icons.phone),
-                            const SizedBox(height: 12),
-                            
-                            // Branch Selection Dropdown
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFCBD5E1)),
-                              ),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text("Select Your Location", style: TextStyle(color: const Color(0xFF64748B), fontSize: 12)),
-                                      IconButton(
-                                        icon: const Icon(Icons.refresh, size: 16, color: Color(0xFF4A80F0)),
-                                        onPressed: () => branchProvider.fetchBranches(force: true),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        tooltip: "Refresh Locations",
-                                      )
-                                    ],
-                                  ),
-                                  DropdownButtonHideUnderline(
-                                    child: DropdownButton<Branch>(
-                                      isExpanded: true,
-                                      hint: Row(children: [
-                                        const Icon(Icons.location_on, color: Color(0xFF64748B), size: 20),
-                                        const SizedBox(width: 12),
-                                        Text("Select Your Location", style: TextStyle(color: const Color(0xFF64748B)))
-                                      ]),
-                                      value: _selectedBranch,
-                                      items: branchProvider.branches.map((b) => DropdownMenuItem(
-                                        value: b,
-                                        child: Row(children: [
-                                           const Icon(Icons.location_on, color: Color(0xFF4A80F0), size: 20),
-                                           const SizedBox(width: 12),
-                                           Text(b.name, style: const TextStyle(color: Colors.black87))
-                                        ]),
-                                      )).toList(),
-                                      onChanged: (val) => setState(() => _selectedBranch = val),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 12),
-                            _buildInput(label: "Password", hint: "Create a password", controller: _passwordController, isPassword: true, icon: Icons.lock),
-                            
-                            const SizedBox(height: 24),
-                            _isLoading 
-                              ? const CircularProgressIndicator()
-                              : SizedBox(
-                                  width: double.infinity,
-                                  height: 50,
-                                  child: ElevatedButton(
-                                    onPressed: _handleSignup,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF4A80F0),
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      elevation: 2,
-                                    ),
-                                    child: const Text("Sign Up", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                                  ),
-                                ),
-                          ],
-                        );
-                      }
-                    ),
-                  ),
-                ],
+          // 2. Subtle Background Pattern/Bubbles
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Container(
+              width: 200, height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: (isDark ? Colors.blue : Colors.lightBlue).withOpacity(0.05),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 100,
+            left: -30,
+            child: Container(
+              width: 150, height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: (isDark ? Colors.blue : Colors.lightBlue).withOpacity(0.05),
+              ),
+            ),
+          ),
+
+          // 3. Main Content
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              child: Consumer<BranchProvider>(
+                 builder: (context, branchProvider, _) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                       // Logo & Branding
+                       Hero(
+                         tag: 'app_logo',
+                         child: Container(
+                           padding: const EdgeInsets.all(16),
+                           decoration: BoxDecoration(
+                             shape: BoxShape.circle,
+                             color: isDark ? Colors.white10 : Colors.white,
+                             boxShadow: [
+                               BoxShadow(
+                                 color: Colors.black.withOpacity(0.05),
+                                 blurRadius: 20,
+                                 offset: const Offset(0, 10),
+                               )
+                             ]
+                           ),
+                           child: const WashingMachineLogo(size: 50),
+                         ),
+                       ),
+                       const SizedBox(height: 24),
+                       Text(
+                         "Create Account",
+                         style: TextStyle(
+                           fontSize: 28,
+                           fontWeight: FontWeight.bold,
+                           color: isDark ? Colors.white : const Color(0xFF1E293B),
+                           letterSpacing: -0.5,
+                         ),
+                       ),
+                       const SizedBox(height: 8),
+                       Text(
+                         "Join the freshest laundry community",
+                         style: TextStyle(
+                           fontSize: 16,
+                           color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                         ),
+                       ),
+                       const SizedBox(height: 32),
+
+                       // Inputs
+                       _buildGlassInput(
+                         isDark: isDark,
+                         controller: _nameController,
+                         icon: Icons.person_outline,
+                         hint: "Full Name",
+                         keyboardType: TextInputType.name,
+                       ),
+                       const SizedBox(height: 16),
+                       _buildGlassInput(
+                         isDark: isDark,
+                         controller: _emailController,
+                         icon: Icons.email_outlined,
+                         hint: "Email Address",
+                         keyboardType: TextInputType.emailAddress,
+                       ),
+                       const SizedBox(height: 16),
+                       _buildGlassInput(
+                         isDark: isDark,
+                         controller: _phoneController,
+                         icon: Icons.phone_outlined,
+                         hint: "Phone Number",
+                         keyboardType: TextInputType.phone,
+                       ),
+                       const SizedBox(height: 16),
+                       
+                       // Branch Selection (Styled to match inputs)
+                       Container(
+                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                         decoration: BoxDecoration(
+                           color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+                           borderRadius: BorderRadius.circular(16),
+                           border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+                           boxShadow: isDark ? [] : [
+                             BoxShadow(
+                               color: Colors.black.withOpacity(0.03),
+                               blurRadius: 10,
+                               offset: const Offset(0, 4),
+                             )
+                           ]
+                         ),
+                         child: DropdownButtonHideUnderline(
+                           child: DropdownButton<Branch>(
+                             isExpanded: true,
+                             dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                             icon: Icon(Icons.keyboard_arrow_down, color: isDark ? Colors.white54 : Colors.black45),
+                             hint: Row(children: [
+                               Icon(Icons.location_on_outlined, color: isDark ? Colors.white54 : Colors.black45),
+                               const SizedBox(width: 12),
+                               Text("Select Your Location", style: TextStyle(color: isDark ? Colors.white30 : Colors.black38))
+                             ]),
+                             value: _selectedBranch,
+                             items: branchProvider.branches.map((b) => DropdownMenuItem(
+                               value: b,
+                               child: Row(children: [
+                                  const Icon(Icons.location_on, color: Color(0xFF4A80F0), size: 20),
+                                  const SizedBox(width: 12),
+                                  Text(b.name, style: TextStyle(color: isDark ? Colors.white : Colors.black87))
+                               ]),
+                             )).toList(),
+                             onChanged: (val) => setState(() => _selectedBranch = val),
+                           ),
+                         ),
+                       ),
+
+                       const SizedBox(height: 16),
+                       _buildGlassInput(
+                         isDark: isDark,
+                         controller: _passwordController,
+                         icon: Icons.lock_outline,
+                         hint: "Password",
+                         isPassword: true,
+                         isVisible: _isPasswordVisible,
+                         onVisibilityToggle: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                       ),
+     
+                       const SizedBox(height: 32),
+
+                       // Actions
+                       SizedBox(
+                         width: double.infinity,
+                         height: 56,
+                         child: ElevatedButton(
+                           onPressed: _isLoading ? null : _handleSignup,
+                           style: ElevatedButton.styleFrom(
+                             backgroundColor: const Color(0xFF4A80F0),
+                             foregroundColor: Colors.white,
+                             elevation: 4,
+                             shadowColor: const Color(0xFF4A80F0).withOpacity(0.4),
+                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                           ),
+                           child: _isLoading 
+                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text("Create Account", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                         ),
+                       ),
+                       const SizedBox(height: 24),
+                       
+                       // Already have account?
+                       Row(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: [
+                           Text("Already have an account? ", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
+                           GestureDetector(
+                             onTap: () => Navigator.pop(context),
+                             child: const Text("Sign In", style: TextStyle(color: Color(0xFF4A80F0), fontWeight: FontWeight.bold)),
+                           )
+                         ],
+                       ),
+                       const SizedBox(height: 30),
+                    ],
+                  );
+                 }
               ),
             ),
           ),
@@ -218,28 +306,47 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildInput({
-    required String label,
-    required String hint,
+  Widget _buildGlassInput({
+    required bool isDark,
     required TextEditingController controller,
-    bool isPassword = false,
     required IconData icon,
+    required String hint,
+    bool isPassword = false,
+    bool isVisible = false,
+    VoidCallback? onVisibilityToggle,
+    TextInputType? keyboardType,
   }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: isPassword,
-      style: const TextStyle(color: Colors.black87),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF64748B), size: 20),
-        labelStyle: const TextStyle(color: Color(0xFF64748B)),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.5),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF94A3B8))),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4A80F0), width: 2)),
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+        boxShadow: isDark ? [] : [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ]
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword && !isVisible,
+        keyboardType: keyboardType,
+        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: isDark ? Colors.white54 : Colors.black45),
+          suffixIcon: isPassword 
+            ? IconButton(
+                icon: Icon(isVisible ? Icons.visibility : Icons.visibility_off, color: isDark ? Colors.white38 : Colors.grey),
+                onPressed: onVisibilityToggle,
+              )
+            : null,
+          hintText: hint,
+          hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.black38),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        ),
       ),
     );
   }

@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Add SharedPrefs
 import 'api_service.dart';
 import 'dart:convert'; // Added for JSON encoding/decoding
+import 'push_notification_service.dart';
 
 class AuthService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -15,6 +17,17 @@ class AuthService extends ChangeNotifier {
   Map<String, dynamic>? _currentUser;
   Map<String, dynamic>? get currentUser => _currentUser;
   bool _isInitialized = false;
+
+  // [BOOTSTRAP] Synchronous Hydration
+  void hydrateSimpleProfile(Map<String, dynamic>? profile, String? role) {
+    if (profile != null) {
+      _currentUser = {
+         ...profile,
+         'role': role ?? 'user'
+      };
+      _isInitialized = true;
+    }
+  }
   
   Future<void> enableDevMode() async {
     try {
@@ -115,6 +128,10 @@ class AuthService extends ChangeNotifier {
         
         // Update memory
         _currentUser = user; 
+        
+        // [NEW] Sync Token on Auto-Login
+        syncFcmToken();
+        
         notifyListeners();
         return true;
       } else {
@@ -168,6 +185,7 @@ class AuthService extends ChangeNotifier {
     required String email,
     required String password,
     required String phone,
+    String? branchId, // Add optional branchId
   }) async {
     try {
       final response = await _apiService.client.post('/auth/signup', data: {
@@ -175,7 +193,8 @@ class AuthService extends ChangeNotifier {
         'email': email,
         'password': password,
         'phone': phone,
-        'role': 'user' // Default role
+        'role': 'user', // Default role
+        'branchId': branchId // Pass branchId
       });
 
       if (response.statusCode == 200) {
@@ -246,6 +265,22 @@ class AuthService extends ChangeNotifier {
     await _storage.write(key: 'user_name', value: user['name']?.toString() ?? '');
     await _storage.write(key: 'user_email', value: user['email']?.toString() ?? '');
 
+    // [New] Persist Branch Preference & Auth State to SharedPrefs
+    final prefs = await SharedPreferences.getInstance();
+    
+    // 1. Branch
+    if (user['preferredBranch'] != null) {
+       await prefs.setString('selected_branch_id', user['preferredBranch'].toString());
+    }
+    
+    // 2. Optimistic Auth Flags (for Instant Launch)
+    await prefs.setBool('is_logged_in', true);
+    await prefs.setString('saved_user_role', user['role']?.toString() ?? 'user');
+    
+    // [FIX] Persist Profile for Instant Launch (Bootloader)
+    await prefs.setString('user_name', user['name']?.toString() ?? '');
+    await prefs.setString('user_email', user['email']?.toString() ?? '');
+
     // Persist RBAC data
     await _storage.write(key: 'is_master_admin', value: (user['isMasterAdmin'] ?? false).toString());
     if (user['permissions'] != null) {
@@ -253,6 +288,10 @@ class AuthService extends ChangeNotifier {
     }
 
     _currentUser = user;
+    
+    // [NEW] Sync FCM Token in Background
+    syncFcmToken();
+    
     notifyListeners();
     return user;
   }
@@ -273,6 +312,11 @@ class AuthService extends ChangeNotifier {
 
   Future<void> logout() async {
     await _storage.deleteAll();
+    
+    // Clear Optimistic Flags
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', false);
+    
     _currentUser = null;
     notifyListeners();
   }
@@ -292,6 +336,28 @@ class AuthService extends ChangeNotifier {
     final email = await _storage.read(key: 'user_email');
     // If either is missing/empty, profile is invalid (Ghost)
     return name != null && name.isNotEmpty && email != null && email.isNotEmpty;
+    return name != null && name.isNotEmpty && email != null && email.isNotEmpty;
+  }
+
+  // [NEW] Sync FCM Token
+  Future<void> syncFcmToken() async {
+    try {
+       // Get current FCM token
+       String? token = await PushNotificationService.getToken();
+       
+       if (token != null) {
+          // Send to backend
+          // We use the existing client - the interceptor adds x-auth-token automatically 
+          // if we are logged in (Implied since we call this after login)
+          await _apiService.client.put('/auth/fcm-token', data: {
+            'token': token
+          });
+          print("FCM Token Synced: $token");
+       }
+    } catch (e) {
+      // Create a non-breaking error log
+      print("FCM Sync Warning: $e"); 
+    }
   }
 
   Future<List<dynamic>> fetchAllUsers() async {

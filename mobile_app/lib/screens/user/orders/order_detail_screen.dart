@@ -7,7 +7,8 @@ import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../services/payment_service.dart';
 import '../../../../services/receipt_service.dart';
 import '../../../../utils/toast_utils.dart';
-import '../../../../widgets/toast/top_toast.dart';
+import '../chat/chat_screen.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final OrderModel order;
@@ -21,7 +22,8 @@ class OrderDetailScreen extends StatelessWidget {
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent, // Global Background Consistency
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text("Order Details", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
@@ -33,9 +35,10 @@ class OrderDetailScreen extends StatelessWidget {
           statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      body: LaundryGlassBackground(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 70, left: 20, right: 20, bottom: 20),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Status Card
@@ -213,13 +216,14 @@ class OrderDetailScreen extends StatelessWidget {
                 icon: const Icon(Icons.help_outline),
                 label: const Text("Need Help with this Order?"),
                 onPressed: () {
-                  // TODO: Navigate to Chat with context
+                   Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(orderId: order.id)));
                 },
               ),
             )
           ],
         ),
       ),
+    ),
     );
   }
 

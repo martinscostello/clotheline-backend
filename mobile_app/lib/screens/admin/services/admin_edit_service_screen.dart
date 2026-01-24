@@ -3,8 +3,6 @@ import '../../../../models/service_model.dart';
 import '../../../../services/api_service.dart';
 import '../../../../services/content_service.dart';
 import '../../../../services/laundry_service.dart';
-import 'package:provider/provider.dart';
-import '../../../../providers/branch_provider.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
@@ -15,7 +13,6 @@ import 'package:image_cropper/image_cropper.dart';
 
 import '../../../../models/branch_model.dart'; // [NEW]
 import '../../../../utils/toast_utils.dart';
-import '../../../../widgets/toast/top_toast.dart';
 
 class AdminEditServiceScreen extends StatefulWidget {
   final ServiceModel? service; // [CHANGED] Nullable for Creation Mode
@@ -445,7 +442,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                            title: Text(widget.scopeBranch != null ? "Lock Service (${widget.scopeBranch!.name})" : "Global Lock", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                            subtitle: const Text("Prevent users from booking this service", style: TextStyle(color: Colors.white54, fontSize: 12)),
                            value: _isLocked,
-                           activeColor: Colors.redAccent,
+                           activeThumbColor: Colors.redAccent,
                            onChanged: (val) => setState(() => _isLocked = val),
                          ),
                          if (_isLocked)

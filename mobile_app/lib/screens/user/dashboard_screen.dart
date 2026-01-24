@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/widgets/booking/booking_sheet.dart';
-import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/models/app_content_model.dart';
@@ -13,22 +12,22 @@ import 'package:laundry_app/models/store_product.dart';
 import 'package:laundry_app/screens/user/products/product_detail_screen.dart';
 import 'package:laundry_app/utils/currency_formatter.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:laundry_app/screens/user/products/products_screen.dart';
 import 'dart:convert';
 import '../../../widgets/custom_cached_image.dart';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
-import 'chat/chat_screen.dart';
 import 'notifications/notifications_screen.dart';
 import '../../providers/branch_provider.dart';
 import '../common/branch_selection_screen.dart';
-import 'hero_video_player.dart';
+import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import 'hero_video_player.dart'; // Added Import
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onSwitchToStore;
+  final ValueNotifier<int>? tabNotifier;
 
-  const DashboardScreen({super.key, this.onSwitchToStore});
+  const DashboardScreen({super.key, this.onSwitchToStore, this.tabNotifier});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -41,11 +40,12 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   Timer? _carouselTimer;
 
   // Services
-  final LaundryService _laundryService = LaundryService();
-  final ContentService _contentService = ContentService();
+  late LaundryService _laundryService;
+  late ContentService _contentService;
   
   AppContentModel? _appContent;
   bool _isHydrated = false; // The Hydration Gate
+  bool _isTabActive = true; 
 
   Timer? _rotationTimer;
 
@@ -57,8 +57,25 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // Track Lifecycle
-    _hydrateAndSync();
-    _startCarouselTimer();
+    
+    // Defer provider access to next frame or didChangeDependencies, 
+    // BUT we need to start hydration ASAP.
+    // Provider access in initState is allowed if listen: false.
+    _laundryService = Provider.of<LaundryService>(context, listen: false);
+    _contentService = Provider.of<ContentService>(context, listen: false);
+
+    // [HYDRATION-FIRST] Data is ALREADY here via Bootstrap.
+    // We just render cache immediately.
+    _isHydrated = true; 
+    
+    // Attempt to load content cache if not bootstrapped (ContentService wasn't strictly bootstrapped yet)
+    _contentService.loadFromCache().then((content) {
+       if (content != null && mounted) {
+          setState(() { _appContent = content; });
+       }
+    });
+
+    _scheduleNextSlide();
     
     // Rotate featured products every 60s
     _rotationTimer = Timer.periodic(const Duration(seconds: 60), (_) {
@@ -67,53 +84,25 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
          StoreService().fetchFeaturedProducts(branchId: branchId);
        }
     });
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _carouselTimer?.cancel();
-    _rotationTimer?.cancel();
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  // Monitor App Lifecycle to prevent "Too much work on resume"
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // iOS Strict Resume Policy:
-      // Do NOT trigger sync on resume. Cache is sufficient.
-      // This prevents resource watchdog kills on physical devices.
-      debugPrint("App Resumed. Staying with cached data.");
-    }
-  }
-
-  // 1. HYDRATION: Load Cache -> Render UI
-  Future<void> _hydrateAndSync() async {
-    // A. Load Content Cache
-    final cachedContent = await _contentService.loadFromCache();
     
-    // B. Load Laundry Cache (Wait for it to populate service list)
-    await _laundryService.loadFromCache();
-
-    // C. Load Store Cache (Internal cache load)
-    // STRICT: Cache Only. Do not hit network yet.
-    await StoreService().fetchFeaturedProducts(onlyCache: true); 
-
-    if (mounted) {
-      setState(() {
-        _appContent = cachedContent;
-        _isHydrated = true; // GATE OPEN: Render UI
-      });
-    }
-
-    // 2. SILENT SYNC: Fetch Fresh Data in Background
-    // DELAYED to avoid "heavy work" during initial frame rendering (Resume/Launch crash protection)
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) _performSilentSync();
-    });
+    // Listen to Tab Changes
+    widget.tabNotifier?.addListener(_handleTabChange);
+    
+    // Silent Sync after render
+    Future.microtask(() => _performSilentSync());
   }
+  
+
+  void _handleTabChange() {
+    if (widget.tabNotifier == null) return;
+    final isActive = widget.tabNotifier!.value == 0; // 0 is Dashboard
+    if (isActive != _isTabActive) {
+      if (mounted) {
+         setState(() => _isTabActive = isActive);
+      }
+    }
+  }
+
 
   Future<void> _performSilentSync({bool isResume = false}) async {
     // Throttling Check
@@ -141,6 +130,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
            setState(() {
             _appContent = updatedContent;
           });
+          // [FIX] Kickstart carousel if it was waiting for data
+          _scheduleNextSlide();
         }
       }
     });
@@ -170,47 +161,65 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     return [];
   }
 
-  void _startCarouselTimer() {
-    _scheduleNextSlide();
-  }
-
-  void _scheduleNextSlide() async {
+  void _scheduleNextSlide() {
     _carouselTimer?.cancel();
     if (!mounted) return;
-
+    
     final items = _getItems();
-    if (items.isEmpty) return;
+    // [FIX] Critical: "Continuous Check" - If no data, keep polling until it arrives.
+    if (items.isEmpty) {
+       _carouselTimer = Timer(const Duration(seconds: 1), _scheduleNextSlide);
+       return;
+    }
+    
+    // Safety check
+    if (_currentHeroIndex >= items.length) _currentHeroIndex = 0;
 
-    // Determine Duration based on CURRENT item type
     final currentItem = items[_currentHeroIndex];
     final isVideo = currentItem.mediaType == 'video';
+    // [FIX] Timers: 10s Video, 5s Image
     final duration = isVideo ? const Duration(seconds: 10) : const Duration(seconds: 5);
 
     _carouselTimer = Timer(duration, () {
       if (!mounted) return;
-      final items = _getItems(); // Re-fetch
-      if (items.isEmpty) return;
-
-      int nextIndex = _currentHeroIndex + 1;
-      if (nextIndex >= items.length) nextIndex = 0;
-
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          nextIndex,
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOutCubic,
-        );
+      
+      // [FIX] Critical: If controller isn't attached yet, KEEP TRYING.
+      // This loop will never die until the UI is ready.
+      if (!_pageController.hasClients) {
+         _scheduleNextSlide(); // Recursive retry
+         return;
       }
-      // Recursively schedule next
-      // Note: onPageChanged updates _currentHeroIndex, which we usually rely on.
-      // But animateToPage triggers onPageChanged.
-      // So we just fire animation, and on next cycle (after delay), we check index again.
-      // Actually, to be safe, we schedule AFTER animation completes or just let recursion handle it.
-      // Better pattern: _startCarouselTimer() is called once. 
-      // Inside: wait X seconds -> animate -> wait Y seconds.
-      // But we need to update the delay based on the NEW item.
-      _scheduleNextSlide();
+
+      final currentList = _getItems(); 
+      if (currentList.isEmpty) {
+        _scheduleNextSlide();
+        return;
+      }
+
+      // [FIX] Single Item Loop Protection
+      // animateToPage won't fire onPageChanged if page doesn't change (e.g. 0 -> 0).
+      // So we must manually recurse for single items to keep the timer alive.
+      if (currentList.length < 2) {
+         _scheduleNextSlide();
+         return;
+      }
+
+      int nextPage = _currentHeroIndex + 1;
+      if (nextPage >= currentList.length) nextPage = 0;
+      
+      _pageController.animateToPage(
+        nextPage, 
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOutCubic
+      );
+      // onPageChanged will handle the recursion
     });
+  }
+
+  void _onPageChanged(int index) {
+    setState(() => _currentHeroIndex = index);
+    // Restart timer when page changes (Manual or Automatic)
+    _scheduleNextSlide();
   }
 
   @override
@@ -230,8 +239,15 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       );
     }
 
+    // BLOCKING BRANCH CHECK
+    final branchProvider = Provider.of<BranchProvider>(context);
+    if (branchProvider.selectedBranch == null && !branchProvider.isLoading) {
+      // Force User to Select City
+      return const BranchSelectionScreen(isModal: false); 
+    }
+
     return ScrollConfiguration(
-      behavior: ScrollBehavior().copyWith(overscroll: false),
+      behavior: const ScrollBehavior().copyWith(overscroll: false),
       child: Stack(
         children: [
           RefreshIndicator(
@@ -240,7 +256,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(), // Ensure scroll even if empty
               padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 80, 
+                top: MediaQuery.of(context).padding.top + 112, 
                 bottom: 120
               ),
               child: Column(
@@ -318,7 +334,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
              crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
              padding: const EdgeInsets.symmetric(horizontal: 20),
              crossAxisSpacing: 15, mainAxisSpacing: 15,
-             childAspectRatio: 0.85,
+             childAspectRatio: 1.1, // Match real grid (was 0.85)
              children: List.generate(4, (index) => Container(
                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
              )),
@@ -329,121 +345,80 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   }
 
   Widget _buildHeader(bool isDark) {
-    return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 10,
-        left: 20,
-        right: 20,
-        bottom: 20,
-      ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            isDark ? Colors.black.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.8),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 1.0],
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return UnifiedGlassHeader(
+      isDark: isDark,
+      height: 112,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Consumer<AuthService>(
-                builder: (context, auth, _) {
-                  final name = auth.currentUser?['name']?.toString().split(" ").first ?? "Friend";
-                  return Text(
-                    "Hi $name,",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDark ? Colors.white70 : Colors.black87,
-                      shadows: [
-                        if (isDark) const Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
-                      ],
-                    ),
-                  );
-                }
-              ),
-              Consumer<BranchProvider>(
-                builder: (context, branchProvider, _) {
-                  final branchName = branchProvider.selectedBranch?.name ?? "Select City";
-                  return GestureDetector(
-                    onTap: () {
-                       Navigator.push(context, MaterialPageRoute(builder: (_) => const BranchSelectionScreen(isModal: true)));
-                    },
-                    child: Text(
-                      "Clotheline · $branchName",
+          Consumer<AuthService>(
+            builder: (context, auth, _) {
+              final name = auth.currentUser?['name']?.toString().split(" ").first ?? "Friend";
+              return Text(
+                "Hi $name,",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              );
+            }
+          ),
+          Consumer<BranchProvider>(
+            builder: (context, branchProvider, _) {
+              final branchName = branchProvider.selectedBranch?.name ?? "Select City";
+              return GestureDetector(
+                onTap: () {
+                   Navigator.push(context, MaterialPageRoute(builder: (_) => const BranchSelectionScreen(isModal: true)));
+                },
+                child: Row(
+                  children: [
+                    Text(
+                      branchName,
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : Colors.black,
-                        shadows: [
-                          if (isDark) const Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2)),
-                        ],
                       ),
                     ),
-                  );
-                }
-              ),
-            ],
-          ),
-          
-          // Header Actions (Capsule)
-          LiquidGlassContainer(
-            radius: 30, // Capsule Shape
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Chat Support
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen()));
-                  },
-                  child: Icon(Icons.support_agent_rounded, color: isDark ? Colors.white : Colors.black87, size: 24),
+                    const SizedBox(width: 4),
+                    Icon(Icons.keyboard_arrow_down, size: 18, color: isDark ? Colors.white54 : Colors.black54)
+                  ],
                 ),
-                
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Container(width: 1, height: 20, color: isDark ? Colors.white24 : Colors.black12),
-                ),
-                
-                // Notifications
-                GestureDetector(
-                   onTap: () {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsScreen()));
-                   },
-                   child: Stack(
-                     clipBehavior: Clip.none,
-                     children: [
-                       Icon(Icons.notifications_outlined, color: isDark ? Colors.white : Colors.black87, size: 24),
-                       // Consumer for badge could go here
-                       Consumer<NotificationService>(
-                         builder: (context, ns, _) {
-                           if (ns.unreadCount > 0) {
-                             return Positioned(
-                               top: -2, right: -2,
-                               child: Container(
-                                 width: 10, height: 10,
-                                 decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                               ),
-                             );
-                           }
-                           return const SizedBox();
-                         }
-                       )
-                     ],
-                   ),
-                )
-              ],
-            ),
+              );
+            }
           ),
         ],
       ),
+      actions: [
+        // Notifications Only
+        IconButton(
+           onPressed: () {
+             Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+           },
+           padding: EdgeInsets.zero,
+           icon: Stack(
+             clipBehavior: Clip.none,
+             children: [
+               Icon(Icons.notifications_outlined, color: isDark ? Colors.white : Colors.black87, size: 28),
+               Consumer<NotificationService>(
+                 builder: (context, ns, _) {
+                   if (ns.unreadCount > 0) {
+                     return Positioned(
+                       top: -2, right: -2,
+                       child: Container(
+                         width: 10, height: 10,
+                         decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                       ),
+                     );
+                   }
+                   return const SizedBox();
+                 }
+               )
+             ],
+           ),
+        )
+      ],
     );
   }
 
@@ -457,7 +432,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       child: PageView.builder(
         controller: _pageController,
         clipBehavior: Clip.none, // Allow shadows to overflow
-        onPageChanged: (index) => setState(() => _currentHeroIndex = index),
+        onPageChanged: _onPageChanged,
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
@@ -476,6 +451,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
 // ... (existing imports)
 
   Widget _buildHeroCard(HeroCarouselItem item, int totalItems, {bool isActive = false}) {
+    // Combine Carousel Active + Tab Active
+    final bool shouldPlay = isActive && _isTabActive;
+    
     // Parse Colors
     Color titleClr = Colors.white;
     Color tagClr = Colors.white70;
@@ -514,7 +492,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 child: item.mediaType == 'video' 
                     ? HeroVideoPlayer(
                         videoUrl: item.imageUrl,
-                        isActive: isActive, 
+                        isActive: shouldPlay, 
                       )
                     : CustomCachedImage(
                         imageUrl: item.imageUrl,
@@ -585,13 +563,51 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
 
   Widget _buildServiceGrid(BuildContext context, bool isDark) {
     if (_laundryService.services.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(20),
-        child: Text("No services available.", style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)),
+      // Empty State
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            Icon(Icons.cleaning_services_outlined, size: 50, color: isDark ? Colors.white24 : Colors.black12),
+            const SizedBox(height: 15),
+            Text(
+              "No services here yet",
+              style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 16),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              "We are working on bringing services to this city.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: isDark ? Colors.white30 : Colors.black38, fontSize: 13),
+            ),
+          ],
+        ),
       );
     }
 
-    var services = _laundryService.services;
+    // LOCK ORDER
+    var services = List.from(_laundryService.services);
+    final order = {
+      'Regular laundry': 1,
+      'Footwears': 2,
+      'Footwear': 2, // Alias
+      'Rug cleaning': 3,
+      'Home/Office cleaning': 4
+    };
+    
+    services.sort((a, b) {
+      int posA = 99;
+      int posB = 99;
+      
+      order.forEach((key, val) {
+        if (a.name.toLowerCase().contains(key.toLowerCase())) posA = val;
+        if (b.name.toLowerCase().contains(key.toLowerCase())) posB = val;
+      });
+      
+      return posA.compareTo(posB);
+    });
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.builder(
@@ -650,27 +666,35 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        s.name,
-                        maxLines: 1, 
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                       // Hide description for compactness if needed, or keep it small
-                       if (s.description.isNotEmpty)
-                         Text(
-                            s.description,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            s.name,
                             style: TextStyle(
-                              color: isDark ? Colors.white60 : Colors.black54,
-                              fontSize: 10,
+                              color: isDark ? Colors.white : Colors.black87,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
                             ),
                           ),
+                        ),
+                      ),
+                       const SizedBox(height: 4),
+                       // Hide description for compactness if needed, or keep it small
+                       if (s.description.isNotEmpty)
+                         Expanded(
+                           child: Text(
+                              s.description,
+                              maxLines: 2, // Allow 2 lines
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark ? Colors.white60 : Colors.black54,
+                                fontSize: 10,
+                                height: 1.2,
+                              ),
+                            ),
+                         ),
                     ],
                   ),
                 ),
@@ -736,7 +760,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 borderRadius: BorderRadius.circular(20),
                 child: content
               ),
-            ).animate().scale(delay: (100 * index).ms, duration: 400.ms),
+            ),
           );
         },
       ),
@@ -782,8 +806,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 );
               }
             },
-            child: Row(
-              children: const [
+            child: const Row(
+              children: [
                 Text("View All", style: TextStyle(color: Colors.blueAccent)),
                 SizedBox(width: 4),
                 Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.blueAccent),
@@ -808,9 +832,16 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
 
         if (products.isEmpty) {
           return SizedBox(
-            height: 100, 
+            height: 120, 
             child: Center(
-              child: Text("No newly added products", style: TextStyle(color: isDark ? Colors.white54 : Colors.black45)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inventory_2_outlined, color: isDark ? Colors.white24 : Colors.black12, size: 40),
+                  const SizedBox(height: 10),
+                  Text("No featured products", style: TextStyle(color: isDark ? Colors.white54 : Colors.black45)),
+                ],
+              ),
             )
           );
         }

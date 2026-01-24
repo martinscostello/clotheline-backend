@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 
 
 enum ToastType { success, error, info, warning }
@@ -26,22 +25,22 @@ class TopToast extends StatelessWidget {
 
     switch (type) {
       case ToastType.success:
-        bgColor = Colors.green.withOpacity(0.9);
+        bgColor = Colors.green.withValues(alpha: 0.9);
         iconColor = Colors.white;
         icon = Icons.check_circle_outline;
         break;
       case ToastType.error:
-        bgColor = Colors.redAccent.withOpacity(0.9);
+        bgColor = Colors.redAccent.withValues(alpha: 0.9);
         iconColor = Colors.white;
         icon = Icons.error_outline;
         break;
       case ToastType.warning:
-        bgColor = Colors.orange.withOpacity(0.9);
+        bgColor = Colors.orange.withValues(alpha: 0.9);
         iconColor = Colors.white;
         icon = Icons.warning_amber_rounded;
         break;
       case ToastType.info:
-        bgColor = isDark ? Colors.white.withOpacity(0.9) : const Color(0xFF333333).withValues(alpha: 0.9);
+        bgColor = isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF333333).withValues(alpha: 0.9);
         iconColor = isDark ? Colors.black : Colors.white;
         icon = Icons.info_outline;
         break;
@@ -58,7 +57,7 @@ class TopToast extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               )
@@ -81,7 +80,7 @@ class TopToast extends StatelessWidget {
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: onDismiss,
-                child: Icon(Icons.close, color: iconColor.withOpacity(0.7), size: 18),
+                child: Icon(Icons.close, color: iconColor.withValues(alpha: 0.7), size: 18),
               ),
             ],
           ),

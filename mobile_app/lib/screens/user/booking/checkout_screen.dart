@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../theme/app_theme.dart';
-import '../../../models/booking_models.dart';
 import '../../../services/cart_service.dart';
-import 'package:flutter/services.dart';
 import '../../../services/content_service.dart';
-import '../../../models/app_content_model.dart';
 import '../../../services/order_service.dart';
 import '../../../services/delivery_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -17,7 +14,8 @@ import '../../../services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../utils/toast_utils.dart';
-import '../../../widgets/toast/top_toast.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'combined_order_summary_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -33,8 +31,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   int _currentStage = 1;
   
   // Logic Selections
-  int _beforeWashOption = 1; 
-  int _afterWashOption = 1;
+  int _beforeWashOption = 0; // 0 = Unselected, 1 = Pickup, 2 = Dropoff
+  int _afterWashOption = 0; // 0 = Unselected, 1 = Deliver, 2 = Pickup
 
   // Controllers
   final _pickupAddressController = TextEditingController();
@@ -84,7 +82,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
   Future<void> _fetchContent() async {
     final content = await _contentService.getAppContent();
-    if(mounted && content != null) {
+    if(mounted) {
       setState(() {
         _branchAddress = content.contactAddress;
         _branchPhone = content.contactPhone;
@@ -173,89 +171,54 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(_getStageTitle(), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-          centerTitle: true,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: IconThemeData(color: textColor),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (_currentStage > 1) {
-                setState(() => _currentStage--);
-              } else {
-                Navigator.pop(context);
-              }
-            },
-          ),
-          systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-          ),
-        ),
-        body: ListenableBuilder(
-          listenable: _cartService,
-          builder: (context, _) {
-            return Column(
-              children: [
-                // Step Indicator
-                _buildStepIndicator(isDark),
-  
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent,
+        body: LaundryGlassBackground(
+          child: Stack(
+            children: [
+              ListenableBuilder(
+                listenable: _cartService,
+                builder: (context, _) {
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top + 90, 
+                      bottom: 180, // Space for bottom bar
+                      left: 20, 
+                      right: 20
+                    ),
                     child: _buildStageContent(isDark, textColor),
-                  ),
+                  );
+                }
+              ),
+
+              // Bottom Bar overlay
+              Positioned(
+                bottom: 0, left: 0, right: 0,
+                child: _buildBottomBar(isDark),
+              ),
+
+              // Header
+              Positioned(
+                top: 0, left: 0, right: 0,
+                child: UnifiedGlassHeader(
+                  isDark: isDark,
+                  title: Text(_getStageTitle(), style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                  onBack: () {
+                    if (_currentStage > 1) {
+                      setState(() => _currentStage--);
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
                 ),
-  
-                 // Navigation Buttons
-                 _buildBottomBar(isDark),
-              ],
-            );
-          }
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStepIndicator(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildStepDot(1, isDark),
-          _buildStepLine(1, isDark),
-          _buildStepDot(2, isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepDot(int step, bool isDark) {
-    final isActive = _currentStage >= step;
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        color: isActive ? AppTheme.primaryColor : (isDark ? Colors.white10 : Colors.grey.shade300),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text("$step", style: TextStyle(color: isActive ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)),
-      ),
-    );
-  }
-
-  Widget _buildStepLine(int step, bool isDark) {
-    final isActive = _currentStage > step;
-    return Container(
-      width: 50,
-      height: 2,
-      color: isActive ? AppTheme.primaryColor : (isDark ? Colors.white10 : Colors.grey.shade300),
-    );
-  }
 
   Widget _buildStageContent(bool isDark, Color textColor) {
     if (_currentStage == 1) {
@@ -600,6 +563,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   Widget _buildLogisticsSummary(bool isDark, Color textColor) {
+    final branch = Provider.of<BranchProvider>(context, listen: false).selectedBranch;
+    final displayAddress = branch?.address ?? _branchAddress;
+    final displayPhone = branch?.phone ?? _branchPhone;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -609,9 +576,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildLogisticsRow("Pickup", _beforeWashOption == 1 ? "At: ${_pickupAddressController.text}" : "Drop off at Branch", textColor),
-          const SizedBox(height: 10),
-          _buildLogisticsRow("Delivery", _afterWashOption == 1 ? "To: ${_deliveryAddressController.text}" : "Pick up at Branch", textColor),
+          _buildLogisticsRow(
+            "Pickup", 
+            _beforeWashOption == 1 
+              ? "At: ${_pickupAddressController.text}" 
+              : "Drop off at Office:\n$displayAddress\nTel: $displayPhone", 
+            textColor
+          ),
+          const SizedBox(height: 15),
+          _buildLogisticsRow(
+            "Delivery", 
+            _afterWashOption == 1 
+              ? "To: ${_deliveryAddressController.text}" 
+              : "Pick up at Office:\n$displayAddress\nTel: $displayPhone", 
+            textColor
+          ),
         ],
       ),
     );
@@ -621,7 +600,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 80, child: Text(label, style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
+        SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
         Expanded(child: Text(value, style: TextStyle(color: textColor))),
       ],
     );
@@ -816,16 +795,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   Widget _buildBottomBar(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.black26 : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        boxShadow: [
-           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))
-        ]
-      ),
-      child: _currentStage == 1 
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 10, 24, 20),
+        child: _currentStage == 1 
         ? SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -833,13 +807,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
               ),
-              onPressed: () => setState(() => _currentStage = 2),
+              onPressed: () {
+                // Validation
+                if (_beforeWashOption == 0 || _afterWashOption == 0) {
+                  ToastUtils.show(context, "Please select both Pickup and Delivery options", type: ToastType.warning);
+                  return;
+                }
+                if (_beforeWashOption == 1 && (_pickupAddressController.text.isEmpty || _pickupPhoneController.text.isEmpty)) {
+                  ToastUtils.show(context, "Please provide pickup address and phone", type: ToastType.warning);
+                  return;
+                }
+                if (_afterWashOption == 1 && (_deliveryAddressController.text.isEmpty || _deliveryPhoneController.text.isEmpty)) {
+                  ToastUtils.show(context, "Please provide delivery address and phone", type: ToastType.warning);
+                  return;
+                }
+                setState(() => _currentStage = 2);
+              },
               child: const Text("PROCEED", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           )
         : Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
                 width: double.infinity,
@@ -848,7 +839,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
                   ),
                   onPressed: _isSubmitting ? null : _submitOrder,
                   child: _isSubmitting 
@@ -856,14 +848,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                       : const Text("PAY NOW", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: const BorderSide(color: AppTheme.primaryColor),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: _showCallDialog, 
                   child: const Text("Call to Place Order", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
@@ -871,6 +863,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
               ),
             ],
           ),
+      ),
     );
   }
 

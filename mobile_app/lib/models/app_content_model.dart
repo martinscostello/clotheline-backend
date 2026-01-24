@@ -26,7 +26,7 @@ class AppContentModel {
   factory AppContentModel.fromJson(Map<String, dynamic> json) {
     final gridRaw = json['homeGridServices'];
     final gridList = (gridRaw is List) 
-        ? gridRaw.where((e) => e is Map).map((e) => ServiceModel.fromJson(Map<String, dynamic>.from(e))).toList() 
+        ? gridRaw.whereType<Map>().map((e) => ServiceModel.fromJson(Map<String, dynamic>.from(e))).toList() 
         : <ServiceModel>[];
 
     return AppContentModel(
