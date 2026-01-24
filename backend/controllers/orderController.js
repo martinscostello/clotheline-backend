@@ -143,7 +143,10 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             const message = `(New order from ${branchName} | ${customer ? customer.name : 'Guest'})`;
 
             // Notify Admins
+            console.log(`[OrderNotif] Looking for admins to notify for Branch: ${branchId}`);
             const admins = await User.find({ role: 'admin' });
+            console.log(`[OrderNotif] Found ${admins.length} admins.`);
+
             const adminNotifications = admins.map(admin => ({
                 userId: admin._id,
                 title,
@@ -155,22 +158,33 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
             if (adminNotifications.length > 0) {
                 await Notification.insertMany(adminNotifications);
+                console.log(`[OrderNotif] Saved ${adminNotifications.length} in-app notifications.`);
 
                 // [NEW] Send Push to Admins
                 const adminTokens = admins.reduce((acc, admin) => {
-                    if (admin.fcmTokens && admin.fcmTokens.length > 0) {
+                    // Check if tokens exist and are array
+                    if (admin.fcmTokens && Array.isArray(admin.fcmTokens) && admin.fcmTokens.length > 0) {
                         return acc.concat(admin.fcmTokens);
                     }
                     return acc;
                 }, []);
 
+                console.log(`[OrderNotif] Aggregated ${adminTokens.length} push tokens.`);
+
                 if (adminTokens.length > 0) {
-                    await NotificationService.sendPushNotification(
-                        adminTokens,
-                        title,
-                        message,
-                        { orderId: newOrder._id.toString(), type: 'order' }
-                    );
+                    try {
+                        const response = await NotificationService.sendPushNotification(
+                            adminTokens,
+                            title,
+                            message,
+                            { orderId: newOrder._id.toString(), type: 'order', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
+                        );
+                        console.log(`[OrderNotif] FCM Send Result: Success=${response.successCount}, Failure=${response.failureCount}`);
+                    } catch (pushErr) {
+                        console.error(`[OrderNotif] FCM Send Failed:`, pushErr);
+                    }
+                } else {
+                    console.warn("[OrderNotif] No admin tokens found. Push skipped.");
                 }
             }
 
