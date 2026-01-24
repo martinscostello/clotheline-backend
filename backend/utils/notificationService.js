@@ -58,6 +58,28 @@ exports.sendPushNotification = async (tokens, title, body, data = {}) => {
             body: body
         },
         data: data, // Custom data like { route: '/orders/123' }
+        // [CRITICAL] Platform overrides for High Priority & Heads-up
+        android: {
+            priority: 'high',
+            notification: {
+                channelId: 'high_importance_channel', // Must match AndroidManifest
+                priority: 'high',
+                defaultSound: true,
+                defaultVibrateTimings: true,
+                visibility: 'public'
+            }
+        },
+        apns: {
+            payload: {
+                aps: {
+                    'content-available': 1, // Wake up app
+                    sound: 'default'
+                }
+            },
+            headers: {
+                'apns-priority': '10' // High Priority
+            }
+        },
         tokens: tokens
     };
 
