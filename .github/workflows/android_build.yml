@@ -43,6 +43,9 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
 
+      - name: Clean Build
+        run: flutter clean
+
       - name: Get Dependencies
         run: flutter pub get
 
