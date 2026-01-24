@@ -21,6 +21,11 @@ module.exports = async function (req, res, next) {
             return res.status(403).json({ msg: 'Your access has been Revoked: Contact Master Admin for assistance' });
         }
 
+        // [CRITICAL FIX] Ensure User exists in DB
+        if (!user) {
+            return res.status(401).json({ msg: 'User not found in database. Please login again.' });
+        }
+
         // Pass fresh user data if needed
         if (user) {
             req.user.permissions = user.permissions;

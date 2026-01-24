@@ -78,5 +78,7 @@ exports.sendPushNotification = async (tokens, title, body, data = {}) => {
         }
     } catch (error) {
         console.error('[NotificationService] Error sending message:', error);
+        if (error.code) console.error('[NotificationService] Error Code:', error.code);
+        if (error.message) console.error('[NotificationService] Error Message:', error.message);
     }
 };

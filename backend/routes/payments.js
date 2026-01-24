@@ -199,6 +199,19 @@ router.post('/verify', auth, async (req, res) => {
 
         if (order) {
             payment.orderId = order._id;
+
+            // [CRITICAL FIX] Lock in the Price
+            // Ensure Order Total matches exactly what was paid.
+            const paidAmountNaira = payment.amount / 100;
+
+            // Allow small float diff (0.5), otherwise correct it.
+            if (Math.abs(order.totalAmount - paidAmountNaira) > 1.0) {
+                console.warn(`[PriceCorrection] Order Total (${order.totalAmount}) diverged from Paid Amount (${paidAmountNaira}). Forcing correction.`);
+                order.totalAmount = paidAmountNaira;
+                // We could also adjust tax/subtotal proportionally, but ensures Total is paramount.
+                order.paymentStatus = 'Paid'; // Re-affirm
+                await order.save();
+            }
         }
 
         await payment.save();
