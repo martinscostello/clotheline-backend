@@ -32,7 +32,12 @@ const checkRateLimit = (user, type) => {
 exports.signup = async (req, res) => {
     try {
         console.log('Signup Request Body:', req.body);
-        const { name, email, password, phone, role } = req.body;
+        let { name, email, password, phone, role, branchId } = req.body;
+
+        // [FIX] Normalize Inputs
+        if (email) email = email.trim().toLowerCase();
+        if (name) name = name.trim();
+        if (phone) phone = phone.trim();
 
         // Validation (Basic)
         if (!email || !password || !name) return res.status(400).json({ msg: "Please fill all fields" });
@@ -120,7 +125,8 @@ exports.signup = async (req, res) => {
             otpExpires: new Date(Date.now() + 10 * 60 * 1000),
             otpLastSentAt: Date.now(),
             otpResendCount: 1,
-            isVerified: false
+            isVerified: false,
+            preferredBranch: branchId || undefined // Save City preference
         });
 
         await newUser.save();
@@ -210,7 +216,7 @@ exports.verifyEmail = async (req, res) => {
 
         jwt.sign(payload, process.env.JWT_SECRET || 'secret123', { expiresIn: '7d' }, (err, token) => {
             if (err) throw err;
-            res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+            res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, preferredBranch: user.preferredBranch } });
         });
 
     } catch (err) {
@@ -221,13 +227,25 @@ exports.verifyEmail = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        let { email, password } = req.body;
+
+        // [FIX] Normalize Inputs
+        if (email) email = email.trim().toLowerCase();
+        if (password) password = password.trim();
+
+        console.log(`[Auth] Attempting Login for: '${email}'`);
 
         let user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
+        if (!user) {
+            console.warn(`[Auth] Login Failed: User '${email}' not found.`);
+            return res.status(400).json({ msg: 'Invalid Credentials (User not found)' });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
+        if (!isMatch) {
+            console.warn(`[Auth] Login Failed: Password mismatch for '${email}'.`);
+            return res.status(400).json({ msg: 'Invalid Credentials' });
+        }
 
         // Strict Verification Check (Exempt Admins)
         if (!user.isVerified && user.role !== 'admin') {
@@ -259,7 +277,8 @@ exports.login = async (req, res) => {
                     email: user.email,
                     role: user.role,
                     isMasterAdmin: user.isMasterAdmin,
-                    permissions: user.permissions
+                    permissions: user.permissions,
+                    preferredBranch: user.preferredBranch // Return preference
                 }
             });
         });
@@ -286,7 +305,8 @@ exports.verifyToken = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 isMasterAdmin: user.isMasterAdmin || false,
-                permissions: user.permissions || {}
+                permissions: user.permissions || {},
+                preferredBranch: user.preferredBranch
             }
         });
     } catch (err) {
@@ -352,5 +372,29 @@ exports.seedUsers = async () => {
         }
     } catch (err) {
         console.error('User Seeding Error:', err);
+    }
+};
+
+exports.updateFcmToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ msg: 'Token is required' });
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        // Initialize if undefined (migration safety)
+        if (!user.fcmTokens) user.fcmTokens = [];
+
+        // Add token only if it doesn't exist to prevent duplicates
+        if (!user.fcmTokens.includes(token)) {
+            user.fcmTokens.push(token);
+            await user.save();
+        }
+
+        res.json({ msg: 'Token updated' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
     }
 };

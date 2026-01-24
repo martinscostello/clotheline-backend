@@ -2,6 +2,7 @@ const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
+const NotificationService = require('../utils/notificationService');
 
 // Helper: Calculate Total (Used by payments.js and createOrder)
 // Supports both Service Items and Store Products
@@ -129,7 +130,55 @@ exports.createOrderInternal = async (orderData, userId = null) => {
         await newOrder.save();
 
         // Send Notification (New Order)
-        // ... (Optional)
+        try {
+            const customer = await User.findById(userId);
+            const Branch = require('../models/Branch'); // Lazy load
+            let branchName = "Unknown Branch";
+            if (branchId) {
+                const branch = await Branch.findById(branchId);
+                if (branch) branchName = branch.name;
+            }
+
+            const title = "New Order Recieved";
+            const message = `(New order from ${branchName} | ${customer ? customer.name : 'Guest'})`;
+
+            // Notify Admins
+            const admins = await User.find({ role: 'admin' });
+            const adminNotifications = admins.map(admin => ({
+                userId: admin._id,
+                title,
+                message,
+                type: 'order',
+                branchId,
+                metadata: { orderId: newOrder._id }
+            }));
+
+            if (adminNotifications.length > 0) {
+                await Notification.insertMany(adminNotifications);
+
+                // [NEW] Send Push to Admins
+                const adminTokens = admins.reduce((acc, admin) => {
+                    if (admin.fcmTokens && admin.fcmTokens.length > 0) {
+                        return acc.concat(admin.fcmTokens);
+                    }
+                    return acc;
+                }, []);
+
+                if (adminTokens.length > 0) {
+                    await NotificationService.sendPushNotification(
+                        adminTokens,
+                        title,
+                        message,
+                        { orderId: newOrder._id.toString(), type: 'order' }
+                    );
+                }
+            }
+
+            // Notify User (Confirmation)
+            // if (customer) ... (already handled usually by frontend confirmation or separate email)
+        } catch (notifErr) {
+            console.error("Failed to send Admin Order Notification:", notifErr);
+        }
 
         return newOrder;
     } catch (err) {
@@ -212,6 +261,17 @@ exports.updateOrderStatus = async (req, res) => {
                 type: 'order',
                 branchId: order.branchId
             }).save();
+
+            // [NEW] Send Push to User
+            const user = await User.findById(order.user);
+            if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+                await NotificationService.sendPushNotification(
+                    user.fcmTokens,
+                    title,
+                    message,
+                    { orderId: order._id.toString(), type: 'order' }
+                );
+            }
         }
 
         res.json(order);

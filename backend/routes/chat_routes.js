@@ -102,12 +102,23 @@ router.post('/send', auth, async (req, res) => {
         try {
             if (!isAdmin) {
                 const admins = await User.find({ role: 'admin' }).select('_id');
+
+                // Fetch Branch Name for context
+                const Branch = require('../models/Branch');
+                let branchName = "Unknown Branch";
+                if (thread.branchId) {
+                    const branch = await Branch.findById(thread.branchId);
+                    if (branch) branchName = branch.name;
+                }
+                const senderName = req.user.name || "Customer";
+
                 const adminNotifications = admins.map(adm => ({
                     userId: adm._id,
                     title: "New Message",
-                    message: "New message from customer",
+                    message: `(New Message from ${branchName} | ${senderName})`,
                     type: 'chat',
-                    branchId: thread.branchId
+                    branchId: thread.branchId,
+                    metadata: { threadId: thread._id }
                 }));
                 if (adminNotifications.length > 0) await Notification.insertMany(adminNotifications);
             } else {

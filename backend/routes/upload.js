@@ -33,8 +33,16 @@ const upload = multer({
 router.post('/', (req, res) => {
     upload(req, res, (err) => {
         if (err) {
-            console.error("Upload Error:", err);
-            return res.status(400).json({ message: err.message || err });
+            console.error("===== Upload Execution Error =====");
+            console.error("Error Code:", err.code);
+            console.error("Error Message:", err.message);
+            console.error("Full Error:", err);
+            console.error("==================================");
+
+            return res.status(400).json({
+                message: err.message || 'Upload failed',
+                error: err.code || 'UPLOAD_ERROR'
+            });
         }
 
         if (!req.file) {

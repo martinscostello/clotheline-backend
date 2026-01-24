@@ -3,20 +3,25 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        trim: true,
+        lowercase: true
     },
     password: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     phone: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     role: {
         type: String,
@@ -27,6 +32,11 @@ const UserSchema = new mongoose.Schema({
     isMasterAdmin: {
         type: Boolean,
         default: false
+    },
+    // Location Preference
+    preferredBranch: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch'
     },
     isRevoked: {
         type: Boolean,
@@ -47,6 +57,10 @@ const UserSchema = new mongoose.Schema({
         manageProducts: { type: Boolean, default: false },
         manageUsers: { type: Boolean, default: false }, // Broadcast
     },
+    // Device Tokens for Notifications
+    fcmTokens: [{
+        type: String
+    }],
     // OTP / Verification
     otp: { type: String },
     otpExpires: { type: Date },

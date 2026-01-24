@@ -14,6 +14,10 @@ const NotificationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    metadata: {
+        type: Object, // Stores { orderId: '...', threadId: '...' }
+        default: {}
+    },
     type: {
         type: String, // 'order', 'bucket', 'broadcast'
         required: true
