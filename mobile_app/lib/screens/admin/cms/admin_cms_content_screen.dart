@@ -575,7 +575,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              Switch(value: item.active, onChanged: onActiveChanged, activeThumbColor: AppTheme.secondaryColor)
+              Switch(value: item.active, onChanged: onActiveChanged, activeColor: AppTheme.secondaryColor)
             ],
           ),
           if (item.active) ...[

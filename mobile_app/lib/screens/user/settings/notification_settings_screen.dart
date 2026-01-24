@@ -47,7 +47,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 _buildSection(isDark, [
                   SwitchListTile(
                     title: Text("Enable Notifications", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                    activeThumbColor: AppTheme.primaryColor,
+                    activeColor: AppTheme.primaryColor,
                     value: get('push'), // Mapping 'push' as master toggle for now
                     onChanged: (val) => notifService.updatePreference('push', val),
                     secondary: const Icon(Icons.notifications_active_outlined, color: AppTheme.primaryColor),
@@ -67,7 +67,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     SwitchListTile(
                       title: Text("Admin Broadcasts", style: TextStyle(color: textColor)),
                       subtitle: Text("News and announcements", style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)),
-                      activeThumbColor: Colors.purpleAccent,
+                      activeColor: Colors.purpleAccent,
                       value: get('adminBroadcasts'),
                       onChanged: (val) => notifService.updatePreference('adminBroadcasts', val),
                     ),
@@ -75,7 +75,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     SwitchListTile(
                       title: Text("Order Updates", style: TextStyle(color: textColor)),
                       subtitle: Text("Status changes and delivery", style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)),
-                      activeThumbColor: Colors.blueAccent,
+                      activeColor: Colors.blueAccent,
                       value: get('orderUpdates'),
                       onChanged: (val) => notifService.updatePreference('orderUpdates', val),
                     ),
@@ -83,7 +83,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     SwitchListTile(
                       title: Text("Bucket Updates", style: TextStyle(color: textColor)),
                       subtitle: Text("Items added/removed", style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)),
-                      activeThumbColor: Colors.orangeAccent,
+                      activeColor: Colors.orangeAccent,
                       value: get('bucketUpdates'),
                       onChanged: (val) => notifService.updatePreference('bucketUpdates', val),
                     ),

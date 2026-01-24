@@ -121,7 +121,7 @@ class _AdminTaxSettingsScreenState extends State<AdminTaxSettingsScreen> {
                            title: const Text("Enable VAT", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                            subtitle: const Text("Apply Value Added Tax to all orders", style: TextStyle(color: Colors.white54)),
                            value: _taxEnabled,
-                           activeThumbColor: AppTheme.primaryColor,
+                           activeColor: AppTheme.primaryColor,
                            onChanged: (val) => setState(() => _taxEnabled = val),
                          ),
                          

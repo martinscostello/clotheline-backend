@@ -442,7 +442,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                            title: Text(widget.scopeBranch != null ? "Lock Service (${widget.scopeBranch!.name})" : "Global Lock", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                            subtitle: const Text("Prevent users from booking this service", style: TextStyle(color: Colors.white54, fontSize: 12)),
                            value: _isLocked,
-                           activeThumbColor: Colors.redAccent,
+                           activeColor: Colors.redAccent,
                            onChanged: (val) => setState(() => _isLocked = val),
                          ),
                          if (_isLocked)

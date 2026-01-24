@@ -155,7 +155,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
                         Switch(
                           value: _isRevoked,
                           onChanged: (val) => setState(() => _isRevoked = val),
-                          activeThumbColor: Colors.red,
+                          activeColor: Colors.red,
                         ),
                       ],
                     ),
@@ -205,7 +205,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
               _permissions[key] = val;
             });
           },
-          activeThumbColor: AppTheme.primaryColor,
+          activeColor: AppTheme.primaryColor,
         ),
       ],
     );
