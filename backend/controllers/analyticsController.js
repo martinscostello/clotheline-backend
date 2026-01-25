@@ -17,7 +17,7 @@ exports.getRevenueStats = async (req, res) => {
         // If range='year', show last 12 months.
 
         let intervalFormat = '%Y-%m-%d';
-        if (range === 'year') intervalFormat = '%Y-%m';
+        if (range === 'year') intervalFormat = '%Y-%m-01';
 
         if (range === 'week') startDate.setDate(now.getDate() - 7);
         else if (range === 'month') startDate.setDate(now.getDate() - 30);

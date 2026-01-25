@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const categoryController = require('../controllers/categoryController');
+const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
 
 // @route   GET api/categories
 // @desc    Get all categories (Global)
@@ -9,12 +11,12 @@ router.get('/', categoryController.getAllCategories);
 
 // @route   POST api/categories
 // @desc    Create category (Admin)
-// @access  Public (Should be Admin, but keeping simple for now/internal)
-router.post('/', categoryController.createCategory);
+// @access  Admin
+router.post('/', auth, admin, categoryController.createCategory);
 
 // @route   DELETE api/categories/:id
 // @desc    Delete category (Admin)
 // @access  Admin
-router.delete('/:id', categoryController.deleteCategory);
+router.delete('/:id', auth, admin, categoryController.deleteCategory);
 
 module.exports = router;
