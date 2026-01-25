@@ -140,7 +140,6 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
-    final cardBg = isDark ? Colors.white.withOpacity(0.05) : Colors.white;
 
     return Scaffold(
       backgroundColor: Colors.transparent,

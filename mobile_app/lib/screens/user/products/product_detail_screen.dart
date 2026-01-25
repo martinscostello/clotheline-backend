@@ -42,6 +42,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? _eligibleOrderId;
   bool _isReviewLoading = true;
 
+  // Keys for Animation
+  final GlobalKey _cartKey = GlobalKey();
+  final GlobalKey _addBtnKey = GlobalKey();
+
   void _showFullDescription(BuildContext context, Color textColor) {
     showModalBottomSheet(
       context: context,
@@ -146,7 +150,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const priceColor = Color(0xFFFF5722);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF101010) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black;
@@ -961,8 +964,8 @@ class _DrivingIconState extends State<_DrivingIcon> with SingleTickerProviderSta
         gradient: LinearGradient(
           colors: [widget.color.withOpacity(0), widget.color.withOpacity(opacity)],
         ),
-        borderRadius: BorderRadius.circular(1)
       ),
+    );
   }
 }
 
