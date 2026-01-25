@@ -7,16 +7,8 @@ exports.getAllProducts = async (req, res) => {
         const limit = parseInt(req.query.limit) || 0;
         const { branchId, category } = req.query;
 
-        // [STRICT BRANCH SCOPE]
-        // Must provide branchId.
-        if (!branchId) {
-            // If no branch, return empty or error? 
-            // Ideally we force client to send it.
-            // For safety, return empty list if no branch context.
-            return res.json([]);
-        }
-
-        let query = { isActive: true, branchId }; // Filter by Branch
+        let query = { isActive: true };
+        if (branchId) query.branchId = branchId;
         if (category) query.category = category;
 
         let products = await Product.find(query)

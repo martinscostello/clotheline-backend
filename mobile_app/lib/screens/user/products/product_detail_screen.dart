@@ -541,12 +541,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => SubmitReviewScreen(
-                        productId: widget.product.id,
-                        productName: widget.product.name,
-                        orderId: _eligibleOrderId!,
-                      ),
+                      productId: widget.product.id,
+                      productName: widget.product.name,
+                      productImageUrl: widget.product.imagePath,
+                      orderId: _eligibleOrderId!,
                     ),
-                  );
+                  ),
+                );
                   _fetchReviewsAndEligibility(); // Refresh after submitting
                 },
                 style: ElevatedButton.styleFrom(

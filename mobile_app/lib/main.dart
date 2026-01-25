@@ -21,6 +21,7 @@ import 'services/navigation_persistence_service.dart';
 import 'services/content_service.dart'; 
 import 'services/analytics_service.dart';
 import 'services/promotion_service.dart'; // Added // Added
+import 'services/review_service.dart';
 import 'providers/branch_provider.dart';
 import 'screens/user/main_layout.dart';
 import 'screens/admin/admin_main_layout.dart';
@@ -167,6 +168,7 @@ class LaundryApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ChatService()),
         ChangeNotifierProvider(create: (_) => AnalyticsService()),
         ChangeNotifierProvider(create: (_) => PromotionService()), // Added
+        ChangeNotifierProvider(create: (_) => ReviewService()), // Added
         Provider(create: (_) => ContentService()),
       ],
       child: ValueListenableBuilder<ThemeMode>(

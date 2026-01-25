@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:laundry_app/services/api_service.dart';
 
 class CustomCachedImage extends StatelessWidget {
   final String imageUrl;
@@ -30,30 +31,31 @@ class CustomCachedImage extends StatelessWidget {
       return _buildPlaceholder(context);
     }
 
+    String finalUrl = imageUrl;
+    // Prefix relative paths from server
+    if (!finalUrl.startsWith('http') && !finalUrl.startsWith('assets/') && finalUrl.startsWith('uploads/')) {
+       final baseUrl = ApiService.baseUrl.replaceAll('/api', '');
+       finalUrl = '$baseUrl/$finalUrl';
+    }
+
     Widget imageWidget;
 
-    if (imageUrl.startsWith('http') || imageUrl.startsWith('https')) {
+    if (finalUrl.startsWith('http') || finalUrl.startsWith('https')) {
       imageWidget = CachedNetworkImage(
-        // Optimize: Downsample images in memory to max 1000px.
-        // This prevents 12MP photos from consuming 50MB RAM each.
         memCacheWidth: 1000, 
-        imageUrl: imageUrl,
+        imageUrl: finalUrl,
         width: width,
         height: height,
         fit: fit,
         placeholder: (context, url) => _buildSkeleton(context),
         errorWidget: (context, url, error) {
-           // On error, show skeleton or custom error widget
-           // NEVER show a "default laundry photo" here.
-           // If errorWidget is provided (e.g. for user avatar), use it.
-           // Otherwise, stay as skeleton which is better than wrong data.
            return errorWidget ?? _buildErrorState(context);
         },
         fadeInDuration: const Duration(milliseconds: 300),
       );
-    } else if (imageUrl.startsWith('assets/')) {
+    } else if (finalUrl.startsWith('assets/')) {
        imageWidget = Image.asset(
-          imageUrl,
+          finalUrl,
           width: width,
           height: height,
           fit: fit,
@@ -61,7 +63,7 @@ class CustomCachedImage extends StatelessWidget {
        );
     } else {
        // Assume local file path
-       File file = File(imageUrl);
+       File file = File(finalUrl);
        if (file.existsSync()) {
           imageWidget = Image.file(
              file,
