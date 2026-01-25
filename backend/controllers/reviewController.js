@@ -7,10 +7,30 @@ exports.submitReview = async (req, res) => {
     try {
         const { productId, orderId, rating, comment, images } = req.body;
         const userId = req.user.id;
+        const mongoose = require('mongoose');
+
+        console.log(`[ReviewSubmit] Attempting review. User: ${userId}, Order: ${orderId}, Product: ${productId}`);
 
         // 1. Eligibility Check: Order must be completed
-        const order = await Order.findOne({ _id: orderId, user: userId, status: 'Completed' });
+        const order = await Order.findOne({
+            _id: new mongoose.Types.ObjectId(orderId),
+            user: new mongoose.Types.ObjectId(userId),
+            status: 'Completed'
+        });
+
         if (!order) {
+            console.log(`[ReviewSubmit] Eligibility Failed. Order not found or not completed for user.`);
+            // Debug: check if order exists at all without the user/status filter
+            try {
+                const basicOrder = await Order.findById(orderId);
+                if (basicOrder) {
+                    console.log(`[ReviewSubmit] Found basic order ${orderId}. DB User: ${basicOrder.user}, DB Status: ${basicOrder.status}`);
+                } else {
+                    console.log(`[ReviewSubmit] Order ${orderId} not found in DB at all.`);
+                }
+            } catch (err) {
+                console.log(`[ReviewSubmit] Error searching for basic order: ${err.message}`);
+            }
             return res.status(403).json({ message: 'You can only review products from completed orders.' });
         }
 

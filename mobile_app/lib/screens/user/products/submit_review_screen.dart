@@ -166,7 +166,9 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: CustomCachedImage(
-                              imageUrl: _fetchedImageUrl ?? '',
+                              imageUrl: (_fetchedImageUrl != null && _fetchedImageUrl!.isNotEmpty) 
+                                ? _fetchedImageUrl! 
+                                : 'assets/images/service_laundry.png',
                               width: 60,
                               height: 60,
                               fit: BoxFit.cover,

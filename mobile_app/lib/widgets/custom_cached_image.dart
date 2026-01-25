@@ -33,9 +33,14 @@ class CustomCachedImage extends StatelessWidget {
 
     String finalUrl = imageUrl;
     // Prefix relative paths from server
-    if (!finalUrl.startsWith('http') && !finalUrl.startsWith('assets/') && finalUrl.startsWith('uploads/')) {
-       final baseUrl = ApiService.baseUrl.replaceAll('/api', '');
-       finalUrl = '$baseUrl/$finalUrl';
+    if (!finalUrl.startsWith('http') && !finalUrl.startsWith('assets/') && finalUrl.isNotEmpty) {
+       // Cloudinary check: if it contains "res.cloudinary.com", it's an absolute URL even if it doesn't start with http (unlikely but safe)
+       if (!finalUrl.contains('cloudinary.com')) {
+          String path = finalUrl;
+          if (path.startsWith('/')) path = path.substring(1);
+          final baseUrl = ApiService.baseUrl.replaceAll('/api', '');
+          finalUrl = '$baseUrl/$path';
+       }
     }
 
     Widget imageWidget;
