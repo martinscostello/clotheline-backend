@@ -113,8 +113,14 @@ router.post('/initialize', auth, async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Paystack Init Error:", err.response?.data || err.message);
-        const errorMsg = err.response?.data?.message || err.message;
+        console.error("Paystack Init Error [VERBOSE]:", {
+            message: err.message,
+            stack: err.stack,
+            responseData: err.response?.data,
+            requestBody: items ? { itemCount: items.length, scope, branchId } : 'No Items'
+        });
+
+        const errorMsg = err.response?.data?.message || err.message || 'An unknown error occurred';
         res.status(500).json({ msg: 'Payment Init Error: ' + errorMsg });
     }
 });
