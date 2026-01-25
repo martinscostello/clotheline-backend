@@ -117,7 +117,7 @@ router.post('/initialize', auth, async (req, res) => {
             message: err.message,
             stack: err.stack,
             responseData: err.response?.data,
-            requestBody: items ? { itemCount: items.length, scope, branchId } : 'No Items'
+            requestBody: req.body ? { itemCount: req.body.items?.length, scope: req.body.scope, branchId: req.body.branchId } : 'No Body'
         });
 
         const errorMsg = err.response?.data?.message || err.message || 'An unknown error occurred';
