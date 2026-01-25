@@ -2,7 +2,7 @@ const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
-const StoreProduct = require('../models/StoreProduct'); // [NEW]
+const StoreProduct = require('../models/Product'); // [FIX] Point to correct model
 const NotificationService = require('../utils/notificationService');
 
 // ... (calculateOrderTotal unchanged)
@@ -92,7 +92,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
                 if (item.itemType === 'Product' && item.itemId) {
                     await StoreProduct.updateOne(
                         { _id: item.itemId },
-                        { $inc: { stockLevel: -item.quantity, soldCount: item.quantity } }
+                        { $inc: { stock: -item.quantity, soldCount: item.quantity } }
                     );
                 }
             }
