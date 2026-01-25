@@ -218,38 +218,48 @@ class StoreCartScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(CurrencyFormatter.format(item.price), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722), fontSize: 16)),
-                            if (item.product.originalPrice > item.price) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                CurrencyFormatter.format(item.product.originalPrice),
-                                style: const TextStyle(
-                                  decoration: TextDecoration.lineThrough,
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        if (item.product.savedAmount > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              "Saved ${CurrencyFormatter.format(item.product.savedAmount)} extra",
-                              style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown, 
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              children: [
+                                Text(CurrencyFormatter.format(item.price), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722), fontSize: 16)),
+                                if (item.product.originalPrice > item.price) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    CurrencyFormatter.format(item.product.originalPrice),
+                                    style: const TextStyle(
+                                      decoration: TextDecoration.lineThrough,
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                      ],
+                          if (item.product.savedAmount > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                "Saved ${CurrencyFormatter.format(item.product.savedAmount)}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       decoration: BoxDecoration(border: Border.all(color: Colors.grey.withOpacity(0.3)), borderRadius: BorderRadius.circular(4)),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           _qtyButton(Icons.remove, () {
                             if (item.quantity > 1) {
@@ -258,7 +268,12 @@ class StoreCartScreen extends StatelessWidget {
                               service.removeStoreItem(item);
                             }
                           }, isDark, service, item),
-                          Container(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text("${item.quantity}", style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black))),
+                          Container(
+                             constraints: const BoxConstraints(minWidth: 20),
+                             padding: const EdgeInsets.symmetric(horizontal: 8), 
+                             alignment: Alignment.center,
+                             child: Text("${item.quantity}", style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black))
+                          ),
                           _qtyButton(Icons.add, () => service.updateStoreItemQuantity(item, item.quantity + 1), isDark, service, item),
                         ],
                       ),

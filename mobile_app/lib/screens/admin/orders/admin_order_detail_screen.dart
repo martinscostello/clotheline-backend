@@ -323,32 +323,11 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 ),
               ),
 
-              // 3. Items
-              const Text("Items", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              // 3. Items Breakdown
+              const Text("Items Breakdown", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              ..._order!.items.map((item) => Card(
-                color: Colors.white10,
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: Icon(
-                    item.itemType == 'Service' ? Icons.local_laundry_service : Icons.shopping_bag,
-                    color: item.itemType == 'Service' ? Colors.blueAccent : Colors.pinkAccent
-                  ),
-                  title: Text(item.name, style: const TextStyle(color: Colors.white)),
-                  subtitle: Text(
-                    item.itemType == 'Product' ? "Variant: ${item.variant ?? 'Standard'}" : "Service: ${item.serviceType}",
-                    style: const TextStyle(color: Colors.white54)
-                  ),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text("x${item.quantity}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Text("₦${(item.price * item.quantity).toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 12)),
-                    ],
-                  ),
-                ),
-              )),
+              
+              _buildGroupedItemsList(),
 
               const SizedBox(height: 20),
 
@@ -411,6 +390,105 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildGroupedItemsList() {
+    // 1. Group Items
+    Map<String, List<OrderItem>> serviceGroups = {};
+    List<OrderItem> products = [];
+
+    for (var item in _order!.items) {
+      if (item.itemType == 'Service') {
+        final type = item.serviceType ?? "General";
+        if (!serviceGroups.containsKey(type)) serviceGroups[type] = [];
+        serviceGroups[type]!.add(item);
+      } else {
+        products.add(item);
+      }
+    }
+
+    List<Widget> children = [];
+
+    // 2. Render Services by Group
+    for (var entry in serviceGroups.entries) {
+       final serviceType = entry.key;
+       final items = entry.value;
+
+       // Header (Optional, user format implies just listing items then discount)
+       // Let's render items
+       children.addAll(items.map((item) => _buildItemTile(item)));
+       
+       // Check Discount
+       final discountKey = "Discount ($serviceType)";
+       if (_order!.discountBreakdown.containsKey(discountKey)) {
+          final amt = _order!.discountBreakdown[discountKey]!;
+          if (amt > 0) {
+             children.add(_buildDiscountRow(discountKey, amt));
+          }
+       }
+    }
+
+    // 3. Render Store Products
+    if (products.isNotEmpty) {
+       children.addAll(products.map((item) => _buildItemTile(item)));
+       
+       // Store Discount (Global or Promo)
+       if (_order!.storeDiscount > 0) {
+          children.add(_buildDiscountRow("Store Discount", _order!.storeDiscount));
+       }
+    }
+    
+    // Fallback: If legacy order without breakdown but has discountAmount
+    if (_order!.discountBreakdown.isEmpty && _order!.storeDiscount == 0 && _order!.discountAmount > 0) {
+       children.add(_buildDiscountRow("Discount (Legacy)", _order!.discountAmount));
+    }
+
+    return Column(children: children);
+  }
+
+  Widget _buildItemTile(OrderItem item) {
+    return Card(
+      color: Colors.white10,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: Icon(
+          item.itemType == 'Service' ? Icons.local_laundry_service : Icons.shopping_bag,
+          color: item.itemType == 'Service' ? Colors.blueAccent : Colors.pinkAccent
+        ),
+        title: Text(item.name, style: const TextStyle(color: Colors.white)),
+        subtitle: Text(
+          item.itemType == 'Product' ? "Variant: ${item.variant ?? 'Standard'}" : "Service: ${item.serviceType}",
+          style: const TextStyle(color: Colors.white54)
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text("x${item.quantity}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            Text("₦${(item.price * item.quantity).toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiscountRow(String label, double amount) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15, left: 10, right: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8)
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+          Text("-₦${amount.toStringAsFixed(0)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }

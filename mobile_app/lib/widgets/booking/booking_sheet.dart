@@ -408,7 +408,7 @@ class _BookingSheetState extends State<BookingSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Total (inc. VAT)", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                      Text("Cart Total (inc. VAT)", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
                       Text(CurrencyFormatter.format(_cartService.serviceTotalAmount + _cartService.taxAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
                     ],
                   ),

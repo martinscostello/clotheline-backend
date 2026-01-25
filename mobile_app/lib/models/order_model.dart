@@ -35,7 +35,13 @@ class OrderModel {
   final String? guestEmail; 
   final String? userName;
   final String? userEmail;
-  final String? userId; // [NEW]
+  final String? userId; 
+  
+  // Discount Metadata
+  final double discountAmount; // [New]
+  final double storeDiscount;
+  final Map<String, double> discountBreakdown;
+  // Note: discountBreakdown keys: "Discount (Regular)", "Discount (Footwear)" etc.
 
   OrderModel({
     required this.id,
@@ -46,8 +52,8 @@ class OrderModel {
     this.taxRate = 0,
     required this.status,
     required this.paymentStatus,
-    this.exceptionStatus = OrderExceptionStatus.None, // [NEW]
-    this.exceptionNote, // [NEW]
+    this.exceptionStatus = OrderExceptionStatus.None, 
+    this.exceptionNote, 
     required this.pickupOption,
     required this.deliveryOption,
     this.pickupAddress,
@@ -61,7 +67,10 @@ class OrderModel {
     this.guestEmail,
     this.userName,
     this.userEmail,
-    this.userId // [NEW]
+    this.userId,
+    this.discountAmount = 0.0, // [New]
+    this.storeDiscount = 0.0,
+    this.discountBreakdown = const {}
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -86,10 +95,15 @@ class OrderModel {
       branchId: json['branchId'],
       guestName: json['guestInfo']?['name'],
       guestPhone: json['guestInfo']?['phone'],
-      guestEmail: json['guestInfo']?['email'], // [Added]
+      guestEmail: json['guestInfo']?['email'], 
       userName: json['user'] is Map ? json['user']['name'] : null,
       userEmail: json['user'] is Map ? json['user']['email'] : null,
-      userId: json['user'] is Map ? json['user']['_id'] : (json['user'] is String ? json['user'] : null), // [NEW]
+      userId: json['user'] is Map ? json['user']['_id'] : (json['user'] is String ? json['user'] : null),
+      discountAmount: (json['discountAmount'] as num?)?.toDouble() ?? 0.0, // [New]
+      storeDiscount: (json['storeDiscount'] as num?)?.toDouble() ?? 0.0, // [New]
+      discountBreakdown: json['discountBreakdown'] != null 
+          ? Map<String, double>.from(json['discountBreakdown'].map((k, v) => MapEntry(k, (v as num).toDouble()))) 
+          : {}, // [New]
     );
   }
 

@@ -16,6 +16,7 @@ import '../../../services/auth_service.dart';
 import '../../../utils/toast_utils.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import '../booking/combined_order_summary_screen.dart'; // [Fix] Path adjustment
 
 class StoreCheckoutScreen extends StatefulWidget {
   const StoreCheckoutScreen({super.key});
@@ -562,9 +563,6 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     setState(() => _isSubmitting = true);
     
     // 1. Check for Mixed Cart (Bucket + Store)
-    String scope = 'cart';
-    bool includeLaundryItems = false;
-
     if (_cartService.items.isNotEmpty) {
       // Prompt User
       final result = await showDialog<String>(
@@ -588,14 +586,39 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       );
 
       if (result == 'combined') {
-        scope = 'combined';
-        includeLaundryItems = true;
+        // [New] Navigate to Summary First
+        setState(() => _isSubmitting = false); 
+        
+        Navigator.push(context, MaterialPageRoute(builder: (_) => CombinedOrderSummaryScreen(
+             logisticsData: {
+               'deliveryFee': _deliveryFee,
+               // Store doesn't use Pickup Fee usually unless laundry logic.
+               // We pass 0 or maybe cartService logic needed? 
+               // Combined logic might recalc. For now pass 0 as base.
+               'pickupFee': 0.0, 
+               'deliveryOption': _deliveryOption == 1 ? 'Deliver' : 'Pickup',
+               'deliveryAddress': _deliveryAddressController.text, // Pre-fill
+             },
+             onProceed: (logistics) async {
+                Navigator.pop(context); // Close summary
+                // Trigger Payment with Combined Scope
+                await _processPayment(scope: 'combined', includeLaundryItems: true);
+             }
+         )));
+         return; 
       } else {
         // Default or 'separate'
-        scope = 'cart';
-        includeLaundryItems = false;
+        await _processPayment(scope: 'cart', includeLaundryItems: false);
       }
+    } else {
+        // Clean Store Checkout
+        await _processPayment(scope: 'cart', includeLaundryItems: false);
     }
+  }
+
+  // [NEW] Extracted Payment Logic
+  Future<void> _processPayment({required String scope, required bool includeLaundryItems}) async {
+    setState(() => _isSubmitting = true);
 
     List<Map<String, dynamic>> items = [];
     
@@ -640,7 +663,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     final auth = Provider.of<AuthService>(context, listen: false);
     final String email = auth.currentUser?['email'] ?? "guest@clotheline.com";
 
-    // Debug: Ensure we don't send empty items (Standard logic)
+    // Debug: Ensure we don't send empty items
     if (items.isEmpty) {
        setState(() => _isSubmitting = false);
        ToastUtils.show(context, "No items to checkout", type: ToastType.info);
@@ -651,8 +674,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       'scope': scope, // [STRICT SCOPE]
       'branchId': selectedBranch?.id, 
       'items': items,
-      // 'totalAmount': _cartService.totalAmount + _deliveryFee, // Calculated on backend
-      'subtotal': _cartService.subtotal,
+      'subtotal': _cartService.subtotal, 
       'discountAmount': _cartService.discountAmount,
       'promoCode': _cartService.appliedPromotion?['code'],
       'taxAmount': _cartService.taxAmount,
@@ -663,6 +685,8 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       'deliveryPhone': _deliveryOption == 1 ? _contactPhoneController.text : null,
       'deliveryCoordinates': _deliveryOption == 1 && _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
       'deliveryFee': _deliveryOption == 1 ? _deliveryFee : 0,
+      'discountBreakdown': _cartService.laundryDiscounts, // [New]
+      'storeDiscount': _cartService.storeDiscountAmount, // [New]
       'guestInfo': {
          'name': 'Guest User',
          'email': email,
@@ -673,10 +697,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     try {
       if(mounted) ToastUtils.show(context, "Initializing Payment...", type: ToastType.info);
 
-      // 1. Initialize & Get URL
-      final initResult = await _paymentService().initializePayment(orderData); // Use instance or singleton? _paymentService instantiation
-      // Correction: _paymentService is not field in StoreCheckoutScreenState? Ah, it was instantiated in submitOrder locally in previous code.
-      // I need to instantiate it.
+      final initResult = await PaymentService().initializePayment(orderData);
       
       if (initResult == null) {
          throw Exception("Failed to initialize payment");
@@ -687,8 +708,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
 
       // 2. Open WebView
       if (!mounted) return;
-      // final paymentService = PaymentService(); // Instantiate if needed
-      final bool paymentCompleted = await PaymentService().openPaymentWebView(context, url, ref); // Static or new instance
+      final bool paymentCompleted = await PaymentService().openPaymentWebView(context, url, ref);
 
       if (paymentCompleted) {
          if(mounted) ToastUtils.show(context, "Verifying Payment...", type: ToastType.info);
@@ -700,14 +720,20 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
             setState(() => _isSubmitting = false);
             
             if(!mounted) return;
-            _cartService.clearStoreItems();
+            // Clear BOTH if combined
+            if (scope == 'combined') {
+               _cartService.clearCart();
+               _cartService.clearStoreItems();
+            } else {
+               _cartService.clearStoreItems();
+            }
             
             showDialog(
               context: context, 
               barrierDismissible: false,
               builder: (ctx) => AlertDialog(
                 title: const Text("Order Placed & Paid!"),
-                content: const Text("Your store order has been successfully placed."),
+                content: const Text("Your order has been successfully placed."),
                 actions: [
                   TextButton(
                     onPressed: () {

@@ -26,10 +26,27 @@ class MyBucketScreen extends StatelessWidget {
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
 
-    final cartService = CartService();
-    double subtotal = cart.fold(0, (sum, item) => sum + item.totalPrice);
-    double tax = subtotal * (cartService.taxRate / 100);
-    double grandTotal = subtotal + tax;
+    final cartService = CartService(); // [Restored]
+    
+    // [Recalculate for visual consistency with CartService Gross Logic]
+    double grossSubtotal = cart.fold(0, (sum, item) => sum + (item.item.basePrice * item.serviceType.priceMultiplier * item.quantity));
+    
+    // Calculate Discounts locally for the view if needed, or rely on service if cart matches
+    Map<String, double> discounts = {};
+    for (var item in cart) {
+      if (item.discountPercentage > 0) {
+         double base = item.item.basePrice * item.serviceType.priceMultiplier * item.quantity;
+         double d = base * (item.discountPercentage / 100);
+         String key = "Discount (${item.serviceType.name})";
+         discounts[key] = (discounts[key] ?? 0) + d;
+      }
+    }
+    double totalDiscount = discounts.values.fold(0, (sum, v) => sum + v);
+    double netSubtotal = grossSubtotal - totalDiscount;
+    if (netSubtotal < 0) netSubtotal = 0;
+    
+    double tax = netSubtotal * (cartService.taxRate / 100); // Tax on Net
+    double grandTotal = netSubtotal + tax;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -103,12 +120,12 @@ class MyBucketScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text("Subtotal", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
-                              Text(CurrencyFormatter.format(subtotal), style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500)),
+                              Text(CurrencyFormatter.format(grossSubtotal), style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500)),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          // [NEW] Itemized Discounts
-                          ...cartService.laundryDiscounts.entries.map((e) => Padding(
+                          // [NEW] Itemized Discounts (Category Based)
+                          ...discounts.entries.map((e) => Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,

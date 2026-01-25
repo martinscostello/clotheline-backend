@@ -301,10 +301,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
            _buildSectionHeader("Order Details", textColor),
            const SizedBox(height: 15),
            _buildSummaryCard(isDark, textColor),
-           _buildSummaryCard(isDark, textColor),
            
-           const SizedBox(height: 20),
-           _buildPromoSection(isDark, textColor),
+           const SizedBox(height: 30),
            
            const SizedBox(height: 30),
             _buildSectionHeader("Logistics", textColor),
@@ -824,6 +822,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       'deliveryCoordinates': _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
       'pickupFee': _pickupFee,
       'deliveryFee': _deliveryFee,
+      'discountBreakdown': _cartService.laundryDiscounts, // [New]
+      'storeDiscount': _cartService.storeDiscountAmount, // [New]
       'guestInfo': {
         'name': auth.currentUser != null ? (auth.currentUser!['name'] ?? 'Guest User') : 'Guest User', 
         'email': email, // Pass email for Paystack
@@ -900,10 +900,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   Widget _buildBottomBar(bool isDark) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 10, 24, 20),
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, -5))
+        ]
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 30, 24, 30), // Extra padding for safe area handled by container usually or add safe area inside
+      child: SafeArea(
+        top: false,
         child: _currentStage == 1 
         ? SizedBox(
             width: double.infinity,

@@ -161,59 +161,100 @@ class CartService extends ChangeNotifier {
   Map<String, dynamic>? _appliedPromotion;
   Map<String, dynamic>? get appliedPromotion => _appliedPromotion;
 
-  double get discountAmount {
+  // Aggregated Laundry Discounts (Internal Service Discounts)
+  Map<String, double> get laundryDiscounts {
+    Map<String, double> discounts = {};
+    for (var item in _items) {
+      if (item.discountPercentage > 0) {
+         // Calculate discount for this item
+         // Note: totalPrice getter in CartItem ALREADY applies discount. 
+         // We need (Base - Total) or manual calc.
+         // CartItem.totalPrice = base * (1 - discount/100).
+         // So discount = base - totalPrice.
+         
+         double baseTotal = item.item.basePrice * item.serviceType.priceMultiplier * item.quantity;
+         double itemDiscount = baseTotal * (item.discountPercentage / 100);
+         
+         String key = "Discount (${item.serviceType.name})";
+         discounts[key] = (discounts[key] ?? 0) + itemDiscount;
+      }
+    }
+    return discounts;
+  }
+  
+  double get laundryTotalDiscount => laundryDiscounts.values.fold(0, (sum, v) => sum + v);
+
+  // Store Promo (Applied Code)
+  double get storeDiscountAmount {
     if (_appliedPromotion == null) return 0.0;
     
     final type = _appliedPromotion!['type'];
     final value = (_appliedPromotion!['value'] as num).toDouble();
     final maxDiscount = _appliedPromotion!['maxDiscountAmount'] != null ? (_appliedPromotion!['maxDiscountAmount'] as num).toDouble() : null;
     
+    // Apply only to STORE items
+    double baseStoreTotal = storeTotalAmount; 
     double discount = 0.0;
 
     if (type == 'fixed') {
       discount = value;
     } else if (type == 'percentage') {
-       discount = (subtotal * value) / 100;
+       discount = (baseStoreTotal * value) / 100;
+       
+       if (value >= 100) {
+          print("Warning: Promo value $value >= 100%. Limiting to 100%.");
+          discount = baseStoreTotal;
+       }
        if (maxDiscount != null && discount > maxDiscount) {
          discount = maxDiscount;
        }
     }
     
-    // Cap at subtotal
-    return discount > subtotal ? subtotal : discount;
+    return discount > baseStoreTotal ? baseStoreTotal : discount;
   }
 
-  // Base Subtotal (Before Discount)
-  double get subtotal => serviceTotalAmount + storeTotalAmount; 
+  // Gross Totals
+  double get serviceGrossTotalAmount => _items.fold(0, (sum, item) {
+     double base = item.item.basePrice * item.serviceType.priceMultiplier * item.quantity;
+     return sum + base;
+  });
+  
+  // storeTotalAmount is defined above at top of class.
+  // We can just rely on that.
+  
+  // Total of all discounts (Laundry Internal + Store Promo)
+  double get discountAmount => laundryTotalDiscount + storeDiscountAmount; // [Restored]
+  
+  // Base Subtotal (GROSS) = Gross Service + Gross Store
+  double get subtotal => serviceGrossTotalAmount + storeTotalAmount; 
+  
+  // Net Total
   double get subtotalAfterDiscount => (subtotal - discountAmount) < 0 ? 0 : (subtotal - discountAmount);
   
   // Tax Calculations
-  double get taxAmount => (subtotalAfterDiscount * (taxRate / 100)); // Combined Tax
+  // Tax is usually on NET amount (after discounts)
+  double get taxAmount => (subtotalAfterDiscount * (taxRate / 100)); 
   
-  // [COMPATIBILITY] Missing Getters for UI
+  // Final Total
   double get totalAmount => subtotalAfterDiscount + taxAmount;
   
-  Map<String, double> get laundryDiscounts {
-     if (_appliedPromotion != null && discountAmount > 0) {
-       final code = _appliedPromotion!['code'] ?? 'Discount';
-       return {code: discountAmount};
-     }
-     return {};
-  }
-  
-  // Split Tax (Approximate for display, actual tax is total)
+   // Split Tax (Approximate for display)
+   // We use NET proportion
   double get serviceTaxAmount {
-    // Pro-rate tax based on service share? Or just simple rate?
-    // User screens expect this. Let's use simple rate for now.
-    // If discount applies, this might be slightly off sum-wise vs total tax, but acceptable for detailed breakdown if not strictly accounting.
-    // Ideally: (serviceTotal / subtotal) * taxAmount
-    if (subtotal == 0) return 0.0;
-    return (serviceTotalAmount / subtotal) * taxAmount;
+    if (subtotalAfterDiscount == 0) return 0.0;
+    // Calculate Service Net Share
+    double serviceNet = serviceGrossTotalAmount - laundryTotalDiscount;
+    if (serviceNet < 0) serviceNet = 0;
+    
+    return (serviceNet / subtotalAfterDiscount) * taxAmount;
   }
 
   double get storeTaxAmount {
-    if (subtotal == 0) return 0.0;
-    return (storeTotalAmount / subtotal) * taxAmount;
+     if (subtotalAfterDiscount == 0) return 0.0;
+     double storeNet = storeTotalAmount - storeDiscountAmount;
+     if (storeNet < 0) storeNet = 0;
+     
+     return (storeNet / subtotalAfterDiscount) * taxAmount;
   }
   
   // Apply Promo

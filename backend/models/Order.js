@@ -27,8 +27,10 @@ const OrderSchema = new mongoose.Schema({
 
     // Money Fields
     subtotal: { type: Number, default: 0 }, // Sum of items
-    discountAmount: { type: Number, default: 0 }, // [New]
-    promoCode: { type: String, default: null }, // [New]
+    discountAmount: { type: Number, default: 0 },
+    storeDiscount: { type: Number, default: 0 }, // [New] Pure Store Discount
+    discountBreakdown: { type: Map, of: Number }, // [New] Breakdown like {"Discount (Regular)": 500}
+    promoCode: { type: String, default: null },
     taxRate: { type: Number, default: 0 }, // % at time of purchase
     taxAmount: { type: Number, default: 0 }, // Calculated tax
     totalAmount: { type: Number, required: true }, // subtotal - discount + taxAmount
