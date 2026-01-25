@@ -177,9 +177,11 @@ router.post('/verify', auth, async (req, res) => {
 
         // 3. RECONSTRUCT CONTEXT from Metadata
         const metadata = verifiedData.metadata || {};
+        console.log(`[VerifyDebug] Metadata received:`, JSON.stringify(metadata, null, 2));
         const { retryOrderId, userId } = metadata;
 
         if (!userId) {
+            console.error(`[VerifyError] Missing userId in metadata:`, metadata);
             return res.status(400).json({ msg: 'Invalid Transaction: Missing User Context' });
         }
 
@@ -244,8 +246,14 @@ router.post('/verify', auth, async (req, res) => {
         res.json({ status: 'success', msg: 'Payment verified', order });
 
     } catch (err) {
-        console.error("Verification Error:", err);
-        res.status(500).send('Server Error');
+        console.error("Verification Error [VERBOSE]:", {
+            message: err.message,
+            stack: err.stack,
+            responseData: err.response?.data,
+            reference: req.body.reference
+        });
+        const errorMsg = err.response?.data?.message || err.message || 'Verification Error';
+        res.status(500).json({ msg: 'Payment Verification Error: ' + errorMsg });
     }
 });
 // POST /refund (Admin Only)

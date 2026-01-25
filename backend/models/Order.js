@@ -52,8 +52,8 @@ const OrderSchema = new mongoose.Schema({
     exceptionNote: String,
 
     // Logistics
-    pickupOption: { type: String, enum: ['Pickup', 'Dropoff'], required: true },
-    deliveryOption: { type: String, enum: ['Deliver', 'Pickup'], required: true },
+    pickupOption: { type: String, enum: ['Pickup', 'Dropoff', 'None'], required: true },
+    deliveryOption: { type: String, enum: ['Deliver', 'Pickup', 'None'], required: true },
 
     pickupAddress: String,
     pickupPhone: String,
