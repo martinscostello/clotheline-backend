@@ -138,6 +138,27 @@ router.post('/send', auth, async (req, res) => {
     }
 });
 
+// GET /admin/thread-for-user - Admin finding or creating thread for specific customer
+router.get('/admin/thread-for-user', auth, async (req, res) => {
+    try {
+        const { userId, branchId } = req.query;
+        if (!userId || !branchId) return res.status(400).json({ msg: 'User ID and Branch ID are required' });
+
+        const adminUser = await User.findById(req.user.id);
+        if (adminUser.role !== 'admin') return res.status(403).json({ msg: 'Admins only' });
+
+        let thread = await ChatThread.findOne({ userId, branchId });
+        if (!thread) {
+            thread = new ChatThread({ userId, branchId });
+            await thread.save();
+        }
+        res.json(thread);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // ADMIN Routes
 router.get('/admin/threads', auth, async (req, res) => {
     try {

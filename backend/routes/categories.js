@@ -12,4 +12,9 @@ router.get('/', categoryController.getAllCategories);
 // @access  Public (Should be Admin, but keeping simple for now/internal)
 router.post('/', categoryController.createCategory);
 
+// @route   DELETE api/categories/:id
+// @desc    Delete category (Admin)
+// @access  Admin
+router.delete('/:id', categoryController.deleteCategory);
+
 module.exports = router;

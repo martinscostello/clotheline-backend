@@ -27,6 +27,20 @@ exports.createCategory = async (req, res) => {
     }
 };
 
+exports.deleteCategory = async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+        if (!category) return res.status(404).json({ msg: 'Category not found' });
+
+        await Category.deleteOne({ _id: req.params.id });
+        res.json({ msg: 'Category removed' });
+    } catch (err) {
+        console.error(err.message);
+        if (err.kind === 'ObjectId') return res.status(404).json({ msg: 'Category not found' });
+        res.status(500).send('Server Error');
+    }
+};
+
 // Helper to seed defaults if empty
 exports.seedCategories = async () => {
     try {

@@ -401,4 +401,14 @@ class AuthService extends ChangeNotifier {
       throw Exception('Failed to update admin: $e');
     }
   }
+
+  Future<bool> deleteUser(String userId) async {
+    try {
+      final response = await _apiService.client.delete('/auth/$userId');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error deleting user: $e");
+      return false;
+    }
+  }
 }

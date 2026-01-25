@@ -28,7 +28,7 @@ class ReviewModel {
       id: json['_id'],
       userId: json['user'] is Map ? json['user']['_id'] : json['user'],
       userName: json['user'] is Map ? json['user']['name'] : 'User',
-      productId: json['product'],
+      productId: json['product'] is Map ? json['product']['_id'] : (json['product'] ?? ''),
       orderId: json['order'],
       rating: json['rating'],
       comment: json['comment'],

@@ -10,6 +10,7 @@ import '../../../../services/chat_service.dart';
 import '../orders/admin_order_detail_screen.dart';
 import 'package:laundry_app/utils/toast_utils.dart';
 import '../chat/admin_chat_screen.dart'; // [New]
+import '../../../../services/auth_service.dart';
 
 class AdminUserProfileScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -38,6 +39,41 @@ class _AdminUserProfileScreenState extends State<AdminUserProfileScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _showDeleteConfirm(BuildContext context) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final userId = widget.user['_id'];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text("Delete User Account?", style: TextStyle(color: Colors.white)),
+        content: const Text("This action is permanent and will remove all user data. Proceed?", style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () async {
+               Navigator.pop(ctx);
+               ToastUtils.show(context, "Deleting user...", type: ToastType.info);
+               final success = await authService.deleteUser(userId);
+               
+               if (context.mounted) {
+                 if (success) {
+                   ToastUtils.show(context, "User deleted successfully", type: ToastType.success);
+                   Navigator.pop(context); // Go back to list
+                 } else {
+                   ToastUtils.show(context, "Delete failed. User may have existing dependencies.", type: ToastType.error);
+                 }
+               }
+            },
+            child: const Text("Delete"),
+          )
+        ],
+      )
+    );
   }
 
   @override
@@ -80,39 +116,51 @@ class _AdminUserProfileScreenState extends State<AdminUserProfileScreen> {
                        Row(
                          mainAxisAlignment: MainAxisAlignment.center,
                          children: [
-                           ElevatedButton.icon(
-                             style: ElevatedButton.styleFrom(
-                               backgroundColor: AppTheme.primaryColor,
-                               foregroundColor: Colors.black,
-                             ),
-                             icon: const Icon(Icons.chat),
-                             label: const Text("CHAT"),
-                             onPressed: () async {
-                               final chatService = Provider.of<ChatService>(context, listen: false);
-                               final userId = user['_id'];
-                               final branchId = user['branchId'] ?? "default"; // or select from provider?
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                foregroundColor: Colors.black,
+                              ),
+                              icon: const Icon(Icons.chat),
+                              label: const Text("CHAT"),
+                              onPressed: () async {
+                                final chatService = Provider.of<ChatService>(context, listen: false);
+                                final userId = user['_id'];
+                                final branchId = user['branchId'] ?? "default"; 
 
-                               ToastUtils.show(context, "Locating chat...", type: ToastType.info);
-                               final threadId = await chatService.getAdminThreadForUser(userId, branchId);
+                                ToastUtils.show(context, "Locating chat...", type: ToastType.info);
+                                final threadId = await chatService.getAdminThreadForUser(userId, branchId);
 
-                               if (!context.mounted) return;
+                                if (!context.mounted) return;
 
-                               if (threadId != null) {
-                                  Navigator.push(
-                                     context,
-                                     MaterialPageRoute(builder: (_) => AdminChatScreen(initialThreadId: threadId)),
-                                  );
-                               } else {
-                                  ToastUtils.show(context, "No chat history found for User.", type: ToastType.warning);
-                               }
-                             },
-                           ),
-                         ],
-                       )
-                     ],
-                   ),
-                 ),
-               ),
+                                if (threadId != null) {
+                                   Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => AdminChatScreen(initialThreadId: threadId)),
+                                   );
+                                } else {
+                                   ToastUtils.show(context, "Failed to initiate chat session.", type: ToastType.error);
+                                }
+                              },
+                            ),
+                            const SizedBox(width: 15),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.redAccent.withOpacity(0.2),
+                                foregroundColor: Colors.redAccent,
+                                elevation: 0,
+                                side: const BorderSide(color: Colors.redAccent)
+                              ),
+                              icon: const Icon(Icons.person_remove),
+                              label: const Text("DELETE"),
+                              onPressed: () => _showDeleteConfirm(context),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ),
 
                const SizedBox(height: 20),
                

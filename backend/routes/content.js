@@ -23,6 +23,7 @@ router.put('/', async (req, res) => {
         if (req.body.homeGridServices) content.homeGridServices = req.body.homeGridServices;
         if (req.body.productAds) content.productAds = req.body.productAds;
         if (req.body.brandText) content.brandText = req.body.brandText;
+        if (req.body.productCategories) content.productCategories = req.body.productCategories;
 
         // [NEW] Added support for new fields
         if (req.body.contactAddress) content.contactAddress = req.body.contactAddress;

@@ -315,6 +315,22 @@ exports.verifyToken = async (req, res) => {
     }
 };
 
+exports.deleteUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        // Prevent deleting master admin (safety)
+        if (user.isMasterAdmin) return res.status(403).json({ msg: 'Cannot delete Master Admin' });
+
+        await User.deleteOne({ _id: req.params.userId });
+        res.json({ msg: 'User deleted successfully' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
 exports.getAllUsers = async (req, res) => {
     try {
         const users = await User.find().select('-password').sort({ date: -1 });
