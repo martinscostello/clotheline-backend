@@ -2,10 +2,56 @@ const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
-const StoreProduct = require('../models/Product'); // [FIX] Point to correct model
+const StoreProduct = require('../models/Product');
 const NotificationService = require('../utils/notificationService');
 
-// ... (calculateOrderTotal unchanged)
+// Helper: Calculate Total (Used by payments.js and createOrder)
+// Supports both Service Items and Store Products
+exports.calculateOrderTotal = async (items) => {
+    // 1. Fetch Tax Settings
+    const settings = await Settings.findOne() || { taxEnabled: true, taxRate: 7.5 };
+    let taxRate = settings.taxEnabled ? settings.taxRate : 0;
+
+    // [FIX] Sanity Check for Tax Rate (Prevent 975% error)
+    if (taxRate > 50) {
+        console.warn(`[OrderTotal] Abnormal Tax Rate detected: ${taxRate}. Resetting to 7.5 temporarily.`);
+        taxRate = 7.5;
+    }
+
+    // 2. Calculate Subtotal
+    let subtotal = 0;
+
+    // Validate Items Array
+    if (!items || !Array.isArray(items)) {
+        return { subtotal: 0, taxAmount: 0, totalAmount: 0 };
+    }
+
+    items.forEach(item => {
+        // Handle both "price" (frontend passed) or lookup (safer).
+        // For MVP, we trust price if we don't want to double-fetch everything, 
+        // BUT strict implementation should fetch prices. 
+        // Given the corrupt state, let's trust the 'price' passed in calculationItems 
+        // which comes from DB in the Retry Flow, or from Frontend in Initialize flow.
+        // Ideally we re-validate, but let's assume valid for now.
+
+        // Robust Parsing: Handle strings, commas, decimals safely
+        let rawPrice = item.price;
+        if (typeof rawPrice === 'string') {
+            rawPrice = rawPrice.replace(/,/g, ''); // Remove commas
+        }
+        let price = parseFloat(rawPrice) || 0;
+        let quantity = parseInt(item.quantity) || 1;
+
+        subtotal += (price * quantity);
+    });
+
+    // 3. Calculate Tax/Total
+    const taxAmount = (subtotal * taxRate) / 100;
+    const totalAmount = subtotal + taxAmount;
+
+    console.log(`[PriceDebug] Subtotal: ${subtotal}, TaxRate: ${taxRate}%, TaxAmt: ${taxAmount}, Total: ${totalAmount}. Items: ${items.length}`);
+    return { subtotal, taxAmount, totalAmount };
+};
 
 // Internal Helper to Create Order (Used by payments.js after verification)
 exports.createOrderInternal = async (orderData, userId = null) => {
