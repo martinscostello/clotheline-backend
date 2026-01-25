@@ -58,12 +58,12 @@ class AdminCMSScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 15),
                       const SizedBox(height: 15),
-                      // _buildCMSCard(
-                      //   title: "Branding Text",
-                      //   subtitle: "Update brands and slogans.",
-                      //   icon: Icons.text_fields,
-                      //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding'))),
-                      // ),
+                      _buildCMSCard(
+                        title: "Branding & Delivery Assurance",
+                        subtitle: "Update brands, slogans and delivery banners.",
+                        icon: Icons.text_fields,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding'))),
+                      ),
                       const SizedBox(height: 15),
                       _buildCMSCard(
                         title: "Promotions",

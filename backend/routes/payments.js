@@ -100,7 +100,7 @@ router.post('/initialize', auth, async (req, res) => {
         );
 
         if (!paystackResponse.data.status) {
-            return res.status(400).json({ msg: 'Paystack initialization failed' });
+            return res.status(400).json({ msg: 'Paystack initialization failed: ' + (paystackResponse.data.message || '') });
         }
 
         const { authorization_url, access_code } = paystackResponse.data.data;
@@ -114,7 +114,8 @@ router.post('/initialize', auth, async (req, res) => {
 
     } catch (err) {
         console.error("Paystack Init Error:", err.response?.data || err.message);
-        res.status(500).send('Server Error');
+        const errorMsg = err.response?.data?.message || err.message;
+        res.status(500).json({ msg: 'Payment Init Error: ' + errorMsg });
     }
 });
 

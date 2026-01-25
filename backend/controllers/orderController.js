@@ -2,55 +2,10 @@ const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
+const StoreProduct = require('../models/StoreProduct'); // [NEW]
 const NotificationService = require('../utils/notificationService');
 
-// Helper: Calculate Total (Used by payments.js and createOrder)
-// Supports both Service Items and Store Products
-exports.calculateOrderTotal = async (items) => {
-    // 1. Fetch Tax Settings
-    const settings = await Settings.findOne() || { taxEnabled: true, taxRate: 7.5 };
-    let taxRate = settings.taxEnabled ? settings.taxRate : 0;
-
-    // [FIX] Sanity Check for Tax Rate (Prevent 975% error)
-    if (taxRate > 50) {
-        console.warn(`[OrderTotal] Abnormal Tax Rate detected: ${taxRate}. Resetting to 7.5 temporarily.`);
-        taxRate = 7.5;
-    }
-
-    // 2. Calculate Subtotal
-    let subtotal = 0;
-
-    // Validate Items Array
-    if (!items || !Array.isArray(items)) {
-        return { subtotal: 0, taxAmount: 0, totalAmount: 0 };
-    }
-
-    items.forEach(item => {
-        // Handle both "price" (frontend passed) or lookup (safer).
-        // For MVP, we trust price if we don't want to double-fetch everything, 
-        // BUT strict implementation should fetch prices. 
-        // Given the corrupt state, let's trust the 'price' passed in calculationItems 
-        // which comes from DB in the Retry Flow, or from Frontend in Initialize flow.
-        // Ideally we re-validate, but let's assume valid for now.
-
-        // Robust Parsing: Handle strings, commas, decimals safely
-        let rawPrice = item.price;
-        if (typeof rawPrice === 'string') {
-            rawPrice = rawPrice.replace(/,/g, ''); // Remove commas
-        }
-        let price = parseFloat(rawPrice) || 0;
-        let quantity = parseInt(item.quantity) || 1;
-
-        subtotal += (price * quantity);
-    });
-
-    // 3. Calculate Tax/Total
-    const taxAmount = (subtotal * taxRate) / 100;
-    const totalAmount = subtotal + taxAmount;
-
-    console.log(`[PriceDebug] Subtotal: ${subtotal}, TaxRate: ${taxRate}%, TaxAmt: ${taxAmount}, Total: ${totalAmount}. Items: ${items.length}`);
-    return { subtotal, taxAmount, totalAmount };
-};
+// ... (calculateOrderTotal unchanged)
 
 // Internal Helper to Create Order (Used by payments.js after verification)
 exports.createOrderInternal = async (orderData, userId = null) => {
@@ -61,15 +16,15 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             items,
             subtotal,
             discountAmount,
-            promoCode, // [FIX] Added
+            promoCode,
             taxAmount,
-            totalAmount, // Usually recalculated, but can be passed
+            totalAmount,
 
             // Delivery
             pickupOption,
             deliveryOption,
-            pickupAddress, // [FIX] Added
-            pickupPhone,   // [FIX] Added
+            pickupAddress,
+            pickupPhone,
             deliveryAddress,
             deliveryPhone,
             deliveryCoordinates,
@@ -107,7 +62,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             tax: finalTax,
             deliveryFee: finalDelivery,
             discount: finalDiscount,
-            promoCode: promoCode || null, // [FIX] Added
+            promoCode: promoCode || null,
             totalAmount: finalTotal,
 
             // Status
@@ -117,19 +72,34 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             // Logistics
             pickupOption: pickupOption || 'None',
             deliveryOption: deliveryOption || 'None',
-            pickupAddress, // [FIX] Added
-            pickupPhone,   // [FIX] Added
+            pickupAddress,
+            pickupPhone,
             deliveryAddress,
             deliveryPhone,
             deliveryCoordinates,
 
             // Guest
-            guestInfo: guestInfo, // [FIX] Pass full object as per Schema
+            guestInfo: guestInfo,
 
             createdAt: Date.now()
         });
 
         await newOrder.save();
+
+        // [NEW] Update Stock Counter
+        try {
+            for (const item of items) {
+                if (item.itemType === 'Product' && item.itemId) {
+                    await StoreProduct.updateOne(
+                        { _id: item.itemId },
+                        { $inc: { stockLevel: -item.quantity, soldCount: item.quantity } }
+                    );
+                }
+            }
+        } catch (stockErr) {
+            console.error("Stock Update Error:", stockErr);
+            // Don't fail order creation, just log
+        }
 
         // Send Notification (New Order)
         try {

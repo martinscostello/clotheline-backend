@@ -136,7 +136,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                    
                    SliverToBoxAdapter(
                      child: Padding(
-                       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20),
+                       padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 20.0),
                        child: Column(
                          crossAxisAlignment: CrossAxisAlignment.start,
                          children: [
@@ -628,20 +628,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
   }
+
   Widget _buildDeliveryAssurance() {
      final da = _appContent?.deliveryAssurance;
      if (da == null || !da.active) return const SizedBox.shrink();
 
      IconData iconData = Icons.local_shipping;
-     if (da.icon == 'bike') iconData = Icons.motorcycle;
-     if (da.icon == 'clock') iconData = Icons.access_time;
+     Color iconColor = Colors.green; // Default Green (Van)
+
+     if (da.icon == 'bike') {
+       iconData = Icons.motorcycle;
+       iconColor = Colors.red;
+     }
+     if (da.icon == 'clock') {
+       iconData = Icons.access_time;
+       iconColor = Colors.purple;
+     }
 
      return Padding(
-       padding: const EdgeInsets.only(bottom: 8.0),
+       padding: const EdgeInsets.only(bottom: 4.0), // Reduced Gap
        child: Row(
          crossAxisAlignment: CrossAxisAlignment.center,
          children: [
-            _DrivingIcon(icon: iconData), 
+            _DrivingIcon(icon: iconData, color: iconColor), 
             const SizedBox(width: 8),
             Expanded(child: _parseRichText(da.text))
          ],
@@ -689,7 +698,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
 class _DrivingIcon extends StatefulWidget {
   final IconData icon;
-  const _DrivingIcon({required this.icon});
+  final Color color;
+  const _DrivingIcon({required this.icon, required this.color});
 
   @override
   State<_DrivingIcon> createState() => _DrivingIconState();
@@ -703,12 +713,11 @@ class _DrivingIconState extends State<_DrivingIcon> with SingleTickerProviderSta
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600), // Faster
       vsync: this,
     )..repeat(reverse: true);
     
-    // Move slightly forward and back
-    _offsetAnimation = Tween<double>(begin: -1.0, end: 1.0).animate(CurvedAnimation(
+    _offsetAnimation = Tween<double>(begin: -2.0, end: 2.0).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOut,
     ));
@@ -727,9 +736,40 @@ class _DrivingIconState extends State<_DrivingIcon> with SingleTickerProviderSta
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(_offsetAnimation.value, 0),
-          child: Icon(widget.icon, color: Colors.green, size: 28), // Green Icon
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Speed Lines (Trailing)
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildSpeedLine(12, 0.4),
+                  const SizedBox(height: 2),
+                  _buildSpeedLine(20, 0.7),
+                  const SizedBox(height: 2),
+                  _buildSpeedLine(10, 0.3),
+                ],
+              ),
+              const SizedBox(width: 4),
+              Icon(widget.icon, color: widget.color, size: 28),
+            ],
+          ),
         );
       },
     );
   }
+
+  Widget _buildSpeedLine(double width, double opacity) {
+    return Container(
+      width: width,
+      height: 2,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [widget.color.withOpacity(0), widget.color.withOpacity(opacity)],
+        ),
+        borderRadius: BorderRadius.circular(1)
+      ),
+    );
+  }
 }
+

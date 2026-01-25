@@ -28,6 +28,7 @@ router.put('/', async (req, res) => {
         if (req.body.contactAddress) content.contactAddress = req.body.contactAddress;
         if (req.body.contactPhone) content.contactPhone = req.body.contactPhone;
         if (req.body.freeShippingThreshold !== undefined) content.freeShippingThreshold = req.body.freeShippingThreshold;
+        if (req.body.deliveryAssurance) content.deliveryAssurance = req.body.deliveryAssurance;
 
         const updatedContent = await content.save();
         res.json(updatedContent);

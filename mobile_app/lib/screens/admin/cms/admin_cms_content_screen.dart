@@ -309,14 +309,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("General Branding", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 15),
-        _buildTextField("Brand Name", _brandTextController),
-        const SizedBox(height: 15),
-        _buildTextField("Contact Address", _contactAddressCtrl),
-        const SizedBox(height: 15),
-        _buildTextField("Contact Phone", _contactPhoneCtrl),
-        const SizedBox(height: 40),
+        // Brand, Address, Phone removed as per user request (handled by Delivery Zones)
         
         const Text("Delivery Assurance", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
         Text("Shown on Product Details Page. Wrap text in [] to highlight in green.", style: TextStyle(color: Colors.white70, fontSize: 12)),

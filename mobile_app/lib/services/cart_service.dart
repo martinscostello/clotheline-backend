@@ -108,8 +108,28 @@ class CartService extends ChangeNotifier {
   }
   
   void addStoreItem(StoreCartItem item) {
-    // Check if same item/variant exists
+    // Check global stock limit
+    if (item.product.stockLevel <= 0) return;
+
     final index = _storeItems.indexWhere((i) => i.product.id == item.product.id && i.variant?.id == item.variant?.id);
+    int currentQty = index != -1 ? _storeItems[index].quantity : 0;
+    
+    if (currentQty + item.quantity > item.product.stockLevel) {
+       // Cannot add more than stock. 
+       // We can only add the remainder
+       int remainder = item.product.stockLevel - currentQty;
+       if (remainder > 0) {
+         if (index != -1) {
+             _storeItems[index] = StoreCartItem(product: item.product, variant: item.variant, quantity: currentQty + remainder);
+         } else {
+             _storeItems.add(StoreCartItem(product: item.product, variant: item.variant, quantity: remainder));
+         }
+         _saveCart();
+         notifyListeners();
+       }
+       return; 
+    }
+
     if (index != -1) {
        final old = _storeItems[index];
        _storeItems[index] = StoreCartItem(product: item.product, variant: item.variant, quantity: old.quantity + item.quantity);
@@ -121,6 +141,10 @@ class CartService extends ChangeNotifier {
   }
   
   void updateStoreItemQuantity(StoreCartItem item, int newQuantity) {
+    if (newQuantity > item.product.stockLevel) {
+       newQuantity = item.product.stockLevel; // Cap at max
+    }
+
     final index = _storeItems.indexOf(item);
     if (index != -1) {
       if (newQuantity <= 0) {
