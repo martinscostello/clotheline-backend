@@ -154,6 +154,7 @@ router.post('/verify', auth, async (req, res) => {
         // We will trust the metadata's userId but ensure valid context.
 
         const { reference, provider = 'paystack' } = req.body;
+        console.log(`[VerifyTrigger] Attempting verification for Reference: ${reference}, User: ${req.user.id}`);
 
         const existingPayment = await Payment.findOne({ reference });
         if (existingPayment && existingPayment.status === 'success') {

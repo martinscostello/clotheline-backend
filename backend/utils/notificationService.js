@@ -49,9 +49,11 @@ initializeFirebase();
 exports.sendPushNotification = async (tokens, title, body, data = {}) => {
     if (!isInitialized || !tokens || tokens.length === 0) return;
 
-    // Filter out invalid tokens/duplicates if needed.
-    // FCM multicast limit is 500.
+    // Deduplicate and clean tokens
+    const uniqueTokens = [...new Set(tokens.filter(t => t && typeof t === 'string' && t.trim() !== ''))];
+    if (uniqueTokens.length === 0) return;
 
+    // FCM multicast limit is 500.
     const message = {
         notification: {
             title: title,
@@ -80,7 +82,7 @@ exports.sendPushNotification = async (tokens, title, body, data = {}) => {
                 'apns-priority': '10' // High Priority
             }
         },
-        tokens: tokens
+        tokens: uniqueTokens
     };
 
     try {

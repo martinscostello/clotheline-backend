@@ -27,13 +27,6 @@ exports.calculateOrderTotal = async (items) => {
     }
 
     items.forEach(item => {
-        // Handle both "price" (frontend passed) or lookup (safer).
-        // For MVP, we trust price if we don't want to double-fetch everything, 
-        // BUT strict implementation should fetch prices. 
-        // Given the corrupt state, let's trust the 'price' passed in calculationItems 
-        // which comes from DB in the Retry Flow, or from Frontend in Initialize flow.
-        // Ideally we re-validate, but let's assume valid for now.
-
         // Robust Parsing: Handle strings, commas, decimals safely
         let rawPrice = item.price;
         if (typeof rawPrice === 'string') {
@@ -80,9 +73,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             guestInfo
         } = orderData;
 
-        // Recalculate to be safe? 
-        // If we trust payments.js (which called calculateOrderTotal), we should use the passed totals OR recalculate.
-        // Let's recalculate base totals.
+        // Recalculate to be safe
         const calc = await exports.calculateOrderTotal(items);
         const finalSubtotal = calc.subtotal;
         const finalTax = calc.taxAmount;
@@ -91,7 +82,8 @@ exports.createOrderInternal = async (orderData, userId = null) => {
         const finalDiscount = discountAmount || 0;
         const finalTotal = finalSubtotal + finalTax + finalDelivery - finalDiscount;
 
-        console.log(`[OrderCreation] Items: ${items.length}, Subtotal: ${finalSubtotal}, Tax: ${finalTax}, Delivery: ${finalDelivery}, Discount: ${finalDiscount}, FINAL TOTAL: ${finalTotal}`);
+        // [TRACKING] Log order creation attempt
+        console.log(`[OrderTrigger] Creating Order for User: ${userId}, Branch: ${branchId}, Total: ${finalTotal}`);
 
         // [STRICT AUTH]
         if (!userId) {
@@ -144,7 +136,6 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             }
         } catch (stockErr) {
             console.error("Stock Update Error:", stockErr);
-            // Don't fail order creation, just log
         }
 
         // Send Notification (New Order)
@@ -161,9 +152,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             const message = `(New order from ${branchName} | ${customer ? customer.name : 'Guest'})`;
 
             // Notify Admins
-            console.log(`[OrderNotif] Looking for admins to notify for Branch: ${branchId}`);
             const admins = await User.find({ role: 'admin' });
-            console.log(`[OrderNotif] Found ${admins.length} admins.`);
 
             const adminNotifications = admins.map(admin => ({
                 userId: admin._id,
@@ -176,18 +165,16 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
             if (adminNotifications.length > 0) {
                 await Notification.insertMany(adminNotifications);
-                console.log(`[OrderNotif] Saved ${adminNotifications.length} in-app notifications.`);
 
-                // [NEW] Send Push to Admins
-                const adminTokens = admins.reduce((acc, admin) => {
-                    // Check if tokens exist and are array
-                    if (admin.fcmTokens && Array.isArray(admin.fcmTokens) && admin.fcmTokens.length > 0) {
-                        return acc.concat(admin.fcmTokens);
+                // [FIX] Aggregated and Deduplicated Admin Tokens
+                let adminTokensRaw = [];
+                admins.forEach(admin => {
+                    if (admin.fcmTokens && Array.isArray(admin.fcmTokens)) {
+                        adminTokensRaw = adminTokensRaw.concat(admin.fcmTokens);
                     }
-                    return acc;
-                }, []);
+                });
 
-                console.log(`[OrderNotif] Aggregated ${adminTokens.length} push tokens.`);
+                const adminTokens = [...new Set(adminTokensRaw.filter(t => t))];
 
                 if (adminTokens.length > 0) {
                     try {
@@ -197,19 +184,14 @@ exports.createOrderInternal = async (orderData, userId = null) => {
                             message,
                             { orderId: newOrder._id.toString(), type: 'order', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
                         );
-                        console.log(`[OrderNotif] FCM Send Result: Success=${response.successCount}, Failure=${response.failureCount}`);
+                        console.log(`[OrderNotif] FCM Sent to ${response?.successCount || adminTokens.length} tokens.`);
                     } catch (pushErr) {
-                        console.error(`[OrderNotif] FCM Send Failed:`, pushErr);
+                        console.error(`[OrderNotif] FCM Failed:`, pushErr);
                     }
-                } else {
-                    console.warn("[OrderNotif] No admin tokens found. Push skipped.");
                 }
             }
-
-            // Notify User (Confirmation)
-            // if (customer) ... (already handled usually by frontend confirmation or separate email)
         } catch (notifErr) {
-            console.error("Failed to send Admin Order Notification:", notifErr);
+            console.error("Admin Order Notification Flow Failed:", notifErr);
         }
 
         return newOrder;
@@ -221,7 +203,6 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
 // --- HTTP CONTROLLERS ---
 
-// GET /orders (User)
 exports.getUserOrders = async (req, res) => {
     try {
         const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
@@ -232,12 +213,11 @@ exports.getUserOrders = async (req, res) => {
     }
 };
 
-// GET /orders (Admin/All) - Fix for Missing Handler
 exports.getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find()
             .sort({ createdAt: -1 })
-            .populate('user', 'name email'); // Populate User Details
+            .populate('user', 'name email');
         res.json(orders);
     } catch (err) {
         console.error(err.message);
@@ -245,15 +225,10 @@ exports.getAllOrders = async (req, res) => {
     }
 };
 
-// GET /orders/:id (User/Admin)
 exports.getOrderById = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ msg: 'Order not found' });
-
-        // Access Check
-        // if (order.user.toString() !== req.user.id && req.user.role !== 'admin') ... 
-
         res.json(order);
     } catch (err) {
         console.error(err.message);
@@ -261,7 +236,6 @@ exports.getOrderById = async (req, res) => {
     }
 };
 
-// GET /orders/user/:userId (Admin)
 exports.getOrdersByUserId = async (req, res) => {
     try {
         const orders = await Order.find({ user: req.params.userId }).sort({ createdAt: -1 });
@@ -272,7 +246,6 @@ exports.getOrdersByUserId = async (req, res) => {
     }
 };
 
-// POST /orders (Manual Creation if needed, usually via Payment)
 exports.createOrder = async (req, res) => {
     try {
         const order = await exports.createOrderInternal(req.body, req.user.id);
@@ -292,6 +265,9 @@ exports.updateOrderStatus = async (req, res) => {
         order.status = status;
         await order.save();
 
+        // [TRACKING] Log status update
+        console.log(`[OrderUpdate] Order ${order._id} status changed to ${status}`);
+
         // Notify User
         const title = `Order ${status}`;
         const message = `Your order #${order._id.toString().slice(-6).toUpperCase()} is now ${status}`;
@@ -305,9 +281,9 @@ exports.updateOrderStatus = async (req, res) => {
                 branchId: order.branchId
             }).save();
 
-            // [NEW] Send Push to User
             const user = await User.findById(order.user);
             if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+                // notificationService handles deduplication internally now
                 await NotificationService.sendPushNotification(
                     user.fcmTokens,
                     title,
@@ -324,7 +300,6 @@ exports.updateOrderStatus = async (req, res) => {
     }
 };
 
-// PUT /orders/:id/exception
 exports.updateOrderException = async (req, res) => {
     try {
         const { exceptionStatus, exceptionNote } = req.body;
@@ -335,7 +310,6 @@ exports.updateOrderException = async (req, res) => {
         order.exceptionNote = exceptionNote;
         await order.save();
 
-        // Notify User if it's an issue
         if (exceptionStatus !== 'None' && order.user) {
             const title = `Issue Reported: ${exceptionStatus}`;
             const message = `We found a ${exceptionStatus} with your order. Check chat for details.`;
@@ -344,17 +318,17 @@ exports.updateOrderException = async (req, res) => {
                 userId: order.user,
                 title,
                 message,
-                type: 'alert', // Highlight differently?
+                type: 'alert',
                 branchId: order.branchId
             }).save();
 
             const user = await User.findById(order.user);
-            if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+            if (user && user.fcmTokens && Array.isArray(user.fcmTokens)) {
                 await NotificationService.sendPushNotification(
                     user.fcmTokens,
                     title,
                     message,
-                    { orderId: order._id.toString(), type: 'chat' } // Redirect to Chat
+                    { orderId: order._id.toString(), type: 'chat' }
                 );
             }
         }
@@ -366,7 +340,6 @@ exports.updateOrderException = async (req, res) => {
     }
 };
 
-// POST /orders/batch-status
 exports.batchUpdateOrderStatus = async (req, res) => {
     try {
         const { orderIds, status } = req.body;
@@ -376,7 +349,6 @@ exports.batchUpdateOrderStatus = async (req, res) => {
         }
 
         const orders = await Order.find({ _id: { $in: orderIds } });
-
         let successCount = 0;
 
         for (const order of orders) {
@@ -384,7 +356,6 @@ exports.batchUpdateOrderStatus = async (req, res) => {
             await order.save();
             successCount++;
 
-            // Prepare Notification
             if (order.user) {
                 const title = `Order ${status}`;
                 const message = `Your order #${order._id.toString().slice(-6).toUpperCase()} is now ${status}`;
@@ -409,11 +380,10 @@ exports.batchUpdateOrderStatus = async (req, res) => {
     }
 };
 
-// Async Helper to avoid blocking main thread
 const _sendPushAsync = async (userId, title, message, orderId) => {
     try {
         const user = await User.findById(userId);
-        if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+        if (user && user.fcmTokens && Array.isArray(user.fcmTokens)) {
             await NotificationService.sendPushNotification(
                 user.fcmTokens,
                 title,

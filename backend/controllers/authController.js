@@ -380,21 +380,16 @@ exports.updateFcmToken = async (req, res) => {
         const { token } = req.body;
         if (!token) return res.status(400).json({ msg: 'Token is required' });
 
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ msg: 'User not found' });
-
-        // Initialize if undefined (migration safety)
-        if (!user.fcmTokens) user.fcmTokens = [];
-
-        // Add token only if it doesn't exist to prevent duplicates
-        if (!user.fcmTokens.includes(token)) {
-            user.fcmTokens.push(token);
-            await user.save();
-        }
+        // Use $addToSet to atomically add the token only if it doesn't already exist
+        await User.findByIdAndUpdate(
+            req.user.id,
+            { $addToSet: { fcmTokens: token } },
+            { new: true }
+        );
 
         res.json({ msg: 'Token updated' });
     } catch (err) {
-        console.error(err.message);
+        console.error("[Auth] Token Update Error:", err.message);
         res.status(500).send('Server Error');
     }
 };
