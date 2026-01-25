@@ -29,11 +29,15 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
   final TextEditingController _brandTextController = TextEditingController();
   final TextEditingController _contactAddressCtrl = TextEditingController();
   final TextEditingController _contactPhoneCtrl = TextEditingController();
-  
+  final TextEditingController _deliveryTextCtrl = TextEditingController(); // [NEW]
+
   // Dynamic Controllers
   final List<TextEditingController> _heroTitleControllers = [];
   final List<TextEditingController> _heroTagControllers = [];
   
+  String _deliveryIcon = "van"; // [NEW]
+  bool _deliveryActive = true; // [NEW]
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +49,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     _brandTextController.dispose();
     _contactAddressCtrl.dispose();
     _contactPhoneCtrl.dispose();
+    _deliveryTextCtrl.dispose();
     for (var c in _heroTitleControllers) {
       c.dispose();
     }
@@ -69,6 +74,13 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
         _brandTextController.text = content.brandText;
         _contactAddressCtrl.text = content.contactAddress;
         _contactPhoneCtrl.text = content.contactPhone;
+
+        // Delivery Assurance
+        if (content.deliveryAssurance != null) {
+           _deliveryTextCtrl.text = content.deliveryAssurance!.text;
+           _deliveryIcon = content.deliveryAssurance!.icon;
+           _deliveryActive = content.deliveryAssurance!.active;
+        }
 
         // Init Controllers
         _heroTitleControllers.clear();
@@ -117,6 +129,11 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
       'contactAddress': _content!.contactAddress,
       'contactPhone': _content!.contactPhone,
       'homeGridServices': _content!.homeGridServices.map((e) => e.id).toList(), 
+      'deliveryAssurance': {
+         'text': _deliveryTextCtrl.text,
+         'icon': _deliveryIcon,
+         'active': _deliveryActive
+      }
     };
     
     setState(() => _isUploading = true);
@@ -134,6 +151,18 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
       }
     }
   }
+
+  // ... _pickAndUploadImage, _pickAndUploadVideo intentionally omitted from replacement to match range
+  // Wait, I need to match EXACT LINES. 
+  // The provided text covers _saveContent and _fetchContent fully.
+  // But my Range (StartLine 28) covers _saveContent and `_pickAndUploadImage` isn't in my replacement content?
+  // Be careful. I'll include ALL OF THEM or just do multiple edits.
+  // I'll do multiple edits to be safe.
+  // Edit 1: State variables and _fetchContent (Lines 28-93)
+  // Edit 2: _saveContent (Lines 95-136)
+  // Edit 3: _buildSectionContent (Lines 268-276) + Add _buildBrandingConfig
+
+  // Let's do Edit 1: State Variables.
 
   Future<void> _pickAndUploadImage(Function(String) onUrlReady, {required CropAspectRatioPreset preset}) async {
     final picker = ImagePicker();
@@ -271,8 +300,82 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     switch(widget.section) {
       case 'home': return _buildHomeConfig();
       case 'ads': return _buildAdsConfig();
+      case 'branding': return _buildBrandingConfig();
       default: return const SizedBox();
     }
+  }
+
+  Widget _buildBrandingConfig() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("General Branding", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 15),
+        _buildTextField("Brand Name", _brandTextController),
+        const SizedBox(height: 15),
+        _buildTextField("Contact Address", _contactAddressCtrl),
+        const SizedBox(height: 15),
+        _buildTextField("Contact Phone", _contactPhoneCtrl),
+        const SizedBox(height: 40),
+        
+        const Text("Delivery Assurance", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        Text("Shown on Product Details Page. Wrap text in [] to highlight in green.", style: TextStyle(color: Colors.white70, fontSize: 12)),
+        const SizedBox(height: 15),
+        
+        GlassContainer(
+          opacity: 0.1,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+               Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                 children: [
+                   const Text("Show Delivery Assurance", style: TextStyle(color: Colors.white)),
+                   Switch(value: _deliveryActive, onChanged: (v) => setState(() => _deliveryActive = v), activeColor: AppTheme.secondaryColor),
+                 ],
+               ),
+               if (_deliveryActive) ...[
+                 const SizedBox(height: 15),
+                 _buildTextField("Assurance Text", _deliveryTextCtrl),
+                 const SizedBox(height: 20),
+                 const Text("Select Icon", style: TextStyle(color: Colors.white70)),
+                 const SizedBox(height: 10),
+                 Row(
+                   mainAxisAlignment: MainAxisAlignment.spaceAround,
+                   children: [
+                     _buildIconOption("van", Icons.local_shipping),
+                     _buildIconOption("bike", Icons.motorcycle),
+                     _buildIconOption("clock", Icons.access_time),
+                   ],
+                 )
+               ]
+            ],
+          ),
+        )
+      ],
+    );
+  }
+  
+  Widget _buildIconOption(String value, IconData icon) {
+     bool isSelected = _deliveryIcon == value;
+     return GestureDetector(
+       onTap: () => setState(() => _deliveryIcon = value),
+       child: Container(
+         padding: const EdgeInsets.all(12),
+         decoration: BoxDecoration(
+           color: isSelected ? AppTheme.secondaryColor.withOpacity(0.2) : Colors.transparent,
+           border: Border.all(color: isSelected ? AppTheme.secondaryColor : Colors.white24),
+           borderRadius: BorderRadius.circular(10)
+         ),
+         child: Column(
+           children: [
+             Icon(icon, color: isSelected ? AppTheme.secondaryColor : Colors.white, size: 30),
+             const SizedBox(height: 8),
+             Text(value.toUpperCase(), style: TextStyle(color: isSelected ? AppTheme.secondaryColor : Colors.white70, fontSize: 10))
+           ],
+         ),
+       ),
+     );
   }
 
 

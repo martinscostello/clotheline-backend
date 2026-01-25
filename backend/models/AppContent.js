@@ -30,7 +30,12 @@ const AppContentSchema = new mongoose.Schema({
     },
     contactAddress: { type: String, default: "123 Laundry St, Lagos" },
     contactPhone: { type: String, default: "+234 800 000 0000" },
-    freeShippingThreshold: { type: Number, default: 25000 }
+    freeShippingThreshold: { type: Number, default: 25000 },
+    deliveryAssurance: {
+        text: { type: String, default: "Arrives in as little as [2 days]" },
+        icon: { type: String, enum: ['van', 'bike', 'clock'], default: 'van' },
+        active: { type: Boolean, default: true }
+    }
 }, { timestamps: true });
 
 // Ensure we only have one config document
@@ -42,7 +47,12 @@ AppContentSchema.statics.getSingleton = async function () {
             homeGridServices: [],
             productAds: [],
             brandText: "Premium Laundry Services",
-            productCategories: ["Fragrances", "Softeners", "Household", "Cleaning", "Accesories", "Beddings", "Clothes", "Special"]
+            productCategories: ["Fragrances", "Softeners", "Household", "Cleaning", "Accesories", "Beddings", "Clothes", "Special"],
+            deliveryAssurance: {
+                text: "Arrives in as little as [2 days]",
+                icon: "van",
+                active: true
+            }
         });
     }
     return doc;

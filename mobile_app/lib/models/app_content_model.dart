@@ -9,7 +9,8 @@ class AppContentModel {
   List<String> productCategories;
   String contactAddress;
   String contactPhone;
-  double freeShippingThreshold; // [NEW]
+  double freeShippingThreshold; 
+  DeliveryAssurance? deliveryAssurance; // [NEW]
 
   AppContentModel({
     required this.id,
@@ -21,6 +22,7 @@ class AppContentModel {
     required this.contactAddress,
     required this.contactPhone,
     this.freeShippingThreshold = 25000.0,
+    this.deliveryAssurance,
   });
 
   factory AppContentModel.fromJson(Map<String, dynamic> json) {
@@ -43,21 +45,49 @@ class AppContentModel {
       contactAddress: json['contactAddress'] ?? "123 Laundry St, Lagos",
       contactPhone: json['contactPhone'] ?? "+234 800 000 0000",
       freeShippingThreshold: (json['freeShippingThreshold'] as num?)?.toDouble() ?? 25000.0,
+      deliveryAssurance: json['deliveryAssurance'] != null ? DeliveryAssurance.fromJson(json['deliveryAssurance']) : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'heroCarousel': heroCarousel.map((e) => e.toJson()).toList(),
-      'homeGridServices': homeGridServices.map((e) => e.id).toList(), // Send IDs back to backend
+      'homeGridServices': homeGridServices.map((e) => e.id).toList(), 
       'productAds': productAds.map((e) => e.toJson()).toList(),
       'brandText': brandText,
       'productCategories': productCategories,
       'contactAddress': contactAddress,
       'contactPhone': contactPhone,
       'freeShippingThreshold': freeShippingThreshold,
+      'deliveryAssurance': deliveryAssurance?.toJson(),
     };
   }
+}
+
+class DeliveryAssurance {
+  String text;
+  String icon;
+  bool active;
+
+  DeliveryAssurance({
+    this.text = "Arrives in as little as [2 days]",
+    this.icon = "van",
+    this.active = true
+  });
+
+  factory DeliveryAssurance.fromJson(Map<String, dynamic> json) {
+    return DeliveryAssurance(
+      text: json['text'] ?? "Arrives in as little as [2 days]",
+      icon: json['icon'] ?? "van",
+      active: json['active'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'text': text,
+    'icon': icon,
+    'active': active,
+  };
 }
 
 class HeroCarouselItem {

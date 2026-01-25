@@ -13,33 +13,57 @@ router.get('/financials', auth, async (req, res) => {
         // (Simulate Admin Check or use middleware if configured with roles)
         // req.user.role check needed if auth middleware doesn't enforce it
 
-        const { startDate, endDate } = req.query; // '2024-01-01', etc.
+        const { startDate, endDate, branchId } = req.query;
+        const mongoose = require('mongoose');
 
         let dateQuery = {};
         if (startDate && endDate) {
             dateQuery = { createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) } };
         }
 
+        // Helper to build pipeline
+        const buildPipeline = (initialMatch) => {
+            const pipeline = [{ $match: { ...initialMatch, ...dateQuery } }];
+
+            if (branchId) {
+                pipeline.push(
+                    { $lookup: { from: 'orders', localField: 'orderId', foreignField: '_id', as: 'order' } },
+                    { $unwind: { path: '$order', preserveNullAndEmptyArrays: false } }, // only matched orders
+                    { $match: { 'order.branchId': new mongoose.Types.ObjectId(branchId) } }
+                );
+            }
+            return pipeline;
+        };
+
         // 1. Total Revenue (Success Payments)
-        const revenueAgg = await Payment.aggregate([
-            { $match: { status: 'success', ...dateQuery } },
+        const revenueWithBranchWrapper = [
+            ...buildPipeline({ status: 'success' }),
             { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
-        ]);
+        ];
+        const revenueAgg = await Payment.aggregate(revenueWithBranchWrapper);
 
         // 2. Refunds
-        const refundAgg = await Payment.aggregate([
-            { $match: { refundStatus: { $in: ['processing', 'completed'] }, ...dateQuery } },
+        const refundWithBranchWrapper = [
+            ...buildPipeline({ refundStatus: { $in: ['processing', 'completed'] } }),
             { $group: { _id: null, total: { $sum: '$refundedAmount' }, count: { $sum: 1 } } }
-        ]);
+        ];
+        const refundAgg = await Payment.aggregate(refundWithBranchWrapper);
 
         // 3. Pending Payments
-        const pendingCount = await Payment.countDocuments({ status: 'pending', ...dateQuery });
+        // countDocuments doesn't support aggregation lookup easily. Use aggregate.
+        const pendingWrapper = [
+            ...buildPipeline({ status: 'pending' }),
+            { $count: 'count' }
+        ];
+        const pendingRes = await Payment.aggregate(pendingWrapper);
+        const pendingCount = pendingRes[0]?.count || 0;
 
         // 4. Group by Provider (Revenue)
-        const providerAgg = await Payment.aggregate([
-            { $match: { status: 'success', ...dateQuery } },
+        const providerWrapper = [
+            ...buildPipeline({ status: 'success' }),
             { $group: { _id: '$provider', total: { $sum: '$amount' }, count: { $sum: 1 } } }
-        ]);
+        ];
+        const providerAgg = await Payment.aggregate(providerWrapper);
 
         const totalRevenue = revenueAgg[0]?.total || 0;
         const totalRefunds = refundAgg[0]?.total || 0;

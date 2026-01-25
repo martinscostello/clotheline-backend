@@ -4,8 +4,9 @@ import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../../providers/branch_provider.dart'; // [New]
 import '../../../services/auth_service.dart';
-import '../../../services/analytics_service.dart'; // [New]
+import '../../../services/analytics_service.dart'; 
 import '../../../utils/currency_formatter.dart';
 import '../services/admin_services_screen.dart';
 import '../products/admin_products_screen.dart';
@@ -15,7 +16,7 @@ import '../reports/admin_financial_dashboard.dart';
 import '../settings/admin_tax_settings_screen.dart';
 import '../settings/admin_delivery_settings_screen.dart';
 import '../orders/admin_orders_screen.dart'; 
-import '../promotions/admin_promotions_screen.dart'; // Added 
+import '../promotions/admin_promotions_screen.dart'; 
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -25,20 +26,29 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  String _timeRange = 'week'; // week, month, year
+  String _timeRange = 'week'; 
+  String? _selectedBranchId; // [New]
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Ensure branches are loaded if not already
+      Provider.of<BranchProvider>(context, listen: false).fetchBranches();
       _fetchData();
     });
   }
 
   void _fetchData() {
     final analytics = Provider.of<AnalyticsService>(context, listen: false);
-    analytics.fetchRevenueStats(range: _timeRange);
-    analytics.fetchTopItems(limit: 5);
+    analytics.fetchRevenueStats(range: _timeRange, branchId: _selectedBranchId);
+    analytics.fetchTopItems(limit: 5, branchId: _selectedBranchId);
+  }
+  
+  void _onBranchChanged(String? newBranchId) {
+    if (_selectedBranchId == newBranchId) return;
+    setState(() => _selectedBranchId = newBranchId);
+    _fetchData();
   }
 
   void _onRangeChanged(String newRange) {
@@ -56,6 +66,35 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          // Branch Selector
+          Consumer<BranchProvider>(
+            builder: (context, branchProvider, _) {
+              if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
+              
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    dropdownColor: const Color(0xFF2C2C2E),
+                    value: _selectedBranchId,
+                    hint: const Text("All Branches", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    icon: const Icon(Icons.store, color: AppTheme.secondaryColor, size: 20),
+                    onChanged: _onBranchChanged,
+                    items: [
+                      const DropdownMenuItem<String?>(
+                         value: null, 
+                         child: Text("All Branches", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                      ),
+                      ...branchProvider.branches.map((b) => DropdownMenuItem(
+                        value: b.id,
+                        child: Text(b.name, style: const TextStyle(color: Colors.white70))
+                      ))
+                    ],
+                  ),
+                ),
+              );
+            }
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.secondaryColor), 
             onPressed: _fetchData

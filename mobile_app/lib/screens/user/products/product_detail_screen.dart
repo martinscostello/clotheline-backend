@@ -140,9 +140,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                        child: Column(
                          crossAxisAlignment: CrossAxisAlignment.start,
                          children: [
+                            _buildDeliveryAssurance(),
                            // 1. Title (Expandable)
                            _buildExpandableTitle(textColor),
-                           const SizedBox(height: 12),
+                           const SizedBox(height: 6),
 
                            // 2. Brand Tag
                            Row(
@@ -402,7 +403,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         children: [
           Text(
             widget.product.name,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: textColor),
             maxLines: _isTitleExpanded ? null : 2,
             overflow: _isTitleExpanded ? null : TextOverflow.ellipsis,
           ),
@@ -424,18 +425,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildStockIndicator() {
      int stock = widget.product.stockLevel;
-     if (stock <= 5) {
-       return Container(
-         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-         decoration: BoxDecoration(
-           border: Border.all(color: Colors.deepOrange),
-           borderRadius: BorderRadius.circular(4),
-           color: Colors.deepOrange.withOpacity(0.1)
-         ),
-         child: const Text("[Almost sold out]", style: TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 12)),
-       );
-     }
-     return Text("$stock in stock currently", style: const TextStyle(color: Colors.grey, fontSize: 13));
+     return Container(
+       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+       decoration: BoxDecoration(
+         border: Border.all(color: Colors.deepOrange),
+         borderRadius: BorderRadius.circular(4),
+         color: Colors.deepOrange.withOpacity(0.1)
+       ),
+       child: Text("$stock in stock currently", style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 13)),
+     );
   }
 
   Widget _buildFreeShipping() {
@@ -629,5 +627,109 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       );
     }
+  }
+  Widget _buildDeliveryAssurance() {
+     final da = _appContent?.deliveryAssurance;
+     if (da == null || !da.active) return const SizedBox.shrink();
+
+     IconData iconData = Icons.local_shipping;
+     if (da.icon == 'bike') iconData = Icons.motorcycle;
+     if (da.icon == 'clock') iconData = Icons.access_time;
+
+     return Padding(
+       padding: const EdgeInsets.only(bottom: 8.0),
+       child: Row(
+         crossAxisAlignment: CrossAxisAlignment.center,
+         children: [
+            _DrivingIcon(icon: iconData), 
+            const SizedBox(width: 8),
+            Expanded(child: _parseRichText(da.text))
+         ],
+       ),
+     );
+  }
+
+  Widget _parseRichText(String text) {
+     List<InlineSpan> spans = [];
+     RegExp exp = RegExp(r'\[(.*?)\]');
+     Iterable<RegExpMatch> matches = exp.allMatches(text);
+     
+     int lastIndex = 0;
+     for (final match in matches) {
+        if (match.start > lastIndex) {
+           spans.add(TextSpan(text: text.substring(lastIndex, match.start)));
+        }
+        spans.add(WidgetSpan(
+          alignment: PlaceholderAlignment.baseline, 
+          baseline: TextBaseline.alphabetic,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(4)
+            ),
+            child: Text(match.group(1)!, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)), 
+          )
+        ));
+        lastIndex = match.end;
+     }
+     if (lastIndex < text.length) {
+        spans.add(TextSpan(text: text.substring(lastIndex)));
+     }
+     
+     return RichText(
+       text: TextSpan(
+         style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black, fontSize: 14),
+         children: spans
+       )
+     );
+  }
+}
+
+class _DrivingIcon extends StatefulWidget {
+  final IconData icon;
+  const _DrivingIcon({required this.icon});
+
+  @override
+  State<_DrivingIcon> createState() => _DrivingIconState();
+}
+
+class _DrivingIconState extends State<_DrivingIcon> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _offsetAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    // Move slightly forward and back
+    _offsetAnimation = Tween<double>(begin: -1.0, end: 1.0).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _offsetAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(_offsetAnimation.value, 0),
+          child: Icon(widget.icon, color: Colors.green, size: 28), // Green Icon
+        );
+      },
+    );
   }
 }

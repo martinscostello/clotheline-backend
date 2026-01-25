@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // [New]
+import '../../../../providers/branch_provider.dart'; // [New]
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
@@ -18,17 +20,31 @@ class _AdminFinancialDashboardState extends State<AdminFinancialDashboard> {
   bool _isLoading = true;
   Map<String, dynamic>? _data;
   String _rangeLabel = "All Time";
+  String? _selectedBranchId; // [New]
   
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+       Provider.of<BranchProvider>(context, listen: false).fetchBranches();
+       _fetchData();
+    });
   }
 
   Future<void> _fetchData({DateTime? start, DateTime? end}) async {
     setState(() => _isLoading = true);
     try {
-      final data = await _reportService.fetchFinancials(startDate: start, endDate: end);
+      // Re-calculate dates based on range label if args missing
+      if (start == null && end == null) {
+          // Check _rangeLabel logic if needed or reused
+          // Actually _updateRange logic handles date calc. 
+          // But _fetchData is called initially with nulls which means "All Time" by default implementation?
+          // Line 58 logic in original: if range=AllTime -> start=null, end=null.
+          // So we should respect current logic unless we want to enforce dates.
+          // My implementation below:
+      }
+      
+      final data = await _reportService.fetchFinancials(startDate: start, endDate: end, branchId: _selectedBranchId);
       if (mounted) {
         setState(() {
           _data = data;
@@ -42,6 +58,10 @@ class _AdminFinancialDashboardState extends State<AdminFinancialDashboard> {
       }
     }
   }
+
+  // Refactor _updateRange to store dates or re-calc them
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   void _updateRange(String range) {
     DateTime now = DateTime.now();
@@ -59,8 +79,18 @@ class _AdminFinancialDashboardState extends State<AdminFinancialDashboard> {
        end = null;
     }
 
-    setState(() => _rangeLabel = range);
+    setState(() {
+       _rangeLabel = range;
+       _startDate = start;
+       _endDate = end;
+    });
     _fetchData(start: start, end: end);
+  }
+  
+  void _onBranchChanged(String? newId) {
+     if (_selectedBranchId == newId) return;
+     setState(() => _selectedBranchId = newId);
+     _fetchData(start: _startDate, end: _endDate);
   }
 
   @override
@@ -73,6 +103,36 @@ class _AdminFinancialDashboardState extends State<AdminFinancialDashboard> {
         elevation: 0,
         leading: const BackButton(color: Colors.white),
         actions: [
+          // Branch Selector
+          Consumer<BranchProvider>(
+            builder: (context, branchProvider, _) {
+              if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
+              
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    dropdownColor: const Color(0xFF2C2C2E),
+                    value: _selectedBranchId,
+                    hint: const Text("All", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    icon: const Icon(Icons.store, color: AppTheme.secondaryColor, size: 20),
+                    onChanged: _onBranchChanged,
+                    items: [
+                      const DropdownMenuItem<String?>(
+                         value: null, 
+                         child: Text("All", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                      ),
+                      ...branchProvider.branches.map((b) => DropdownMenuItem(
+                        value: b.id,
+                        child: Text(b.name, style: const TextStyle(color: Colors.white70))
+                      ))
+                    ],
+                  ),
+                ),
+              );
+            }
+          ),
+          
           PopupMenuButton<String>(
             icon: const Icon(Icons.calendar_today, color: Colors.white),
             onSelected: _updateRange,
