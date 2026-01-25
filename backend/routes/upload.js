@@ -16,10 +16,13 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'clotheline_uploads', // Folder in Cloudinary
+        folder: 'clotheline_uploads',
         allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'mp4', 'mov', 'avi'],
-        resource_type: 'auto', // Auto-detect image vs video
-        public_id: (req, file) => file.fieldname + '-' + Date.now(), // Unique filename
+        resource_type: 'auto',
+        public_id: (req, file) => file.fieldname + '-' + Date.now(),
+        transformation: [
+            { audio_codec: "none" } // Strip audio completely from videos
+        ]
     },
 });
 
