@@ -73,13 +73,31 @@ router.post('/initialize', auth, async (req, res) => {
         const user = await User.findById(userId);
         const email = user ? user.email : (req.body.email || 'user@clotheline.app');
 
-        // 2. Initialize with Paystack DIRECTLY
+        // 2. Initialize with Paystack DIRECTLY (Strip bulky fields to prevent 400 error)
         const metadata = {
-            ...req.body,
+            userId: userId,
+            scope,
+            branchId,
+            items: calculationItems.map(i => ({
+                itemId: i.itemId,
+                name: i.name,
+                itemType: i.itemType,
+                quantity: i.quantity,
+                price: i.price,
+                variant: i.variant,
+                serviceType: i.serviceType
+            })),
             retryOrderId,
-            items: calculationItems,
-            userId: userId // STRICT: From Auth Token
+            deliveryFee,
+            pickupFee,
+            deliveryOption: req.body.deliveryOption,
+            deliveryAddress: req.body.deliveryAddress,
+            deliveryPhone: req.body.deliveryPhone,
+            deliveryCoordinates: req.body.deliveryCoordinates,
+            guestInfo: req.body.guestInfo
         };
+
+        console.log(`[Paystack] Initializing: Email=${email}, Amount=${amountKobo}, Ref=${reference}`);
 
         const paystackResponse = await axios.post(
             'https://api.paystack.co/transaction/initialize',
