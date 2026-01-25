@@ -53,10 +53,15 @@ class ReviewService extends ChangeNotifier {
       } else {
         return {'success': false, 'message': response.data['message'] ?? 'Failed to submit review'};
       }
+    } on DioException catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      final msg = e.response?.data['message'] ?? e.message ?? 'An unknown error occurred';
+      return {'success': false, 'message': msg};
     } catch (e) {
       _isLoading = false;
       notifyListeners();
-      return {'success': false, 'message': e.toString()};
+      return {'success': false, 'message': 'Connection error: ${e.toString()}'};
     }
   }
 
