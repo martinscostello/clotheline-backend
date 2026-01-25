@@ -42,9 +42,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? _eligibleOrderId;
   bool _isReviewLoading = true;
 
-  // Keys for Animation
-  final GlobalKey _cartKey = GlobalKey();
-  final GlobalKey _addBtnKey = GlobalKey();
+  void _showFullDescription(BuildContext context, Color textColor) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text("Product Details", style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Text(
+                  widget.product.description,
+                  style: TextStyle(color: textColor.withOpacity(0.8), height: 1.6, fontSize: 15),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -377,11 +412,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                            // 11. Product Details
                            Text("Product Details", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
                            const SizedBox(height: 12),
-                           Text(
-                             widget.product.description.isEmpty ? "No description available." : widget.product.description,
-                             style: TextStyle(color: textColor.withOpacity(0.8), height: 1.5),
-                           ),
-                           const SizedBox(height: 24),
+                            GestureDetector(
+                               onTap: () => _showFullDescription(context, textColor),
+                               child: Text(
+                                 widget.product.description.isEmpty ? "No description available." : widget.product.description,
+                                 maxLines: 5,
+                                 overflow: TextOverflow.ellipsis,
+                                 style: TextStyle(color: textColor.withOpacity(0.8), height: 1.5),
+                               ),
+                            ),
+                            if (widget.product.description.length > 200)
+                              GestureDetector(
+                                onTap: () => _showFullDescription(context, textColor),
+                                child: const Padding(
+                                  padding: EdgeInsets.only(top: 8.0),
+                                  child: Text("Read More", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                                ),
+                              ),
+                            const SizedBox(height: 24),
 
                            // 12. Large Images
                            _buildLargeImages(),
@@ -586,7 +634,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Row(children: List.generate(5, (i) => Icon(i < r.rating ? Icons.star : Icons.star_border, color: Colors.amber, size: 12))),
                 if (r.comment != null && r.comment!.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(r.comment!, style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 13)),
+                  _ExpandableReviewText(text: r.comment!, color: textColor),
                 ],
                 if (r.images.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -915,6 +963,49 @@ class _DrivingIconState extends State<_DrivingIcon> with SingleTickerProviderSta
         ),
         borderRadius: BorderRadius.circular(1)
       ),
+  }
+}
+
+class _ExpandableReviewText extends StatefulWidget {
+  final String text;
+  final Color color;
+
+  const _ExpandableReviewText({required this.text, required this.color});
+
+  @override
+  State<_ExpandableReviewText> createState() => _ExpandableReviewTextState();
+}
+
+class _ExpandableReviewTextState extends State<_ExpandableReviewText> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.text,
+          maxLines: _isExpanded ? null : 2,
+          overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: TextStyle(color: widget.color.withOpacity(0.8), fontSize: 13),
+        ),
+        if (widget.text.length > 80) // Simple heuristic or use TextPainter for precision
+          GestureDetector(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                _isExpanded ? "Read Less" : "Read More",
+                style: TextStyle(
+                  color: AppTheme.primaryColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

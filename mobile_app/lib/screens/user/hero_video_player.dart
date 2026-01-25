@@ -27,8 +27,10 @@ class _HeroVideoPlayerState extends State<HeroVideoPlayer> {
   }
 
   void _initializeController() {
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-      ..initialize().then((_) {
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoUrl),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    )..initialize().then((_) {
         if (mounted) {
           setState(() {
             _initialized = true;
