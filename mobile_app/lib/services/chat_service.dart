@@ -173,6 +173,26 @@ class ChatService extends ChangeNotifier {
     }
   }
 
+  // [NEW] Helper to find specific thread for Admin context
+  Future<String?> getAdminThreadForUser(String userId, String branchId) async {
+    // Ensure we have threads loaded
+    if (_threads.isEmpty) {
+      await fetchThreads(branchId, 'All');
+    }
+    
+    try {
+      final thread = _threads.firstWhere((t) => 
+        (t['userId'] is Map ? t['userId']['_id'] : t['userId']) == userId, 
+        orElse: () => null
+      );
+      
+      return thread != null ? thread['_id'] : null;
+    } catch (e) {
+      print("Error finding thread for user: $e");
+      return null;
+    }
+  }
+
   Future<void> selectThread(String threadId) async {
     _isLoading = true;
     notifyListeners();

@@ -326,6 +326,163 @@ router.post('/refund', auth, async (req, res) => {
     }
 });
 
+// POST /refund-partial (Admin Only)
+router.post('/refund-partial', auth, async (req, res) => {
+    try {
+        const requestor = await User.findById(req.user.id);
+        if (!requestor || requestor.role !== 'admin') {
+            return res.status(403).json({ msg: 'Access denied. Admins only.' });
+        }
+
+        const { orderId, refundedItemIds } = req.body; // Array of _id strings from items array
+
+        if (!refundedItemIds || !Array.isArray(refundedItemIds) || refundedItemIds.length === 0) {
+            return res.status(400).json({ msg: 'No items selected for refund.' });
+        }
+
+        const Order = require('../models/Order');
+        const originalOrder = await Order.findById(orderId);
+        if (!originalOrder) return res.status(404).json({ msg: 'Order not found' });
+
+        const payment = await Payment.findOne({ orderId: orderId, status: 'success' });
+        // NOTE: We allow partial refunds even if payment not found? No, must have paid to refund.
+        if (!payment) return res.status(404).json({ msg: 'No successful payment found.' });
+
+        // 1. Separate Items
+        const itemsToRefund = [];
+        const itemsRemaining = [];
+        let refundAmount = 0;
+
+        originalOrder.items.forEach(item => {
+            // Check if this item is in the refund list (match ObjectIds)
+            // item._id is likely an ObjectId, refundedItemIds are likely strings
+            if (refundedItemIds.includes(item._id.toString())) {
+                itemsToRefund.push(item);
+                refundAmount += (item.price * item.quantity);
+            } else {
+                itemsRemaining.push(item);
+            }
+        });
+
+        if (itemsToRefund.length === 0) {
+            return res.status(400).json({ msg: 'Selected items not found in order.' });
+        }
+
+        // 2. Adjust Refund Amount (Add Tax?)
+        // Calculate tax portion for these items
+        // Simplified: (ItemTotal / Subtotal) * TaxAmount
+        // Precision might be tricky. Let's re-calculate tax for the refund chunk.
+        const settings = { taxRate: 7.5 }; // Should fetch from DB settings
+        const refundTax = (refundAmount * settings.taxRate) / 100;
+        const totalRefundValue = refundAmount + refundTax;
+
+        // Convert to Kobo
+        const refundAmountKobo = Math.round(totalRefundValue * 100);
+
+        // 3. Process Refund with Paystack
+        if (payment.provider === 'paystack') {
+            try {
+                const response = await axios.post('https://api.paystack.co/refund', {
+                    transaction: payment.reference,
+                    amount: refundAmountKobo,
+                    customer_note: "Partial Refund for specific items",
+                    merchant_note: `Partial refund of ${itemsToRefund.length} items`
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${PAYSTACK_SECRET}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.data.status) {
+                    return res.status(400).json({ msg: 'Paystack refund failed: ' + response.data.message });
+                }
+
+                // 4. Success! Now Split the Order.
+
+                // A. Create New Order for Remaining Items (if any)
+                let newOrder = null;
+                if (itemsRemaining.length > 0) {
+                    const { createOrderInternal } = require('../controllers/orderController');
+                    // Re-construct order data
+                    const orderData = {
+                        branchId: originalOrder.branchId,
+                        items: itemsRemaining,
+                        pickupOption: originalOrder.pickupOption,
+                        deliveryOption: originalOrder.deliveryOption,
+                        pickupAddress: originalOrder.pickupAddress,
+                        pickupPhone: originalOrder.pickupPhone,
+                        deliveryAddress: originalOrder.deliveryAddress,
+                        deliveryPhone: originalOrder.deliveryPhone,
+                        guestInfo: originalOrder.guestInfo,
+                        // Financials will be re-calculated by createOrderInternal
+                    };
+
+                    // We need to bypass Auth check if guest? createOrderInternal handles it.
+                    // But originalOrder.user might be null.
+                    newOrder = await createOrderInternal(orderData, originalOrder.user ? originalOrder.user.toString() : null);
+
+                    // Carry over payment status
+                    newOrder.paymentStatus = 'Paid';
+                    // Inherit status from parent
+                    newOrder.status = originalOrder.status;
+                    await newOrder.save();
+                }
+
+                // B. Update Original Order to be the "Refunded" Record
+                originalOrder.items = itemsToRefund; // Keep only refunded items
+                originalOrder.status = 'Refunded';
+                originalOrder.paymentStatus = 'Refunded';
+                originalOrder.subtotal = refundAmount;
+                originalOrder.taxAmount = refundTax;
+                originalOrder.totalAmount = totalRefundValue;
+                // Add reference to child
+                if (newOrder) {
+                    originalOrder.exceptionNote = `Split: Remaining items moved to Order #${newOrder._id.toString().slice(-6).toUpperCase()}`;
+                }
+                await originalOrder.save();
+
+                // C. Update Payment Record
+                payment.refundStatus = 'partial';
+                payment.refundedAmount = (payment.refundedAmount || 0) + refundAmountKobo;
+                await payment.save();
+
+                // D. Notify User
+                const Notification = require('../models/Notification');
+                if (originalOrder.user) {
+                    const message = newOrder
+                        ? `Partial Refund: ${itemsToRefund.length} items refunded. Remaining items are processing in Order #${newOrder._id.toString().slice(-6).toUpperCase()}.`
+                        : `Partial Refund for ${itemsToRefund.length} items processed.`;
+
+                    await new Notification({
+                        userId: originalOrder.user,
+                        title: 'Partial Refund Processed',
+                        message,
+                        type: 'order',
+                        branchId: originalOrder.branchId
+                    }).save();
+                }
+
+                return res.json({
+                    msg: 'Partial refund successful',
+                    originalOrder, // Refunded part
+                    newOrder // Active part
+                });
+
+            } catch (e) {
+                console.error("Partial Refund API Error:", e.response?.data || e.message);
+                return res.status(500).json({ msg: 'Refund API Failed' });
+            }
+        } else {
+            return res.status(400).json({ msg: 'Provider not supported for auto-refund yet.' });
+        }
+
+    } catch (err) {
+        console.error("Partial Refund Route Error:", err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // GET /status/:orderId
 router.get('/status/:orderId', auth, async (req, res) => {
     try {

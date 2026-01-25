@@ -39,6 +39,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   final _pickupPhoneController = TextEditingController();
   final _deliveryAddressController = TextEditingController();
   final _deliveryPhoneController = TextEditingController();
+  final _promoController = TextEditingController(); // [New]
 
   // Location Data
   LatLng? _pickupLatLng;
@@ -300,6 +301,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
            _buildSectionHeader("Order Details", textColor),
            const SizedBox(height: 15),
            _buildSummaryCard(isDark, textColor),
+           _buildSummaryCard(isDark, textColor),
+           
+           const SizedBox(height: 20),
+           _buildPromoSection(isDark, textColor),
            
            const SizedBox(height: 30),
             _buildSectionHeader("Logistics", textColor),
@@ -603,6 +608,106 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
         Expanded(child: Text(value, style: TextStyle(color: textColor))),
       ],
+    );
+  }
+
+  Widget _buildPromoSection(bool isDark, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.local_offer, color: AppTheme.primaryColor, size: 20),
+              const SizedBox(width: 8),
+              Text("Promotions / Promo Code", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          if (_cartService.appliedPromotion != null)
+             Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.withOpacity(0.3))
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "${_cartService.appliedPromotion!['code']} applied",
+                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)
+                    )
+                  ),
+                  InkWell(
+                    onTap: () {
+                      _cartService.removePromo();
+                      setState(() {});
+                    },
+                    child: const Icon(Icons.close, size: 18, color: Colors.grey)
+                  )
+                ],
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.black26 : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
+                    ),
+                    child: TextField(
+                      controller: _promoController,
+                      style: TextStyle(color: textColor),
+                      decoration: InputDecoration(
+                        hintText: "Enter Code",
+                        hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
+                  ),
+                  onPressed: () async {
+                    if (_promoController.text.trim().isEmpty) return;
+                    FocusScope.of(context).unfocus();
+                    
+                    final error = await _cartService.applyPromoCode(_promoController.text.trim());
+                    if (error != null) {
+                      if(mounted) ToastUtils.show(context, error, type: ToastType.error);
+                    } else {
+                      _promoController.clear();
+                      if(mounted) ToastUtils.show(context, "Discount Applied!", type: ToastType.success);
+                    }
+                    setState(() {}); // Rebuild to show applied status
+                  },
+                  child: const Text("Apply"),
+                )
+              ],
+            )
+        ],
+      ),
     );
   }
 

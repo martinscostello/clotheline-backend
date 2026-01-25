@@ -61,6 +61,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             items,
             subtotal,
             discountAmount,
+            promoCode, // [FIX] Added
             taxAmount,
             totalAmount, // Usually recalculated, but can be passed
 
@@ -106,6 +107,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             tax: finalTax,
             deliveryFee: finalDelivery,
             discount: finalDiscount,
+            promoCode: promoCode || null, // [FIX] Added
             totalAmount: finalTotal,
 
             // Status
@@ -243,6 +245,17 @@ exports.getOrderById = async (req, res) => {
     }
 };
 
+// GET /orders/user/:userId (Admin)
+exports.getOrdersByUserId = async (req, res) => {
+    try {
+        const orders = await Order.find({ user: req.params.userId }).sort({ createdAt: -1 });
+        res.json(orders);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
 // POST /orders (Manual Creation if needed, usually via Payment)
 exports.createOrder = async (req, res) => {
     try {
@@ -292,5 +305,107 @@ exports.updateOrderStatus = async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
+    }
+};
+
+// PUT /orders/:id/exception
+exports.updateOrderException = async (req, res) => {
+    try {
+        const { exceptionStatus, exceptionNote } = req.body;
+        let order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+        order.exceptionStatus = exceptionStatus;
+        order.exceptionNote = exceptionNote;
+        await order.save();
+
+        // Notify User if it's an issue
+        if (exceptionStatus !== 'None' && order.user) {
+            const title = `Issue Reported: ${exceptionStatus}`;
+            const message = `We found a ${exceptionStatus} with your order. Check chat for details.`;
+
+            await new Notification({
+                userId: order.user,
+                title,
+                message,
+                type: 'alert', // Highlight differently?
+                branchId: order.branchId
+            }).save();
+
+            const user = await User.findById(order.user);
+            if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+                await NotificationService.sendPushNotification(
+                    user.fcmTokens,
+                    title,
+                    message,
+                    { orderId: order._id.toString(), type: 'chat' } // Redirect to Chat
+                );
+            }
+        }
+
+        res.json(order);
+    } catch (err) {
+        console.error("Order Exception Error:", err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// POST /orders/batch-status
+exports.batchUpdateOrderStatus = async (req, res) => {
+    try {
+        const { orderIds, status } = req.body;
+
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ msg: "No orders provided" });
+        }
+
+        const orders = await Order.find({ _id: { $in: orderIds } });
+
+        let successCount = 0;
+
+        for (const order of orders) {
+            order.status = status;
+            await order.save();
+            successCount++;
+
+            // Prepare Notification
+            if (order.user) {
+                const title = `Order ${status}`;
+                const message = `Your order #${order._id.toString().slice(-6).toUpperCase()} is now ${status}`;
+
+                new Notification({
+                    userId: order.user,
+                    title,
+                    message,
+                    type: 'order',
+                    branchId: order.branchId
+                }).save().catch(e => console.error("Notif Save Error", e));
+
+                _sendPushAsync(order.user, title, message, order._id);
+            }
+        }
+
+        res.json({ msg: `Updated ${successCount} orders`, successCount });
+
+    } catch (err) {
+        console.error("Batch Update Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Async Helper to avoid blocking main thread
+const _sendPushAsync = async (userId, title, message, orderId) => {
+    try {
+        const user = await User.findById(userId);
+        if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+            await NotificationService.sendPushNotification(
+                user.fcmTokens,
+                title,
+                message,
+                { orderId: orderId.toString(), type: 'order' }
+            );
+        }
+    } catch (e) {
+        console.error("Push Error:", e);
     }
 };

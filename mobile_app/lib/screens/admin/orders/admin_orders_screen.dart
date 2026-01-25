@@ -9,7 +9,9 @@ import '../../../../models/order_model.dart';
 import 'package:intl/intl.dart';
 import '../../../../models/branch_model.dart';
 import '../../../../providers/branch_provider.dart';
+import '../../../../utils/toast_utils.dart'; // Ensure utils imported
 import 'admin_order_detail_screen.dart';
+import '../../../../services/notification_service.dart';
 
 class AdminOrdersScreen extends StatefulWidget {
   const AdminOrdersScreen({super.key});
@@ -22,6 +24,10 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   // [Multi-Branch] Filter State
   Branch? _selectedBranchFilter;
   
+  // [Batch Operations]
+  final Set<String> _selectedIds = {};
+  bool get _isSelectionMode => _selectedIds.isNotEmpty;
+
   late TabController _tabController;
   Timer? _refreshTimer;
   final List<String> _tabs = ['New', 'InProgress', 'Ready', 'Completed', 'Cancelled', 'Refunded'];
@@ -35,9 +41,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
       _fetchOrders();
       Provider.of<BranchProvider>(context, listen: false).fetchBranches();
     });
-    // Auto-refresh every 15 seconds
+    // Auto-refresh every 15 seconds (pause if selecting)
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      if (mounted) _fetchOrders(silent: true);
+      if (mounted && !_isSelectionMode) _fetchOrders(silent: true);
     });
   }
 
@@ -50,6 +56,114 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
 
   Future<void> _fetchOrders({bool silent = false}) async {
     await Provider.of<OrderService>(context, listen: false).fetchOrders();
+    // [Auto-Read Policy]
+    if (mounted) {
+       Provider.of<NotificationService>(context, listen: false).markAllReadByType('order');
+    }
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _clearSelection() {
+    setState(() => _selectedIds.clear());
+  }
+
+  Future<void> _batchUpdate(String status) async {
+    if (_selectedIds.isEmpty) return;
+    
+    // Confirm
+    final confirm = await showDialog<bool>(
+      context: context, 
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF202020),
+        title: const Text("Confirm Batch Update", style: TextStyle(color: Colors.white)),
+        content: Text("Update ${_selectedIds.length} orders to '$status'?", style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(child: const Text("CANCEL"), onPressed: () => Navigator.pop(ctx, false)),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text("UPDATE", style: TextStyle(color: Colors.black))
+          )
+        ],
+      )
+    );
+
+    if (confirm != true) return;
+
+    final service = Provider.of<OrderService>(context, listen: false);
+    final success = await service.batchUpdateStatus(_selectedIds.toList(), status);
+
+    if (success) {
+      if (mounted) {
+         ToastUtils.show(context, "Updated ${_selectedIds.length} orders", type: ToastType.success);
+         _clearSelection();
+      }
+    } else {
+      if (mounted) ToastUtils.show(context, "Batch Update Failed", type: ToastType.error);
+    }
+  }
+
+  void _showBatchMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+               const Text("Update Status To...", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+               const SizedBox(height: 10),
+               Wrap(
+                 spacing: 10,
+                 children: [
+                   _batchActionButton("InProgress", Colors.orange),
+                   _batchActionButton("Ready", Colors.purple),
+                   _batchActionButton("Completed", Colors.green),
+                 ],
+               ),
+               const SizedBox(height: 15),
+               Divider(color: Colors.white.withOpacity(0.1)),
+               const SizedBox(height: 15),
+               ListTile(
+                 leading: const Icon(Icons.print, color: Colors.blueAccent),
+                 title: const Text("Print Labels (Batch)", style: TextStyle(color: Colors.white)),
+                 onTap: () {
+                    Navigator.pop(ctx);
+                    ToastUtils.show(context, "Printing ${_selectedIds.length} labels...", type: ToastType.info);
+                    _clearSelection();
+                 },
+               ),
+               const SizedBox(height: 20),
+            ],
+          ),
+        );
+      }
+    );
+  }
+
+  Widget _batchActionButton(String status, Color color) {
+    return ActionChip(
+      label: Text(status),
+      backgroundColor: color.withOpacity(0.2),
+      labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
+      side: BorderSide(color: color),
+      onPressed: () {
+        Navigator.pop(context);
+        _batchUpdate(status);
+      },
+    );
   }
 
   @override
@@ -57,15 +171,20 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: _buildBranchFilterTitle(),
-        backgroundColor: Colors.transparent,
-        leading: const BackButton(color: Colors.white),
+        title: _isSelectionMode 
+             ? Text("${_selectedIds.length} Selected", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+             : _buildBranchFilterTitle(),
+        backgroundColor: _isSelectionMode ? AppTheme.primaryColor.withOpacity(0.8) : Colors.transparent,
+        elevation: 0,
+        leading: _isSelectionMode 
+            ? IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _clearSelection)
+            : const BackButton(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          labelColor: AppTheme.primaryColor,
+          labelColor: _isSelectionMode ? Colors.white : AppTheme.primaryColor,
           unselectedLabelColor: Colors.white70,
-          indicatorColor: AppTheme.primaryColor,
+          indicatorColor: _isSelectionMode ? Colors.white : AppTheme.primaryColor,
           tabs: _tabs.map((t) => Tab(text: t)).toList(),
         ),
         actions: [
@@ -75,6 +194,17 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
           )
         ],
       ),
+      floatingActionButton: _isSelectionMode 
+         ? Padding(
+             padding: const EdgeInsets.only(bottom: 90),
+             child: FloatingActionButton.extended(
+               onPressed: _showBatchMenu, 
+               label: const Text("Update Status"),
+               icon: const Icon(Icons.edit),
+               backgroundColor: AppTheme.primaryColor,
+             ),
+           )
+         : null,
       body: LiquidBackground(
         child: Consumer<OrderService>(
           builder: (context, orderService, child) {
@@ -92,6 +222,10 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
               controller: _tabController,
               children: _tabs.map((status) {
                 // Filter Status
+                // If in selection mode, maybe allow viewing all? No, tab filtering persists.
+                // We select items within the current view or across views? 
+                // Set stores IDs so it works across views, which is fancy.
+                
                 final orders = filteredList.where((o) => o.status.name == status).toList();
                 
                 if (orders.isEmpty) {
@@ -149,57 +283,83 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   }
 
   Widget _buildOrderCard(OrderModel order) {
+    final isSelected = _selectedIds.contains(order.id);
+
     return GestureDetector(
+      onLongPress: () {
+        if (!_isSelectionMode) _toggleSelection(order.id);
+      },
       onTap: () async {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => AdminOrderDetailScreen(order: order)),
-        );
-        if (result == true && context.mounted) {
-           _fetchOrders();
+        if (_isSelectionMode) {
+          _toggleSelection(order.id);
+        } else {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AdminOrderDetailScreen(order: order)),
+          );
+          if (result == true && context.mounted) {
+             _fetchOrders();
+          }
         }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
-        child: GlassContainer(
-          opacity: 0.1,
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left Column: #ID, Name, Date
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("#${order.id.substring(order.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text(order.userName ?? order.guestName ?? "Guest", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                          Text(DateFormat('MMM dd, hh:mm a').format(order.date.toLocal()), style: const TextStyle(color: Colors.white38, fontSize: 12)),
-                        ],
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            border: isSelected ? Border.all(color: AppTheme.primaryColor, width: 2) : null,
+            borderRadius: BorderRadius.circular(15)
+          ),
+          child: GlassContainer(
+            opacity: 0.1,
+            child: Padding(
+              padding: const EdgeInsets.all(15),
+              child: Row(
+                children: [
+                  // Checkbox Area (Animated)
+                  if (_isSelectionMode)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 15),
+                      child: Icon(
+                        isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                        color: isSelected ? AppTheme.primaryColor : Colors.white54,
                       ),
                     ),
-                    // Right: Status
-                    _buildStatusBadge(order.status.name),
-                  ],
-                ),
-                const Divider(color: Colors.white10, height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("${order.items.length} Items", style: const TextStyle(color: Colors.white70)),
-                    // Using CurrencyFormatter implicitly by importing or local helper? 
-                    // CurrencyFormatter is not imported in this file. I need to add import.
-                    // Actually, I'll use a local formatted string for now or import it.
-                    // Wait, I should import it.
-                    Text("₦${_formatCurrency(order.totalAmount)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                  ],
-                ),
-              ],
+                    
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("#${order.id.substring(order.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text(order.userName ?? order.guestName ?? "Guest", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                  Text(DateFormat('MMM dd, hh:mm a').format(order.date.toLocal()), style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                            _buildStatusBadge(order.status.name),
+                          ],
+                        ),
+                        const Divider(color: Colors.white10, height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("${order.items.length} Items", style: const TextStyle(color: Colors.white70)),
+                            Text("₦${_formatCurrency(order.totalAmount)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

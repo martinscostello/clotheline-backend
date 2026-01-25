@@ -8,15 +8,31 @@ import '../../../../services/payment_service.dart';
 import '../../../../services/receipt_service.dart';
 import '../../../../utils/toast_utils.dart';
 import '../chat/chat_screen.dart';
+import 'package:provider/provider.dart';
+import '../../../../services/notification_service.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 
-class OrderDetailScreen extends StatelessWidget {
+class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
-
   const OrderDetailScreen({super.key, required this.order});
 
   @override
+  State<OrderDetailScreen> createState() => _OrderDetailScreenState();
+}
+
+class _OrderDetailScreenState extends State<OrderDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // [Auto-Read Policy] Mark specific order notifications read
+    Future.microtask(() => 
+      Provider.of<NotificationService>(context, listen: false).markReadByEntity(widget.order.id, type: 'order')
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final order = widget.order; // Access widget.order
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;

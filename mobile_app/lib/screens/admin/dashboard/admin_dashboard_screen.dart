@@ -3,20 +3,19 @@ import 'package:provider/provider.dart';
 import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../services/auth_service.dart';
-import '../../../services/order_service.dart';
-import '../../../models/order_model.dart';
+import '../../../services/analytics_service.dart'; // [New]
 import '../../../utils/currency_formatter.dart';
 import '../services/admin_services_screen.dart';
-import '../products/admin_products_screen.dart'; // [FIXED] Navigate to list, not add
+import '../products/admin_products_screen.dart';
 import '../cms/admin_cms_content_screen.dart';
 import '../notifications/admin_notification_dashboard.dart';
 import '../reports/admin_financial_dashboard.dart';
 import '../settings/admin_tax_settings_screen.dart';
 import '../settings/admin_delivery_settings_screen.dart';
 import '../orders/admin_orders_screen.dart'; 
-import 'admin_revenue_screen.dart';
-import '../../../services/notification_service.dart';
+import '../promotions/admin_promotions_screen.dart'; // Added 
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -26,13 +25,26 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  
+  String _timeRange = 'week'; // week, month, year
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<OrderService>(context, listen: false).fetchOrders();
+      _fetchData();
     });
+  }
+
+  void _fetchData() {
+    final analytics = Provider.of<AnalyticsService>(context, listen: false);
+    analytics.fetchRevenueStats(range: _timeRange);
+    analytics.fetchTopItems(limit: 5);
+  }
+
+  void _onRangeChanged(String newRange) {
+    if (_timeRange == newRange) return;
+    setState(() => _timeRange = newRange);
+    _fetchData();
   }
 
   @override
@@ -46,182 +58,123 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.secondaryColor), 
-            onPressed: () => Provider.of<OrderService>(context, listen: false).fetchOrders()
+            onPressed: _fetchData
           ),
         ],
       ),
       body: LiquidBackground(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(top: 100, bottom: 100, left: 20, right: 20),
-          child: Consumer<OrderService>(
-            builder: (context, orderService, _) {
-              final orders = orderService.orders;
-            
-            // Get Permissions
-            final authService = Provider.of<AuthService>(context, listen: false);
-            final user = authService.currentUser;
-            final permissions = user != null ? (user['permissions'] ?? {}) : {};
-            final isMaster = user != null && user['isMasterAdmin'] == true;
+          child: Consumer<AnalyticsService>(
+            builder: (context, analytics, _) {
+               if (analytics.isLoading && analytics.revenueStats == null) {
+                 return const SizedBox(height: 300, child: Center(child: CircularProgressIndicator()));
+               }
 
-            // Calculate Stats (Client-Side)c
-              final activeOrders = orders.where((o) => o.status != OrderStatus.Completed && o.status != OrderStatus.Cancelled).length;
-              final pendingOrders = orders.where((o) => o.status == OrderStatus.New).length;
-              final revenue = orders
-                  .where((o) => o.status == OrderStatus.Completed) // Assuming only completed counts as revenue
-                  .fold(0.0, (sum, o) => sum + o.totalAmount);
+               final summary = analytics.revenueStats?['summary'] ?? {'total': 0, 'count': 0};
+               final dataPoints = analytics.revenueStats?['data'] as List<dynamic>? ?? [];
+               final topItems = analytics.topItems ?? [];
 
-              // Recent Orders (Sort by date desc just in case, catch 5)
-              final recentOrders = List<OrderModel>.from(orders);
-              recentOrders.sort((a, b) => b.date.compareTo(a.date));
-              final top5Orders = recentOrders.take(5).toList();
+               return Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   // 1. Time Range Toggle
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     children: [
+                       _buildRangeToggle('week', '7 Days'),
+                       const SizedBox(width: 10),
+                       _buildRangeToggle('month', '30 Days'),
+                       const SizedBox(width: 10),
+                       _buildRangeToggle('year', 'Year'),
+                     ],
+                   ),
+                   const SizedBox(height: 20),
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Stats Grid
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 15,
-                    mainAxisSpacing: 15,
-                    childAspectRatio: 1.4,
-                    children: [
-                       _buildStatCard("Active Orders", "$activeOrders", Icons.local_laundry_service, Colors.blue, 
-                         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
-                       
-                       _buildStatCard("Pending", "$pendingOrders", Icons.pending_actions, Colors.orange, 
-                         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
-                       
-                       _buildStatCard("Revenue", CurrencyFormatter.format(revenue), 
-                         const Text("₦", style: TextStyle(color: Colors.green, fontSize: 28, fontWeight: FontWeight.w900)), // [FIX] Naira Icon 
-                         Colors.green, 
-                         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminRevenueScreen()))),
-                       
-                       Consumer<NotificationService>(
-                         builder: (context, notifService, _) {
-                           final count = notifService.unreadCount;
-                           return _buildStatCard(
-                             "Notifications", 
-                             "$count", 
-                             Icons.notifications_active, 
-                             count > 0 ? Colors.redAccent : Colors.purple, 
-                             () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminNotificationDashboard()))
-                           );
-                         }
-                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
+                   // 2. Revenue Chart
+                   GlassContainer(
+                     height: 300,
+                     opacity: 0.15,
+                     padding: const EdgeInsets.all(20),
+                     child: Column(
+                       children: [
+                         Row(
+                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                           children: [
+                             Column(
+                               crossAxisAlignment: CrossAxisAlignment.start,
+                               children: [
+                                 const Text("Total Revenue", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                                 Text(
+                                   CurrencyFormatter.format(summary['total']?.toDouble() ?? 0),
+                                   style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                                 ),
+                               ],
+                             ),
+                             Container(
+                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                               decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                               child: Row(
+                                 children: [
+                                   const Icon(Icons.arrow_upward, size: 14, color: Colors.greenAccent),
+                                   Text(" ${summary['count']} Orders", style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                                 ],
+                               ),
+                             )
+                           ],
+                         ),
+                         const SizedBox(height: 20),
+                         Expanded(child: _RevenueChart(data: dataPoints, range: _timeRange)),
+                       ],
+                     ),
+                   ),
 
-                  const SizedBox(height: 20),
-                  const Text("Quick Actions", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 15),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        if (isMaster || permissions['manageServices'] == true)
-                           _buildQuickAction(context, "Manage Services", Icons.local_laundry_service, Colors.blueAccent, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
-                           }),
-                        if ((isMaster || permissions['manageServices'] == true) && (isMaster || permissions['manageProducts'] == true || permissions['manageCMS'] == true))
-                          const SizedBox(width: 15),
-                        if (isMaster || permissions['manageProducts'] == true)
-                           _buildQuickAction(context, "Manage Products", Icons.inventory_2, Colors.purpleAccent, () {
-                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen()));
-                           }),
-                        if ((isMaster || permissions['manageProducts'] == true) && (isMaster || permissions['manageCMS'] == true))
-                          const SizedBox(width: 15),
-                        if (isMaster || permissions['manageCMS'] == true)
-                           _buildQuickAction(context, "Ads & Banners", Icons.campaign, Colors.orangeAccent, () {
-                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads')));
-                           }),
-                        if (isMaster || permissions['manageUsers'] == true) ...[
-                           const SizedBox(width: 15),
-                           _buildQuickAction(context, "Notifications", Icons.notifications_active, Colors.pinkAccent, () {
-                              // Navigator push to AdminNotificationDashboard
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminNotificationDashboard()));
-                           }),
-                           const SizedBox(width: 15),
-                           _buildQuickAction(context, "Financial Reports", Icons.bar_chart, Colors.tealAccent, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialDashboard()));
-                           }),
-                           const SizedBox(width: 15),
-                           _buildQuickAction(context, "Tax & VAT", Icons.percent, Colors.indigoAccent, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxSettingsScreen()));
-                           }),
-                           const SizedBox(width: 15),
-                           _buildQuickAction(context, "Delivery Settings", Icons.map, Colors.cyanAccent, () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
-                           }),
-                        ]
-                      ],
-                    ),
-                  ),
+                   const SizedBox(height: 20),
 
-                  const SizedBox(height: 30),
+                   // 3. Quick Actions (Same as before but condensed)
+                   const Text("Quick Actions", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                   const SizedBox(height: 15),
+                   _buildQuickActionsRow(context),
 
-                  // Recent Activity / Incoming Requests
-                  const Text("Incoming Orders", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5), // [UX] Reduced Spacing
-                  
-                  if (top5Orders.isEmpty)
-                     const Padding(
-                       padding: EdgeInsets.all(20.0),
-                       child: Center(child: Text("No orders found", style: TextStyle(color: Colors.white38))),
-                     )
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: top5Orders.length,
-                      itemBuilder: (context, index) {
-                        final order = top5Orders[index];
-                        final timeDiff = DateTime.now().difference(order.date);
-                        String timeAgo;
-                        if (timeDiff.inMinutes < 60) {
-                          timeAgo = "${timeDiff.inMinutes} mins ago";
-                        } else if (timeDiff.inHours < 24) {
-                          timeAgo = "${timeDiff.inHours} hrs ago";
-                        } else {
-                          timeAgo = "${timeDiff.inDays} days ago";
-                        }
+                   const SizedBox(height: 30),
 
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: GlassContainer(
-                            opacity: 0.1,
-                            padding: const EdgeInsets.all(15),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.white10,
-                                  radius: 18,
-                                  child: Icon(_getStatusIcon(order.status), size: 18, color: Colors.white70),
-                                ),
-                                const SizedBox(width: 15),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text("${order.guestName ?? 'User'} placed an order", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                      Text(
-                                        "$timeAgo • ${CurrencyFormatter.format(order.totalAmount)} • ${order.status.name}",
-                                        style: TextStyle(color: _getStatusColor(order.status), fontSize: 12)
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // const Icon(Icons.chevron_right, color: Colors.white24),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                ],
-              );
+                   // 4. Top Products
+                   const Text("Top Performers", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                   const SizedBox(height: 10),
+                   if (topItems.isEmpty)
+                     const Center(child: Text("No data usually means no sales yet.", style: TextStyle(color: Colors.white38)))
+                   else
+                     ...topItems.map((item) {
+                       final name = item['_id'] ?? "Unknown";
+                       final revenue = item['totalRevenue'] ?? 0;
+                       final sold = item['totalSold'] ?? 0;
+                       return Padding(
+                         padding: const EdgeInsets.only(bottom: 10),
+                         child: GlassContainer(
+                           opacity: 0.1,
+                           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                           child: Row(
+                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                             children: [
+                               Expanded(
+                                 child: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+                               ),
+                               Column(
+                                 crossAxisAlignment: CrossAxisAlignment.end,
+                                 children: [
+                                   Text(CurrencyFormatter.format(revenue.toDouble()), style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
+                                   Text("$sold Sold", style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                                 ],
+                               )
+                             ],
+                           ),
+                         ),
+                       );
+                     }),
+
+                   const SizedBox(height: 50),
+                 ],
+               );
             }
           ),
         ),
@@ -229,61 +182,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  IconData _getStatusIcon(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.New: return Icons.new_releases;
-      case OrderStatus.InProgress: return Icons.local_laundry_service;
-      case OrderStatus.Ready: return Icons.check_circle_outline;
-      case OrderStatus.Completed: return Icons.done_all;
-      case OrderStatus.Cancelled: return Icons.cancel;
-      case OrderStatus.Refunded: return Icons.money_off; // [Added]
-    }
-  }
-
-  Color _getStatusColor(OrderStatus status) {
-     switch (status) {
-      case OrderStatus.New: return Colors.orangeAccent;
-      case OrderStatus.InProgress: return Colors.blueAccent;
-      case OrderStatus.Ready: return Colors.greenAccent;
-      case OrderStatus.Completed: return Colors.grey;
-      case OrderStatus.Cancelled: return Colors.redAccent;
-      case OrderStatus.Refunded: return Colors.pinkAccent; // [Added]
-    }
-  }
-
-  Widget _buildStatCard(String title, String value, dynamic icon, Color color, VoidCallback onTap) { // Added onTap
-    return Center( // Use Center/Container to ensure tap area
-     child: Material(
-       color: Colors.transparent,
-       child: InkWell( // Wrap with InkWell for interaction
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: GlassContainer(
-          opacity: 0.15,
-          padding: const EdgeInsets.all(12),
-          child: SizedBox( // Ensure full width/height within Grid
-           width: double.infinity,
-           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              icon is IconData 
-                  ? Icon(icon, color: color, size: 28)
-                  : icon,
-              const SizedBox(height: 8),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(title, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-            ],
-          ),
-         ),
+  Widget _buildRangeToggle(String value, String label) {
+    final isSelected = _timeRange == value;
+    return GestureDetector(
+      onTap: () => _onRangeChanged(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor : Colors.white10,
+          borderRadius: BorderRadius.circular(20),
         ),
-       ),
-     ),
+        child: Text(label, style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsRow(BuildContext context) {
+    // Condensed single row scroll
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildQuickAction(context, "Orders", Icons.list_alt, Colors.blueAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
+          const SizedBox(width: 15),
+          _buildQuickAction(context, "Services", Icons.local_laundry_service, Colors.purpleAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()))),
+          const SizedBox(width: 15),
+          _buildQuickAction(context, "Products", Icons.inventory_2, Colors.orangeAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen()))),
+          const SizedBox(width: 15),
+          _buildQuickAction(context, "Promos", Icons.local_offer, Colors.pinkAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPromotionsScreen()))),
+           const SizedBox(width: 15),
+          _buildQuickAction(context, "Reports", Icons.bar_chart, Colors.tealAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialDashboard()))),
+        ],
+      ),
     );
   }
 
@@ -291,23 +222,96 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return GestureDetector(
       onTap: onTap,
       child: GlassContainer(
-        width: 140,
-        height: 100,
+        width: 100,
+        height: 90,
         opacity: 0.1,
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(10),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
-              child: Icon(icon, color: color, size: 24),
+              decoration: BoxDecoration(color: color.withOpacity(0.2), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(height: 10),
-            Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RevenueChart extends StatelessWidget {
+  final List<dynamic> data;
+  final String range;
+
+  const _RevenueChart({required this.data, required this.range});
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.isEmpty) return const Center(child: Text("No Data", style: TextStyle(color: Colors.white38)));
+
+    // Max Y
+    double maxY = 0;
+    for (var d in data) {
+      if ((d['totalRevenue'] as num) > maxY) maxY = d['totalRevenue'].toDouble();
+    }
+    if (maxY == 0) maxY = 100;
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: maxY * 1.2,
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+             sideTitles: SideTitles(
+               showTitles: true,
+               getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index < 0 || index >= data.length) return const Text('');
+                  final date = DateTime.parse(data[index]['_id']);
+                  String text = "${date.day}/${date.month}";
+                  if (range == 'year') text = "${date.month}/${date.year}"; 
+                  return SideTitleWidget(axisSide: meta.axisSide, child: Text(text, style: const TextStyle(color: Colors.white54, fontSize: 10)));
+               },
+             )
+          ),
+          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+             getTooltipColor: (_) => Colors.blueGrey,
+             getTooltipItem: (group, groupIndex, rod, rodIndex) {
+               return BarTooltipItem(
+                 CurrencyFormatter.format(rod.toY),
+                 const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+               );
+             }
+          )
+        ),
+        barGroups: data.asMap().entries.map((e) {
+            final index = e.key;
+            final val = e.value;
+            return BarChartGroupData(
+              x: index,
+              barRods: [
+                BarChartRodData(
+                  toY: (val['totalRevenue'] as num).toDouble(),
+                  color: AppTheme.primaryColor,
+                  width: 12,
+                  borderRadius: BorderRadius.circular(4)
+                )
+              ]
+            );
+        }).toList(),
+      )
     );
   }
 }

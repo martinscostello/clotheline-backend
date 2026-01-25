@@ -6,9 +6,12 @@ import '../../../../models/order_model.dart';
 import '../../../../services/order_service.dart';
 import 'package:provider/provider.dart';
 import '../../../../services/api_service.dart';
+import '../../../../services/chat_service.dart'; // [FIX] Import ChatService
 
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../utils/toast_utils.dart';
+import '../../user/chat/chat_screen.dart';
+import '../chat/admin_chat_screen.dart'; // [FIX] Import AdminChatScreen
 
 class AdminOrderDetailScreen extends StatefulWidget {
   final OrderModel? order;
@@ -69,17 +72,102 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
 
   Future<void> _contactCustomer() async {
     if (_order == null) return;
-    final phone = _order!.guestPhone ?? "";
-    if (phone.isEmpty) return;
     
-    final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    final Uri smsUri = Uri(scheme: 'sms', path: cleanPhone);
-    
-    if (await canLaunchUrl(smsUri)) {
-      await launchUrl(smsUri);
-    } else {
-       if (mounted) ToastUtils.show(context, "Could not launch messaging app", type: ToastType.error);
+    // [FIX] Open Admin Chat Context instead of User Chat
+    final chatService = Provider.of<ChatService>(context, listen: false);
+    final String? userId = _order!.userId;
+    final String branchId = _order!.branchId ?? "default"; // Fallback?
+
+    if (userId == null) {
+      ToastUtils.show(context, "Cannot chat with Guest User (Email Only)", type: ToastType.warning);
+      return;
     }
+
+    ToastUtils.show(context, "Locating chat thread...", type: ToastType.info);
+    final threadId = await chatService.getAdminThreadForUser(userId, branchId);
+    
+    if (!mounted) return;
+
+    if (threadId != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => AdminChatScreen(initialThreadId: threadId)),
+      );
+    } else {
+      ToastUtils.show(context, "No existing chat found for this user.", type: ToastType.info);
+      // Option: Create thread? Admin usually responds to inbound. 
+      // User must initiate? Or we can force create?
+      // Backend GET / creates if not exists.
+      // But Admin GET /admin/threads only lists existing.
+      // We'll leave it as "No chat found" for now.
+    }
+  }
+
+  Future<void> _reportIssue() async {
+    OrderExceptionStatus selected = OrderExceptionStatus.Stain;
+    final noteCtrl = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF202020),
+          title: const Text("Report Order Issue", style: TextStyle(color: Colors.redAccent)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Select the issue type (User will be notified):", style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 15),
+              DropdownButton<OrderExceptionStatus>(
+                dropdownColor: const Color(0xFF333333),
+                value: selected,
+                isExpanded: true,
+                style: const TextStyle(color: Colors.white),
+                underline: Container(height: 1, color: Colors.white24),
+                items: OrderExceptionStatus.values
+                    .where((e) => e != OrderExceptionStatus.None)
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e.name))).toList(),
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => selected = val);
+                },
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: noteCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: "Details (Optional)",
+                  labelStyle: TextStyle(color: Colors.white54),
+                  hintText: "e.g., Stain found on white shirt",
+                  hintStyle: TextStyle(color: Colors.white24),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                ),
+              )
+            ],
+          ),
+          actions: [
+            TextButton(child: const Text("CANCEL"), onPressed: () => Navigator.pop(ctx)),
+            TextButton(
+              child: const Text("REPORT & NOTIFY", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                setState(() => _isUpdating = true);
+                final success = await Provider.of<OrderService>(context, listen: false)
+                    .updateExceptionStatus(_order!.id, selected, noteCtrl.text);
+                
+                if (success) {
+                  // _fetchOrder(); // Service usually refreshes list, but we might need re-fetch single
+                  await _fetchOrder();
+                }
+                
+                setState(() => _isUpdating = false);
+                if (mounted) ToastUtils.show(context, success ? "Issue Reported" : "Failed to report", type: success ? ToastType.success : ToastType.error);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -103,6 +191,13 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
         title: Text("Order #${_order!.id.substring(_order!.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         leading: const BackButton(color: Colors.white),
+        actions: [
+          IconButton(
+             icon: const Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+             tooltip: "Report Issue",
+             onPressed: _reportIssue,
+          )
+        ],
       ),
       body: LiquidBackground(
         child: SingleChildScrollView(
@@ -110,6 +205,44 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 0. Exception Banner
+              if (_order!.exceptionStatus != OrderExceptionStatus.None)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.15),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.report_problem, color: Colors.redAccent),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Issue: ${_order!.exceptionStatus.name}", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                            if (_order!.exceptionNote != null && _order!.exceptionNote!.isNotEmpty)
+                              Text(_order!.exceptionNote!, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.check_circle_outline, color: Colors.greenAccent),
+                        tooltip: "Resolve Issue",
+                        onPressed: () async {
+                           // Resolve
+                           await Provider.of<OrderService>(context, listen: false)
+                              .updateExceptionStatus(_order!.id, OrderExceptionStatus.None, null);
+                           _fetchOrder();
+                        },
+                      )
+                    ],
+                  ),
+                ),
+
               // 1. Status Manager
               Container(
                 margin: const EdgeInsets.only(bottom: 20),
@@ -162,7 +295,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                            children: [
                              const Text("Customer Info", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
                              IconButton(
-                               icon: const Icon(Icons.message_outlined, color: AppTheme.primaryColor),
+                               icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primaryColor),
                                onPressed: _contactCustomer,
                                tooltip: "Message User",
                              )
@@ -312,68 +445,205 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
   }
 
   void _showRefundDialog() {
-    final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF202020),
-        title: const Text("Confirm Refund", style: TextStyle(color: Colors.white)),
-        content: Column(
+      builder: (ctx) {
+        return _RefundDialog(
+          order: _order!, 
+          onRefundComplete: (bool success) {
+            if (success) {
+              setState(() => _currentStatus = 'Refunded');
+              _fetchOrder(); // Refresh to see split results if partial
+            }
+          }
+        );
+      },
+    );
+  }
+}
+
+class _RefundDialog extends StatefulWidget {
+  final OrderModel order;
+  final Function(bool) onRefundComplete;
+
+  const _RefundDialog({required this.order, required this.onRefundComplete});
+
+  @override
+  State<_RefundDialog> createState() => _RefundDialogState();
+}
+
+class _RefundDialogState extends State<_RefundDialog> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final Set<String> _selectedItemIds = {};
+  bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF202020),
+      title: const Text("Refund Order", style: TextStyle(color: Colors.white)),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              "Are you sure you want to refund this order? This action will process via Paystack.",
-              style: TextStyle(color: Colors.white70)
+            TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.redAccent,
+              labelColor: Colors.redAccent,
+              unselectedLabelColor: Colors.white54,
+              tabs: const [Tab(text: "FULL REFUND"), Tab(text: "PARTIAL SPLIT")],
             ),
             const SizedBox(height: 20),
-            TextField(
-              controller: controller,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: "Amount (Optional for Partial)",
-                hintText: "Leave empty for full refund",
-                labelStyle: TextStyle(color: Colors.white54),
-                hintStyle: TextStyle(color: Colors.white24),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+            SizedBox(
+              height: 300,
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildFullRefundView(),
+                  _buildPartialRefundView(),
+                ],
               ),
-              keyboardType: TextInputType.number,
-            )
+            ),
           ],
         ),
-        actions: [
+      ),
+      actions: [
+        if (!_isProcessing)
           TextButton(
             child: const Text("CANCEL"),
             onPressed: () => Navigator.pop(context),
           ),
+        if (_isProcessing)
+          const Center(child: CircularProgressIndicator(color: Colors.redAccent))
+        else
           TextButton(
-            child: const Text("REFUND", style: TextStyle(color: Colors.redAccent)),
-            onPressed: () async {
-               Navigator.pop(context);
-               
-               // Trigger Refund via ApiService
-               final api = ApiService();
-               ToastUtils.show(context, "Processing Refund...", type: ToastType.info);
-               
-               try {
-                  final amount = double.tryParse(controller.text);
-                  await api.client.post('/payments/refund', data: {
-                    'orderId': _order!.id,
-                    'amount': amount 
-                  });
-                   if (!context.mounted) return;
-                   ToastUtils.show(context, "Refund Initiated Successfully", type: ToastType.success);
-                   // Update Local Status immediately
-                   setState(() {
-                      _currentStatus = 'Refunded';
-                   });
-                   Navigator.pop(context, true);
-               } catch (e) {
-                   ToastUtils.show(context, "Refund Failed: $e", type: ToastType.error);
-               }
-            },
+            child: const Text("PROCESS REFUND", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            onPressed: _processRefund,
           )
-        ],
-      ),
+      ],
     );
+  }
+
+  Widget _buildFullRefundView() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.orange),
+        const SizedBox(height: 16),
+        const Text(
+          "This will refund the ENTIRE amount and mark the order as Cancelled.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white70),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          "Total: ₦${widget.order.totalAmount.toStringAsFixed(0)}",
+          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPartialRefundView() {
+    double refundTotal = 0;
+    for (var item in widget.order.items) {
+      if (_selectedItemIds.contains(item.id)) {
+        refundTotal += (item.price * item.quantity);
+      }
+    }
+
+    return Column(
+      children: [
+        const Text(
+          "Select items to refund. These items will be moved to a 'Refunded' order.",
+          style: TextStyle(color: Colors.white54, fontSize: 12),
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: ListView.builder(
+            itemCount: widget.order.items.length,
+            itemBuilder: (context, index) {
+              final item = widget.order.items[index];
+              final isSelected = _selectedItemIds.contains(item.id);
+              
+              return CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: Colors.redAccent,
+                side: const BorderSide(color: Colors.white24),
+                title: Text(item.name, style: const TextStyle(color: Colors.white, fontSize: 13)),
+                subtitle: Text("₦${item.price} x ${item.quantity}", style: const TextStyle(color: Colors.white38)),
+                value: isSelected,
+                onChanged: (val) {
+                  if (item.id == null) return;
+                  setState(() {
+                    if (val == true) {
+                      _selectedItemIds.add(item.id!);
+                    } else {
+                      _selectedItemIds.remove(item.id!);
+                    }
+                  });
+                },
+              );
+            },
+          ),
+        ),
+        const Divider(color: Colors.white24),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Refund Total:", style: TextStyle(color: Colors.white70)),
+              Text("₦${refundTotal.toStringAsFixed(0)}", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        )
+      ],
+    );
+  }
+
+  Future<void> _processRefund() async {
+    setState(() => _isProcessing = true);
+    final api = ApiService();
+    bool success = false;
+
+    try {
+      if (_tabController.index == 0) {
+        // Full Refund
+        await api.client.post('/payments/refund', data: {
+          'orderId': widget.order.id,
+        });
+        if (mounted) ToastUtils.show(context, "Full Refund Initiated", type: ToastType.success);
+        success = true;
+      } else {
+        // Partial Refund
+        if (_selectedItemIds.isEmpty) {
+          ToastUtils.show(context, "Select at least one item", type: ToastType.warning);
+          setState(() => _isProcessing = false);
+          return;
+        }
+
+        await api.client.post('/payments/refund-partial', data: {
+          'orderId': widget.order.id,
+          'refundedItemIds': _selectedItemIds.toList()
+        });
+        if (mounted) ToastUtils.show(context, "Partial Refund & Split Successful", type: ToastType.success);
+        success = true;
+      }
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "Refund Failed: $e", type: ToastType.error);
+    }
+
+    if (mounted) {
+      Navigator.pop(context);
+      if (success) widget.onRefundComplete(true);
+    }
   }
 }

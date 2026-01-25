@@ -15,8 +15,7 @@ class NotificationService extends ChangeNotifier {
 
   int get unreadCount => _notifications.where((n) => n['isRead'] == false).length;
 
-  // Track known IDs to detect NEW ones
-  final Set<String> _knownNotificationIds = {};
+
 
   Map<String, dynamic> _preferences = {
     'email': true,
@@ -41,31 +40,17 @@ class NotificationService extends ChangeNotifier {
   }
 
   void _startPolling() {
-     // Fetch immediately
-     fetchNotifications(silent: true);
+     // Fetch immediately (No Alerts on Launch)
+     fetchNotifications(silent: true, alert: false);
      // Poll every 5 seconds (Quick Notifications)
      _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-        fetchNotifications(silent: true);
+        fetchNotifications(silent: true, alert: true);
      });
   }
 
-  Future<void> _initLocalNotifications() async {
-     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
-     const InitializationSettings settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
-     
-     await _localNotifications.initialize(settings);
-     
-     // Request Permissions Explicitly (Required for iOS)
-     final platform = _localNotifications.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
-     await platform?.requestPermissions(
-       alert: true,
-       badge: true,
-       sound: true,
-     );
-  }
+  // ...
 
-  Future<void> fetchNotifications({bool silent = false}) async {
+  Future<void> fetchNotifications({bool silent = false, bool alert = true}) async {
     if (!silent) {
        _isLoading = true;
        notifyListeners();
@@ -75,31 +60,12 @@ class NotificationService extends ChangeNotifier {
       final response = await _apiService.client.get('/notifications');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        _notifications = data; // Already sorted by backend
+        _notifications = data; 
 
-        // Check for NEW notifications
-        for (var n in data) {
-           final id = n['_id'];
-           if (!_knownNotificationIds.contains(id)) {
-              _knownNotificationIds.add(id);
-              // Only alert if isRead is false AND it's not the initial load (heuristic)
-              // Actually, simply checking known IDs handles "New" items effectively.
-              // To avoid spam on first load, maybe check if we already have a set?
-              if (_knownNotificationIds.length > data.length) { 
-                 // This means we just added one. (On first load size is 0 -> length, so condition fails)
-                 // But wait, if _known is empty, we add all. logic:
-              }
-           }
-        }
-        
-        // Simpler Logic: Store last check time? Or just Count diff?
-        // Let's use isRead. If we find an item where isRead=false AND we haven't alerted it?
-        // Let's use a simpler heuristic for now: IF unread count increases? 
-        // Best: Check strictly for ID in difference set.
-        
-        // ALERT LOGIC:
-        if (silent) {
+        if (alert) {
            _checkForAlerts();
+        } else {
+           _syncLastAlert();
         }
       }
       
@@ -112,33 +78,91 @@ class NotificationService extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
       } else {
-        // Even silent updates need listener notification to update Badge
         notifyListeners();
       }
     }
   }
 
-  String? _lastAlertedId;
+  // [NEW] Mark All Read By Type
+  Future<void> markAllReadByType(String type) async {
+    // Optimistic
+    bool changed = false;
+    for (var n in _notifications) {
+      if (n['isRead'] == false && n['type'] == type) {
+           n['isRead'] = true;
+           changed = true;
+      }
+    }
+    if (changed) notifyListeners();
 
-  // Call this inside fetch loop
+    try {
+      await _apiService.client.post('/notifications/mark-entity-read', data: {
+        'type': type
+      });
+    } catch (e) {
+      print("Error marking type read: $e");
+    }
+  }
+
+  String? _lastAlertedId; // Reset on App Launch, so we need logic to prevent re-alerting OLD items if alert=true passed later.
+  // Actually, standard behavior: If I launch app, I don't want sound. 
+  // If I leave app open and new one comes, I want sound. 
+  // If I restart app, I don't want sound for old unread.
+  // The 'alert: false' on first run handles the "Loop on Restart" if logic relies on incoming diff.
+  // But _checkForAlerts checks _notifications.first['isRead'] == false.
+  // If we don't mark it read, next poll (alert=true) will see it as unread and trigger!
+  // FIX: We need to initialize _lastAlertedId with the top unread ID on the first "silent" fetch so we know "we've seen this".
+
   void _checkForAlerts() {
      if (_notifications.isEmpty) return;
-     final latest = _notifications.first;
+     // Filter only unread
+     final unread = _notifications.where((n) => n['isRead'] == false).toList();
+     if (unread.isEmpty) return;
+
+     final latest = unread.first;
      
-     if (latest['isRead'] == false && latest['_id'] != _lastAlertedId) {
-        // It's a new unread item!
+     // If _lastAlertedId is null (fresh start), we might trigger if we didn't populate it on init.
+     // We need to sync _lastAlertedId on the first 'alert: false' run too.
+     
+     if (latest['_id'] != _lastAlertedId) {
         _lastAlertedId = latest['_id'];
         _showLocalNotification(latest['title'], latest['message']);
      }
   }
+  
+  // Method to sync ID without alerting (called on init)
+  void _syncLastAlert() {
+     if (_notifications.isEmpty) return;
+     final unread = _notifications.where((n) => n['isRead'] == false).toList();
+     if (unread.isNotEmpty) {
+       _lastAlertedId = unread.first['_id'];
+     }
+  }
+  
+  // Override fetchNotifications logic slightly above to call _syncLastAlert() if alert is false
+  
+  Future<void> _initLocalNotifications() async {
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
+    const InitializationSettings settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+    
+    await _localNotifications.initialize(settings);
+    
+    final platform = _localNotifications.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+    await platform?.requestPermissions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  }
 
   Future<void> _showLocalNotification(String? title, String? body) async {
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'clotheline_alerts', 'Clotheline Alerts',
-        importance: Importance.max, priority: Priority.high,
-      );
-      const NotificationDetails details = NotificationDetails(android: androidDetails, iOS: DarwinNotificationDetails());
-      await _localNotifications.show(0, title, body, details);
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'clotheline_alerts', 'Clotheline Alerts',
+      importance: Importance.max, priority: Priority.high,
+    );
+    const NotificationDetails details = NotificationDetails(android: androidDetails, iOS: DarwinNotificationDetails());
+    await _localNotifications.show(0, title, body, details);
   }
   
   // ... Rest of methods (fetchPreferences, updatePreference, markAllAsRead) ...
@@ -188,9 +212,32 @@ class NotificationService extends ChangeNotifier {
         n['isRead'] = true;
       }
       notifyListeners();
-      fetchNotifications(silent: true);
     } catch (e) {
       print("Error marking read: $e");
+    }
+  }
+
+  // [NEW] Mark Read By Entity
+  Future<void> markReadByEntity(String entityId, {String? type}) async {
+    // Optimistic
+    bool changed = false;
+    for (var n in _notifications) {
+      if (n['isRead'] == false && n['metadata'] != null) {
+        if (n['metadata']['orderId'] == entityId) { // Check Order ID
+           n['isRead'] = true;
+           changed = true;
+        }
+      }
+    }
+    if (changed) notifyListeners();
+
+    try {
+      await _apiService.client.post('/notifications/mark-entity-read', data: {
+        'entityId': entityId,
+        'type': type
+      });
+    } catch (e) {
+      print("Error marking entity read: $e");
     }
   }
 }

@@ -654,6 +654,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       // 'totalAmount': _cartService.totalAmount + _deliveryFee, // Calculated on backend
       'subtotal': _cartService.subtotal,
       'discountAmount': _cartService.discountAmount,
+      'promoCode': _cartService.appliedPromotion?['code'],
       'taxAmount': _cartService.taxAmount,
       'appliedPromotion': _cartService.appliedPromotion, // Snapshot Promo
       'pickupOption': _deliveryOption == 2 ? 'Pickup' : 'None', 

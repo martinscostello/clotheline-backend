@@ -8,7 +8,8 @@ router.get('/', auth, notificationController.getNotifications);
 
 // POST /mark-read - Mark all or specific as read
 router.post('/mark-read', auth, notificationController.markAllRead);
-router.post('/:id/read', auth, notificationController.markAsRead); // Added specific read
+router.post('/:id/read', auth, notificationController.markAsRead);
+router.post('/mark-entity-read', auth, notificationController.markReadByEntity); // [NEW]
 
 // POST /test - Diagnostic Endpoint
 router.post('/test', auth, notificationController.sendTestNotification);

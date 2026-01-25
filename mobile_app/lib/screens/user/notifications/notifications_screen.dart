@@ -18,9 +18,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => 
-      Provider.of<NotificationService>(context, listen: false).fetchNotifications()
-    );
+    Future.microtask(() {
+      final service = Provider.of<NotificationService>(context, listen: false);
+      service.fetchNotifications();
+      service.markAllAsRead(); // [Auto-Read Policy]
+    });
   }
 
   @override

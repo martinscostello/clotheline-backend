@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../screens/user/main_layout.dart'; // [NEW]
 
 // Top-level function for background handling
 @pragma('vm:entry-point')
@@ -144,18 +145,29 @@ class PushNotificationService {
   static void _handleMessage(BuildContext context, RemoteMessage message) {
      if (message.data['type'] == 'order') {
         // Deep link to orders tab
-        // Note: Simple tab switching for now, or sophisticated routing
-        // Assuming MainLayout is available, we might need a GlobalKey or route
-        // deep linking support.
-        // For now, simpler: Switch to Orders tab?
-        // Navigation is tricky without named routes or context control.
-        // Assuming context is from MainLayout.
-        // We can use Navigator to push, or if using Tabs, finding the TabController is hard.
-        // Better: Pop until root, then select tab.
-        // For now: Just log interaction. Full deep linking requires routing table.
-        // Actually user said: "Then route based on notification data."
         print("Notification Tapped: ${message.data}");
-        // TODO: Implement advanced routing
+        
+        int tabIndex = 1; // Default: New
+        String status = message.data['status'] ?? '';
+        
+        // Map Status to Tab Index
+        if (status == 'InProgress' || status == 'Processing') tabIndex = 2;
+        if (status == 'Ready') tabIndex = 3;
+        if (status == 'Completed') tabIndex = 4;
+        if (status == 'Cancelled' || status == 'Refunded') tabIndex = 5;
+
+        try {
+          // Navigate to MainLayout -> Orders Tab (Index 2) -> Correct SubTab
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => MainLayout(
+              initialIndex: 2, 
+              initialOrderTabIndex: tabIndex
+            )),
+            (route) => false
+          );
+        } catch (e) {
+          print("Deep link navigation error: $e");
+        }
      }
   }
 

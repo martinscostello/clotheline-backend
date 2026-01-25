@@ -1,5 +1,6 @@
 enum OrderStatus { New, InProgress, Ready, Completed, Cancelled, Refunded }
-enum PaymentStatus { Pending, Paid }
+enum PaymentStatus { Pending, Paid, Refunded }
+enum OrderExceptionStatus { None, Stain, Damage, Delay, MissingItem, Other }
 
 class OrderModel {
   final String id;
@@ -7,6 +8,8 @@ class OrderModel {
   final double totalAmount;
   final OrderStatus status;
   final PaymentStatus paymentStatus;
+  final OrderExceptionStatus exceptionStatus; // [NEW]
+  final String? exceptionNote; // [NEW]
   
   final String pickupOption; // Pickup, Dropoff
   final String deliveryOption; // Deliver, Pickup
@@ -29,9 +32,10 @@ class OrderModel {
   // Guest Info
   final String? guestName;
   final String? guestPhone;
-  final String? guestEmail; // [Added]
+  final String? guestEmail; 
   final String? userName;
   final String? userEmail;
+  final String? userId; // [NEW]
 
   OrderModel({
     required this.id,
@@ -42,6 +46,8 @@ class OrderModel {
     this.taxRate = 0,
     required this.status,
     required this.paymentStatus,
+    this.exceptionStatus = OrderExceptionStatus.None, // [NEW]
+    this.exceptionNote, // [NEW]
     required this.pickupOption,
     required this.deliveryOption,
     this.pickupAddress,
@@ -52,9 +58,10 @@ class OrderModel {
     this.branchId, 
     this.guestName,
     this.guestPhone,
-    this.guestEmail, // [Added]
+    this.guestEmail,
     this.userName,
-    this.userEmail
+    this.userEmail,
+    this.userId // [NEW]
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -67,6 +74,8 @@ class OrderModel {
       taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0.0,
       status: OrderStatus.values.firstWhere((e) => e.name == json['status'], orElse: () => OrderStatus.New),
       paymentStatus: PaymentStatus.values.firstWhere((e) => e.name == json['paymentStatus'], orElse: () => PaymentStatus.Pending),
+      exceptionStatus: OrderExceptionStatus.values.firstWhere((e) => e.name == (json['exceptionStatus'] ?? 'None'), orElse: () => OrderExceptionStatus.None),
+      exceptionNote: json['exceptionNote'],
       pickupOption: json['pickupOption'],
       deliveryOption: json['deliveryOption'],
       pickupAddress: json['pickupAddress'],
@@ -80,6 +89,7 @@ class OrderModel {
       guestEmail: json['guestInfo']?['email'], // [Added]
       userName: json['user'] is Map ? json['user']['name'] : null,
       userEmail: json['user'] is Map ? json['user']['email'] : null,
+      userId: json['user'] is Map ? json['user']['_id'] : (json['user'] is String ? json['user'] : null), // [NEW]
     );
   }
 
@@ -99,12 +109,14 @@ class OrderModel {
         'name': guestName,
         'phone': guestPhone,
         'email': guestEmail // [Added]
-      }
+      },
+      'userId': userId // [NEW]
     };
   }
 }
 
 class OrderItem {
+  final String? id; // [NEW] Subdocument ID
   final String itemType; // Service, Product
   final String itemId; 
   final String name;
@@ -114,6 +126,7 @@ class OrderItem {
   final double price;
 
   OrderItem({
+    this.id,
     required this.itemType,
     required this.itemId,
     required this.name,
@@ -125,6 +138,7 @@ class OrderItem {
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
+      id: json['_id'],
       itemType: json['itemType'],
       itemId: json['itemId'],
       name: json['name'],
@@ -136,6 +150,7 @@ class OrderItem {
   }
 
   Map<String, dynamic> toJson() => {
+    '_id': id,
     'itemType': itemType,
     'itemId': itemId,
     'name': name,

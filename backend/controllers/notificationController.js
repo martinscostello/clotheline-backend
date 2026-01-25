@@ -40,6 +40,30 @@ exports.markAllRead = async (req, res) => {
     }
 };
 
+// [NEW] Mark Read by Entity (Order, etc)
+exports.markReadByEntity = async (req, res) => {
+    try {
+        const { entityId, type } = req.body;
+
+        // Allow marking entirely by Type (e.g. mark all 'order' notifications)
+        if (!entityId && !type) return res.status(400).json({ msg: "Entity ID or Type required" });
+
+        const query = {
+            userId: req.user.id,
+            isRead: false
+        };
+
+        if (type) query.type = type;
+        if (entityId) query['metadata.orderId'] = entityId;
+
+        await Notification.updateMany(query, { $set: { isRead: true } });
+        res.json({ msg: 'Entity notifications marked as read' });
+    } catch (err) {
+        console.error("MarkEntityRead Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
 exports.getPreferences = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('notificationPreferences');

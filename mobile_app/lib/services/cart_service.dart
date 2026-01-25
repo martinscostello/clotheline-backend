@@ -164,25 +164,23 @@ class CartService extends ChangeNotifier {
   double get discountAmount {
     if (_appliedPromotion == null) return 0.0;
     
-    // Backend returns the exact discount amount in validation, but we can also limit it here if we trust the object
-    // For simplicity, let's use the object returned by the validate endpoint which should contain 'discountAmount'
-    // relative to the subtotal sent. However, if subtotal changes (items added), we technically need to RE-VALIDATE or RE-CALCULATE.
-    
-    // Strategy: We will recalculate locally based on the rules if simple, OR just store the fixed value if it was fixed.
-    // Better Strategy: Recalculate based on type.
-    
     final type = _appliedPromotion!['type'];
     final value = (_appliedPromotion!['value'] as num).toDouble();
+    final maxDiscount = _appliedPromotion!['maxDiscountAmount'] != null ? (_appliedPromotion!['maxDiscountAmount'] as num).toDouble() : null;
     
+    double discount = 0.0;
+
     if (type == 'fixed') {
-      return value > subtotal ? subtotal : value;
+      discount = value;
     } else if (type == 'percentage') {
-       double discount = (subtotal * value) / 100;
-       // Check for max discount if we had that field, assuming backend validation handled capped logic for the initial check.
-       // Ideally we should re-verify with backend on checkout, but for UI:
-       return discount;
+       discount = (subtotal * value) / 100;
+       if (maxDiscount != null && discount > maxDiscount) {
+         discount = maxDiscount;
+       }
     }
-    return 0.0;
+    
+    // Cap at subtotal
+    return discount > subtotal ? subtotal : discount;
   }
 
   // Base Subtotal (Before Discount)
@@ -192,57 +190,59 @@ class CartService extends ChangeNotifier {
   // Tax Calculations
   double get taxAmount => (subtotalAfterDiscount * (taxRate / 100)); // Combined Tax
   
-  // Granular Tax (assuming discount applies proportionally or to total? implementation varies, assuming discount is general)
-  // For granular display, if we ignore discount splitting for now:
-  double get storeTaxAmount => (storeTotalAmount * (taxRate / 100));
-  double get serviceTaxAmount => (serviceTotalAmount * (taxRate / 100));
-
+  // [COMPATIBILITY] Missing Getters for UI
   double get totalAmount => subtotalAfterDiscount + taxAmount;
-
-  // [NEW] Scoped totals for Laundry flow to prevent confusion with Store Cart
-  double get serviceSubtotalBeforeDiscount => _items.fold(0, (sum, item) => sum + (item.item.basePrice * item.serviceType.priceMultiplier * item.quantity));
-  double get serviceTotalDiscount => _items.fold(0, (sum, item) => sum + (item.item.basePrice * item.serviceType.priceMultiplier * item.quantity * (item.discountPercentage / 100)));
   
-  double get serviceSubtotal => serviceSubtotalBeforeDiscount; // Using raw subtotal for display
-  double get serviceTax => ((serviceSubtotalBeforeDiscount - serviceTotalDiscount) * (taxRate / 100));
-  double get serviceTotalWithTax => (serviceSubtotalBeforeDiscount - serviceTotalDiscount) + serviceTax;
-
-  // [NEW] Itemized Laundry Discounts
   Map<String, double> get laundryDiscounts {
-    final Map<String, double> discounts = {};
-    for (var item in _items) {
-      if (item.discountPercentage > 0) {
-        double base = item.item.basePrice * item.serviceType.priceMultiplier * item.quantity;
-        double discountVal = base * (item.discountPercentage / 100);
-        String label = "${item.item.name} (${item.discountPercentage.toInt()}% Off)";
-        discounts[label] = (discounts[label] ?? 0.0) + discountVal;
-      }
-    }
-    return discounts;
+     if (_appliedPromotion != null && discountAmount > 0) {
+       final code = _appliedPromotion!['code'] ?? 'Discount';
+       return {code: discountAmount};
+     }
+     return {};
+  }
+  
+  // Split Tax (Approximate for display, actual tax is total)
+  double get serviceTaxAmount {
+    // Pro-rate tax based on service share? Or just simple rate?
+    // User screens expect this. Let's use simple rate for now.
+    // If discount applies, this might be slightly off sum-wise vs total tax, but acceptable for detailed breakdown if not strictly accounting.
+    // Ideally: (serviceTotal / subtotal) * taxAmount
+    if (subtotal == 0) return 0.0;
+    return (serviceTotalAmount / subtotal) * taxAmount;
   }
 
+  double get storeTaxAmount {
+    if (subtotal == 0) return 0.0;
+    return (storeTotalAmount / subtotal) * taxAmount;
+  }
+  
   // Apply Promo
   Future<String?> applyPromoCode(String code) async {
     if (_activeBranchId == null) return "Please select a branch first";
     
     try {
       final ApiService api = ApiService();
+      // Send cartTotal so backend can check Min Spend initially
       final response = await api.client.post('/promotions/validate', data: {
-        'code': code,
+        'code': code.trim().toUpperCase(),
         'branchId': _activeBranchId,
-        'cartTotal': subtotal
+        'orderTotal': subtotal // Use current subtotal
       });
 
-      if (response.statusCode == 200 && response.data['isValid'] == true) {
+      if (response.statusCode == 200 && response.data['valid'] == true) {
          _appliedPromotion = response.data;
          notifyListeners();
          return null; // Success
       } else {
-        return response.data['message'] ?? "Invalid code";
+        return response.data['msg'] ?? "Invalid code";
       }
     } catch (e) {
+      // Dio Error Parsing
       if (e.toString().contains("400") || e.toString().contains("404")) {
-         return "Invalid or expired promotion";
+          // If possible, parse detailed message from response via Interceptor?
+          // ApiService logs it.
+          // For now generic or "Invalid".
+          return "Invalid or expired promotion";
       }
       return "Error validating code";
     }

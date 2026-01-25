@@ -27,9 +27,11 @@ const OrderSchema = new mongoose.Schema({
 
     // Money Fields
     subtotal: { type: Number, default: 0 }, // Sum of items
+    discountAmount: { type: Number, default: 0 }, // [New]
+    promoCode: { type: String, default: null }, // [New]
     taxRate: { type: Number, default: 0 }, // % at time of purchase
     taxAmount: { type: Number, default: 0 }, // Calculated tax
-    totalAmount: { type: Number, required: true }, // subtotal + taxAmount
+    totalAmount: { type: Number, required: true }, // subtotal - discount + taxAmount
 
     status: {
         type: String,
@@ -38,6 +40,14 @@ const OrderSchema = new mongoose.Schema({
     },
 
     paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Refunded'], default: 'Pending' },
+
+    // Exception Handling
+    exceptionStatus: {
+        type: String,
+        enum: ['None', 'Stain', 'Damage', 'Delay', 'MissingItem', 'Other'],
+        default: 'None'
+    },
+    exceptionNote: String,
 
     // Logistics
     pickupOption: { type: String, enum: ['Pickup', 'Dropoff'], required: true },

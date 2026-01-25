@@ -30,6 +30,11 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    Future.microtask(() {
+       final ns = Provider.of<NotificationService>(context, listen: false);
+       ns.fetchNotifications();
+       ns.markAllAsRead(); // [Auto-Read Policy]
+    });
   }
 
   @override

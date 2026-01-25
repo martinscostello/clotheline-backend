@@ -43,6 +43,20 @@ class OrderService extends ChangeNotifier {
     return null;
   }
 
+  // [NEW] Fetch Orders for specific User (Admin View)
+  Future<List<OrderModel>> fetchOrdersByUser(String userId) async {
+    try {
+      final response = await _apiService.client.get('/orders/user/$userId');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        return data.map((json) => OrderModel.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint("Error fetching user orders: $e");
+    }
+    return [];
+  }
+
   // For User: Create Order
   Future<Map<String, dynamic>?> createOrder(Map<String, dynamic> orderData) async {
     try {
@@ -74,6 +88,42 @@ class OrderService extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint("Error updating status: $e");
+      return false;
+    }
+  }
+
+  // [NEW] Report Exception
+  Future<bool> updateExceptionStatus(String id, OrderExceptionStatus status, String? note) async {
+    try {
+      final response = await _apiService.client.put('/orders/$id/exception', data: {
+        'exceptionStatus': status.name,
+        'exceptionNote': note
+      });
+      if (response.statusCode == 200) {
+         await fetchOrders(); 
+         return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error updating exception: $e");
+      return false;
+    }
+  }
+
+  // [NEW] Batch Update Status
+  Future<bool> batchUpdateStatus(List<String> ids, String status) async {
+    try {
+      final response = await _apiService.client.post('/orders/batch-status', data: {
+        'orderIds': ids,
+        'status': status
+      });
+      if (response.statusCode == 200) {
+         await fetchOrders(); 
+         return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error batch updating: $e");
       return false;
     }
   }

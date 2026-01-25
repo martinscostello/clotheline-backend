@@ -271,32 +271,11 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     switch(widget.section) {
       case 'home': return _buildHomeConfig();
       case 'ads': return _buildAdsConfig();
-      case 'branding': return _buildBrandingConfig();
       default: return const SizedBox();
     }
   }
 
-  Widget _buildBrandingConfig() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Main Branding", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 15),
-        GlassContainer(
-          opacity: 0.1,
-          child: Column(
-            children: [
-              _buildTextField("Brand Slogan / Product Banner", _brandTextController),
-              const SizedBox(height: 15),
-              _buildTextField("Office Address", _contactAddressCtrl),
-              const SizedBox(height: 15),
-              _buildTextField("Contact Phone Number", _contactPhoneCtrl),
-            ],
-          ),
-        )
-      ],
-    );
-  }
+
 
   Widget _buildHomeConfig() {
     final items = _content!.heroCarousel.take(3).toList();

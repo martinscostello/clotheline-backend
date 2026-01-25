@@ -8,6 +8,7 @@ import '../../../services/auth_service.dart';
 import '../../../utils/toast_utils.dart';
 import '../../../services/chat_service.dart';
 import '../../../providers/branch_provider.dart';
+import 'admin_user_profile_screen.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -17,23 +18,49 @@ class AdminUsersScreen extends StatefulWidget {
 }
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
-  List<dynamic> _users = [];
+  List<dynamic> _allUsers = []; // Store full list
+  List<dynamic> _filteredUsers = []; // Store filtered list
   bool _isLoading = true;
   final Set<String> _selectedUserIds = {};
   bool _isSelectionMode = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _fetchUsers();
+    _searchController.addListener(_filterUsers);
+  }
+  
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchUsers() async {
     try {
       final users = await Provider.of<AuthService>(context, listen: false).fetchAllUsers();
       if (mounted) {
+        // [BRANCH AWARENESS Check]
+        // Ideally backend does this, but for now we filter frontend.
+        // We need to know current admin branch.
+        final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+        // If master, show all. If branch admin, show only users assigned to branch OR users who ordered from branch?
+        // User model has 'assignedBranch'.
+        // Simplified Logic: If user has 'branchId' matching admin's selected branch.
+        
+        List<dynamic> relevantUsers = users;
+        /*
+        // [Future Restriction]
+        if (branchProvider.selectedBranch != null && !branchProvider.isMaster) {
+           relevantUsers = users.where((u) => u['branchId'] == branchProvider.selectedBranch!.id).toList();
+        }
+        */
+
         setState(() {
-          _users = users;
+          _allUsers = relevantUsers;
+          _filteredUsers = relevantUsers;
           _isLoading = false;
         });
       }
@@ -43,6 +70,25 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         ToastUtils.show(context, "Error fetching users: $e", type: ToastType.error);
       }
     }
+  }
+
+  void _filterUsers() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredUsers = _allUsers.where((user) {
+        final name = (user['name'] ?? "").toLowerCase();
+        final email = (user['email'] ?? "").toLowerCase();
+        final phone = (user['phone'] ?? "").toLowerCase();
+        return name.contains(query) || email.contains(query) || phone.contains(query);
+      }).toList();
+    });
+  }
+
+  void _openProfile(Map<String, dynamic> user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AdminUserProfileScreen(user: user)),
+    );
   }
 
   @override
@@ -56,14 +102,23 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(_isSelectionMode ? "${_selectedUserIds.length} Selected" : "User Management", 
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
-        ),
+        title: _isSelectionMode 
+           ? Text("${_selectedUserIds.length} Selected", style: const TextStyle(color: Colors.white))
+           : TextField(
+               controller: _searchController,
+               style: const TextStyle(color: Colors.white),
+               decoration: const InputDecoration(
+                 hintText: "Search Users...",
+                 hintStyle: TextStyle(color: Colors.white54),
+                 border: InputBorder.none,
+                 icon: Icon(Icons.search, color: Colors.white54),
+               ),
+             ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: _isSelectionMode 
           ? IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() { _isSelectionMode = false; _selectedUserIds.clear(); }))
-          : null,
+          : const BackButton(color: Colors.white),
         actions: [
           if (_isSelectionMode)
             IconButton(
@@ -82,13 +137,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       body: LiquidBackground(
         child: _isLoading 
           ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
-          : _users.isEmpty 
+          : _filteredUsers.isEmpty 
             ? const Center(child: Text("No users found", style: TextStyle(color: Colors.white54)))
             : ListView.builder(
                 padding: const EdgeInsets.only(top: 100, bottom: 100, left: 15, right: 15),
-                itemCount: _users.length,
+                itemCount: _filteredUsers.length,
                 itemBuilder: (context, index) {
-                  final user = _users[index];
+                  final user = _filteredUsers[index];
                   final userId = user['_id'].toString();
                   final isSelected = _selectedUserIds.contains(userId);
 
@@ -111,6 +166,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                               _selectedUserIds.add(userId);
                             }
                           });
+                        } else {
+                          _openProfile(user);
                         }
                       },
                       child: GlassContainer(
@@ -150,13 +207,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                               ),
                             ),
                             if (!_isSelectionMode)
-                              IconButton(
-                                icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primaryColor),
-                                onPressed: () {
-                                   // Quick navigation to user thread could be added here
-                                   ToastUtils.show(context, "Direct chat coming soon", type: ToastType.info);
-                                },
-                              ),
+                              const Icon(Icons.chevron_right, color: Colors.white24),
                           ],
                         ),
                       ),

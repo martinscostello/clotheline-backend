@@ -17,12 +17,17 @@ import 'services/notification_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/chat_service.dart';
 import 'services/navigation_persistence_service.dart';
-import 'services/content_service.dart'; // Added Import
+import 'services/navigation_persistence_service.dart';
+import 'services/content_service.dart'; 
+import 'services/analytics_service.dart';
+import 'services/promotion_service.dart'; // Added // Added
 import 'providers/branch_provider.dart';
 import 'screens/user/main_layout.dart';
 import 'screens/admin/admin_main_layout.dart';
 import 'models/service_model.dart'; // Assuming this import exists for ServiceModel
 import 'models/branch_model.dart';
+import 'widgets/global_error_boundary.dart'; // Added
+import 'services/network_service.dart'; // Added
 
 // Global Theme Notifier
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
@@ -90,8 +95,10 @@ Future<void> main() async {
   );
 
   // Initialize Push Notifications (Non-blocking)
+  // Initialize Push Notifications (Non-blocking)
   try {
     PushNotificationService.initialize();
+    NetworkService().initialize(); 
   } catch (_) {}
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -157,6 +164,9 @@ class LaundryApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FavoritesService()..loadFavorites()),
         ChangeNotifierProvider(create: (_) => NotificationService()),
         ChangeNotifierProvider(create: (_) => ChatService()),
+        ChangeNotifierProvider(create: (_) => ChatService()),
+        ChangeNotifierProvider(create: (_) => AnalyticsService()),
+        ChangeNotifierProvider(create: (_) => PromotionService()), // Added
         Provider(create: (_) => ContentService()),
       ],
       child: ValueListenableBuilder<ThemeMode>(
@@ -172,6 +182,36 @@ class LaundryApp extends StatelessWidget {
             // 3. [ROUTING] Instant Determination
             home: _determineInitialScreen(bootstrap),
             
+            builder: (context, child) {
+              // Wrap with Error Boundary
+              return GlobalErrorBoundary(
+                child: Overlay( // Required for Banner? No, Material App provides Overlay.
+                  initialEntries: [
+                    OverlayEntry(
+                      builder: (ctx) => Stack(
+                        children: [
+                          if (child != null) child,
+                          // Network Banner Overlay
+                          const _NetworkBanner(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              // Wait, simpler approach for builder:
+              // return GlobalErrorBoundary(
+              //   child: Stack(
+              //     children: [
+              //       if (child != null) child,
+              //       const _NetworkBanner(),
+              //     ],
+              //   ),
+              // );
+              // BUT ErrorBoundary relies on ErrorWidget.builder which is global.
+              // The widget wrapper captures build errors.
+            },
+
             navigatorObservers: [
               NavigationPersistenceService()
             ],
@@ -181,21 +221,58 @@ class LaundryApp extends StatelessWidget {
     );
   }
 
+  // ... _determineInitialScreen ...
   Widget _determineInitialScreen(BootstrapData data) {
     if (!data.isLoggedIn) {
-       // Check onboarding? (Lazy check: assume seen if not logged in? No, need check)
-       // We didn't read onboarding in main(). Let's assume Login if indeterminate for now, 
-       // or user can add it to Bootloader.
-       // Actually user rule: "App must never reset to login visually... if session expires show modal".
-       // But if NEVER logged in? LoginScreen.
        return const LoginScreen(); 
     }
-    
-    // Logged In -> Dashboard Immediately
     if (data.userRole == 'admin') {
       return const AdminMainLayout();
     } else {
       return const MainLayout();
     }
+  }
+}
+
+// [SMALL WIDGET] Network Banner
+class _NetworkBanner extends StatefulWidget {
+  const _NetworkBanner();
+
+  @override
+  State<_NetworkBanner> createState() => _NetworkBannerState();
+}
+
+class _NetworkBannerState extends State<_NetworkBanner> {
+  bool isOffline = false;
+
+  @override
+  void initState() {
+    super.initState();
+    NetworkService().connectionStream.listen((online) {
+       if (mounted) setState(() => isOffline = !online);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isOffline) return const SizedBox.shrink();
+
+    return Positioned(
+      bottom: 0, left: 0, right: 0,
+      child: Material(
+        color: Colors.redAccent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.wifi_off, color: Colors.white, size: 14),
+              SizedBox(width: 8),
+              Text("No Internet Connection", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

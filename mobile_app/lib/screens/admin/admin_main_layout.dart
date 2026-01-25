@@ -92,20 +92,23 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         // Or just show Dash/Settings (default) until permissions load.
         // We chose to show default tabs immediately to prevent "Infinite Spinner".
 
-        return Scaffold(
-          extendBody: true,
-          resizeToAvoidBottomInset: false,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: LaundryGlassBackground(
-            child: Stack(
-              children: [
-                Positioned.fill(child: _currentScreens[_currentIndex]),
-                if (MediaQuery.of(context).viewInsets.bottom == 0)
-                  Positioned(
-                    bottom: 0, left: 0, right: 0,
-                    child: _buildGlassNavBar(),
-                  ),
-              ],
+        return Theme(
+          data: AppTheme.darkTheme,
+          child: Scaffold(
+            extendBody: true,
+            resizeToAvoidBottomInset: false,
+            backgroundColor: AppTheme.darkTheme.scaffoldBackgroundColor, // Enforce dark background
+            body: LaundryGlassBackground(
+              child: Stack(
+                children: [
+                  Positioned.fill(child: _currentScreens[_currentIndex]),
+                  if (MediaQuery.of(context).viewInsets.bottom == 0)
+                    Positioned(
+                      bottom: 0, left: 0, right: 0,
+                      child: _buildGlassNavBar(),
+                    ),
+                ],
+              ),
             ),
           ),
         );

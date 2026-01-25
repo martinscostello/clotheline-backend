@@ -5,6 +5,7 @@ import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/models/app_content_model.dart';
 import 'package:laundry_app/utils/toast_utils.dart';
+import '../promotions/admin_promotions_screen.dart'; // [New] Import
 class AdminCMSPromotionsScreen extends StatefulWidget {
   const AdminCMSPromotionsScreen({super.key});
 
@@ -122,6 +123,25 @@ class _AdminCMSPromotionsScreenState extends State<AdminCMSPromotionsScreen> {
                           const Text(
                             "Customers will see 'Free Shipping for orders above ₦...' on product pages.",
                             style: TextStyle(color: Colors.white54, fontSize: 11, fontStyle: FontStyle.italic),
+                          ),
+                          const SizedBox(height: 20),
+                          const Divider(color: Colors.white10),
+                          const SizedBox(height: 10),
+                          
+                          // [NEW] Promocodes Navigation
+                          ListTile(
+                             contentPadding: EdgeInsets.zero,
+                             title: const Text("Manage Promocodes", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                             subtitle: const Text("Create discount codes and coupons.", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                             leading: Container(
+                               padding: const EdgeInsets.all(8),
+                               decoration: const BoxDecoration(color: Colors.pinkAccent, shape: BoxShape.circle),
+                               child: const Icon(Icons.local_offer, color: Colors.white, size: 16),
+                             ),
+                             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                             onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPromotionsScreen()));
+                             },
                           )
                         ],
                       ),

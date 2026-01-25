@@ -10,10 +10,13 @@ import '../../../models/order_model.dart';
 import '../booking/checkout_screen.dart';
 import 'package:intl/intl.dart';
 import 'order_detail_screen.dart';
+import 'package:provider/provider.dart';
+import '../../../services/notification_service.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key});
+  final int initialIndex;
+  const OrdersScreen({super.key, this.initialIndex = 0});
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -44,6 +47,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Future<void> _fetchOrders({bool silent = false}) async {
     await _orderService.fetchOrders();
+    // [Auto-Read Policy] Mark all order-related notifications as read
+    if (mounted) {
+       Provider.of<NotificationService>(context, listen: false).markAllReadByType('order');
+    }
     if (mounted && !silent) setState(() => _isLoading = false);
   }
 
@@ -55,6 +62,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return DefaultTabController(
       length: 6, 
+      initialIndex: widget.initialIndex, // [NEW] 
       child: Scaffold(
         backgroundColor: Colors.transparent, // Consistent Global Background
         extendBodyBehindAppBar: true,

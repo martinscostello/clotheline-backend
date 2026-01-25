@@ -13,7 +13,8 @@ import '../../services/push_notification_service.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
-  const MainLayout({super.key, this.initialIndex = 0});
+  final int initialOrderTabIndex; // [NEW]
+  const MainLayout({super.key, this.initialIndex = 0, this.initialOrderTabIndex = 0});
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
@@ -35,7 +36,7 @@ class _MainLayoutState extends State<MainLayout> {
         tabNotifier: _tabNotifier, // Pass Notifier
       ),
       const ProductsScreen(),
-      const OrdersScreen(),
+      OrdersScreen(initialIndex: widget.initialOrderTabIndex), // [NEW]
       const SettingsScreen(),
     ];
     
