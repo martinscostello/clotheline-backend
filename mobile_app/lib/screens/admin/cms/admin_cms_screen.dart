@@ -8,6 +8,7 @@ import '../services/admin_services_screen.dart';
 import '../products/admin_products_screen.dart';
 import 'admin_categories_screen.dart';
 import '../orders/admin_orders_screen.dart';
+import '../products/review_moderation_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
 
@@ -121,6 +122,14 @@ class AdminCMSScreen extends StatelessWidget {
                         icon: Icons.shopping_bag, 
                         color: Colors.purpleAccent,
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen())),
+                      ),
+                      const SizedBox(height: 15),
+                      _buildCMSCard(
+                        title: "Review Moderation", 
+                        subtitle: "View and hide product reviews.",
+                        icon: Icons.rate_review_outlined, 
+                        color: Colors.yellowAccent,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewModerationScreen())),
                       ),
                     ],
 

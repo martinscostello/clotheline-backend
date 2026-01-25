@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:dio/dio.dart'; // [FIX] Added import
 import 'api_service.dart';
 
 class PaymentService {
@@ -18,8 +19,12 @@ class PaymentService {
       }
       return null;
     } catch (e) {
+      if (e is DioException) {
+         final msg = e.response?.data is Map ? e.response?.data['msg'] : null;
+         if (msg != null) throw msg; // Throw just the message string
+      }
       print("Payment Init Error: $e");
-      return null;
+      throw e.toString().replaceAll("Exception:", ""); // Fallback clean string
     }
   }
 

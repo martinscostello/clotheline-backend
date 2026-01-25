@@ -59,6 +59,8 @@ class BranchProvider extends ChangeNotifier {
     if (savedId != null && _branches.isNotEmpty) {
       try {
         _selectedBranch = _branches.firstWhere((b) => b.id == savedId);
+        // Sync CartService
+        CartService().setBranch(savedId);
       } catch (e) {
         // ID might not exist in cache logic
       }

@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/user/main_layout.dart'; // [NEW]
+import '../screens/user/products/submit_review_screen.dart';
 
 // Top-level function for background handling
 @pragma('vm:entry-point')
@@ -167,6 +168,27 @@ class PushNotificationService {
           );
         } catch (e) {
           print("Deep link navigation error: $e");
+        }
+     } else if (message.data['type'] == 'review_reminder') {
+        // Deep link to Review Submission
+        final productId = message.data['productId'];
+        final productName = message.data['productName'] ?? 'Product';
+        final orderId = message.data['orderId'];
+
+        if (productId != null && orderId != null) {
+          try {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SubmitReviewScreen(
+                  productId: productId,
+                  productName: productName,
+                  orderId: orderId,
+                ),
+              ),
+            );
+          } catch (e) {
+            print("Review reminder deep link error: $e");
+          }
         }
      }
   }

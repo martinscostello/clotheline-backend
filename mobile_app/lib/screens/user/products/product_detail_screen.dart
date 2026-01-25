@@ -6,6 +6,11 @@ import '../../../models/store_product.dart';
 import '../../../services/cart_service.dart'; 
 import '../../../services/store_service.dart'; // [NEW]
 import '../../../services/favorites_service.dart'; // [NEW]
+import '../../../services/review_service.dart'; 
+import '../../../services/order_service.dart';
+import '../../../models/review_model.dart';
+import '../../../models/order_model.dart';
+import 'submit_review_screen.dart';
 import '../../../utils/add_to_cart_animation.dart';
 import 'store_cart_screen.dart';
 import '../../../utils/currency_formatter.dart';
@@ -13,6 +18,7 @@ import '../../../widgets/fullscreen_gallery.dart';
 import '../../../widgets/custom_cached_image.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import '../../../../theme/app_theme.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final StoreProduct product;
@@ -30,6 +36,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _currentImageIndex = 0;
   bool _isTitleExpanded = false;
   
+  // Review Logic Fields
+  List<ReviewModel> _reviews = [];
+  bool _isEligibleToReview = false;
+  String? _eligibleOrderId;
+  bool _isReviewLoading = true;
+
   // Keys for Animation
   final GlobalKey _cartKey = GlobalKey();
   final GlobalKey _addBtnKey = GlobalKey();
@@ -38,8 +50,57 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void initState() {
     super.initState();
     _fetchAppContent();
+    _fetchReviewsAndEligibility();
     if (widget.product.variants.isNotEmpty) {
        _selectedVariant = widget.product.variants.first;
+    }
+  }
+
+  Future<void> _fetchReviewsAndEligibility() async {
+    setState(() => _isReviewLoading = true);
+    
+    try {
+      final reviewService = Provider.of<ReviewService>(context, listen: false);
+      final orderService = Provider.of<OrderService>(context, listen: false);
+
+      // 1. Fetch Reviews
+      final reviews = await reviewService.getProductReviews(widget.product.id);
+      
+      // 2. Check Eligibility (User must have a completed order with this product)
+      // Ensure orders are fetched
+      if (orderService.orders.isEmpty) {
+        await orderService.fetchOrders();
+      }
+
+      bool eligible = false;
+      String? orderId;
+
+      for (var order in orderService.orders) {
+        if (order.status == OrderStatus.Completed) {
+          final hasProduct = order.items.any((item) => item.itemType == 'Product' && item.itemId == widget.product.id);
+          if (hasProduct) {
+            // Check if already reviewed for this order
+            final alreadyReviewed = reviews.any((r) => r.orderId == order.id);
+            if (!alreadyReviewed) {
+              eligible = true;
+              orderId = order.id;
+              break;
+            }
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _reviews = reviews;
+          _isEligibleToReview = eligible;
+          _eligibleOrderId = orderId;
+          _isReviewLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching reviews/eligibility: $e");
+      if (mounted) setState(() => _isReviewLoading = false);
     }
   }
 
@@ -473,16 +534,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 )
               ],
             ),
-            Icon(Icons.chevron_right, color: textColor.withOpacity(0.5))
+            if (_isEligibleToReview && _eligibleOrderId != null)
+              ElevatedButton(
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SubmitReviewScreen(
+                        productId: widget.product.id,
+                        productName: widget.product.name,
+                        orderId: _eligibleOrderId!,
+                      ),
+                    ),
+                  );
+                  _fetchReviewsAndEligibility(); // Refresh after submitting
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                  foregroundColor: AppTheme.primaryColor,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  minimumSize: const Size(0, 32),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                child: const Text("Write a Review", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              )
+            else
+              Icon(Icons.chevron_right, color: textColor.withOpacity(0.5))
           ],
         ),
         const SizedBox(height: 16),
-        // Customer Reviews List
-        if (widget.product.reviews.isEmpty)
-           const Text("No reviews yet. Be the first!", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
+        
+        if (_isReviewLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (_reviews.isEmpty)
+          const Text("No reviews yet. Be the first!", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
         else
-          ...widget.product.reviews.take(2).map((r) => Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
+          ..._reviews.take(3).map((r) => Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -490,12 +579,46 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   children: [
                     Text(r.userName, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13)),
                     const Spacer(),
-                    Text("${r.date.day}/${r.date.month}/${r.date.year}", style: const TextStyle(color: Colors.grey, fontSize: 10))
+                    Text("${r.createdAt.day}/${r.createdAt.month}/${r.createdAt.year}", style: const TextStyle(color: Colors.grey, fontSize: 10))
                   ],
                 ),
-                Row(children: List.generate(5, (i) => Icon(i < r.rating.round() ? Icons.star : Icons.star_border, color: Colors.amber, size: 12))),
-                const SizedBox(height: 4),
-                Text(r.comment, style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 13))
+                Row(children: List.generate(5, (i) => Icon(i < r.rating ? Icons.star : Icons.star_border, color: Colors.amber, size: 12))),
+                if (r.comment != null && r.comment!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(r.comment!, style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 13)),
+                ],
+                if (r.images.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 60,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: r.images.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => FullScreenGallery(
+                                imageUrls: r.images,
+                                initialIndex: index,
+                              )));
+                            },
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: CustomCachedImage(
+                                imageUrl: r.images[index],
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ],
             ),
           ))
@@ -672,13 +795,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           alignment: PlaceholderAlignment.baseline, 
           baseline: TextBaseline.alphabetic,
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
               color: Colors.green,
-              borderRadius: BorderRadius.circular(4)
+              borderRadius: BorderRadius.circular(3)
             ),
-            child: Text(match.group(1)!, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)), 
+            child: Text(match.group(1)!, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)), 
           )
         ));
         lastIndex = match.end;
@@ -707,20 +830,29 @@ class _DrivingIcon extends StatefulWidget {
 
 class _DrivingIconState extends State<_DrivingIcon> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _offsetAnimation;
+  late Animation<double> _horizontalAnimation;
+  late Animation<double> _verticalAnimation;
+  late Animation<double> _linesAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 600), // Faster
+      duration: const Duration(milliseconds: 800),
       vsync: this,
-    )..repeat(reverse: true);
+    )..repeat();
     
-    _offsetAnimation = Tween<double>(begin: -2.0, end: 2.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    _horizontalAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: -2.0, end: 2.0), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 2.0, end: -2.0), weight: 50),
+    ]).animate(_controller);
+
+    _verticalAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -3.0).chain(CurveTween(curve: Curves.easeOut)), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: -3.0, end: 0.0).chain(CurveTween(curve: Curves.bounceOut)), weight: 70),
+    ]).animate(_controller);
+
+    _linesAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
   }
 
   @override
@@ -732,28 +864,41 @@ class _DrivingIconState extends State<_DrivingIcon> with SingleTickerProviderSta
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _offsetAnimation,
+      animation: _controller,
       builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(_offsetAnimation.value, 0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Speed Lines (Trailing)
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Speed Lines (Now look like they move through/behind)
+            SizedBox(
+              width: 24,
+              height: 18,
+              child: Stack(
                 children: [
-                  _buildSpeedLine(12, 0.4),
-                  const SizedBox(height: 2),
-                  _buildSpeedLine(20, 0.7),
-                  const SizedBox(height: 2),
-                  _buildSpeedLine(10, 0.3),
+                  Positioned(
+                    left: (1.0 - _linesAnimation.value) * 15,
+                    top: 4,
+                    child: _buildSpeedLine(12, 0.4 * _linesAnimation.value),
+                  ),
+                  Positioned(
+                    left: (1.0 - _linesAnimation.value) * 20,
+                    top: 8,
+                    child: _buildSpeedLine(18, 0.7 * _linesAnimation.value),
+                  ),
+                  Positioned(
+                    left: (1.0 - _linesAnimation.value) * 10,
+                    top: 12,
+                    child: _buildSpeedLine(8, 0.3 * _linesAnimation.value),
+                  ),
                 ],
               ),
-              const SizedBox(width: 4),
-              Icon(widget.icon, color: widget.color, size: 28),
-            ],
-          ),
+            ),
+            const SizedBox(width: 2),
+            Transform.translate(
+              offset: Offset(_horizontalAnimation.value, _verticalAnimation.value),
+              child: Icon(widget.icon, color: widget.color, size: 18),
+            ),
+          ],
         );
       },
     );
@@ -762,7 +907,7 @@ class _DrivingIconState extends State<_DrivingIcon> with SingleTickerProviderSta
   Widget _buildSpeedLine(double width, double opacity) {
     return Container(
       width: width,
-      height: 2,
+      height: 1.5,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [widget.color.withOpacity(0), widget.color.withOpacity(opacity)],

@@ -16,9 +16,10 @@ const ProductSchema = new mongoose.Schema({
     originalPrice: { type: Number }, // derived or set
     stock: { type: Number, default: 0 },
     soldCount: { type: Number, default: 0 },
-    rating: { type: Number, default: 0 },
+    totalReviews: { type: Number, default: 0 },
+    averageRating: { type: Number, default: 0 },
     brand: { type: String, default: "Generic" },
-    reviews: [{
+    legacyReviews: [{
         userName: String,
         rating: Number,
         comment: String,

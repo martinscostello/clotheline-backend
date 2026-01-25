@@ -11,6 +11,7 @@ import '../chat/chat_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../../services/notification_service.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import '../products/submit_review_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -123,8 +124,38 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         ],
                       ),
                     ),
-                    Text(CurrencyFormatter.format(item.price * item.quantity), 
-                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(CurrencyFormatter.format(item.price * item.quantity), 
+                          style: TextStyle(color: textColor, fontWeight: FontWeight.bold)
+                        ),
+                        if (order.status == OrderStatus.Completed && item.itemType == 'Product')
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => SubmitReviewScreen(
+                                      productId: item.itemId,
+                                      productName: item.name,
+                                      orderId: order.id,
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                foregroundColor: AppTheme.primaryColor,
+                              ),
+                              child: const Text("Write a Review", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),

@@ -79,9 +79,9 @@ class StoreProduct {
       price: parseDouble(json['price']),
       originalPrice: parseDouble(json['originalPrice'] ?? json['price']),
       soldCount: json['soldCount'] ?? 0,
-      rating: parseDouble(json['rating']),
-      reviews: (json['reviews'] as List?)?.map((e) => ProductReview.fromJson(e)).toList() ?? [],
-      reviewCount: (json['reviews'] as List?)?.length ?? 0, 
+      rating: parseDouble(json['averageRating'] ?? json['rating']), // Map averageRating
+      reviews: (json['legacyReviews'] as List?)?.map((e) => ProductReview.fromJson(e)).toList() ?? [],
+      reviewCount: json['totalReviews'] ?? (json['legacyReviews'] as List?)?.length ?? 0, // Map totalReviews
       stockLevel: json['stock'] ?? 0,
       isFreeShipping: json['isFreeShipping'] ?? false,
       variants: (json['variations'] as List?)?.map((e) => ProductVariant.fromJson(e)).toList() ?? [],
