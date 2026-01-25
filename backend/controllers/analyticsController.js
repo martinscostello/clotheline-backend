@@ -25,10 +25,8 @@ exports.getRevenueStats = async (req, res) => {
         else startDate.setDate(now.getDate() - 7); // Default week
 
         const matchStage = {
-            createdAt: { $gte: startDate },
-            status: { $nin: ['Cancelled', 'Refunded'] }, // Exclude cancelled
-            paymentStatus: { $in: ['Paid'] } // Only actual revenue? Or all "valid" orders? 
-            // Revenue usually implies Paid.
+            date: { $gte: startDate },
+            status: { $nin: ['Cancelled', 'Refunded'] }
         };
 
         if (branchId) {
@@ -40,7 +38,7 @@ exports.getRevenueStats = async (req, res) => {
             { $match: matchStage },
             {
                 $group: {
-                    _id: { $dateToString: { format: intervalFormat, date: "$createdAt" } },
+                    _id: { $dateToString: { format: intervalFormat, date: "$date" } },
                     totalRevenue: { $sum: "$totalAmount" },
                     count: { $sum: 1 }
                 }

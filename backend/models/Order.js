@@ -62,6 +62,6 @@ const OrderSchema = new mongoose.Schema({
     deliveryPhone: String,
 
     date: { type: Date, default: Date.now }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Order', OrderSchema);
