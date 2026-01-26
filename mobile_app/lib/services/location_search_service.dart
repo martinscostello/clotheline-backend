@@ -40,9 +40,14 @@ class LocationSearchService {
       print("DEBUG: Google Autocomplete URL: ${url.replaceFirst(_apiKey, 'KEY_HIDDEN')}");
 
       if (city != null) {
-        // We can add location bias here if we had the city coords
-        // For now, let's try adding city name to input if not already there or using components
-        // url += "&components=country:ng|city:${city.toLowerCase()}"; // Google doesn't support city component directly like this often
+        // Strict location restriction based on the branch city
+        // Benin City: 6.3350, 5.6037
+        // Abuja: 9.0765, 7.3986
+        if (city.toLowerCase().contains("benin")) {
+          url += "&locationrestriction=circle:15000@6.3350,5.6037";
+        } else if (city.toLowerCase().contains("abuja")) {
+          url += "&locationrestriction=circle:20000@9.0765,7.3986";
+        }
       }
 
       final response = await _dio.get(url);

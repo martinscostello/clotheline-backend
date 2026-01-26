@@ -86,8 +86,8 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
       _source = 'saved'; 
       _customLatLng = LatLng(addr.lat, addr.lng);
       _addressLabel = addr.addressLabel;
-      _landmarkController.text = addr.landmark ?? '';
-      _searchController.text = addr.addressLabel;
+      // We store the label to show it in the summary
+      _searchController.text = addr.label; 
       _suggestions = [];
       _isCollapsed = true; // Collapse on select
     });
@@ -159,6 +159,10 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
     final lng = _customLatLng?.longitude ?? _selectedArea?.centroid.longitude ?? 0.0;
     
     String label = _addressLabel;
+    
+    // If it's a saved address, we might want to prepend the label for clarity in order logs
+    // but the user mostly cares about seeing the label in the UI.
+    
     if (_landmarkController.text.isNotEmpty) {
       label += " (Near ${_landmarkController.text})";
     }
@@ -246,7 +250,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
       setState(() {
         _customLatLng = result;
         _source = 'pin';
-        _addressLabel = "Dropped Pin at ${result.latitude.toStringAsFixed(4)}, ${result.longitude.toStringAsFixed(4)}";
+        _addressLabel = "Custom Address";
       });
       _notifyChange();
     }
@@ -313,8 +317,12 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Selected Address", style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text(_addressLabel, style: TextStyle(color: textColor, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const Text("Selected Location", style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text(_source == 'saved' ? _searchController.text : _addressLabel, 
+                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold), 
+                      maxLines: 1, 
+                      overflow: TextOverflow.ellipsis
+                    ),
                   ],
                 ),
               ),
