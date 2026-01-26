@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass/LaundryGlassBackground.dart';
-import '../../widgets/navigation/CrystalNavBar.dart'; // Fixed import
+import '../../widgets/navigation/NavScaffold.dart';
+import '../../widgets/navigation/PremiumNavBar.dart';
 // Fixed relative path
 import 'dashboard_screen.dart';
 import 'products/products_screen.dart';
@@ -81,68 +82,21 @@ class _MainLayoutState extends State<MainLayout> {
       systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
     ));
 
-    return Scaffold(
-      extendBody: true,
-      extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.transparent,
+    return NavScaffold(
+      currentIndex: _currentIndex,
+      onTabTap: _updateIndex,
+      navItems: const [
+        PremiumNavItem(label: "Home", icon: CupertinoIcons.house_fill),
+        PremiumNavItem(label: "Store", icon: CupertinoIcons.bag_fill),
+        PremiumNavItem(label: "Orders", icon: CupertinoIcons.ticket_fill),
+        PremiumNavItem(label: "Settings", icon: CupertinoIcons.person_crop_circle_fill),
+      ],
       body: LaundryGlassBackground(
-        child: Stack(
-          children: [
-            // 1. Current Screen Content
-            Positioned.fill(
-              child: IndexedStack(
-                index: _currentIndex,
-                children: _screens,
-              ),
-            ),
-
-            // 2. Flush Glass Nav Bar
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _buildCustomNavBar(context),
-            ),
-          ],
+        child: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
         ),
       ),
-    );
-  }
-
-  Widget _buildCustomNavBar(BuildContext context) {
-    return CrystalNavBar(
-      currentIndex: _currentIndex,
-      height: 75, // Original
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), // Original floating
-      backgroundColor: Theme.of(context).brightness == Brightness.dark 
-          ? Colors.black.withOpacity(0.8) 
-          : Colors.white.withOpacity(0.9),
-      indicatorColor: AppTheme.primaryColor,
-      unselectedItemColor: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Colors.black45,
-      onTap: (index) => _updateIndex(index),
-      items: const [
-        CrystalNavItem(
-          label: "Home", 
-          unselectedIcon: CupertinoIcons.house, 
-          selectedIcon: CupertinoIcons.house_fill
-        ),
-        CrystalNavItem(
-          label: "Store", 
-          unselectedIcon: CupertinoIcons.bag, 
-          selectedIcon: CupertinoIcons.bag_fill
-        ),
-        CrystalNavItem(
-          label: "Orders", 
-          unselectedIcon: CupertinoIcons.ticket, 
-          selectedIcon: CupertinoIcons.ticket_fill
-        ),
-        CrystalNavItem(
-          label: "Settings", 
-          unselectedIcon: CupertinoIcons.person_crop_circle, 
-          selectedIcon: CupertinoIcons.person_crop_circle_fill
-        ),
-      ],
     );
   }
 }

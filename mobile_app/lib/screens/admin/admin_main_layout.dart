@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +10,8 @@ import 'users/admin_users_screen.dart';
 import 'chat/admin_chat_screen.dart';
 import 'settings/admin_settings_screen.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import '../../widgets/navigation/NavScaffold.dart';
+import '../../widgets/navigation/PremiumNavBar.dart';
 
 class AdminMainLayout extends StatefulWidget {
   const AdminMainLayout({super.key});
@@ -105,80 +106,22 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
 
         return Theme(
           data: AppTheme.darkTheme,
-          child: Scaffold(
-            extendBody: true,
-            resizeToAvoidBottomInset: true,
-            backgroundColor: Colors.transparent,
+          child: NavScaffold(
+            currentIndex: _currentIndex,
+            onTabTap: (index) => setState(() => _currentIndex = index),
+            navItems: _currentNavItems.map((item) => PremiumNavItem(
+              label: item['label'],
+              icon: item['icon'],
+            )).toList(),
             body: LaundryGlassBackground(
-              child: Stack(
-                children: [
-                  Positioned.fill(child: _currentScreens[_currentIndex]),
-                  Positioned(
-                    bottom: 0, left: 0, right: 0,
-                    child: _buildGlassNavBar(),
-                  ),
-                ],
+              child: IndexedStack(
+                index: _currentIndex,
+                children: _currentScreens,
               ),
             ),
           ),
         );
       }
-    );
-  }
-
-  Widget _buildGlassNavBar() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          height: 85,
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.5), 
-            border: Border(top: BorderSide(color: AppTheme.secondaryColor.withValues(alpha: 0.5), width: 1.5)), 
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-            boxShadow: [
-               BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 5),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(_currentNavItems.length, (index) {
-              return _buildNavItem(
-                _currentNavItems[index]['icon'], 
-                _currentNavItems[index]['label'], 
-                index
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    final isSelected = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? AppTheme.secondaryColor : Colors.white38, 
-            size: 26,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? AppTheme.secondaryColor : Colors.white38,
-              fontSize: 10,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
