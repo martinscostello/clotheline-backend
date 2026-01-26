@@ -77,7 +77,7 @@ const OrderSchema = new mongoose.Schema({
         lat: Number,
         lng: Number,
         addressLabel: String,
-        source: { type: String, enum: ['pin', 'google', 'manual', 'admin'] },
+        source: { type: String, enum: ['pin', 'google', 'manual', 'admin', 'saved'] },
         area: String,
         landmark: String
     },
@@ -85,7 +85,7 @@ const OrderSchema = new mongoose.Schema({
         lat: Number,
         lng: Number,
         addressLabel: String,
-        source: { type: String, enum: ['pin', 'google', 'manual', 'admin'] },
+        source: { type: String, enum: ['pin', 'google', 'manual', 'admin', 'saved'] },
         area: String,
         landmark: String
     },

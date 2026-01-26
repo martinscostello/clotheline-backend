@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Settings = require('../models/Settings');
 const StoreProduct = require('../models/Product');
 const NotificationService = require('../utils/notificationService');
+const mongoose = require('mongoose');
 
 // Helper: Calculate Total (Used by payments.js and createOrder)
 // Supports both Service Items and Store Products
@@ -99,10 +100,13 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             throw new Error("Order creation failed: Missing Authenticated User ID");
         }
 
+        // [VISIBILITY FIX] Explicitly cast to ObjectId
+        const userObjectId = (typeof userId === 'string') ? new mongoose.Types.ObjectId(userId) : userId;
+
         const newOrder = new Order({
-            user: userId,
+            user: userObjectId,
             branchId,
-            items,
+            items: Array.isArray(items) ? items : [],
 
             // Financials
             subtotal: finalSubtotal,
@@ -220,7 +224,11 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
         return newOrder;
     } catch (err) {
-        console.error("createOrderInternal Error:", err);
+        console.error("createOrderInternal Error Detail:", {
+            message: err.message,
+            stack: err.stack,
+            validationErrors: err.errors ? Object.keys(err.errors).map(k => `${k}: ${err.errors[k].message}`) : 'None'
+        });
         throw err;
     }
 };

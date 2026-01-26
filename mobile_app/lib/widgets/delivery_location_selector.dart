@@ -520,14 +520,21 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
         if (_customLatLng != null || _addressLabel.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 12.0),
-            child: Row(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 if (_source == 'pin' || _source == 'google') ...[
-                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                  const SizedBox(width: 4),
-                  const Text("Location Selected", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                      const SizedBox(width: 4),
+                      const Text("Location Selected", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ],
-                const Spacer(),
                 if (_addressLabel.isNotEmpty && (_source == 'pin' || _source == 'google') && _savedAddresses.length < 3)
                    TextButton.icon(
                     onPressed: _isSaving ? null : _saveSelection,
@@ -535,6 +542,11 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                         ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.save_outlined, size: 16),
                     label: const Text("Save this address", style: TextStyle(fontSize: 12)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
                 if (_source == 'pin' || _source == 'google')
                   TextButton(
@@ -545,6 +557,11 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                       _notifyChange();
                     }),
                     child: const Text("Reset to Area", style: TextStyle(fontSize: 12)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   )
               ],
             ),
