@@ -925,12 +925,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                   ToastUtils.show(context, "Please select both Pickup and Delivery options", type: ToastType.warning);
                   return;
                 }
-                if (_beforeWashOption == 1 && (_pickupAddressController.text.isEmpty || _pickupPhoneController.text.isEmpty)) {
-                  ToastUtils.show(context, "Please provide pickup address and phone", type: ToastType.warning);
+                if (_beforeWashOption == 1 && (_pickupSelection == null || _pickupPhoneController.text.isEmpty)) {
+                  ToastUtils.show(context, "Please provide pickup location and phone", type: ToastType.warning);
                   return;
                 }
-                if (_afterWashOption == 1 && (_deliveryAddressController.text.isEmpty || _deliveryPhoneController.text.isEmpty)) {
-                  ToastUtils.show(context, "Please provide delivery address and phone", type: ToastType.warning);
+                if (_afterWashOption == 1 && (_deliverySelection == null || _deliveryPhoneController.text.isEmpty)) {
+                  ToastUtils.show(context, "Please provide delivery location and phone", type: ToastType.warning);
                   return;
                 }
                 setState(() => _currentStage = 2);

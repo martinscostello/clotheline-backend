@@ -124,7 +124,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                       initialZoom: 15.0,
                       onPositionChanged: (pos, hasGesture) {
                         if (hasGesture) {
-                          currentPos = pos.center;
+                          currentPos = pos.center!;
                         }
                       },
                     ),
@@ -137,7 +137,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                   ),
                   const Center(
                     child: Padding(
-                      padding: EdgeInsets.bottom: 40),
+                      padding: EdgeInsets.only(bottom: 40),
                       child: Icon(Icons.location_pin, color: AppTheme.primaryColor, size: 50),
                     ),
                   ),
