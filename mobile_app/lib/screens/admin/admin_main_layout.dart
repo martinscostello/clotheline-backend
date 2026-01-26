@@ -94,12 +94,16 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         // Or just show Dash/Settings (default) until permissions load.
         // We chose to show default tabs immediately to prevent "Infinite Spinner".
         
+        final bottomPadding = MediaQuery.of(context).padding.bottom;
+        final bool isButtonNav = bottomPadding > 45;
+
         SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
-          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarColor: isButtonNav ? Colors.black : Colors.transparent,
           systemNavigationBarIconBrightness: Brightness.light,
+          systemNavigationBarContrastEnforced: false,
         ));
 
         return Theme(

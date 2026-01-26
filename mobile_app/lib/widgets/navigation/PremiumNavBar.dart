@@ -125,8 +125,8 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
     final Color inactiveColor = isDark ? Colors.white : Colors.black; 
     
     // 4. Adaptive Margin Logic (System Nav Aware)
-    // Threshold for Gesture Nav is usually < 20px, Button Nav is > 40px
-    final bool isButtonNav = bottomPadding > 20;
+    // Threshold for Gesture Nav is usually < 40px (iOS ~34), Button Nav is > 45px
+    final bool isButtonNav = bottomPadding > 45;
     
     final defaultMargin = EdgeInsets.fromLTRB(20, 0, 20, isButtonNav ? bottomPadding : 10);
     
