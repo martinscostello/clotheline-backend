@@ -168,18 +168,32 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            // 1. Liquid Pill Highlight (Telegram Style)
+                            // 1. Liquid Pill Highlight (Shape-Aware)
                             AnimatedOpacity(
                               duration: const Duration(milliseconds: 200),
                               opacity: isSelected ? 1.0 : 0.0,
                               child: Container(
-                                width: 68,
-                                height: 60, // Sits close to top/bottom edges
+                                width: 70,
+                                height: 62, // Sits close to top/bottom edges
                                 decoration: BoxDecoration(
                                   color: isDark 
-                                      ? Colors.white.withValues(alpha: 0.08) 
-                                      : Colors.black.withValues(alpha: 0.04),
-                                  borderRadius: BorderRadius.circular(24),
+                                      ? Colors.white.withValues(alpha: 0.1) 
+                                      : Colors.black.withValues(alpha: 0.05),
+                                  borderRadius: index == 0
+                                      ? BorderRadius.only(
+                                          topLeft: effectiveBorderRadius.topLeft,
+                                          bottomLeft: effectiveBorderRadius.bottomLeft,
+                                          topRight: const Radius.circular(20),
+                                          bottomRight: const Radius.circular(20),
+                                        )
+                                      : index == widget.items.length - 1
+                                          ? BorderRadius.only(
+                                              topRight: effectiveBorderRadius.topRight,
+                                              bottomRight: effectiveBorderRadius.bottomRight,
+                                              topLeft: const Radius.circular(20),
+                                              bottomLeft: const Radius.circular(20),
+                                            )
+                                          : BorderRadius.circular(20),
                                 ),
                               ),
                             ),
@@ -198,7 +212,7 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
                                         child: Icon(
                                           item.icon,
                                           color: isSelected ? activeColor : inactiveColor,
-                                          size: 24,
+                                          size: isSelected ? 28 : 22, // Enhanced Presence
                                         ),
                                       ),
                                     );
@@ -210,7 +224,7 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
                                   style: TextStyle(
                                     color: isSelected ? activeColor : inactiveColor,
                                     fontSize: 10,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500, // Thicker Active
                                     letterSpacing: -0.3,
                                   ),
                                 ),
