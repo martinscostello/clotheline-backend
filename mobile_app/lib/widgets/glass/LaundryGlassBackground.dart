@@ -1,4 +1,4 @@
-import '../../theme/app_theme.dart';
+import 'package:flutter/material.dart';
 
 class LaundryGlassBackground extends StatelessWidget {
   final Widget child;
@@ -9,10 +9,10 @@ class LaundryGlassBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    // "Fresh" Colors - Using Theme for consistency
+    // "Fresh" Colors
     final bgColors = isDark 
       ? [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)] // Deep Ocean
-      : [AppTheme.lightBgStart, AppTheme.lightBgEnd]; // Softer themed gradient
+      : [Colors.white, Colors.white]; // Pure White for Light Mode
 
     // Bubbles/Icons Color
     final bubbleColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05);
