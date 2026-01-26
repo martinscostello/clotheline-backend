@@ -92,15 +92,23 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         // Or just show Dash/Settings (default) until permissions load.
         // We chose to show default tabs immediately to prevent "Infinite Spinner".
 
+        final isDark = authService.currentUser != null; // Admin is usually dark theme fixed, but let's be robust
+        
+        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarIconBrightness: Brightness.light,
+        ));
+
         return Theme(
           data: AppTheme.darkTheme,
           child: Scaffold(
-            extendBody: false,
+            extendBody: true,
             resizeToAvoidBottomInset: true,
-            backgroundColor: AppTheme.darkTheme.scaffoldBackgroundColor,
-            body: SafeArea(
-              bottom: true,
-              child: LaundryGlassBackground(
+            backgroundColor: Colors.transparent,
+            body: LaundryGlassBackground(
               child: Stack(
                 children: [
                   Positioned.fill(child: _currentScreens[_currentIndex]),
@@ -112,7 +120,6 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
               ),
             ),
           ),
-        ),
         );
       }
     );

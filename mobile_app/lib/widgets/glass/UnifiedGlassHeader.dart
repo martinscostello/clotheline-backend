@@ -37,8 +37,8 @@ class UnifiedGlassHeader extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            isDark ? const Color(0xFF101010) : Colors.white, // Match LaundryGlassBackground
-            isDark ? const Color(0xFF101010).withOpacity(0.0) : Colors.white.withOpacity(0.0),
+            (isDark ? const Color(0xFF0F2027) : Colors.white).withOpacity(0.8), // Start with some opacity
+            (isDark ? const Color(0xFF0F2027) : Colors.white).withOpacity(0.0), // Fade to transparent
           ],
           stops: const [0.0, 1.0],
         ),

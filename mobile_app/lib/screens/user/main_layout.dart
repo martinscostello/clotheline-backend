@@ -69,13 +69,23 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Set System UI Overlay for edge-to-edge transparency
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+    ));
+
     return Scaffold(
-      extendBody: false,
+      extendBody: true,
+      extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        bottom: true,
-        child: LaundryGlassBackground(
+      backgroundColor: Colors.transparent,
+      body: LaundryGlassBackground(
         child: Stack(
           children: [
             // 1. Current Screen Content
@@ -96,7 +106,6 @@ class _MainLayoutState extends State<MainLayout> {
           ],
         ),
       ),
-    ),
     );
   }
 
