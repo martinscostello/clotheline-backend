@@ -29,12 +29,17 @@ class PremiumNavBar extends StatefulWidget {
 
 class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
+  late AnimationController _navbarController;
+  
   late List<Animation<double>> _scaleAnimations;
   late List<Animation<double>> _bounceAnimations;
+  late Animation<double> _navbarScaleAnimation;
 
   @override
   void initState() {
     super.initState();
+    
+    // Individual item controllers (jiggle + liquid transition)
     _controllers = List.generate(
       widget.items.length,
       (index) => AnimationController(
@@ -43,17 +48,28 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
       ),
     );
 
+    // Global navbar controller (bubble physics)
+    _navbarController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+
+    _navbarScaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.96), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 0.96, end: 1.0), weight: 50),
+    ]).animate(CurvedAnimation(parent: _navbarController, curve: Curves.easeInOut));
+
     _scaleAnimations = _controllers.map((controller) {
       return TweenSequence<double>([
-        TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.2), weight: 50),
-        TweenSequenceItem(tween: Tween(begin: 1.2, end: 1.0), weight: 50),
+        TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.15), weight: 50),
+        TweenSequenceItem(tween: Tween(begin: 1.15, end: 1.0), weight: 50),
       ]).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
     }).toList();
 
     _bounceAnimations = _controllers.map((controller) {
       return TweenSequence<double>([
-        TweenSequenceItem(tween: Tween(begin: 0.0, end: -4.0), weight: 50),
-        TweenSequenceItem(tween: Tween(begin: -4.0, end: 0.0), weight: 50),
+        TweenSequenceItem(tween: Tween(begin: 0.0, end: -3.0), weight: 50),
+        TweenSequenceItem(tween: Tween(begin: -3.0, end: 0.0), weight: 50),
       ]).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
     }).toList();
   }
@@ -63,14 +79,14 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
     for (var controller in _controllers) {
       controller.dispose();
     }
+    _navbarController.dispose();
     super.dispose();
   }
 
   void _handleTap(int index) {
-    if (index != widget.currentIndex) {
-      _controllers[index].forward(from: 0.0);
-      widget.onTap(index);
-    }
+    _navbarController.forward(from: 0.0);
+    _controllers[index].forward(from: 0.0);
+    widget.onTap(index);
   }
 
   @override
@@ -78,104 +94,110 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
-    // Colors based on Spec
+    // Background Colors (High contrast for dark mode)
     final Color backgroundColor = isDark 
-        ? const Color(0xFF1C1C1E).withValues(alpha: 0.8) // Deep charcoal
-        : Colors.white.withValues(alpha: 0.7); // Light blur with white tint
+        ? const Color(0xFF1C1C1E).withValues(alpha: 0.9) // Solid charcoal feel
+        : Colors.white.withValues(alpha: 0.85); // Airy but visible
     
-    final Color activeColor = const Color(0xFF007AFF); // Brand Blue
-    final Color inactiveColor = isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.4);
+    const Color activeColor = Color(0xFF007AFF); // Telegram Blue
     
-    final Color activeLabelColor = isDark ? Colors.white : activeColor;
-    final Color inactiveLabelColor = isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.5);
-
+    // Adaptive Inactive Colors (Non-negotiable)
+    final Color inactiveColor = isDark ? Colors.white : Colors.black; 
+    
     return RepaintBoundary(
-      child: Container(
-        margin: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding > 0 ? bottomPadding : 20),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              height: 70,
-              decoration: BoxDecoration(
-                color: backgroundColor,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                  width: 0.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
-                    blurRadius: 12,
-                    spreadRadius: 0,
-                    offset: const Offset(0, 4),
+      child: ScaleTransition(
+        scale: _navbarScaleAnimation,
+        child: Container(
+          margin: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding > 0 ? bottomPadding : 20),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(35),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                height: 72,
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(35),
+                  border: Border.all(
+                    color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+                    width: 0.5,
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(widget.items.length, (index) {
-                  final item = widget.items[index];
-                  final isSelected = index == widget.currentIndex;
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.12),
+                      blurRadius: 16,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(widget.items.length, (index) {
+                    final item = widget.items[index];
+                    final isSelected = index == widget.currentIndex;
 
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => _handleTap(index),
-                      behavior: HitTestBehavior.opaque,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          AnimatedBuilder(
-                            animation: _controllers[index],
-                            builder: (context, child) {
-                              return Transform.translate(
-                                offset: Offset(0, _bounceAnimations[index].value),
-                                child: Transform.scale(
-                                  scale: _scaleAnimations[index].value,
-                                  child: Icon(
-                                    item.icon,
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => _handleTap(index),
+                        behavior: HitTestBehavior.opaque,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // 1. Liquid Pill Highlight (Telegram Style)
+                            AnimatedOpacity(
+                              duration: const Duration(milliseconds: 200),
+                              opacity: isSelected ? 1.0 : 0.0,
+                              child: Container(
+                                width: 68,
+                                height: 60, // Sits close to top/bottom edges
+                                decoration: BoxDecoration(
+                                  color: isDark 
+                                      ? Colors.white.withValues(alpha: 0.08) 
+                                      : Colors.black.withValues(alpha: 0.04),
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                              ),
+                            ),
+                            
+                            // 2. Content (Icon + Label)
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                AnimatedBuilder(
+                                  animation: _controllers[index],
+                                  builder: (context, child) {
+                                    return Transform.translate(
+                                      offset: Offset(0, _bounceAnimations[index].value),
+                                      child: Transform.scale(
+                                        scale: _scaleAnimations[index].value,
+                                        child: Icon(
+                                          item.icon,
+                                          color: isSelected ? activeColor : inactiveColor,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  item.label,
+                                  style: TextStyle(
                                     color: isSelected ? activeColor : inactiveColor,
-                                    size: 26,
+                                    fontSize: 10,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                    letterSpacing: -0.3,
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item.label,
-                            style: TextStyle(
-                              color: isSelected ? activeLabelColor : inactiveLabelColor,
-                              fontSize: 11,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                              letterSpacing: -0.2,
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          // Subtle Underline Indicator
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            height: 2,
-                            width: isSelected ? 12 : 0,
-                            decoration: BoxDecoration(
-                              color: activeColor,
-                              borderRadius: BorderRadius.circular(1),
-                              boxShadow: isSelected ? [
-                                BoxShadow(
-                                  color: activeColor.withValues(alpha: 0.4),
-                                  blurRadius: 4,
-                                  spreadRadius: 1,
-                                )
-                              ] : null,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
+                ),
               ),
             ),
           ),
