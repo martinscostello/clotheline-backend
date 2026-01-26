@@ -7,7 +7,11 @@ const User = require('../models/User');
 const axios = require('axios');
 
 // Paystack Config
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || 'sk_test_xxxx'; // Fallback for dev
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
+if (!PAYSTACK_SECRET) {
+    console.warn("[Paystack] WARNING: PAYSTACK_SECRET_KEY is not defined in environment variables. Falling back to test key.");
+}
+const ACTUAL_SECRET = PAYSTACK_SECRET || 'sk_test_xxxx';
 
 // POST /initialize
 // Initializes a transaction Securely via Paystack API
@@ -74,7 +78,22 @@ router.post('/initialize', auth, async (req, res) => {
             // Add Logistics Fees for normal orders
             const deliveryFee = Number(req.body.deliveryFee) || 0;
             const pickupFee = Number(req.body.pickupFee) || 0;
-            finalTotal = itemsTotal + deliveryFee + pickupFee;
+
+            // [FIX] Subtract Discounts
+            const laundryDiscounts = req.body.discountBreakdown || {};
+            const totalLaundryDiscount = Object.values(laundryDiscounts).reduce((a, b) => a + (Number(b) || 0), 0);
+            const storeDiscountValue = Number(req.body.storeDiscount) || 0;
+            const totalDiscount = totalLaundryDiscount + storeDiscountValue;
+
+            finalTotal = itemsTotal + deliveryFee + pickupFee - totalDiscount;
+
+            // [New] Store discount in metadata for persistency
+            req.metadata_discount = totalDiscount;
+        }
+
+        // Paystack Min Amount is 1 Naira (100 Kobo)
+        if (finalTotal < 50) { // Safety buffer
+            finalTotal = 100; // Force min amount if it's too small or zero
         }
 
         const amountKobo = Math.round(finalTotal * 100);
@@ -102,9 +121,16 @@ router.post('/initialize', auth, async (req, res) => {
             retryOrderId,
             deliveryFee,
             pickupFee,
+            discountAmount: req.metadata_discount || 0, // Persist discount
+            pickupOption: req.body.pickupOption,
             deliveryOption: req.body.deliveryOption,
+            pickupAddress: req.body.pickupAddress,
+            pickupPhone: req.body.pickupPhone,
             deliveryAddress: req.body.deliveryAddress,
             deliveryPhone: req.body.deliveryPhone,
+            pickupLocation: req.body.pickupLocation,
+            deliveryLocation: req.body.deliveryLocation,
+            pickupCoordinates: req.body.pickupCoordinates,
             deliveryCoordinates: req.body.deliveryCoordinates,
             guestInfo: req.body.guestInfo
         };
@@ -123,7 +149,7 @@ router.post('/initialize', auth, async (req, res) => {
             },
             {
                 headers: {
-                    Authorization: `Bearer ${PAYSTACK_SECRET}`,
+                    Authorization: `Bearer ${ACTUAL_SECRET}`,
                     'Content-Type': 'application/json'
                 }
             }
@@ -177,7 +203,7 @@ router.post('/verify', auth, async (req, res) => {
         let verifiedData = null;
         if (provider === 'paystack') {
             const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-                headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
+                headers: { Authorization: `Bearer ${ACTUAL_SECRET}` }
             });
             if (response.data.status && response.data.data.status === 'success') {
                 verifiedData = response.data.data;
@@ -324,7 +350,7 @@ router.post('/refund', auth, async (req, res) => {
                     merchant_note: "Admin initiated refund via dashboard"
                 }, {
                     headers: {
-                        Authorization: `Bearer ${PAYSTACK_SECRET}`,
+                        Authorization: `Bearer ${ACTUAL_SECRET}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -453,7 +479,7 @@ router.post('/refund-partial', auth, async (req, res) => {
                     merchant_note: `Partial refund of ${itemsToRefund.length} items`
                 }, {
                     headers: {
-                        Authorization: `Bearer ${PAYSTACK_SECRET}`,
+                        Authorization: `Bearer ${ACTUAL_SECRET}`,
                         'Content-Type': 'application/json'
                     }
                 });

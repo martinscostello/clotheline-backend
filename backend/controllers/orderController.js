@@ -65,6 +65,17 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             deliveryFeeOverride,
             isFeeOverridden,
 
+            // Logistics [FIXED: Added missing fields]
+            deliveryFee,
+            pickupFee,
+            pickupOption,
+            deliveryOption,
+            pickupAddress,
+            pickupPhone,
+            deliveryAddress,
+            deliveryPhone,
+            deliveryCoordinates,
+
             // Guest
             guestInfo
         } = orderData;
@@ -73,10 +84,11 @@ exports.createOrderInternal = async (orderData, userId = null) => {
         const calc = await exports.calculateOrderTotal(items);
         const finalSubtotal = calc.subtotal;
         const finalTax = calc.taxAmount;
-        // Total = Subtotal + Tax + Delivery - Discount
-        const finalDelivery = deliveryFee || 0;
-        const finalDiscount = discountAmount || 0;
-        const finalTotal = finalSubtotal + finalTax + finalDelivery - finalDiscount;
+        // Total = Subtotal + Tax + Delivery + Pickup - Discount
+        const finalDelivery = Number(deliveryFee) || 0;
+        const finalPickup = Number(pickupFee) || 0;
+        const finalDiscount = Number(discountAmount) || 0;
+        const finalTotal = finalSubtotal + finalTax + finalDelivery + finalPickup - finalDiscount;
 
         // [TRACKING] Log order creation attempt
         console.log(`[OrderTrigger] Creating Order for User: ${userId}, Branch: ${branchId}, Total: ${finalTotal}`);
@@ -95,6 +107,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             subtotal: finalSubtotal,
             tax: finalTax,
             deliveryFee: finalDelivery,
+            pickupFee: finalPickup, // Added missing field
             discount: finalDiscount,
             promoCode: promoCode || null,
             totalAmount: finalTotal,
