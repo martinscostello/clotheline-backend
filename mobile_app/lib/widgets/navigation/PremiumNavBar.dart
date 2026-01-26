@@ -128,7 +128,7 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
     // Threshold for Gesture Nav is usually < 45px, Button Nav is > 45px
     final bool isButtonNav = bottomPadding > 45;
     
-    final defaultMargin = EdgeInsets.fromLTRB(20, 0, 20, isButtonNav ? bottomPadding : 0);
+    final defaultMargin = EdgeInsets.fromLTRB(20, 0, 20, isButtonNav ? bottomPadding : 20);
     
     // If the widget was passed a zero margin (like in Admin) but we are in Button Nav,
     // we MUST provide the padding to avoid falling behind the navbar.
