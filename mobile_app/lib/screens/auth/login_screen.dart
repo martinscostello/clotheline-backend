@@ -168,6 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                      icon: Icons.email_outlined,
                      hint: "Email Address",
                      keyboardType: TextInputType.emailAddress,
+                     textInputAction: TextInputAction.next,
                    ),
                    const SizedBox(height: 16),
                    _buildGlassInput(
@@ -178,6 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                      isPassword: true,
                      isVisible: _isPasswordVisible,
                      onVisibilityToggle: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                     textInputAction: TextInputAction.done,
                    ),
 
                    const SizedBox(height: 12),
@@ -262,6 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isVisible = false,
     VoidCallback? onVisibilityToggle,
     TextInputType? keyboardType,
+    TextInputAction? textInputAction,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -280,6 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
         controller: controller,
         obscureText: isPassword && !isVisible,
         keyboardType: keyboardType,
+        textInputAction: textInputAction,
         style: TextStyle(color: isDark ? Colors.white : Colors.black87),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: isDark ? Colors.white54 : Colors.black45),

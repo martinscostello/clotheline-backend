@@ -192,6 +192,7 @@ class _SignupScreenState extends State<SignupScreen> {
                          icon: Icons.person_outline,
                          hint: "Full Name",
                          keyboardType: TextInputType.name,
+                         textInputAction: TextInputAction.next,
                        ),
                        const SizedBox(height: 16),
                        _buildGlassInput(
@@ -200,6 +201,7 @@ class _SignupScreenState extends State<SignupScreen> {
                          icon: Icons.email_outlined,
                          hint: "Email Address",
                          keyboardType: TextInputType.emailAddress,
+                         textInputAction: TextInputAction.next,
                        ),
                        const SizedBox(height: 16),
                        _buildGlassInput(
@@ -208,6 +210,7 @@ class _SignupScreenState extends State<SignupScreen> {
                          icon: Icons.phone_outlined,
                          hint: "Phone Number",
                          keyboardType: TextInputType.phone,
+                         textInputAction: TextInputAction.next,
                        ),
                        const SizedBox(height: 16),
                        
@@ -259,6 +262,7 @@ class _SignupScreenState extends State<SignupScreen> {
                          isPassword: true,
                          isVisible: _isPasswordVisible,
                          onVisibilityToggle: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                         textInputAction: TextInputAction.done,
                        ),
      
                        const SizedBox(height: 32),
@@ -315,6 +319,7 @@ class _SignupScreenState extends State<SignupScreen> {
     bool isVisible = false,
     VoidCallback? onVisibilityToggle,
     TextInputType? keyboardType,
+    TextInputAction? textInputAction,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -333,6 +338,7 @@ class _SignupScreenState extends State<SignupScreen> {
         controller: controller,
         obscureText: isPassword && !isVisible,
         keyboardType: keyboardType,
+        textInputAction: textInputAction,
         style: TextStyle(color: isDark ? Colors.white : Colors.black87),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: isDark ? Colors.white54 : Colors.black45),

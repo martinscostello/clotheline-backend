@@ -59,11 +59,11 @@ class _ManagePasswordScreenState extends State<ManagePasswordScreen> {
            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 70, left: 24, right: 24, bottom: 24),
            child: Column(
            children: [
-             _buildInput(isDark, "Current Password", _currentController, true),
+             _buildInput(isDark, "Current Password", _currentController, true, textInputAction: TextInputAction.next),
              const SizedBox(height: 16),
-             _buildInput(isDark, "New Password", _newController, true),
+             _buildInput(isDark, "New Password", _newController, true, textInputAction: TextInputAction.next),
              const SizedBox(height: 16),
-             _buildInput(isDark, "Confirm New Password", _confirmController, true),
+             _buildInput(isDark, "Confirm New Password", _confirmController, true, textInputAction: TextInputAction.done),
              
              const SizedBox(height: 48),
 
@@ -89,7 +89,10 @@ class _ManagePasswordScreenState extends State<ManagePasswordScreen> {
     );
   }
 
-  Widget _buildInput(bool isDark, String label, TextEditingController controller, bool isPassword) {
+  Widget _buildInput(bool isDark, String label, TextEditingController controller, bool isPassword, {
+    TextInputAction? textInputAction,
+    TextInputType? keyboardType,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -104,6 +107,8 @@ class _ManagePasswordScreenState extends State<ManagePasswordScreen> {
            child: TextField(
              controller: controller,
              obscureText: isPassword,
+             textInputAction: textInputAction,
+             keyboardType: keyboardType,
              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
              decoration: const InputDecoration(
                border: InputBorder.none,

@@ -39,6 +39,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   // Controllers
   final _pickupPhoneController = TextEditingController();
   final _deliveryPhoneController = TextEditingController();
+  final _pickupPhoneFocusNode = FocusNode(); // New
+  final _deliveryPhoneFocusNode = FocusNode(); // New
   final _promoController = TextEditingController(); // [New]
   DeliveryLocationSelection? _pickupSelection;
   DeliveryLocationSelection? _deliverySelection;
@@ -80,6 +82,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   @override
   void dispose() {
     _breathingController.dispose();
+    _pickupPhoneFocusNode.dispose();
+    _deliveryPhoneFocusNode.dispose();
+    _pickupPhoneController.dispose();
+    _deliveryPhoneController.dispose();
+    _promoController.dispose();
     super.dispose();
   }
 
@@ -366,6 +373,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         children: [
           DeliveryLocationSelector(
             initialValue: isPickup ? _pickupSelection : _deliverySelection,
+            onCollapsedStatusChanged: (collapsed) {
+              if (collapsed) {
+                // Auto-focus phone number
+                FocusScope.of(context).requestFocus(isPickup ? _pickupPhoneFocusNode : _deliveryPhoneFocusNode);
+              }
+            },
             onLocationSelected: (selection) {
               setState(() {
                 if (isPickup) {
@@ -395,13 +408,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             },
           ),
           const SizedBox(height: 10),
-          _buildTextField(isPickup ? _pickupPhoneController : _deliveryPhoneController, "Contact Phone", Icons.phone, Theme.of(context).brightness == Brightness.dark),
+          _buildTextField(
+            isPickup ? _pickupPhoneController : _deliveryPhoneController, 
+            "Contact Phone", 
+            Icons.phone, 
+            Theme.of(context).brightness == Brightness.dark,
+            keyboardType: TextInputType.phone,
+            focusNode: isPickup ? _pickupPhoneFocusNode : _deliveryPhoneFocusNode,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, bool isDark) {
+  Widget _buildTextField(
+    TextEditingController controller, 
+    String hint, 
+    IconData icon, 
+    bool isDark, {
+    TextInputType? keyboardType,
+    FocusNode? focusNode,
+    TextInputAction? textInputAction,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? Colors.black26 : Colors.white,
@@ -410,6 +438,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       ),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
+        keyboardType: keyboardType,
+        textInputAction: textInputAction,
         style: TextStyle(color: isDark ? Colors.white : Colors.black),
         decoration: InputDecoration(
           hintText: hint,

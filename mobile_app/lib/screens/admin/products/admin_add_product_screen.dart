@@ -415,18 +415,18 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 const SizedBox(height: 20),
 
                 // 2. Info Fields
-                _buildGlassTextField(controller: _nameController, label: "Product Name"),
+                _buildGlassTextField(controller: _nameController, label: "Product Name", textInputAction: TextInputAction.next),
                 const SizedBox(height: 15),
-                _buildGlassTextField(controller: _descController, label: "Description", maxLines: 3),
+                _buildGlassTextField(controller: _descController, label: "Description", maxLines: 3, textInputAction: TextInputAction.next),
                 const SizedBox(height: 15),
-                _buildGlassTextField(controller: _brandController, label: "Brand (e.g. Rolex, Generic)"), // Added
+                _buildGlassTextField(controller: _brandController, label: "Brand (e.g. Rolex, Generic)", textInputAction: TextInputAction.next), // Added
                 const SizedBox(height: 15),
                 
                 Row(
                   children: [
-                    Expanded(child: _buildGlassTextField(controller: _basePriceController, label: "Base Price", isNumber: true)),
+                    Expanded(child: _buildGlassTextField(controller: _basePriceController, label: "Base Price", isNumber: true, textInputAction: TextInputAction.next)),
                     const SizedBox(width: 15),
-                    Expanded(child: _buildGlassTextField(controller: _discountController, label: "Discount %", isNumber: true)),
+                    Expanded(child: _buildGlassTextField(controller: _discountController, label: "Discount %", isNumber: true, textInputAction: TextInputAction.next)),
                   ],
                 ),
                 const SizedBox(height: 15),
@@ -474,7 +474,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                     ),
                     const SizedBox(width: 15),
                     Expanded(
-                      child: _buildGlassTextField(controller: _stockController, label: "Stock", isNumber: true)
+                      child: _buildGlassTextField(controller: _stockController, label: "Stock", isNumber: true, textInputAction: TextInputAction.done)
                     ),
                   ],
                 ),
@@ -548,6 +548,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     required String label, 
     bool isNumber = false,
     int maxLines = 1,
+    TextInputAction? textInputAction,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
@@ -559,7 +560,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       child: TextFormField(
         controller: controller,
         style: const TextStyle(color: Colors.white),
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+        textInputAction: textInputAction,
         maxLines: maxLines,
         validator: (val) => val == null || val.isEmpty ? "Required" : null,
         decoration: InputDecoration(

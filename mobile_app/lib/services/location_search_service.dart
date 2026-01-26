@@ -35,13 +35,14 @@ class LocationSearchService {
       String url = "https://maps.googleapis.com/maps/api/place/autocomplete/json"
           "?input=$input"
           "&key=$_apiKey"
-          "&components=country:ng"
-          "&types=address|establishment";
+          "&components=country:ng";
+
+      print("DEBUG: Google Autocomplete URL: ${url.replaceFirst(_apiKey, 'KEY_HIDDEN')}");
 
       if (city != null) {
-        // We can add location bias here if we had the city coords, 
-        // but adding it to the query string is often enough for Google.
-        // url += "&locationbias=circle:5000@lat,lng"; // Advanced
+        // We can add location bias here if we had the city coords
+        // For now, let's try adding city name to input if not already there or using components
+        // url += "&components=country:ng|city:${city.toLowerCase()}"; // Google doesn't support city component directly like this often
       }
 
       final response = await _dio.get(url);

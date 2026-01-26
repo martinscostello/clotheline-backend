@@ -5,20 +5,24 @@ import 'package:provider/provider.dart';
 import '../models/delivery_location_model.dart';
 import '../data/areas_data.dart';
 import '../theme/app_theme.dart';
+import '../utils/toast_utils.dart';
 import '../providers/branch_provider.dart';
 import 'glass/GlassContainer.dart';
 import '../services/location_search_service.dart';
 import '../services/address_service.dart';
+import '../screens/user/settings/manage_addresses_screen.dart';
 import 'dart:async';
 
 class DeliveryLocationSelector extends StatefulWidget {
   final DeliveryLocationSelection? initialValue;
   final Function(DeliveryLocationSelection) onLocationSelected;
+  final Function(bool)? onCollapsedStatusChanged; // New callback
 
   const DeliveryLocationSelector({
     super.key,
     this.initialValue,
     required this.onLocationSelected,
+    this.onCollapsedStatusChanged,
   });
 
   @override
@@ -36,11 +40,14 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
   List<SavedAddress> _savedAddresses = [];
   Timer? _debounceTimer;
   bool _isLoadingSaved = true;
+  bool _isSaving = false;
 
   AreaModel? _selectedArea;
   LatLng? _customLatLng;
   String _source = 'manual';
   String _addressLabel = '';
+  String? _lastCity;
+  bool _isCollapsed = false; // New state
 
   @override
   void initState() {
@@ -56,8 +63,9 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
           (a) => a.name == widget.initialValue!.area,
           orElse: () => nigeriaAreas.first,
         );
-      } else if (_source == 'pin' || _source == 'google') {
+      } else if (_source == 'pin' || _source == 'google' || _source == 'saved') {
         _customLatLng = LatLng(widget.initialValue!.lat, widget.initialValue!.lng);
+        _isCollapsed = _source == 'saved';
       }
     }
     _loadSavedAddresses();
@@ -75,14 +83,53 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
 
   void _selectSavedAddress(SavedAddress addr) {
     setState(() {
-      _source = 'manual'; // Treat as preset manual to allow fee calculation via coords
+      _source = 'saved'; 
       _customLatLng = LatLng(addr.lat, addr.lng);
       _addressLabel = addr.addressLabel;
       _landmarkController.text = addr.landmark ?? '';
       _searchController.text = addr.addressLabel;
       _suggestions = [];
+      _isCollapsed = true; // Collapse on select
     });
     _notifyChange();
+    widget.onCollapsedStatusChanged?.call(true);
+  }
+
+  Future<void> _saveSelection() async {
+    if (_addressLabel.isEmpty || _customLatLng == null) return;
+    
+    setState(() => _isSaving = true);
+    
+    // Quick dialog for label
+    final labelController = TextEditingController(text: "Home");
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Label this address"),
+        content: TextField(controller: labelController, decoration: const InputDecoration(hintText: "e.g. Home, Work")),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Save")),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await _addressService.addAddress({
+        'label': labelController.text,
+        'addressLabel': _addressLabel,
+        'lat': _customLatLng!.latitude,
+        'lng': _customLatLng!.longitude,
+        'city': _lastCity ?? "Benin",
+        'landmark': _landmarkController.text,
+      });
+
+      if (success && mounted) {
+        ToastUtils.show(context, "Address saved!");
+        _loadSavedAddresses();
+      }
+    }
+    setState(() => _isSaving = false);
   }
 
   @override
@@ -220,6 +267,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
       
       if (mounted) {
         setState(() {
+          _lastCity = branchCity;
           // Take exactly 3 results as requested
           _suggestions = results.take(3).toList();
         });
@@ -248,35 +296,93 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
 
+    if (_isCollapsed) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: GlassContainer(
+          opacity: isDark ? 0.1 : 0.05,
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                child: const Icon(Icons.check, color: AppTheme.primaryColor),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Selected Address", style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text(_addressLabel, style: TextStyle(color: textColor, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() => _isCollapsed = false);
+                  widget.onCollapsedStatusChanged?.call(false);
+                },
+                child: const Text("Change", style: TextStyle(fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- Saved Addresses Quick-Select ---
-        if (!_isLoadingSaved && _savedAddresses.isNotEmpty) ...[
-          const Text("Saved Addresses", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 40,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _savedAddresses.length,
-              itemBuilder: (context, index) {
-                final addr = _savedAddresses[index];
-                return Padding(
+        // --- Saved Addresses Section (Always Visible) ---
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text("Saved Addresses", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+            if (!_isLoadingSaved && _savedAddresses.length >= 3)
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.edit_note, size: 20, color: AppTheme.primaryColor),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAddressesScreen())).then((_) => _loadSavedAddresses()),
+                tooltip: "Manage Addresses",
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 44,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              // 1. Current Saved Addresses
+              ..._savedAddresses.map((addr) => Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: ActionChip(
+                  avatar: const Icon(Icons.bookmark, size: 14, color: AppTheme.primaryColor),
+                  label: Text(addr.label, style: const TextStyle(fontSize: 12)),
+                  onPressed: () => _selectSavedAddress(addr),
+                  backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+              )).toList(),
+
+              // 2. Dynamic Action Button (+ or Add Address)
+              if (!_isLoadingSaved && _savedAddresses.length < 3)
+                Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: ActionChip(
-                    avatar: const Icon(Icons.bookmark, size: 14, color: AppTheme.primaryColor),
-                    label: Text(addr.label, style: const TextStyle(fontSize: 12)),
-                    onPressed: () => _selectSavedAddress(addr),
+                    avatar: const Icon(Icons.add, size: 14, color: AppTheme.primaryColor),
+                    label: Text(_savedAddresses.isEmpty ? "Add Address" : "", style: const TextStyle(fontSize: 12)),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAddressesScreen())).then((_) => _loadSavedAddresses()),
                     backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
-                );
-              },
-            ),
+                ),
+            ],
           ),
-          const SizedBox(height: 16),
-        ],
+        ),
+        const SizedBox(height: 16),
 
         // --- Suggestions List Appearing ABOVE the textfield ---
         if (_suggestions.isNotEmpty)
@@ -393,8 +499,9 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
           child: TextField(
             controller: _landmarkController,
             maxLines: 2,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: "e.g. Near the big mango tree, White House by the corner...",
+              hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 13),
               border: InputBorder.none,
               isDense: true,
             ),
@@ -402,24 +509,35 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
           ),
         ),
 
-        if (_source == 'pin')
+        if (_customLatLng != null || _addressLabel.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 8.0),
+            padding: const EdgeInsets.only(top: 12.0),
             child: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                const SizedBox(width: 4),
-                const Text("Using exact location from map pin", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                if (_source == 'pin' || _source == 'google') ...[
+                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  const SizedBox(width: 4),
+                  const Text("Location Selected", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                ],
                 const Spacer(),
-                TextButton(
-                  onPressed: () => setState(() {
-                    _source = 'manual';
-                    _customLatLng = null;
-                    _addressLabel = _selectedArea?.name ?? '';
-                    _notifyChange();
-                  }),
-                  child: const Text("Reset to Area", style: TextStyle(fontSize: 12)),
-                )
+                if (_addressLabel.isNotEmpty && (_source == 'pin' || _source == 'google') && _savedAddresses.length < 3)
+                   TextButton.icon(
+                    onPressed: _isSaving ? null : _saveSelection,
+                    icon: _isSaving 
+                        ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.save_outlined, size: 16),
+                    label: const Text("Save this address", style: TextStyle(fontSize: 12)),
+                  ),
+                if (_source == 'pin' || _source == 'google')
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _source = 'manual';
+                      _customLatLng = null;
+                      _addressLabel = _selectedArea?.name ?? '';
+                      _notifyChange();
+                    }),
+                    child: const Text("Reset to Area", style: TextStyle(fontSize: 12)),
+                  )
               ],
             ),
           ),
