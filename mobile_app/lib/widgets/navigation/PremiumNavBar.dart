@@ -124,8 +124,24 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
     // Adaptive Inactive Colors (Non-negotiable)
     final Color inactiveColor = isDark ? Colors.white : Colors.black; 
     
-    final defaultMargin = EdgeInsets.fromLTRB(20, 0, 20, bottomPadding > 0 ? bottomPadding : 20);
-    final effectiveMargin = widget.margin ?? defaultMargin;
+    // 4. Adaptive Margin Logic (System Nav Aware)
+    // Threshold for Gesture Nav is usually < 20px, Button Nav is > 40px
+    final bool isButtonNav = bottomPadding > 20;
+    
+    final defaultMargin = EdgeInsets.fromLTRB(20, 0, 20, isButtonNav ? bottomPadding : 10);
+    
+    // If the widget was passed a zero margin (like in Admin) but we are in Button Nav,
+    // we MUST provide the padding to avoid falling behind the navbar.
+    // However, if we are in Gesture Nav, we allow it to "fall down" to 0 as requested.
+    EdgeInsetsGeometry effectiveMargin;
+    if (widget.margin == EdgeInsets.zero) {
+      effectiveMargin = isButtonNav 
+          ? EdgeInsets.only(bottom: bottomPadding) 
+          : EdgeInsets.zero;
+    } else {
+      effectiveMargin = widget.margin ?? defaultMargin;
+    }
+
     final effectiveBorderRadius = widget.borderRadius ?? BorderRadius.circular(35);
 
     return RepaintBoundary(
