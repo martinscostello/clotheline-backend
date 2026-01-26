@@ -97,30 +97,31 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         final bottomPadding = MediaQuery.of(context).padding.bottom;
         final bool isButtonNav = bottomPadding > 45;
 
-        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
-          systemNavigationBarColor: isButtonNav ? Colors.black : Colors.transparent,
-          systemNavigationBarIconBrightness: Brightness.light,
-          systemNavigationBarContrastEnforced: false,
-        ));
-
-        return Theme(
-          data: AppTheme.darkTheme,
-          child: NavScaffold(
-            currentIndex: _currentIndex,
-            onTabTap: (index) => setState(() => _currentIndex = index),
-            navMargin: EdgeInsets.zero,
-            navBorderRadius: const BorderRadius.vertical(top: Radius.circular(35)),
-            navItems: _currentNavItems.map((item) => PremiumNavItem(
-              label: item['label'],
-              icon: item['icon'],
-            )).toList(),
-            body: LaundryGlassBackground(
-              child: IndexedStack(
-                index: _currentIndex,
-                children: _currentScreens,
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+            systemNavigationBarColor: isButtonNav ? Colors.black : Colors.transparent,
+            systemNavigationBarIconBrightness: Brightness.light,
+            systemNavigationBarDividerColor: isButtonNav ? Colors.black : Colors.transparent,
+          ),
+          child: Theme(
+            data: AppTheme.darkTheme,
+            child: NavScaffold(
+              currentIndex: _currentIndex,
+              onTabTap: (index) => setState(() => _currentIndex = index),
+              navMargin: EdgeInsets.zero,
+              navBorderRadius: const BorderRadius.vertical(top: Radius.circular(35)),
+              navItems: _currentNavItems.map((item) => PremiumNavItem(
+                label: item['label'],
+                icon: item['icon'],
+              )).toList(),
+              body: LaundryGlassBackground(
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: _currentScreens,
+                ),
               ),
             ),
           ),
