@@ -259,8 +259,10 @@ class _NetworkBannerState extends State<_NetworkBanner> {
   Widget build(BuildContext context) {
     if (!isOffline) return const SizedBox.shrink();
 
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+    
     return Positioned(
-      bottom: 0, left: 0, right: 0,
+      bottom: bottomInset, left: 0, right: 0,
       child: Material(
         color: Colors.redAccent,
         child: Padding(

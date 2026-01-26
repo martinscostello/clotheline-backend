@@ -180,7 +180,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         ),
                       ),
                     
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)), // Bottom padding
+                    SliverToBoxAdapter(child: SizedBox(height: 80 + MediaQuery.of(context).viewPadding.bottom)), // Dynamic bottom padding
                   ],
                 );
               }

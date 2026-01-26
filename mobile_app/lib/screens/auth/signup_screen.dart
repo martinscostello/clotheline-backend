@@ -138,170 +138,172 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
 
           // 3. Main Content
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-              child: Consumer<BranchProvider>(
-                 builder: (context, branchProvider, _) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                       // Logo & Branding
-                       Hero(
-                         tag: 'app_logo',
-                         child: Container(
-                           padding: const EdgeInsets.all(16),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                child: Consumer<BranchProvider>(
+                   builder: (context, branchProvider, _) {
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                         // ... Logo & Branding ...
+                         Hero(
+                           tag: 'app_logo',
+                           child: Container(
+                             padding: const EdgeInsets.all(16),
+                             decoration: BoxDecoration(
+                               shape: BoxShape.circle,
+                               color: isDark ? Colors.white10 : Colors.white,
+                               boxShadow: [
+                                 BoxShadow(
+                                   color: Colors.black.withOpacity(0.05),
+                                   blurRadius: 20,
+                                   offset: const Offset(0, 10),
+                                 )
+                               ]
+                             ),
+                             child: const WashingMachineLogo(size: 50),
+                           ),
+                         ),
+                         const SizedBox(height: 24),
+                         Text(
+                           "Create Account",
+                           style: TextStyle(
+                             fontSize: 28,
+                             fontWeight: FontWeight.bold,
+                             color: isDark ? Colors.white : const Color(0xFF1E293B),
+                             letterSpacing: -0.5,
+                           ),
+                         ),
+                         const SizedBox(height: 8),
+                         Text(
+                           "Join the freshest laundry community",
+                           style: TextStyle(
+                             fontSize: 16,
+                             color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                           ),
+                         ),
+                         const SizedBox(height: 32),
+  
+                         // Inputs
+                         _buildGlassInput(
+                           isDark: isDark,
+                           controller: _nameController,
+                           icon: Icons.person_outline,
+                           hint: "Full Name",
+                           keyboardType: TextInputType.name,
+                           textInputAction: TextInputAction.next,
+                         ),
+                         const SizedBox(height: 16),
+                         _buildGlassInput(
+                           isDark: isDark,
+                           controller: _emailController,
+                           icon: Icons.email_outlined,
+                           hint: "Email Address",
+                           keyboardType: TextInputType.emailAddress,
+                           textInputAction: TextInputAction.next,
+                         ),
+                         const SizedBox(height: 16),
+                         _buildGlassInput(
+                           isDark: isDark,
+                           controller: _phoneController,
+                           icon: Icons.phone_outlined,
+                           hint: "Phone Number",
+                           keyboardType: TextInputType.phone,
+                           textInputAction: TextInputAction.next,
+                         ),
+                         const SizedBox(height: 16),
+                         
+                         // Branch Selection (Styled to match inputs)
+                         Container(
+                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                            decoration: BoxDecoration(
-                             shape: BoxShape.circle,
-                             color: isDark ? Colors.white10 : Colors.white,
-                             boxShadow: [
+                             color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+                             borderRadius: BorderRadius.circular(16),
+                             border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+                             boxShadow: isDark ? [] : [
                                BoxShadow(
-                                 color: Colors.black.withOpacity(0.05),
-                                 blurRadius: 20,
-                                 offset: const Offset(0, 10),
+                                 color: Colors.black.withOpacity(0.03),
+                                 blurRadius: 10,
+                                 offset: const Offset(0, 4),
                                )
                              ]
                            ),
-                           child: const WashingMachineLogo(size: 50),
-                         ),
-                       ),
-                       const SizedBox(height: 24),
-                       Text(
-                         "Create Account",
-                         style: TextStyle(
-                           fontSize: 28,
-                           fontWeight: FontWeight.bold,
-                           color: isDark ? Colors.white : const Color(0xFF1E293B),
-                           letterSpacing: -0.5,
-                         ),
-                       ),
-                       const SizedBox(height: 8),
-                       Text(
-                         "Join the freshest laundry community",
-                         style: TextStyle(
-                           fontSize: 16,
-                           color: isDark ? Colors.white70 : const Color(0xFF64748B),
-                         ),
-                       ),
-                       const SizedBox(height: 32),
-
-                       // Inputs
-                       _buildGlassInput(
-                         isDark: isDark,
-                         controller: _nameController,
-                         icon: Icons.person_outline,
-                         hint: "Full Name",
-                         keyboardType: TextInputType.name,
-                         textInputAction: TextInputAction.next,
-                       ),
-                       const SizedBox(height: 16),
-                       _buildGlassInput(
-                         isDark: isDark,
-                         controller: _emailController,
-                         icon: Icons.email_outlined,
-                         hint: "Email Address",
-                         keyboardType: TextInputType.emailAddress,
-                         textInputAction: TextInputAction.next,
-                       ),
-                       const SizedBox(height: 16),
-                       _buildGlassInput(
-                         isDark: isDark,
-                         controller: _phoneController,
-                         icon: Icons.phone_outlined,
-                         hint: "Phone Number",
-                         keyboardType: TextInputType.phone,
-                         textInputAction: TextInputAction.next,
-                       ),
-                       const SizedBox(height: 16),
-                       
-                       // Branch Selection (Styled to match inputs)
-                       Container(
-                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                         decoration: BoxDecoration(
-                           color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
-                           borderRadius: BorderRadius.circular(16),
-                           border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
-                           boxShadow: isDark ? [] : [
-                             BoxShadow(
-                               color: Colors.black.withOpacity(0.03),
-                               blurRadius: 10,
-                               offset: const Offset(0, 4),
-                             )
-                           ]
-                         ),
-                         child: DropdownButtonHideUnderline(
-                           child: DropdownButton<Branch>(
-                             isExpanded: true,
-                             dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-                             icon: Icon(Icons.keyboard_arrow_down, color: isDark ? Colors.white54 : Colors.black45),
-                             hint: Row(children: [
-                               Icon(Icons.location_on_outlined, color: isDark ? Colors.white54 : Colors.black45),
-                               const SizedBox(width: 12),
-                               Text("Select Your Location", style: TextStyle(color: isDark ? Colors.white30 : Colors.black38))
-                             ]),
-                             value: _selectedBranch,
-                             items: branchProvider.branches.map((b) => DropdownMenuItem(
-                               value: b,
-                               child: Row(children: [
-                                  const Icon(Icons.location_on, color: Color(0xFF4A80F0), size: 20),
-                                  const SizedBox(width: 12),
-                                  Text(b.name, style: TextStyle(color: isDark ? Colors.white : Colors.black87))
+                           child: DropdownButtonHideUnderline(
+                             child: DropdownButton<Branch>(
+                               isExpanded: true,
+                               dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                               icon: Icon(Icons.keyboard_arrow_down, color: isDark ? Colors.white54 : Colors.black45),
+                               hint: Row(children: [
+                                 Icon(Icons.location_on_outlined, color: isDark ? Colors.white54 : Colors.black45),
+                                 const SizedBox(width: 12),
+                                 Text("Select Your Location", style: TextStyle(color: isDark ? Colors.white30 : Colors.black38))
                                ]),
-                             )).toList(),
-                             onChanged: (val) => setState(() => _selectedBranch = val),
+                               value: _selectedBranch,
+                               items: branchProvider.branches.map((b) => DropdownMenuItem(
+                                 value: b,
+                                 child: Row(children: [
+                                    const Icon(Icons.location_on, color: Color(0xFF4A80F0), size: 20),
+                                    const SizedBox(width: 12),
+                                    Text(b.name, style: TextStyle(color: isDark ? Colors.white : Colors.black87))
+                                 ]),
+                               )).toList(),
+                               onChanged: (val) => setState(() => _selectedBranch = val),
+                             ),
                            ),
                          ),
-                       ),
-
-                       const SizedBox(height: 16),
-                       _buildGlassInput(
-                         isDark: isDark,
-                         controller: _passwordController,
-                         icon: Icons.lock_outline,
-                         hint: "Password",
-                         isPassword: true,
-                         isVisible: _isPasswordVisible,
-                         onVisibilityToggle: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-                         textInputAction: TextInputAction.done,
-                       ),
-     
-                       const SizedBox(height: 32),
-
-                       // Actions
-                       SizedBox(
-                         width: double.infinity,
-                         height: 56,
-                         child: ElevatedButton(
-                           onPressed: _isLoading ? null : _handleSignup,
-                           style: ElevatedButton.styleFrom(
-                             backgroundColor: const Color(0xFF4A80F0),
-                             foregroundColor: Colors.white,
-                             elevation: 4,
-                             shadowColor: const Color(0xFF4A80F0).withOpacity(0.4),
-                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                           ),
-                           child: _isLoading 
-                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : const Text("Create Account", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+  
+                         const SizedBox(height: 16),
+                         _buildGlassInput(
+                           isDark: isDark,
+                           controller: _passwordController,
+                           icon: Icons.lock_outline,
+                           hint: "Password",
+                           isPassword: true,
+                           isVisible: _isPasswordVisible,
+                           onVisibilityToggle: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                           textInputAction: TextInputAction.done,
                          ),
-                       ),
-                       const SizedBox(height: 24),
-                       
-                       // Already have account?
-                       Row(
-                         mainAxisAlignment: MainAxisAlignment.center,
-                         children: [
-                           Text("Already have an account? ", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
-                           GestureDetector(
-                             onTap: () => Navigator.pop(context),
-                             child: const Text("Sign In", style: TextStyle(color: Color(0xFF4A80F0), fontWeight: FontWeight.bold)),
-                           )
-                         ],
-                       ),
-                       const SizedBox(height: 30),
-                    ],
-                  );
-                 }
+       
+                         const SizedBox(height: 32),
+  
+                         // Actions
+                         SizedBox(
+                           width: double.infinity,
+                           height: 56,
+                           child: ElevatedButton(
+                             onPressed: _isLoading ? null : _handleSignup,
+                             style: ElevatedButton.styleFrom(
+                               backgroundColor: const Color(0xFF4A80F0),
+                               foregroundColor: Colors.white,
+                               elevation: 4,
+                               shadowColor: const Color(0xFF4A80F0).withOpacity(0.4),
+                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                             ),
+                             child: _isLoading 
+                              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Text("Create Account", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                           ),
+                         ),
+                         const SizedBox(height: 24),
+                         
+                         // Already have account?
+                         Row(
+                           mainAxisAlignment: MainAxisAlignment.center,
+                           children: [
+                             Text("Already have an account? ", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
+                             GestureDetector(
+                               onTap: () => Navigator.pop(context),
+                               child: const Text("Sign In", style: TextStyle(color: Color(0xFF4A80F0), fontWeight: FontWeight.bold)),
+                             )
+                           ],
+                         ),
+                         const SizedBox(height: 30),
+                      ],
+                    );
+                   }
+                ),
               ),
             ),
           ),

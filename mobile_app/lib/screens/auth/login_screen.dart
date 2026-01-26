@@ -116,137 +116,139 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
 
           // 3. Main Content
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                   // Logo & Branding
-                   Hero(
-                     tag: 'app_logo',
-                     child: Container(
-                       padding: const EdgeInsets.all(20),
-                       decoration: BoxDecoration(
-                         shape: BoxShape.circle,
-                         color: isDark ? Colors.white10 : Colors.white,
-                         boxShadow: [
-                           BoxShadow(
-                             color: Colors.black.withOpacity(0.05),
-                             blurRadius: 20,
-                             offset: const Offset(0, 10),
-                           )
-                         ]
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                     // ... Logo & Branding ...
+                     Hero(
+                       tag: 'app_logo',
+                       child: Container(
+                         padding: const EdgeInsets.all(20),
+                         decoration: BoxDecoration(
+                           shape: BoxShape.circle,
+                           color: isDark ? Colors.white10 : Colors.white,
+                           boxShadow: [
+                             BoxShadow(
+                               color: Colors.black.withOpacity(0.05),
+                               blurRadius: 20,
+                               offset: const Offset(0, 10),
+                             )
+                           ]
+                         ),
+                         child: const WashingMachineLogo(size: 60),
                        ),
-                       child: const WashingMachineLogo(size: 60),
                      ),
-                   ),
-                   const SizedBox(height: 24),
-                   Text(
-                     "Welcome Back",
-                     style: TextStyle(
-                       fontSize: 28,
-                       fontWeight: FontWeight.bold,
-                       color: isDark ? Colors.white : const Color(0xFF1E293B),
-                       letterSpacing: -0.5,
-                     ),
-                   ),
-                   const SizedBox(height: 8),
-                   Text(
-                     "Sign in to manage your laundry",
-                     style: TextStyle(
-                       fontSize: 16,
-                       color: isDark ? Colors.white70 : const Color(0xFF64748B),
-                     ),
-                   ),
-                   const SizedBox(height: 48),
-
-                   // Inputs
-                   _buildGlassInput(
-                     isDark: isDark,
-                     controller: _emailController,
-                     icon: Icons.email_outlined,
-                     hint: "Email Address",
-                     keyboardType: TextInputType.emailAddress,
-                     textInputAction: TextInputAction.next,
-                   ),
-                   const SizedBox(height: 16),
-                   _buildGlassInput(
-                     isDark: isDark,
-                     controller: _passwordController,
-                     icon: Icons.lock_outline,
-                     hint: "Password",
-                     isPassword: true,
-                     isVisible: _isPasswordVisible,
-                     onVisibilityToggle: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-                     textInputAction: TextInputAction.done,
-                   ),
-
-                   const SizedBox(height: 12),
-                   Align(
-                     alignment: Alignment.centerRight,
-                     child: TextButton(
-                       onPressed: () {
-                         // TODO: Implement Forgot Password navigation
-                         ToastUtils.show(context, "Feature coming soon", type: ToastType.info); 
-                       },
-                       child: Text("Forgot Password?", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
-                     ),
-                   ),
-                   const SizedBox(height: 24),
-
-                   // Actions
-                   SizedBox(
-                     width: double.infinity,
-                     height: 56,
-                     child: ElevatedButton(
-                       onPressed: _isLoading ? null : _handleLogin,
-                       style: ElevatedButton.styleFrom(
-                         backgroundColor: const Color(0xFF4A80F0),
-                         foregroundColor: Colors.white,
-                         elevation: 4,
-                         shadowColor: const Color(0xFF4A80F0).withOpacity(0.4),
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                     const SizedBox(height: 24),
+                     Text(
+                       "Welcome Back",
+                       style: TextStyle(
+                         fontSize: 28,
+                         fontWeight: FontWeight.bold,
+                         color: isDark ? Colors.white : const Color(0xFF1E293B),
+                         letterSpacing: -0.5,
                        ),
-                       child: _isLoading 
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text("Sign In", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                      ),
-                   ),
-                   const SizedBox(height: 24),
-                   
-                   // New here?
-                   Row(
-                     mainAxisAlignment: MainAxisAlignment.center,
-                     children: [
-                       Text("New to Clotheline? ", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
-                       GestureDetector(
-                         onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen()));
+                     const SizedBox(height: 8),
+                     Text(
+                       "Sign in to manage your laundry",
+                       style: TextStyle(
+                         fontSize: 16,
+                         color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                       ),
+                     ),
+                     const SizedBox(height: 48),
+  
+                     // Inputs
+                     _buildGlassInput(
+                       isDark: isDark,
+                       controller: _emailController,
+                       icon: Icons.email_outlined,
+                       hint: "Email Address",
+                       keyboardType: TextInputType.emailAddress,
+                       textInputAction: TextInputAction.next,
+                     ),
+                     const SizedBox(height: 16),
+                     _buildGlassInput(
+                       isDark: isDark,
+                       controller: _passwordController,
+                       icon: Icons.lock_outline,
+                       hint: "Password",
+                       isPassword: true,
+                       isVisible: _isPasswordVisible,
+                       onVisibilityToggle: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                       textInputAction: TextInputAction.done,
+                     ),
+  
+                     const SizedBox(height: 12),
+                     Align(
+                       alignment: Alignment.centerRight,
+                       child: TextButton(
+                         onPressed: () {
+                           // TODO: Implement Forgot Password navigation
+                           ToastUtils.show(context, "Feature coming soon", type: ToastType.info); 
                          },
-                         child: const Text("Create Account", style: TextStyle(color: Color(0xFF4A80F0), fontWeight: FontWeight.bold)),
-                       )
-                     ],
-                   ),
-                   
-                   const SizedBox(height: 40),
-
-                   // Legal Links
-                   Wrap(
-                     alignment: WrapAlignment.center,
-                     children: [
-                       GestureDetector(
-                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(type: LegalType.privacyPolicy))),
-                         child: const Text("Privacy", style: TextStyle(color: Colors.grey, fontSize: 12))
+                         child: Text("Forgot Password?", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
                        ),
-                       const Text("  •  ", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                       GestureDetector(
-                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(type: LegalType.termsOfUse))),
-                         child: const Text("Terms", style: TextStyle(color: Colors.grey, fontSize: 12))
+                     ),
+                     const SizedBox(height: 24),
+  
+                     // Actions
+                     SizedBox(
+                       width: double.infinity,
+                       height: 56,
+                       child: ElevatedButton(
+                         onPressed: _isLoading ? null : _handleLogin,
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: const Color(0xFF4A80F0),
+                           foregroundColor: Colors.white,
+                           elevation: 4,
+                           shadowColor: const Color(0xFF4A80F0).withOpacity(0.4),
+                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                         ),
+                         child: _isLoading 
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text("Sign In", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                        ),
-                     ],
-                   )
-                ],
+                     ),
+                     const SizedBox(height: 24),
+                     
+                     // New here?
+                     Row(
+                       mainAxisAlignment: MainAxisAlignment.center,
+                       children: [
+                         Text("New to Clotheline? ", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
+                         GestureDetector(
+                           onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen()));
+                           },
+                           child: const Text("Create Account", style: TextStyle(color: Color(0xFF4A80F0), fontWeight: FontWeight.bold)),
+                         )
+                       ],
+                     ),
+                     
+                     const SizedBox(height: 40),
+  
+                     // Legal Links
+                     Wrap(
+                       alignment: WrapAlignment.center,
+                       children: [
+                         GestureDetector(
+                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(type: LegalType.privacyPolicy))),
+                           child: const Text("Privacy", style: TextStyle(color: Colors.grey, fontSize: 12))
+                         ),
+                         const Text("  •  ", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                         GestureDetector(
+                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(type: LegalType.termsOfUse))),
+                           child: const Text("Terms", style: TextStyle(color: Colors.grey, fontSize: 12))
+                         ),
+                       ],
+                     )
+                  ],
+                ),
               ),
             ),
           ),

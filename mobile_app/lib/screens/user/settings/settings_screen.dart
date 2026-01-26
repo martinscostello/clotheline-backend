@@ -37,7 +37,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.only(top: 130, bottom: 140, left: 20, right: 20),
+              padding: EdgeInsets.only(
+                top: 130, 
+                bottom: 100 + MediaQuery.of(context).viewPadding.bottom, 
+                left: 20, 
+                right: 20
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [

@@ -71,7 +71,7 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      resizeToAvoidBottomInset: false, // Prevents keyboard from pushing nav bar
+      resizeToAvoidBottomInset: true, // Respect system insets for keyboard
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: LaundryGlassBackground(
         child: Stack(
@@ -98,10 +98,17 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildCustomNavBar(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+    
     return CrystalNavBar(
       currentIndex: _currentIndex,
-      height: 75, // Original
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), // Original floating
+      height: 75 + bottomInset, // Expand height to accommodate system-nav
+      padding: EdgeInsets.only(
+        left: 20, 
+        right: 20, 
+        top: 20, 
+        bottom: bottomInset > 0 ? bottomInset : 20, // Dynamic bottom spacing
+      ),
       backgroundColor: Theme.of(context).brightness == Brightness.dark 
           ? Colors.black.withOpacity(0.8) 
           : Colors.white.withOpacity(0.9),
