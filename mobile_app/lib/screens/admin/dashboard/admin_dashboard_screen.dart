@@ -7,6 +7,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../providers/branch_provider.dart'; // [New]
 import '../../../services/auth_service.dart';
 import '../../../services/analytics_service.dart'; 
+import '../../../services/notification_service.dart';
 import '../../../utils/currency_formatter.dart';
 import '../services/admin_services_screen.dart';
 import '../products/admin_products_screen.dart';
@@ -98,6 +99,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.secondaryColor), 
             onPressed: _fetchData
+          ),
+          Consumer<NotificationService>(
+            builder: (context, notifService, _) {
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none, color: Colors.white),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminNotificationDashboard())),
+                  ),
+                  if (notifService.unreadCount > 0)
+                    Positioned(
+                      right: 8, top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                        constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                        child: Text(
+                          "${notifService.unreadCount}",
+                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),

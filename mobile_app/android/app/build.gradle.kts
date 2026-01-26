@@ -53,18 +53,18 @@ android {
 
     packaging {
         jniLibs {
-            keepDebugSymbols.add("**/*.so")
+            // keepDebugSymbols.add("**/*.so") // REMOVED: Allow stripping to reduce size
         }
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true    // ENABLED: Shrink code
+            isShrinkResources = true  // ENABLED: Remove unused resources
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             ndk {
-                debugSymbolLevel = "FULL"
+                debugSymbolLevel = "NONE" // REDUCED: No full symbols in release
             }
         }
     }
@@ -79,10 +79,10 @@ dependencies {
 }
 
 
-// [WORKAROUND] Explicitly disable stripping to avoid NDK error
-tasks.configureEach {
-    val taskName = name
-    if (taskName.contains("Strip") && taskName.contains("DebugSymbols")) {
-        enabled = false
-    }
-}
+// [REMOVED] Enabling 'StripDebugSymbols' to optimize size
+// tasks.configureEach {
+//     val taskName = name
+//     if (taskName.contains("Strip") && taskName.contains("DebugSymbols")) {
+//         enabled = false
+//     }
+// }

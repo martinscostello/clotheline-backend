@@ -225,12 +225,17 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                     subtitle: Row(
                       children: [
                         Expanded(child: Text(thread['lastMessageText'] ?? "No messages", style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.black54), overflow: TextOverflow.ellipsis)),
+                        const SizedBox(width: 8),
                         if (thread['unreadCountAdmin'] != null && thread['unreadCountAdmin'] > 0)
                           Container(
                             padding: const EdgeInsets.all(5),
                             decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
                             child: Text(thread['unreadCountAdmin'].toString(), style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
                           ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.white38, size: 18),
+                          onPressed: () => _confirmDeleteThread(context, chatService, thread['_id']),
+                        ),
                       ],
                     ),
                   );
@@ -238,6 +243,27 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
               ),
         ),
       ],
+    );
+  }
+
+  void _confirmDeleteThread(BuildContext context, ChatService chatService, String threadId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        title: const Text("Delete Chat?", style: TextStyle(color: Colors.white)),
+        content: const Text("This will permanently remove this chat from your list. The user's history will not be affected.", style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () {
+              chatService.deleteThread(threadId);
+              Navigator.pop(ctx);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
     );
   }
 

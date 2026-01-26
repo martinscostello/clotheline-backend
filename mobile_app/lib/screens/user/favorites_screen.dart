@@ -62,17 +62,29 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       onTap: () {
                          Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)));
                       },
-                      child: Container(
-                        decoration: BoxDecoration(
-                           color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                           borderRadius: BorderRadius.circular(16),
-                           boxShadow: [
-                             if (!isDark)
-                                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
-                           ]
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Column(
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // 1. Shadow Layer (Rule 4)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  if (!isDark)
+                                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+                                ]
+                              ),
+                            ),
+                          ),
+                          // 2. Shell Layer (Rule 2)
+                          Container(
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                               color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                               borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Image
@@ -116,7 +128,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           ],
                         ),
                       ),
-                    );
+                    ],
+                  ),
+                );
                   },
                 ),
 

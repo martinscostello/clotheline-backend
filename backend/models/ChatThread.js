@@ -35,6 +35,10 @@ const ChatThreadSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    isHiddenFromAdmin: {
+        type: Boolean,
+        default: false
     }
 });
 

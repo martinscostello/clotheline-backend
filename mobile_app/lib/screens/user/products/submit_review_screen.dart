@@ -162,16 +162,14 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                     _buildCard(
                       child: Row(
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CustomCachedImage(
-                              imageUrl: (_fetchedImageUrl != null && _fetchedImageUrl!.isNotEmpty) 
-                                ? _fetchedImageUrl! 
-                                : 'assets/images/service_laundry.png',
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                            ),
+                          CustomCachedImage(
+                            imageUrl: (_fetchedImageUrl != null && _fetchedImageUrl!.isNotEmpty) 
+                              ? _fetchedImageUrl! 
+                              : 'assets/images/service_laundry.png',
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            borderRadius: 8, // Shell internally
                           ),
                           const SizedBox(width: 15),
                           Expanded(
@@ -358,22 +356,37 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
 
   Widget _buildCard({required Widget child}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // 1. Shadow Layer (Rule 4)
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-      child: child,
+        ),
+        // 2. Shell Layer (Rule 2)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: child,
+        ),
+      ],
     );
   }
 

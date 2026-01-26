@@ -4,11 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class HeroVideoPlayer extends StatefulWidget {
   final String videoUrl;
+  final String? thumbnailUrl;
   final bool isActive; // Controls Play/Pause
   
   const HeroVideoPlayer({
     super.key, 
     required this.videoUrl,
+    this.thumbnailUrl,
     required this.isActive,
   });
 
@@ -32,12 +34,16 @@ class _HeroVideoPlayerState extends State<HeroVideoPlayer> {
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     )..initialize().then((_) {
         if (mounted) {
+          _controller.setLooping(true);
+          _controller.setVolume(0.0);
+          
           setState(() {
             _initialized = true;
           });
-          _controller.setLooping(true);
-          _controller.setVolume(0.0);
-          if (widget.isActive) _controller.play();
+          
+          if (widget.isActive) {
+            _controller.play();
+          }
         }
       });
   }
@@ -82,35 +88,36 @@ class _HeroVideoPlayerState extends State<HeroVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final thumbnailUrl = _getThumbnailUrl(widget.videoUrl);
+    final String? thumbnailUrl = widget.thumbnailUrl ?? _getThumbnailUrl(widget.videoUrl);
 
     return Stack(
       fit: StackFit.expand,
       children: [
         // 1. Thumbnail (Always visible initially, stays behind video)
         CachedNetworkImage(
-           imageUrl: thumbnailUrl,
+           imageUrl: thumbnailUrl ?? "",
            fit: BoxFit.cover,
            errorWidget: (context, url, error) => Container(color: Colors.black26), // Fallback
            fadeInDuration: Duration.zero, // Instant
         ),
 
         // 2. Video Player (Fades in when ready)
-        if (_initialized)
-          AnimatedOpacity(
-            opacity: _initialized ? 1.0 : 0.0, 
-            duration: const Duration(milliseconds: 300),
-            child: SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                   width: _controller.value.size.width,
-                   height: _controller.value.size.height,
-                   child: VideoPlayer(_controller),
-                ),
-              ),
-            ),
-          ),
+        AnimatedOpacity(
+          opacity: _initialized ? 1.0 : 0.0, 
+          duration: const Duration(milliseconds: 500), // Slightly longer for smoothness
+          child: _initialized 
+              ? SizedBox.expand(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                       width: _controller.value.size.width,
+                       height: _controller.value.size.height,
+                       child: VideoPlayer(_controller),
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
           
         // 3. Loading (Optional, if thumbnail fails or takes time, but usually unnecessary with thumbnail)
       ],

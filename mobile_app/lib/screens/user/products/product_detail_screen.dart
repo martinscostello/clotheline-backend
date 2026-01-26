@@ -536,7 +536,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildStockIndicator() {
+     final bool isOOS = widget.product.isOutOfStock || widget.product.stockLevel <= 0;
      int stock = widget.product.stockLevel;
+     
+     if (isOOS) {
+       return Container(
+         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+         decoration: BoxDecoration(
+           border: Border.all(color: Colors.red),
+           borderRadius: BorderRadius.circular(4),
+           color: Colors.red.withOpacity(0.1)
+         ),
+         child: const Text("OUT OF STOCK", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+       );
+     }
+
      return Container(
        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
        decoration: BoxDecoration(
@@ -656,13 +670,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 initialIndex: index,
                               )));
                             },
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
+                            child: Container(
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
                               child: CustomCachedImage(
                                 imageUrl: r.images[index],
                                 width: 60,
                                 height: 60,
                                 fit: BoxFit.cover,
+                                borderRadius: 0, // Parent clips
                               ),
                             ),
                           ),
@@ -684,7 +702,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         padding: const EdgeInsets.only(bottom: 10),
         child: AspectRatio(
           aspectRatio: 1,
-          child: CustomCachedImage(imageUrl: url, fit: BoxFit.cover, borderRadius: 8),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: CustomCachedImage(
+              imageUrl: url, 
+              fit: BoxFit.cover, 
+              borderRadius: 0, // card clips
+            ),
+          ),
         ),
       )).toList(),
     );
@@ -714,7 +742,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                    children: [
                       AspectRatio(
                         aspectRatio: 1,
-                        child: CustomCachedImage(imageUrl: p.imagePath, fit: BoxFit.cover, borderRadius: 8),
+                        child: Container(
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: CustomCachedImage(
+                            imageUrl: p.imagePath, 
+                            fit: BoxFit.cover, 
+                            borderRadius: 0, // card clips
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
@@ -776,17 +814,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ],
       );
     } else {
+      final bool isOOS = widget.product.isOutOfStock || widget.product.stockLevel <= 0;
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton(
           key: _addBtnKey, 
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF5722),
+            backgroundColor: isOOS ? Colors.grey : const Color(0xFFFF5722),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           ),
-          onPressed: () {
+          onPressed: isOOS ? null : () {
              AddToCartAnimation.run(context, _addBtnKey, _cartKey, () {
                // Animation Done
              });
@@ -798,7 +837,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
              );
              service.addStoreItem(item);
           },
-          child: const Text("Add to Cart", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          child: Text(isOOS ? "OUT OF STOCK" : "Add to Cart", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       );
     }

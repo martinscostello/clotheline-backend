@@ -9,6 +9,8 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:laundry_app/widgets/common/color_picker_sheet.dart';
 import '../../../../widgets/custom_cached_image.dart';
 import 'package:laundry_app/utils/toast_utils.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
 class AdminCMSContentScreen extends StatefulWidget {
   final String section; // 'home', 'ads', 'branding'
   const AdminCMSContentScreen({super.key, required this.section});
@@ -212,7 +214,7 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     }
   }
 
-  Future<void> _pickAndUploadVideo(Function(String) onUrlReady) async {
+  Future<void> _pickAndUploadVideo(Function(String videoUrl, String? thumbUrl) onUrlReady) async {
     final picker = ImagePicker();
     final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
     
@@ -222,23 +224,50 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
       _isUploading = true;
       _uploadProgress = 0.0;
     });
-    
-    // Upload (Same endpoint handles videos now)
-    String? url = await _contentService.uploadImage(
-      video.path,
-      onProgress: (sent, total) {
-        if (total > 0) {
-          setState(() => _uploadProgress = sent / total);
+
+    try {
+      // 1. Generate Thumbnail
+      final String? thumbPath = await VideoThumbnail.thumbnailFile(
+        video: video.path,
+        thumbnailPath: (await getTemporaryDirectory()).path,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 640,
+        quality: 85, // Higher quality for hero 
+        timeMs: 0, // CRITICAL: Start from first frame
+      );
+
+      // 2. Upload Video
+      String? videoUrl = await _contentService.uploadImage(
+        video.path,
+        onProgress: (sent, total) {
+          if (total > 0) {
+            setState(() => _uploadProgress = (sent / total) * 0.8); // 80% for video
+          }
         }
+      );
+
+      if (videoUrl == null) throw Exception("Video upload failed");
+
+      // 3. Upload Thumbnail
+      String? thumbUrl;
+      if (thumbPath != null) {
+        thumbUrl = await _contentService.uploadImage(
+          thumbPath,
+          onProgress: (sent, total) {
+             if (total > 0) {
+               setState(() => _uploadProgress = 0.8 + (sent / total) * 0.2); // Last 20%
+             }
+          }
+        );
       }
-    );
-    
-    setState(() => _isUploading = false);
-    
-    if (url != null) {
-      onUrlReady(url);
-    } else {
-      if(mounted) ToastUtils.show(context, "Video Upload Failed", type: ToastType.error);
+
+      setState(() => _isUploading = false);
+      onUrlReady(videoUrl, thumbUrl);
+
+    } catch (e) {
+      debugPrint("Video/Thumb Upload Error: $e");
+      setState(() => _isUploading = false);
+      if(mounted) ToastUtils.show(context, "Video Upload Failed: $e", type: ToastType.error);
     }
   }
 
@@ -428,9 +457,10 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                                 title: const Text("Upload Video (Short)", style: TextStyle(color: Colors.white)),
                                 onTap: () {
                                   Navigator.pop(ctx);
-                                  _pickAndUploadVideo((url) {
+                                  _pickAndUploadVideo((videoUrl, thumbUrl) {
                                     setState(() {
-                                      _content!.heroCarousel[idx].imageUrl = url;
+                                      _content!.heroCarousel[idx].imageUrl = videoUrl;
+                                      _content!.heroCarousel[idx].videoThumbnail = thumbUrl;
                                       _content!.heroCarousel[idx].mediaType = 'video';
                                     });
                                   });
@@ -460,7 +490,15 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                                     ),
                                   ),
                                 if (item.imageUrl.isNotEmpty && item.mediaType == 'video')
-                                  const Center(child: Icon(Icons.play_circle_fill, color: Colors.white, size: 50)),
+                                  item.videoThumbnail != null 
+                                    ? Positioned.fill(
+                                        child: CustomCachedImage(
+                                          imageUrl: item.videoThumbnail!, 
+                                          fit: BoxFit.cover, 
+                                          borderRadius: 8
+                                        )
+                                      )
+                                    : const Center(child: Icon(Icons.play_circle_fill, color: Colors.white, size: 50)),
                                 
                                 if (item.imageUrl.isEmpty)
                                   const Center(child: Icon(Icons.add_a_photo, color: Colors.white54, size: 40)),

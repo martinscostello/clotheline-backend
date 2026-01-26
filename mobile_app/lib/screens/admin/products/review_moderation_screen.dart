@@ -54,9 +54,10 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text("Review Moderation", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Review Moderation", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
       body: LaundryGlassBackground(

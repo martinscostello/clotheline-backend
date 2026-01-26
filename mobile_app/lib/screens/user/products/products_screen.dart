@@ -351,7 +351,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     final int discountPct = product.discountPercent;
     final double savedAmount = product.savedAmount;
-    final bool showStockWarning = product.stockLevel < 20;
+    final bool showStockWarning = product.stockLevel < 20 && product.stockLevel > 0;
+    final bool isOOS = product.isOutOfStock || product.stockLevel <= 0;
 
     return GestureDetector(
       onTap: () {
@@ -359,196 +360,235 @@ class _ProductsScreenState extends State<ProductsScreen> {
           MaterialPageRoute(builder: (context) => ProductDetailScreen(product: product))
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            // 1. Sharp definition (Small & Darker)
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-            // 2. Soft depth (Large & Diffused)
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // [CRITICAL: Adaptive Height]
-          children: [
-            // 1. Image Area
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: CustomCachedImage(
-                    imageUrl: product.imagePath,
-                    fit: BoxFit.contain, // Respect image aspect ratio
-                    borderRadius: 0,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 1. Shadow Layer (Rule 4)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-                if (product.badgeText != null)
-                  Positioned(
-                    bottom: 0, left: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: badgeColor,
-                        borderRadius: const BorderRadius.only(topRight: Radius.circular(8)),
-                      ),
-                      child: Text(
-                        product.badgeText!,
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)
-                      ),
-                    ),
-                  ),
-                if (discountPct > 0)
-                  Positioned(
-                    top: 0, right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFCC00),
-                        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8), topRight: Radius.circular(12)),
-                      ),
-                      child: Text(
-                        "-$discountPct%",
-                        style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)
-                      ),
-                    ),
-                  )
-              ],
-            ),
-
-            // 2. Info Content
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black87,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      children: [
-                        TextSpan(text: product.name),
-                        if (product.brand.isNotEmpty && product.brand != "Generic")
-                          TextSpan(text: "  ${product.brand}", style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.normal)),
-                      ]
-                    ),
-                  ),
-
-                  if (showStockWarning)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        "Only ${product.stockLevel} left",
-                        style: const TextStyle(color: Color(0xFFFF5722), fontSize: 11, fontWeight: FontWeight.w600)
-                      ),
-                    ),
-
-                  if (savedAmount > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                          decoration: BoxDecoration(
-                          color: const Color(0xFFFFE0B2),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.orange.withValues(alpha: 0.3))
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.arrow_downward, size: 10, color: Color(0xFFE65100)),
-                            const SizedBox(width: 2),
-                            Text(
-                              "Save ${CurrencyFormatter.format(savedAmount)}",
-                              style: const TextStyle(color: Color(0xFFE65100), fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    CurrencyFormatter.format(product.price),
-                                    style: const TextStyle(color: Color(0xFFFF5722), fontSize: 15, fontWeight: FontWeight.bold),
-                                  ),
-                                  if (product.price < product.originalPrice) ...[
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      CurrencyFormatter.format(product.originalPrice),
-                                      style: const TextStyle(color: Colors.grey, fontSize: 10, decoration: TextDecoration.lineThrough),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                const Icon(Icons.star, size: 10, color: Colors.amber),
-                                Text(" ${product.rating}", style: TextStyle(fontSize: 10, color: isDark ? Colors.white70 : Colors.black54)),
-                                const SizedBox(width: 4),
-                                Text("(${product.soldCount})", style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () {
-                          final cart = CartService();
-                          cart.addStoreItem(StoreCartItem(product: product, quantity: 1));
-                          ToastUtils.show(context, "Added to cart!", type: ToastType.success);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFF5722),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 14),
-                        ),
-                      )
-                    ],
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+                    blurRadius: 20,
+                    offset: const Offset(10, 10),
+                    spreadRadius: -2,
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          // 2. Shell Layer (Rule 2)
+          Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Opacity(
+              opacity: isOOS ? 0.6 : 1.0,
+              child: ColorFiltered(
+                colorFilter: isOOS 
+                    ? const ColorFilter.matrix([
+                        0.2126, 0.7152, 0.0722, 0, 0,
+                        0.2126, 0.7152, 0.0722, 0, 0,
+                        0.2126, 0.7152, 0.0722, 0, 0,
+                        0,      0,      0,      1, 0,
+                      ])
+                    : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 1. Image Area
+                    Stack(
+                      children: [
+                        CustomCachedImage(
+                          imageUrl: product.imagePath,
+                          fit: BoxFit.contain,
+                          borderRadius: 0,
+                        ),
+                        if (product.badgeText != null)
+                          Positioned(
+                            bottom: 0, left: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: badgeColor,
+                                borderRadius: const BorderRadius.only(topRight: Radius.circular(8)),
+                              ),
+                              child: Text(
+                                product.badgeText!,
+                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)
+                              ),
+                            ),
+                          ),
+                        if (isOOS)
+                          Positioned.fill(
+                            child: Container(
+                              color: Colors.black26,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black87,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    "OUT OF STOCK",
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (discountPct > 0 && !isOOS)
+                          Positioned(
+                            top: 0, right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFCC00),
+                                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8)),
+                              ),
+                              child: Text(
+                                "-$discountPct%",
+                                style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)
+                              ),
+                            ),
+                          )
+                      ],
+                    ),
+
+                    // 2. Info Content
+                    Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            text: TextSpan(
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              children: [
+                                TextSpan(text: product.name),
+                                if (product.brand.isNotEmpty && product.brand != "Generic")
+                                  TextSpan(text: "  ${product.brand}", style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.normal)),
+                              ]
+                            ),
+                          ),
+                          if (showStockWarning)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                "Only ${product.stockLevel} left",
+                                style: const TextStyle(color: Color(0xFFFF5722), fontSize: 11, fontWeight: FontWeight.w600)
+                              ),
+                            ),
+                          if (savedAmount > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFE0B2),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3))
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.arrow_downward, size: 10, color: Color(0xFFE65100)),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      "Save ${CurrencyFormatter.format(savedAmount)}",
+                                      style: const TextStyle(color: Color(0xFFE65100), fontSize: 10, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            CurrencyFormatter.format(product.price),
+                                            style: const TextStyle(color: Color(0xFFFF5722), fontSize: 15, fontWeight: FontWeight.bold),
+                                          ),
+                                          if (product.price < product.originalPrice) ...[
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              CurrencyFormatter.format(product.originalPrice),
+                                              style: const TextStyle(color: Colors.grey, fontSize: 10, decoration: TextDecoration.lineThrough),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.star, size: 10, color: Colors.amber),
+                                        Text(" ${product.rating}", style: TextStyle(fontSize: 10, color: isDark ? Colors.white70 : Colors.black54)),
+                                        const SizedBox(width: 4),
+                                        Text("(${product.soldCount})", style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              InkWell(
+                                onTap: isOOS ? null : () {
+                                  final cart = CartService();
+                                  cart.addStoreItem(StoreCartItem(product: product, quantity: 1));
+                                  ToastUtils.show(context, "Added to cart!", type: ToastType.success);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: isOOS ? Colors.grey : const Color(0xFFFF5722),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(isOOS ? Icons.remove_shopping_cart : Icons.add_shopping_cart, color: Colors.white, size: 14),
+                                ),
+                              )
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+
   Widget _buildSkeleton(bool isDark) {
     Color color = isDark ? Colors.white10 : Colors.grey.shade200;
     return SafeArea(

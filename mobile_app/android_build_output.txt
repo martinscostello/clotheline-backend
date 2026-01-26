@@ -1,0 +1,25 @@
+Running Gradle task 'assembleDebug'...                          
+lib/screens/user/dashboard_screen.dart:897:19: Error: Can't find ']' to match '['.
+        children: [
+                  ^
+lib/screens/user/dashboard_screen.dart:886:27: Error: Can't find ')' to match '('.
+    return GestureDetector(
+                          ^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/Users/directorm/Development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3s
+Running Gradle task 'assembleDebug'...                              3.7s
+Gradle task assembleDebug failed with exit code 1

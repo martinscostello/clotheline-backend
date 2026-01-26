@@ -437,10 +437,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         itemBuilder: (context, index) {
           final item = items[index];
           final bool isActive = _currentHeroIndex == index;
-          return Container(
-            margin: const EdgeInsets.only(right: 10, left: 20),
-            child: _buildHeroCard(item, items.length, isActive: isActive),
-          );
+          return _buildHeroCard(item, items.length, isActive: isActive);
         },
       ),
     );
@@ -471,95 +468,108 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     } catch (_) {}
 
     return Container(
-      key: ValueKey("${item.imageUrl}${item.mediaType}"), // Force rebuild if media changes
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2C), // Fallback background
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 15,
-            spreadRadius: 2,
-            offset: const Offset(0, 8),
+      key: ValueKey("${item.imageUrl}${item.mediaType}"),
+      margin: const EdgeInsets.only(right: 10, left: 20),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 1. Shadow Layer (Rule 4)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 2. Shell Layer (Rule 2)
+          Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2C),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: item.mediaType == 'video' 
+                      ? HeroVideoPlayer(
+                          videoUrl: item.imageUrl,
+                          thumbnailUrl: item.videoThumbnail,
+                          isActive: shouldPlay, 
+                        )
+                      : CustomCachedImage(
+                          imageUrl: item.imageUrl,
+                          fit: BoxFit.cover,
+                          borderRadius: 0, // shell clips
+                        ),
+                ),
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.black.withValues(alpha: 0.0)],
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item.title ?? "",
+                          style: TextStyle(
+                            color: titleClr,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (item.tagLine != null && item.tagLine!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              item.tagLine!,
+                              style: TextStyle(
+                                color: tagClr,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: List.generate(totalItems, (index) {
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: _currentHeroIndex == index ? 24 : 8,
+                              height: 8,
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: BoxDecoration(
+                                color: _currentHeroIndex == index ? Colors.white : Colors.white30,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                clipBehavior: Clip.antiAlias,
-                child: item.mediaType == 'video' 
-                    ? HeroVideoPlayer(
-                        videoUrl: item.imageUrl,
-                        isActive: shouldPlay, 
-                      )
-                    : CustomCachedImage(
-                        imageUrl: item.imageUrl,
-                        fit: BoxFit.cover,
-                        borderRadius: 24,
-                      ),
-              ),
-            ),
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.0)],
-                  ),
-                ),
-                padding: const EdgeInsets.all(24),
-                child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              item.title ?? "",
-              style: TextStyle(
-                color: titleClr,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (item.tagLine != null && item.tagLine!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  item.tagLine!,
-                  style: TextStyle(
-                    color: tagClr,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 10),
-            Row(
-              children: List.generate(totalItems, (index) {
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  width: _currentHeroIndex == index ? 24 : 8,
-                  height: 8,
-                  margin: const EdgeInsets.only(right: 6),
-                  decoration: BoxDecoration(
-                    color: _currentHeroIndex == index ? Colors.white : Colors.white30,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                );
-              }),
-            ),
-          ],
-                ),
-              ),
-            ),
-
-          ],
-        ),
-      );
+    );
   }
 
   Widget _buildServiceGrid(BuildContext context, bool isDark) {
@@ -633,13 +643,12 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 flex: 4,
                 child: Stack(
                   children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        clipBehavior: Clip.antiAlias,
+                      Container(
+                        width: double.infinity,
                         child: CustomCachedImage(
                             imageUrl: s.image,
                             fit: BoxFit.cover,
-                            borderRadius: 16,
+                            borderRadius: 0, // Parent shell clips
                         ),
                       ),
                     // Discount / Status Badge
@@ -722,7 +731,6 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                          onPressed: () => Navigator.pop(ctx),
                          child: const Text("Okay", style: TextStyle(color: AppTheme.primaryColor)),
                        ),
-                       // Future: Add "Notify Me" here
                      ],
                   )
                 );
@@ -736,30 +744,41 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 builder: (context) => BookingSheet(serviceModel: s),
               );
             },
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E2C) : Colors.white, // Solid dark for dark mode
-                borderRadius: BorderRadius.circular(20),
-                border: isDark ? Border.all(color: Colors.white10) : null,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 1. Shadow Layer (Rule 4)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                        if (!isDark)
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                          blurRadius: 5,
+                          spreadRadius: 0,
+                        )
+                      ]
+                    ),
                   ),
-                  if (!isDark)
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.05),
-                    blurRadius: 5,
-                    spreadRadius: 0,
-                  )
-                ]
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                clipBehavior: Clip.antiAlias,
-                child: content
-              ),
+                ),
+                // 2. Shell Layer (Rule 2)
+                Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: isDark ? Border.all(color: Colors.white10) : null,
+                  ),
+                  child: content,
+                ),
+              ],
             ),
           );
         },
@@ -871,93 +890,104 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             ),
           );
       },
-      child: Container(
-        width: 140,
-        margin: const EdgeInsets.only(right: 15),
-        decoration: BoxDecoration(
-           color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
-           borderRadius: BorderRadius.circular(20), // Standardized to 20 for product images
-           boxShadow: [
-             if (!isDark)
-             BoxShadow(
-               color: Colors.black.withOpacity(0.1),
-               blurRadius: 10,
-               offset: const Offset(0, 4),
-             )
-           ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-             Positioned.fill(
-               child: ClipRRect(
-                 borderRadius: BorderRadius.circular(20),
-                 clipBehavior: Clip.antiAlias,
-                 child: CustomCachedImage(
-                   imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : "",
-                   fit: BoxFit.cover,
-                   borderRadius: 20,
-                 ),
-               ),
-             ),
-             // Discount Badge
-             if (product.discountPercentage > 0)
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      "-${product.discountPercentage.toStringAsFixed(0)}%",
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-             Positioned(
-               bottom: 0,
-               left: 0,
-               right: 0,
-               height: 70,
-               child: Container(
-                 decoration: BoxDecoration(
-                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                   gradient: LinearGradient(
-                     begin: Alignment.topCenter,
-                     end: Alignment.bottomCenter,
-                     colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 1. Shadow Layer (Rule 4)
+          if (!isDark)
+          Positioned.fill(
+            child: Container(
+              margin: const EdgeInsets.only(right: 15),
+              decoration: BoxDecoration(
+                 borderRadius: BorderRadius.circular(16),
+                 boxShadow: [
+                   BoxShadow(
+                     color: Colors.black.withOpacity(0.1),
+                     blurRadius: 10,
+                     offset: const Offset(0, 4),
+                   )
+                 ],
+              ),
+            ),
+          ),
+          // 2. Shell Layer (Rule 2)
+          Container(
+            width: 140,
+            margin: const EdgeInsets.only(right: 15),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+               color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+               borderRadius: BorderRadius.circular(16),
+            ),
+            child: Stack(
+              children: [
+                 Positioned.fill(
+                   child: CustomCachedImage(
+                     imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : "",
+                     fit: BoxFit.cover,
+                     borderRadius: 0, // card clips
                    ),
                  ),
-               ),
-             ),
-             Align(
-               alignment: Alignment.bottomCenter,
-               child: Padding(
-                 padding: const EdgeInsets.all(12.0),
-                 child: Column(
-                   mainAxisSize: MainAxisSize.min,
-                   children: [
-                     Text(
-                       product.name, 
-                       textAlign: TextAlign.center,
-                       maxLines: 1,
-                       overflow: TextOverflow.ellipsis,
-                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                 // Discount Badge
+                 if (product.discountPercentage > 0)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          "-${product.discountPercentage.toStringAsFixed(0)}%",
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                 Positioned(
+                   bottom: 0,
+                   left: 0,
+                   right: 0,
+                   height: 70,
+                   child: Container(
+                     decoration: BoxDecoration(
+                       borderRadius: BorderRadius.zero, // Parent handles clipping
+                       gradient: LinearGradient(
+                         begin: Alignment.topCenter,
+                         end: Alignment.bottomCenter,
+                         colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+                       ),
                      ),
-                     const SizedBox(height: 4),
-                     Text(
-                       CurrencyFormatter.format(product.price),
-                       style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 12),
-                     ),
-                   ],
+                   ),
                  ),
-               ),
-             ),
-          ],
-        ),
+                 Align(
+                   alignment: Alignment.bottomCenter,
+                   child: Padding(
+                     padding: const EdgeInsets.all(12.0),
+                     child: Column(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         Text(
+                           product.name, 
+                           textAlign: TextAlign.center,
+                           maxLines: 1,
+                           overflow: TextOverflow.ellipsis,
+                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                         ),
+                         const SizedBox(height: 4),
+                         Text(
+                           CurrencyFormatter.format(product.price),
+                           style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 12),
+                         ),
+                       ],
+                     ),
+                   ),
+                 ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

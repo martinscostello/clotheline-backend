@@ -241,6 +241,22 @@ class ChatService extends ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<void> deleteThread(String threadId) async {
+    try {
+      final response = await _apiService.client.delete('/chat/admin/thread/$threadId');
+      if (response.statusCode == 200) {
+        _threads.removeWhere((t) => t['_id'] == threadId);
+        if (_currentThread != null && _currentThread!['_id'] == threadId) {
+          _currentThread = null;
+          _messages = [];
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Delete thread error: $e");
+    }
+  }
   
   @override
   void dispose() {

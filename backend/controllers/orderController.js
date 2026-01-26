@@ -74,6 +74,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             pickupPhone,
             deliveryAddress,
             deliveryPhone,
+            pickupCoordinates,
             deliveryCoordinates,
 
             // Guest
@@ -140,14 +141,21 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
         await newOrder.save();
 
-        // [NEW] Update Stock Counter
+        // [NEW] Update Stock Counter (Atomic Auto-OOS)
         try {
             for (const item of items) {
                 if (item.itemType === 'Product' && item.itemId) {
-                    await StoreProduct.updateOne(
-                        { _id: item.itemId },
-                        { $inc: { stock: -item.quantity, soldCount: item.quantity } }
+                    const product = await StoreProduct.findByIdAndUpdate(
+                        item.itemId,
+                        { $inc: { stock: -item.quantity, soldCount: item.quantity } },
+                        { new: true }
                     );
+
+                    if (product && product.stock <= 0) {
+                        product.isOutOfStock = true;
+                        await product.save();
+                        console.log(`[Inventory] Product ${product.name} automatically marked OUT OF STOCK.`);
+                    }
                 }
             }
         } catch (stockErr) {

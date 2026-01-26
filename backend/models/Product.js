@@ -26,6 +26,7 @@ const ProductSchema = new mongoose.Schema({
         date: { type: Date, default: Date.now }
     }],
     isActive: { type: Boolean, default: true },
+    isOutOfStock: { type: Boolean, default: false },
 
     // [STRICT BRANCH OWNERSHIP]
     // Every product belongs to exactly ONE branch.

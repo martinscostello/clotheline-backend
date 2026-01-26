@@ -36,6 +36,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   late TextEditingController _stockController;
   String _selectedCategory = "Cleaning";
   bool _isFreeShipping = false;
+  bool _isOutOfStock = false; // [NEW]
 
   // Images
   List<UploadItem> _uploadItems = []; // Unified list
@@ -59,6 +60,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     _stockController = TextEditingController(text: p?.stockLevel.toString() ?? "10");
     _selectedCategory = p?.category ?? "Cleaning";
     _isFreeShipping = p?.isFreeShipping ?? false;
+    _isOutOfStock = p?.isOutOfStock ?? false; // [NEW]
     
     // Initialize existing images as 'completed' uploads
     if (p?.imageUrls != null) {
@@ -200,6 +202,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
         "stock": int.tryParse(_stockController.text) ?? 0,
         "category": _selectedCategory,
         "isFreeShipping": _isFreeShipping,
+        "isOutOfStock": _isOutOfStock, // [NEW]
         "imageUrls": finalImageUrls,
         "variations": _variants.map((v) {
           double vBase = v.originalPrice > 0 ? v.originalPrice : v.price;
@@ -487,6 +490,14 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                   activeTrackColor: AppTheme.primaryColor,
                   contentPadding: EdgeInsets.zero,
                   onChanged: (val) => setState(() => _isFreeShipping = val),
+                ),
+                SwitchListTile(
+                  title: const Text("Out of Stock (Manual)", style: TextStyle(color: Colors.white)),
+                  subtitle: const Text("Display as unavailable but keep visible", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                  value: _isOutOfStock,
+                  activeTrackColor: Colors.orangeAccent,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (val) => setState(() => _isOutOfStock = val),
                 ),
 
                 const SizedBox(height: 20),

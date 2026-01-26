@@ -97,6 +97,7 @@ router.post('/send', auth, async (req, res) => {
         } else {
             thread.unreadCountAdmin += 1;
         }
+        thread.isHiddenFromAdmin = false; // [NEW] Unhide if admin deleted it previously
         await thread.save();
 
         // Push Alert
@@ -164,7 +165,7 @@ router.get('/admin/threads', auth, async (req, res) => {
         const user = await User.findById(req.user.id);
         if (user.role !== 'admin') return res.status(403).json({ msg: 'Admins only' });
 
-        const query = { branchId };
+        const query = { branchId, isHiddenFromAdmin: { $ne: true } };
         if (status && status !== 'All') query.status = status.toLowerCase();
 
         const threads = await ChatThread.find(query)
@@ -260,6 +261,23 @@ router.post('/admin/broadcast', auth, async (req, res) => {
         }
 
         res.json({ msg: 'Broadcast sent', count: finalUserIds.length });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// [NEW] DELETE /admin/thread/:threadId - Admin-only hard hide
+router.delete('/admin/thread/:threadId', auth, admin, async (req, res) => {
+    try {
+        const thread = await ChatThread.findById(req.params.threadId);
+        if (!thread) return res.status(404).json({ msg: 'Thread not found' });
+
+        thread.isHiddenFromAdmin = true;
+        thread.unreadCountAdmin = 0; // Reset counters
+        await thread.save();
+
+        res.json({ msg: 'Thread removed from admin view' });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');

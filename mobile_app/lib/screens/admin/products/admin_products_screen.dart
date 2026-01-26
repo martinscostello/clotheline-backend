@@ -180,6 +180,7 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
         }
       },
       child: Container(
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           color: const Color(0xFF202020),
@@ -192,7 +193,7 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                 child: CustomCachedImage(
                   imageUrl: product.imageUrls.first,
                   fit: BoxFit.cover,
-                  borderRadius: 20,
+                  borderRadius: 0, // container clips
                 ),
               ),
             // Gradient
@@ -201,7 +202,7 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
               height: 120,
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  borderRadius: BorderRadius.zero, // Parent clips
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,

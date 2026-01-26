@@ -19,6 +19,7 @@ class StoreProduct {
   final bool isFlashDeal;
   final DateTime? dealEndTime;
   final bool isFreeShipping;
+  final bool isOutOfStock; // [NEW]
   
   final String brand;
   final List<ProductReview> reviews; // [NEW]
@@ -44,6 +45,7 @@ class StoreProduct {
     this.badgeColorHex,
     this.isFlashDeal = false,
     this.isFreeShipping = false,
+    this.isOutOfStock = false, // [NEW]
     this.dealEndTime,
     this.variants = const [],
     this.branchInfo = const [], // [NEW]
@@ -84,6 +86,7 @@ class StoreProduct {
       reviewCount: json['totalReviews'] ?? (json['legacyReviews'] as List?)?.length ?? 0, // Map totalReviews
       stockLevel: json['stock'] ?? 0,
       isFreeShipping: json['isFreeShipping'] ?? false,
+      isOutOfStock: json['isOutOfStock'] ?? false, // [NEW]
       variants: (json['variations'] as List?)?.map((e) => ProductVariant.fromJson(e)).toList() ?? [],
       branchInfo: (json['branchInfo'] is List) 
           ? (json['branchInfo'] as List).whereType<Map>().map((e) => BranchProductInfo.fromJson(Map<String, dynamic>.from(e))).toList() 
@@ -102,6 +105,7 @@ class StoreProduct {
       'originalPrice': originalPrice,
       'stock': stockLevel,
       'isFreeShipping': isFreeShipping,
+      'isOutOfStock': isOutOfStock, // [NEW]
       'variations': variants.map((e) => e.toJson()).toList(),
       'branchInfo': branchInfo.map((e) => e.toJson()).toList(),
       // Reviews usually not sent back on product update
