@@ -61,6 +61,26 @@ const OrderSchema = new mongoose.Schema({
     deliveryAddress: String,
     deliveryPhone: String,
 
+    // [New] Rich Location Support (Backward Compatible)
+    deliveryLocation: {
+        lat: Number,
+        lng: Number,
+        addressLabel: String,
+        source: { type: String, enum: ['pin', 'google', 'manual', 'admin'] },
+        area: String,
+        landmark: String
+    },
+    pickupLocation: {
+        lat: Number,
+        lng: Number,
+        addressLabel: String,
+        source: { type: String, enum: ['pin', 'google', 'manual', 'admin'] },
+        area: String,
+        landmark: String
+    },
+    deliveryFeeOverride: Number,
+    isFeeOverridden: { type: Boolean, default: false },
+
     date: { type: Date, default: Date.now }
 }, { timestamps: true });
 

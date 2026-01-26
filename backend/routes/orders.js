@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
 
 // Helper to simulate auth if needed, but for now open
-router.post('/', orderController.createOrder);
-router.post('/batch-status', orderController.batchUpdateOrderStatus); // Place specific POST before generic if any (none here, but safe)
-router.get('/', orderController.getAllOrders);
-router.get('/user/:userId', orderController.getOrdersByUserId);
-router.get('/:id', orderController.getOrderById); // [Fix] Missing ID route
-router.put('/:id/status', orderController.updateOrderStatus);
-router.put('/:id/exception', orderController.updateOrderException);
+router.post('/', auth, orderController.createOrder); // Secure order creation
+router.post('/batch-status', auth, admin, orderController.batchUpdateOrderStatus);
+router.get('/', auth, admin, orderController.getAllOrders); // Secure list
+router.get('/user/:userId', auth, orderController.getOrdersByUserId);
+router.get('/:id', auth, orderController.getOrderById);
+router.put('/:id/status', auth, admin, orderController.updateOrderStatus);
+router.put('/:id/exception', auth, admin, orderController.updateOrderException);
+router.put('/:id/override-fee', auth, admin, orderController.overrideDeliveryFee); // New Override Route
 
 module.exports = router;

@@ -17,6 +17,8 @@ import '../../../utils/toast_utils.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'combined_order_summary_screen.dart';
+import '../../../widgets/delivery_location_selector.dart';
+import '../../../models/delivery_location_model.dart';
 
 class CheckoutScreen extends StatefulWidget {
   // Use Singleton instead of passing list
@@ -35,11 +37,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   int _afterWashOption = 0; // 0 = Unselected, 1 = Deliver, 2 = Pickup
 
   // Controllers
-  final _pickupAddressController = TextEditingController();
   final _pickupPhoneController = TextEditingController();
-  final _deliveryAddressController = TextEditingController();
   final _deliveryPhoneController = TextEditingController();
   final _promoController = TextEditingController(); // [New]
+  DeliveryLocationSelection? _pickupSelection;
+  DeliveryLocationSelection? _deliverySelection;
 
   // Location Data
   LatLng? _pickupLatLng;
@@ -238,7 +240,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             isDark: isDark,
             colors: textColor,
           ),
-          if (_beforeWashOption == 1) _buildAddressInputs(_pickupAddressController, _pickupPhoneController, isDark, true),
+          if (_beforeWashOption == 1) _buildAddressInputs(true),
           
           const SizedBox(height: 10),
           _buildOptionTile(
@@ -251,6 +253,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                  _beforeWashOption = val!;
                  _pickupFee = 0.0; // Reset fee
                  _pickupLatLng = null; // Reset GPS
+                 _pickupSelection = null;
                });
             },
             isDark: isDark,
@@ -272,7 +275,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             isDark: isDark,
             colors: textColor,
           ),
-          if (_afterWashOption == 1) _buildAddressInputs(_deliveryAddressController, _deliveryPhoneController, isDark, false, labelPrefix: "Delivery"),
+          if (_afterWashOption == 1) _buildAddressInputs(false, labelPrefix: "Delivery"),
 
           const SizedBox(height: 10),
           _buildOptionTile(
@@ -285,6 +288,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                  _afterWashOption = val!;
                  _deliveryFee = 0.0; // Reset fee
                  _deliveryLatLng = null; // Reset GPS
+                 _deliverySelection = null;
                });
             },
             isDark: isDark,
@@ -359,56 +363,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildAddressInputs(TextEditingController addrCtrl, TextEditingController phoneCtrl, bool isDark, bool isPickup, {String labelPrefix = "Pickup"}) {
-    // Check if GPS is active for this field
-    bool isGpsActive = isPickup ? _pickupLatLng != null : _deliveryLatLng != null;
+  Widget _buildAddressInputs(bool isPickup, {String labelPrefix = "Pickup"}) {
+    // Check if GPS/Selection is active for this field
+    bool isGpsActive = isPickup ? _pickupSelection != null : _deliverySelection != null;
 
     return Padding(
       padding: const EdgeInsets.only(left: 20, right: 10, bottom: 20, top: 5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(child: _buildTextField(addrCtrl, "$labelPrefix Address (Manual Entry)", Icons.location_on, isDark)),
-              const SizedBox(width: 8),
-              
-              // Animated GPS Button
-              InkWell(
-                onTap: () => _getCurrentLocation(isPickup),
-                child: AnimatedBuilder(
-                  animation: _breathingAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: isGpsActive ? _breathingAnimation.value : 1.0,
-                      child: Container(
-                        height: 50, width: 50,
-                        decoration: BoxDecoration(
-                          color: isGpsActive 
-                              ? AppTheme.primaryColor 
-                              : AppTheme.primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.primaryColor),
-                          boxShadow: isGpsActive ? [
-                            BoxShadow(color: AppTheme.primaryColor.withOpacity(0.5), blurRadius: 10, spreadRadius: 2)
-                          ] : [],
-                        ),
-                        child: Icon(Icons.my_location, color: isGpsActive ? Colors.white : AppTheme.primaryColor),
-                      ),
-                    );
-                  },
-                ),
-              )
-            ],
-          ),
-          const SizedBox(height: 5),
-          // Note Text
-          Text(
-            "Turn on GPS to get accurate Delivery fee", 
-            style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12, fontStyle: FontStyle.italic)
+          DeliveryLocationSelector(
+            initialValue: isPickup ? _pickupSelection : _deliverySelection,
+            onLocationSelected: (selection) {
+              setState(() {
+                if (isPickup) {
+                  _pickupSelection = selection;
+                  _pickupLatLng = LatLng(selection.lat, selection.lng);
+                } else {
+                  _deliverySelection = selection;
+                  _deliveryLatLng = LatLng(selection.lat, selection.lng);
+                }
+                
+                // Recalculate Fee
+                final deliveryService = Provider.of<DeliveryService>(context, listen: false);
+                final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+                
+                double fee = deliveryService.calculateDeliveryFee(
+                  selection.lat, 
+                  selection.lng,
+                  branch: branchProvider.selectedBranch
+                );
+                
+                if (isPickup) {
+                  _pickupFee = fee;
+                } else {
+                  _deliveryFee = fee;
+                }
+              });
+            },
           ),
           const SizedBox(height: 10),
-          _buildTextField(phoneCtrl, "Contact Phone", Icons.phone, isDark),
+          _buildTextField(isPickup ? _pickupPhoneController : _deliveryPhoneController, "Contact Phone", Icons.phone, Theme.of(context).brightness == Brightness.dark),
         ],
       ),
     );
@@ -582,7 +577,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           _buildLogisticsRow(
             "Pickup", 
             _beforeWashOption == 1 
-              ? "At: ${_pickupAddressController.text}" 
+              ? "At: ${_pickupSelection?.addressLabel ?? 'Not set'}" 
               : "Drop off at Office:\n$displayAddress\nTel: $displayPhone", 
             textColor
           ),
@@ -590,7 +585,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           _buildLogisticsRow(
             "Delivery", 
             _afterWashOption == 1 
-              ? "To: ${_deliveryAddressController.text}" 
+              ? "To: ${_deliverySelection?.addressLabel ?? 'Not set'}" 
               : "Pick up at Office:\n$displayAddress\nTel: $displayPhone", 
             textColor
           ),
@@ -814,10 +809,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       // 'totalAmount': total, // Backend calculates this now to be secure
       'pickupOption': _beforeWashOption == 1 ? 'Pickup' : 'Dropoff',
       'deliveryOption': _afterWashOption == 1 ? 'Deliver' : 'Pickup',
-      'pickupAddress': _beforeWashOption == 1 ? _pickupAddressController.text : null,
+      'pickupAddress': _beforeWashOption == 1 ? _pickupSelection?.addressLabel : null,
       'pickupPhone': _beforeWashOption == 1 ? _pickupPhoneController.text : null,
-      'deliveryAddress': _afterWashOption == 1 ? _deliveryAddressController.text : null,
+      'deliveryAddress': _afterWashOption == 1 ? _deliverySelection?.addressLabel : null,
       'deliveryPhone': _afterWashOption == 1 ? _deliveryPhoneController.text : null,
+      'pickupLocation': _beforeWashOption == 1 ? _pickupSelection?.toJson() : null, // [New]
+      'deliveryLocation': _afterWashOption == 1 ? _deliverySelection?.toJson() : null, // [New]
       'pickupCoordinates': _pickupLatLng != null ? {'lat': _pickupLatLng!.latitude, 'lng': _pickupLatLng!.longitude} : null,
       'deliveryCoordinates': _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
       'pickupFee': _pickupFee,

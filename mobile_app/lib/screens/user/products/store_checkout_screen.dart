@@ -17,6 +17,8 @@ import '../../../utils/toast_utils.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import '../booking/combined_order_summary_screen.dart'; // [Fix] Path adjustment
+import '../../../widgets/delivery_location_selector.dart';
+import '../../../models/delivery_location_model.dart';
 
 class StoreCheckoutScreen extends StatefulWidget {
   const StoreCheckoutScreen({super.key});
@@ -33,11 +35,11 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
   int _deliveryOption = 0; // 0 = Unselected, 1 = Deliver, 2 = Pickup
 
   // Controllers
-  final _deliveryAddressController = TextEditingController();
   final _contactPhoneController = TextEditingController();
 
   // Location Data
   LatLng? _deliveryLatLng;
+  DeliveryLocationSelection? _deliverySelection;
   double _deliveryFee = 0.0;
   bool _isLocating = false;
 
@@ -270,38 +272,24 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
                padding: const EdgeInsets.only(left: 20, right: 10, bottom: 20),
                child: Column(
                  children: [
-                   Row(
-                     children: [
-                       Expanded(child: _buildTextField(_deliveryAddressController, "Delivery Address (Manual or GPS)", Icons.location_on, isDark)),
-                       const SizedBox(width: 8),
-                       InkWell(
-                          onTap: _getCurrentLocation,
-                          child: AnimatedBuilder(
-                            animation: _breathingAnimation,
-                            builder: (context, child) {
-                              bool isActive = _deliveryLatLng != null;
-                              return Transform.scale(
-                                scale: isActive ? _breathingAnimation.value : 1.0,
-                                child: Container(
-                                  height: 50, width: 50,
-                                  decoration: BoxDecoration(
-                                    color: isActive ? AppTheme.primaryColor : AppTheme.primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppTheme.primaryColor),
-                                  ),
-                                  child: Icon(Icons.my_location, color: isActive ? Colors.white : AppTheme.primaryColor),
-                                ),
-                              );
-                            },
-                          ),
-                        )
-                     ],
+                   DeliveryLocationSelector(
+                     initialValue: _deliverySelection,
+                     onLocationSelected: (selection) {
+                       setState(() {
+                         _deliverySelection = selection;
+                         _deliveryLatLng = LatLng(selection.lat, selection.lng);
+                         
+                         // Recalculate Fee
+                         final deliveryService = Provider.of<DeliveryService>(context, listen: false);
+                         final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+                         _deliveryFee = deliveryService.calculateDeliveryFee(
+                           selection.lat, 
+                           selection.lng,
+                           branch: branchProvider.selectedBranch
+                         );
+                       });
+                     },
                    ),
-                   if (_deliveryLatLng == null)
-                     Padding(
-                       padding: const EdgeInsets.only(top: 5, left: 5),
-                       child: Text("Use GPS for accurate fee calculation", style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12, fontStyle: FontStyle.italic)),
-                     ),
                    const SizedBox(height: 10),
                    _buildTextField(_contactPhoneController, "Contact Phone", Icons.phone, isDark),
                  ],
@@ -356,7 +344,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
                            children: [
                              Text(_deliveryOption == 1 ? "Delivery to Doorstep" : "Pickup at Branch", style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
                              if (_deliveryOption == 1) ...[
-                               Text(_deliveryAddressController.text, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+                               Text(_deliverySelection?.addressLabel ?? "Address not set", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
                                Text("Tel: ${_contactPhoneController.text}", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13)),
                              ],
                              if (_deliveryOption == 2)
@@ -597,7 +585,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
                // Combined logic might recalc. For now pass 0 as base.
                'pickupFee': 0.0, 
                'deliveryOption': _deliveryOption == 1 ? 'Deliver' : 'Pickup',
-               'deliveryAddress': _deliveryAddressController.text, // Pre-fill
+               'deliveryAddress': _deliverySelection?.addressLabel ?? '', // Pre-fill
              },
              onProceed: (logistics) async {
                 Navigator.pop(context); // Close summary
@@ -681,8 +669,9 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       'appliedPromotion': _cartService.appliedPromotion, // Snapshot Promo
       'pickupOption': _deliveryOption == 2 ? 'Pickup' : 'None', 
       'deliveryOption': _deliveryOption == 1 ? 'Deliver' : 'Pickup',
-      'deliveryAddress': _deliveryOption == 1 ? _deliveryAddressController.text : null,
+      'deliveryAddress': _deliveryOption == 1 ? _deliverySelection?.addressLabel : null,
       'deliveryPhone': _deliveryOption == 1 ? _contactPhoneController.text : null,
+      'deliveryLocation': _deliveryOption == 1 ? _deliverySelection?.toJson() : null, // [New]
       'deliveryCoordinates': _deliveryOption == 1 && _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
       'deliveryFee': _deliveryOption == 1 ? _deliveryFee : 0,
       'discountBreakdown': _cartService.laundryDiscounts, // [New]
@@ -782,8 +771,8 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
                   ToastUtils.show(context, "Please select a Delivery Option", type: ToastType.warning);
                   return;
                 }
-                if (_deliveryOption == 1 && (_deliveryAddressController.text.isEmpty || _contactPhoneController.text.isEmpty)) {
-                   ToastUtils.show(context, "Address and Phone are required for delivery", type: ToastType.warning);
+                if (_deliveryOption == 1 && (_deliverySelection == null || _contactPhoneController.text.isEmpty)) {
+                   ToastUtils.show(context, "Location and Phone are required for delivery", type: ToastType.warning);
                    return;
                 }
                 setState(() => _currentStage = 2);

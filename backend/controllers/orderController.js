@@ -59,15 +59,11 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             taxAmount,
             totalAmount,
 
-            // Delivery
-            pickupOption,
-            deliveryOption,
-            pickupAddress,
-            pickupPhone,
-            deliveryAddress,
-            deliveryPhone,
-            deliveryCoordinates,
-            deliveryFee,
+            // [New] Rich Location Support
+            deliveryLocation,
+            pickupLocation,
+            deliveryFeeOverride,
+            isFeeOverridden,
 
             // Guest
             guestInfo
@@ -110,11 +106,17 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             // Logistics
             pickupOption: pickupOption || 'None',
             deliveryOption: deliveryOption || 'None',
-            pickupAddress,
-            pickupPhone,
-            deliveryAddress,
-            deliveryPhone,
-            deliveryCoordinates,
+            pickupAddress: pickupAddress || (pickupLocation ? pickupLocation.addressLabel : null),
+            pickupPhone: pickupPhone || (pickupLocation ? pickupLocation.phone : null),
+            deliveryAddress: deliveryAddress || (deliveryLocation ? deliveryLocation.addressLabel : null),
+            deliveryPhone: deliveryPhone || (deliveryLocation ? deliveryLocation.phone : null),
+            deliveryCoordinates: deliveryCoordinates || (deliveryLocation ? { lat: deliveryLocation.lat, lng: deliveryLocation.lng } : null),
+
+            // [New] Extended Location Data
+            deliveryLocation,
+            pickupLocation,
+            deliveryFeeOverride: isFeeOverridden ? deliveryFeeOverride : null,
+            isFeeOverridden: isFeeOverridden || false,
 
             // Guest
             guestInfo: guestInfo,
@@ -393,5 +395,48 @@ const _sendPushAsync = async (userId, title, message, orderId) => {
         }
     } catch (e) {
         console.error("Push Error:", e);
+    }
+};
+
+exports.overrideDeliveryFee = async (req, res) => {
+    try {
+        const { fee } = req.body;
+        if (fee === undefined) return res.status(400).json({ msg: 'Fee value is required' });
+
+        let order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+        // Calculate old total without the previous delivery fee if any
+        const oldDeliveryFee = order.isFeeOverridden ? order.deliveryFeeOverride : (order.deliveryFee || 0);
+        const baseTotal = order.totalAmount - oldDeliveryFee;
+
+        // Apply new override
+        order.deliveryFeeOverride = fee;
+        order.isFeeOverridden = true;
+        order.totalAmount = baseTotal + fee;
+
+        await order.save();
+
+        // Notify User about fee change
+        if (order.user) {
+            const title = "Delivery Fee Updated";
+            const message = `The delivery fee for your order #${order._id.toString().slice(-6).toUpperCase()} has been adjusted to ₦${fee}. Please confirm.`;
+
+            await new Notification({
+                userId: order.user,
+                title,
+                message,
+                type: 'order',
+                branchId: order.branchId,
+                metadata: { orderId: order._id }
+            }).save();
+
+            _sendPushAsync(order.user, title, message, order._id);
+        }
+
+        res.json({ msg: 'Delivery fee overridden', order });
+    } catch (err) {
+        console.error("Override Fee Error:", err);
+        res.status(500).send('Server Error');
     }
 };

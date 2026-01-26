@@ -170,6 +170,61 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
     );
   }
 
+  Future<void> _overrideFee() async {
+    final feeCtrl = TextEditingController(text: _order!.deliveryFee.toStringAsFixed(0));
+    
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF202020),
+        title: const Text("Override Delivery Fee", style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("This will update the total amount of the order and notify the customer.", style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const SizedBox(height: 15),
+            TextField(
+              controller: feeCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: "New Delivery Fee",
+                labelStyle: TextStyle(color: Colors.white54),
+                prefixText: "₦ ",
+                prefixStyle: TextStyle(color: Colors.white54),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+              ),
+            )
+          ],
+        ),
+        actions: [
+          TextButton(child: const Text("CANCEL"), onPressed: () => Navigator.pop(ctx)),
+          TextButton(
+            child: const Text("OVERRIDE", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+            onPressed: () async {
+              final double? newFee = double.tryParse(feeCtrl.text);
+              if (newFee == null) {
+                ToastUtils.show(context, "Invalid Amount", type: ToastType.error);
+                return;
+              }
+              Navigator.pop(ctx);
+              setState(() => _isUpdating = true);
+              final success = await Provider.of<OrderService>(context, listen: false)
+                  .overrideDeliveryFee(_order!.id, newFee);
+              
+              if (success) {
+                await _fetchOrder();
+              }
+              
+              setState(() => _isUpdating = false);
+              if (mounted) ToastUtils.show(context, success ? "Fee Overridden" : "Failed to override", type: success ? ToastType.success : ToastType.error);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -357,9 +412,33 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text("Total Amount", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text("₦${_order!.totalAmount.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 22, fontWeight: FontWeight.bold)),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text("₦${_order!.totalAmount.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 22, fontWeight: FontWeight.bold)),
+                              if (_order!.isFeeOverridden)
+                                const Text("(Fee Overridden)", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
                         ],
                       ),
+                      if (_order!.deliveryOption == 'Deliver') ...[
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton.icon(
+                            icon: const Icon(Icons.edit_road, size: 16),
+                            label: const Text("Adjust Delivery Fee"),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white70,
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 30),
+                              alignment: Alignment.centerRight
+                            ),
+                            onPressed: _overrideFee,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

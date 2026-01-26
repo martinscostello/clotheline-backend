@@ -19,6 +19,14 @@ class OrderModel {
   final String? deliveryAddress;
   final String? deliveryPhone;
   
+  // [New] Rich Location Support
+  final Map<String, dynamic>? deliveryLocation;
+  final Map<String, dynamic>? pickupLocation;
+  final double? deliveryFeeOverride;
+  final bool isFeeOverridden;
+  final double deliveryFee;
+  final double pickupFee;
+  
   final DateTime date;
   
   // Tax
@@ -70,7 +78,13 @@ class OrderModel {
     this.userId,
     this.discountAmount = 0.0, // [New]
     this.storeDiscount = 0.0,
-    this.discountBreakdown = const {}
+    this.discountBreakdown = const {},
+    this.deliveryLocation,
+    this.pickupLocation,
+    this.deliveryFeeOverride,
+    this.isFeeOverridden = false,
+    this.deliveryFee = 0,
+    this.pickupFee = 0,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -104,6 +118,12 @@ class OrderModel {
       discountBreakdown: json['discountBreakdown'] != null 
           ? Map<String, double>.from(json['discountBreakdown'].map((k, v) => MapEntry(k, (v as num).toDouble()))) 
           : {}, // [New]
+      deliveryLocation: json['deliveryLocation'],
+      pickupLocation: json['pickupLocation'],
+      deliveryFeeOverride: (json['deliveryFeeOverride'] as num?)?.toDouble(),
+      isFeeOverridden: json['isFeeOverridden'] ?? false,
+      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
+      pickupFee: (json['pickupFee'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

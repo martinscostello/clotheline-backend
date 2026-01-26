@@ -127,4 +127,18 @@ class OrderService extends ChangeNotifier {
       return false;
     }
   }
+  // [NEW] Override Delivery Fee (Admin)
+  Future<bool> overrideDeliveryFee(String id, double fee) async {
+    try {
+      final response = await _apiService.client.put('/orders/$id/override-fee', data: {'fee': fee});
+      if (response.statusCode == 200) {
+        await fetchOrders(); 
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error overriding fee: $e");
+      return false;
+    }
+  }
 }
