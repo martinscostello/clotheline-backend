@@ -93,8 +93,6 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         // Show loading if auth is absolutely initializing? 
         // Or just show Dash/Settings (default) until permissions load.
         // We chose to show default tabs immediately to prevent "Infinite Spinner".
-
-        final isDark = authService.currentUser != null; // Admin is usually dark theme fixed, but let's be robust
         
         SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
@@ -105,10 +103,12 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         ));
 
         return Theme(
-          data: AppTheme.darkTheme,
+          data: const AppTheme.darkTheme,
           child: NavScaffold(
             currentIndex: _currentIndex,
             onTabTap: (index) => setState(() => _currentIndex = index),
+            navMargin: EdgeInsets.zero,
+            navBorderRadius: const BorderRadius.vertical(top: Radius.circular(35)),
             navItems: _currentNavItems.map((item) => PremiumNavItem(
               label: item['label'],
               icon: item['icon'],

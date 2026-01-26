@@ -16,11 +16,16 @@ class PremiumNavBar extends StatefulWidget {
   final List<PremiumNavItem> items;
   final Function(int) onTap;
 
+  final EdgeInsetsGeometry? margin;
+  final BorderRadius? borderRadius;
+
   const PremiumNavBar({
     super.key,
     required this.currentIndex,
     required this.items,
     required this.onTap,
+    this.margin,
+    this.borderRadius,
   });
 
   @override
@@ -119,20 +124,24 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
     // Adaptive Inactive Colors (Non-negotiable)
     final Color inactiveColor = isDark ? Colors.white : Colors.black; 
     
+    final defaultMargin = EdgeInsets.fromLTRB(20, 0, 20, bottomPadding > 0 ? bottomPadding : 20);
+    final effectiveMargin = widget.margin ?? defaultMargin;
+    final effectiveBorderRadius = widget.borderRadius ?? BorderRadius.circular(35);
+
     return RepaintBoundary(
       child: ScaleTransition(
         scale: _navbarScaleAnimation,
         child: Container(
-          margin: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding > 0 ? bottomPadding : 20),
+          margin: effectiveMargin,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(35),
+            borderRadius: effectiveBorderRadius,
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
               child: Container(
                 height: 72,
                 decoration: BoxDecoration(
                   color: backgroundColor,
-                  borderRadius: BorderRadius.circular(35),
+                  borderRadius: effectiveBorderRadius,
                   border: Border.all(
                     color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
                     width: 0.5,

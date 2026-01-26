@@ -7,6 +7,8 @@ class NavScaffold extends StatelessWidget {
   final List<PremiumNavItem> navItems;
   final Function(int) onTabTap;
   final bool extendBody;
+  final EdgeInsetsGeometry? navMargin;
+  final BorderRadius? navBorderRadius;
 
   const NavScaffold({
     super.key,
@@ -15,6 +17,8 @@ class NavScaffold extends StatelessWidget {
     required this.navItems,
     required this.onTabTap,
     this.extendBody = true,
+    this.navMargin,
+    this.navBorderRadius,
   });
 
   @override
@@ -37,6 +41,8 @@ class NavScaffold extends StatelessWidget {
               currentIndex: currentIndex,
               items: navItems,
               onTap: onTabTap,
+              margin: navMargin,
+              borderRadius: navBorderRadius,
             ),
           ),
         ],
