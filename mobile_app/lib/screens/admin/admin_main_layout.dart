@@ -103,7 +103,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         ));
 
         return Theme(
-          data: const AppTheme.darkTheme,
+          data: AppTheme.darkTheme,
           child: NavScaffold(
             currentIndex: _currentIndex,
             onTabTap: (index) => setState(() => _currentIndex = index),
