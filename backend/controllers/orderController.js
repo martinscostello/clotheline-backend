@@ -123,6 +123,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             pickupPhone: pickupPhone || (pickupLocation ? pickupLocation.phone : null),
             deliveryAddress: deliveryAddress || (deliveryLocation ? deliveryLocation.addressLabel : null),
             deliveryPhone: deliveryPhone || (deliveryLocation ? deliveryLocation.phone : null),
+            pickupCoordinates: pickupCoordinates || (pickupLocation ? { lat: pickupLocation.lat, lng: pickupLocation.lng } : null),
             deliveryCoordinates: deliveryCoordinates || (deliveryLocation ? { lat: deliveryLocation.lat, lng: deliveryLocation.lng } : null),
 
             // [New] Extended Location Data

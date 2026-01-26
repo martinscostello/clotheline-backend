@@ -63,6 +63,15 @@ const OrderSchema = new mongoose.Schema({
     deliveryAddress: String,
     deliveryPhone: String,
 
+    pickupCoordinates: {
+        lat: Number,
+        lng: Number
+    },
+    deliveryCoordinates: {
+        lat: Number,
+        lng: Number
+    },
+
     // [New] Rich Location Support (Backward Compatible)
     deliveryLocation: {
         lat: Number,
