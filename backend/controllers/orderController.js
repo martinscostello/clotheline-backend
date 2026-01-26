@@ -466,8 +466,17 @@ exports.confirmFeeAdjustment = async (req, res) => {
         }
 
         if (choice === 'PayOnDelivery') {
+            const extra = order.feeAdjustment.amount || 0;
             order.feeAdjustment.status = 'PayOnDelivery';
             order.status = 'New'; // Return to processing
+
+            // Update totalAmount and delivery override even for Pay on Delivery
+            // so that total reflects the full cost, even if partially paid.
+            const currentFee = order.isFeeOverridden ? (order.deliveryFeeOverride || 0) : (order.deliveryFee || 0);
+            order.deliveryFeeOverride = currentFee + extra;
+            order.isFeeOverridden = true;
+            order.totalAmount += extra;
+
             await order.save();
 
             // Notify Admins

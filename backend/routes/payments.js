@@ -247,7 +247,14 @@ router.post('/verify', auth, async (req, res) => {
                 order.status = 'New'; // Return to processing
 
                 // Update the locked totalAmount to include the extra fee now that it is paid
-                order.totalAmount += order.feeAdjustment.amount;
+                const extra = order.feeAdjustment.amount || 0;
+                order.totalAmount += extra;
+
+                // Also update the delivery override to reflect the new total delivery fee
+                const currentFee = order.isFeeOverridden ? (order.deliveryFeeOverride || 0) : (order.deliveryFee || 0);
+                order.deliveryFeeOverride = currentFee + extra;
+                order.isFeeOverridden = true;
+
                 await order.save();
             } else {
                 // [CRITICAL FIX] Lock in the Price

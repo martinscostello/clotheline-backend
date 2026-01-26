@@ -1,45 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-require('dotenv').config();
+const admin = require('firebase-admin');
+const { v4: uuidv4 } = require('uuid');
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-// Configure Storage
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'clotheline_uploads',
-        allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'mp4', 'mov', 'avi'],
-        resource_type: 'auto',
-        public_id: (req, file) => file.fieldname + '-' + Date.now(),
-        transformation: [
-            { audio_codec: "none" } // Strip audio completely from videos
-        ]
-    },
-});
-
-// Init Upload
+// Configure Multer to use memory storage
 const upload = multer({
-    storage: storage,
-    limits: { fileSize: 50000000 }, // 50MB limit
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
 }).single('image');
 
 // Upload Route
 router.post('/', (req, res) => {
-    upload(req, res, (err) => {
+    upload(req, res, async (err) => {
         if (err) {
             console.error("===== Upload Execution Error =====");
             console.error("Error Code:", err.code);
             console.error("Error Message:", err.message);
-            console.error("Full Error:", err);
             console.error("==================================");
 
             return res.status(400).json({
@@ -52,12 +29,41 @@ router.post('/', (req, res) => {
             return res.status(400).json({ message: 'No file selected!' });
         }
 
-        // Return the Cloudinary URL
-        // req.file.path contains the secure URL from Cloudinary
-        res.json({
-            message: 'File Uploaded to Cloud!',
-            filePath: req.file.path
-        });
+        try {
+            const bucket = admin.storage().bucket();
+            const fileName = `clotheline_uploads/${uuidv4()}-${req.file.originalname}`;
+            const file = bucket.file(fileName);
+
+            const stream = file.createWriteStream({
+                metadata: {
+                    contentType: req.file.mimetype,
+                }
+            });
+
+            stream.on('error', (error) => {
+                console.error("Firebase Upload Stream Error:", error);
+                res.status(500).json({ message: 'Failed to upload to Firebase' });
+            });
+
+            stream.on('finish', async () => {
+                // Make the file public (Simple approach for public access)
+                await file.makePublic();
+
+                // Construct public URL
+                const publicUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
+
+                res.json({
+                    message: 'File Uploaded to Firebase!',
+                    filePath: publicUrl
+                });
+            });
+
+            stream.end(req.file.buffer);
+
+        } catch (error) {
+            console.error("Firebase Storage Error:", error);
+            res.status(500).json({ message: 'Storage error' });
+        }
     });
 });
 

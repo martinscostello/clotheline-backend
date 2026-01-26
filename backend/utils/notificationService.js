@@ -25,14 +25,16 @@ const initializeFirebase = () => {
                     projectId: process.env.FIREBASE_PROJECT_ID,
                     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
                     privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-                })
+                }),
+                storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'clotheline.firebasestorage.app'
             });
             console.log('[NotificationService] Firebase Admin Initialized via Env Vars');
             isInitialized = true;
         } else {
             const serviceAccount = require(serviceAccountPath);
             admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
+                credential: admin.credential.cert(serviceAccount),
+                storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'clotheline.firebasestorage.app'
             });
             console.log(`[NotificationService] Firebase Admin Initialized via file: ${serviceAccountPath}`);
             isInitialized = true;

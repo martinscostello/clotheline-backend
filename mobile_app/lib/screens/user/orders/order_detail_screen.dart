@@ -369,8 +369,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           
           if (verifyResult != null && verifyResult['status'] == 'success') {
             if (context.mounted) {
-              ToastUtils.show(context, "Payment Successful! Order resumed.", type: ToastType.success);
-              Navigator.pop(context); // Refresh
+              await Provider.of<OrderService>(context, listen: false).fetchOrders();
+              if (context.mounted) {
+                ToastUtils.show(context, "Payment Successful! Order resumed.", type: ToastType.success);
+                Navigator.pop(context); // Refresh
+              }
             }
           }
         }
