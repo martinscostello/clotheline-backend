@@ -1,0 +1,39 @@
+Running Gradle task 'assembleDebug'...                          
+lib/screens/admin/admin_main_layout.dart:97:9: Error: The getter 'SystemChrome' isn't defined for the type '_AdminMainLayoutState'.
+ - '_AdminMainLayoutState' is from 'package:laundry_app/screens/admin/admin_main_layout.dart' ('lib/screens/admin/admin_main_layout.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'SystemChrome'.
+        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+        ^^^^^^^^^^^^
+lib/screens/admin/admin_main_layout.dart:97:46: Error: The method 'SystemUiOverlayStyle' isn't defined for the type '_AdminMainLayoutState'.
+ - '_AdminMainLayoutState' is from 'package:laundry_app/screens/admin/admin_main_layout.dart' ('lib/screens/admin/admin_main_layout.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'SystemUiOverlayStyle'.
+        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+                                             ^^^^^^^^^^^^^^^^^^^^
+lib/screens/user/main_layout.dart:75:5: Error: The getter 'SystemChrome' isn't defined for the type '_MainLayoutState'.
+ - '_MainLayoutState' is from 'package:laundry_app/screens/user/main_layout.dart' ('lib/screens/user/main_layout.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'SystemChrome'.
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    ^^^^^^^^^^^^
+lib/screens/user/main_layout.dart:75:42: Error: The method 'SystemUiOverlayStyle' isn't defined for the type '_MainLayoutState'.
+ - '_MainLayoutState' is from 'package:laundry_app/screens/user/main_layout.dart' ('lib/screens/user/main_layout.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'SystemUiOverlayStyle'.
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+                                         ^^^^^^^^^^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/Users/directorm/Development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
+Running Gradle task 'assembleDebug'...                           2,952ms
+Gradle task assembleDebug failed with exit code 1
