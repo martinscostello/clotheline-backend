@@ -181,7 +181,16 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("This will update the total amount of the order and notify the customer.", style: TextStyle(color: Colors.white70, fontSize: 13)),
+            Text(
+              _order!.paymentStatus == PaymentStatus.Paid 
+                ? "This order is already PAID. Increasing the fee will PAUSE the order and require customer confirmation."
+                : "This will update the total amount of the order and notify the customer.",
+              style: TextStyle(
+                color: _order!.paymentStatus == PaymentStatus.Paid ? Colors.orangeAccent : Colors.white70,
+                fontSize: 13,
+                fontWeight: _order!.paymentStatus == PaymentStatus.Paid ? FontWeight.bold : FontWeight.normal
+              )
+            ),
             const SizedBox(height: 15),
             TextField(
               controller: feeCtrl,

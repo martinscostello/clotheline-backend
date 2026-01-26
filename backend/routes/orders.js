@@ -13,5 +13,6 @@ router.get('/:id', auth, orderController.getOrderById);
 router.put('/:id/status', auth, admin, orderController.updateOrderStatus);
 router.put('/:id/exception', auth, admin, orderController.updateOrderException);
 router.put('/:id/override-fee', auth, admin, orderController.overrideDeliveryFee); // New Override Route
+router.put('/:id/confirm-fee', auth, orderController.confirmFeeAdjustment); // New Consent Route
 
 module.exports = router;

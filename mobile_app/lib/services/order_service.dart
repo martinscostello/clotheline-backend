@@ -141,4 +141,19 @@ class OrderService extends ChangeNotifier {
       return false;
     }
   }
+
+  // [NEW] Confirm Fee Adjustment (User)
+  Future<bool> confirmFeeAdjustment(String id, String choice) async {
+    try {
+      final response = await _apiService.client.put('/orders/$id/confirm-fee', data: {'choice': choice});
+      if (response.statusCode == 200) {
+        await fetchOrders(); 
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error confirming fee: $e");
+      return false;
+    }
+  }
 }

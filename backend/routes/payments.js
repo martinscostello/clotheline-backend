@@ -26,8 +26,8 @@ router.post('/initialize', auth, async (req, res) => {
         const { items, scope, branchId, orderId, provider = 'paystack', deliveryOption, deliveryAddress } = req.body;
 
         // [STRICT SCOPE ENFORCEMENT]
-        if (!scope || !['cart', 'bucket', 'combined'].includes(scope)) {
-            return res.status(400).json({ msg: 'Payment Scope (cart, bucket, combined) is required.' });
+        if (!scope || !['cart', 'bucket', 'combined', 'adjustment'].includes(scope)) {
+            return res.status(400).json({ msg: 'Payment Scope (cart, bucket, combined, adjustment) is required.' });
         }
 
         let calculationItems = items;
@@ -60,10 +60,22 @@ router.post('/initialize', auth, async (req, res) => {
         const { calculateOrderTotal } = require('../controllers/orderController');
         const { totalAmount: itemsTotal } = await calculateOrderTotal(calculationItems);
 
-        // Add Logistics Fees
-        const deliveryFee = Number(req.body.deliveryFee) || 0;
-        const pickupFee = Number(req.body.pickupFee) || 0;
-        const finalTotal = itemsTotal + deliveryFee + pickupFee;
+        let finalTotal = itemsTotal;
+
+        if (scope === 'adjustment') {
+            if (!orderId) return res.status(400).json({ msg: 'orderId is required for adjustments' });
+            const order = await Order.findById(orderId);
+            if (!order) return res.status(404).json({ msg: 'Order not found' });
+            if (!order.feeAdjustment || order.feeAdjustment.amount <= 0) {
+                return res.status(400).json({ msg: 'No adjustment needed for this order' });
+            }
+            finalTotal = order.feeAdjustment.amount;
+        } else {
+            // Add Logistics Fees for normal orders
+            const deliveryFee = Number(req.body.deliveryFee) || 0;
+            const pickupFee = Number(req.body.pickupFee) || 0;
+            finalTotal = itemsTotal + deliveryFee + pickupFee;
+        }
 
         const amountKobo = Math.round(finalTotal * 100);
 
@@ -228,17 +240,28 @@ router.post('/verify', auth, async (req, res) => {
         if (order) {
             payment.orderId = order._id;
 
-            // [CRITICAL FIX] Lock in the Price
-            // Ensure Order Total matches exactly what was paid.
-            const paidAmountNaira = payment.amount / 100;
+            // [NEW] Handle Fee Adjustment Success
+            if (metadata.scope === 'adjustment') {
+                order.feeAdjustment.status = 'Paid';
+                order.feeAdjustment.paymentReference = reference;
+                order.status = 'New'; // Return to processing
 
-            // Allow small float diff (0.5), otherwise correct it.
-            if (Math.abs(order.totalAmount - paidAmountNaira) > 1.0) {
-                console.warn(`[PriceCorrection] Order Total (${order.totalAmount}) diverged from Paid Amount (${paidAmountNaira}). Forcing correction.`);
-                order.totalAmount = paidAmountNaira;
-                // We could also adjust tax/subtotal proportionally, but ensures Total is paramount.
-                order.paymentStatus = 'Paid'; // Re-affirm
+                // Update the locked totalAmount to include the extra fee now that it is paid
+                order.totalAmount += order.feeAdjustment.amount;
                 await order.save();
+            } else {
+                // [CRITICAL FIX] Lock in the Price
+                // Ensure Order Total matches exactly what was paid.
+                const paidAmountNaira = payment.amount / 100;
+
+                // Allow small float diff (0.5), otherwise correct it.
+                if (Math.abs(order.totalAmount - paidAmountNaira) > 1.0) {
+                    console.warn(`[PriceCorrection] Order Total (${order.totalAmount}) diverged from Paid Amount (${paidAmountNaira}). Forcing correction.`);
+                    order.totalAmount = paidAmountNaira;
+                    // We could also adjust tax/subtotal proportionally, but ensures Total is paramount.
+                    order.paymentStatus = 'Paid'; // Re-affirm
+                    await order.save();
+                }
             }
         }
 

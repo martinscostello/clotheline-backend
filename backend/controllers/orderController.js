@@ -406,21 +406,35 @@ exports.overrideDeliveryFee = async (req, res) => {
         let order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ msg: 'Order not found' });
 
-        // Calculate old total without the previous delivery fee if any
-        const oldDeliveryFee = order.isFeeOverridden ? order.deliveryFeeOverride : (order.deliveryFee || 0);
-        const baseTotal = order.totalAmount - oldDeliveryFee;
+        const currentFee = order.isFeeOverridden ? order.deliveryFeeOverride : (order.deliveryFee || 0);
 
-        // Apply new override
-        order.deliveryFeeOverride = fee;
-        order.isFeeOverridden = true;
-        order.totalAmount = baseTotal + fee;
+        // [New Flow] If order is already paid and fee is increasing, require consent
+        if (order.paymentStatus === 'Paid' && fee > currentFee) {
+            const extra = fee - currentFee;
+            order.status = 'PendingUserConfirmation';
+            order.feeAdjustment = {
+                amount: extra,
+                status: 'Pending',
+                notified: true
+            };
+            // Note: We don't update totalAmount yet to avoid breaking original accounting
+            // The totalAmount on the record remains what was paid.
+        } else {
+            // Standard override (if not paid, or if decreasing/same)
+            const baseTotal = order.totalAmount - currentFee;
+            order.deliveryFeeOverride = fee;
+            order.isFeeOverridden = true;
+            order.totalAmount = baseTotal + fee;
+        }
 
         await order.save();
 
-        // Notify User about fee change
+        // Notify User
         if (order.user) {
             const title = "Delivery Fee Updated";
-            const message = `The delivery fee for your order #${order._id.toString().slice(-6).toUpperCase()} has been adjusted to ₦${fee}. Please confirm.`;
+            const message = fee > currentFee && order.paymentStatus === 'Paid'
+                ? `An additional delivery fee of ₦${fee - currentFee} is required for order #${order._id.toString().slice(-6).toUpperCase()}. Please confirm.`
+                : `The delivery fee for your order #${order._id.toString().slice(-6).toUpperCase()} has been adjusted to ₦${fee}.`;
 
             await new Notification({
                 userId: order.user,
@@ -434,9 +448,50 @@ exports.overrideDeliveryFee = async (req, res) => {
             _sendPushAsync(order.user, title, message, order._id);
         }
 
-        res.json({ msg: 'Delivery fee overridden', order });
+        res.json({ msg: 'Delivery fee adjusted', order });
     } catch (err) {
         console.error("Override Fee Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.confirmFeeAdjustment = async (req, res) => {
+    try {
+        const { choice } = req.body; // 'PayOnDelivery' (Manual)
+        let order = await Order.findById(req.params.id);
+
+        if (!order) return res.status(404).json({ msg: 'Order not found' });
+        if (order.status !== 'PendingUserConfirmation') {
+            return res.status(400).json({ msg: 'Order does not require confirmation' });
+        }
+
+        if (choice === 'PayOnDelivery') {
+            order.feeAdjustment.status = 'PayOnDelivery';
+            order.status = 'New'; // Return to processing
+            await order.save();
+
+            // Notify Admins
+            const title = "Fee Confirmed (On Delivery)";
+            const message = `User confirmed additional ₦${order.feeAdjustment.amount} for Order #${order._id.toString().slice(-6).toUpperCase()} to be paid on delivery.`;
+
+            const admins = await User.find({ role: 'admin' });
+            admins.forEach(admin => {
+                new Notification({
+                    userId: admin._id,
+                    title,
+                    message,
+                    type: 'order',
+                    branchId: order.branchId,
+                    metadata: { orderId: order._id }
+                }).save();
+            });
+
+            return res.json({ msg: 'Confirmation recorded', order });
+        }
+
+        res.status(400).json({ msg: 'Invalid choice' });
+    } catch (err) {
+        console.error("Confirm Fee Error:", err);
         res.status(500).send('Server Error');
     }
 };

@@ -1,4 +1,4 @@
-enum OrderStatus { New, InProgress, Ready, Completed, Cancelled, Refunded }
+enum OrderStatus { New, InProgress, Ready, Completed, Cancelled, Refunded, PendingUserConfirmation }
 enum PaymentStatus { Pending, Paid, Refunded }
 enum OrderExceptionStatus { None, Stain, Damage, Delay, MissingItem, Other }
 
@@ -49,6 +49,7 @@ class OrderModel {
   final double discountAmount; // [New]
   final double storeDiscount;
   final Map<String, double> discountBreakdown;
+  final FeeAdjustment? feeAdjustment; // [New]
   // Note: discountBreakdown keys: "Discount (Regular)", "Discount (Footwear)" etc.
 
   OrderModel({
@@ -85,6 +86,7 @@ class OrderModel {
     this.isFeeOverridden = false,
     this.deliveryFee = 0,
     this.pickupFee = 0,
+    this.feeAdjustment,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -124,6 +126,7 @@ class OrderModel {
       isFeeOverridden: json['isFeeOverridden'] ?? false,
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
       pickupFee: (json['pickupFee'] as num?)?.toDouble() ?? 0.0,
+      feeAdjustment: json['feeAdjustment'] != null ? FeeAdjustment.fromJson(json['feeAdjustment']) : null,
     );
   }
 
@@ -193,4 +196,27 @@ class OrderItem {
     'quantity': quantity,
     'price': price,
   };
+}
+
+class FeeAdjustment {
+  final double amount;
+  final String status; // Pending, Paid, PayOnDelivery
+  final String? paymentReference;
+  final bool notified;
+
+  FeeAdjustment({
+    required this.amount,
+    required this.status,
+    this.paymentReference,
+    this.notified = false,
+  });
+
+  factory FeeAdjustment.fromJson(Map<String, dynamic> json) {
+    return FeeAdjustment(
+      amount: (json['amount'] as num).toDouble(),
+      status: json['status'],
+      paymentReference: json['paymentReference'],
+      notified: json['notified'] ?? false,
+    );
+  }
 }

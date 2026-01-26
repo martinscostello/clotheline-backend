@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../../../../services/notification_service.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import '../products/submit_review_screen.dart';
+import '../../../../services/order_service.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -58,6 +59,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (order.status == OrderStatus.PendingUserConfirmation && order.feeAdjustment != null)
+              _buildAdjustmentBanner(order, isDark, textColor),
+            
+            const SizedBox(height: 10),
+
             // Status Card
             GlassContainer(
               opacity: isDark ? 0.1 : 0.05,
@@ -268,10 +274,134 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             )
           ],
-        ),
+        ), // Column
+      ), // SingleChildScrollView
+     ), // LaundryGlassBackground
+    ); // Scaffold
+  }
+
+  Widget _buildAdjustmentBanner(OrderModel order, bool isDark, Color textColor) {
+    if (order.feeAdjustment == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.15),
+        border: Border.all(color: Colors.orange.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(16),
       ),
-    ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "Delivery Fee Updated",
+                  style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "An additional fee of ${CurrencyFormatter.format(order.feeAdjustment!.amount)} is required for this delivery. Your order is currently paused awaiting your confirmation.",
+            style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 13),
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _payAdditionalFee(order),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text("Pay ₦${order.feeAdjustment!.amount.toStringAsFixed(0)} Now"),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _confirmPayOnDelivery(order),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                    side: const BorderSide(color: Colors.orange),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text("Pay on Delivery"),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _payAdditionalFee(OrderModel order) async {
+    final paymentService = PaymentService();
+    
+    try {
+      ToastUtils.show(context, "Initializing Additional Payment...", type: ToastType.info);
+      
+      final initData = await paymentService.initializePayment({
+        'orderId': order.id,
+        'scope': 'adjustment',
+      });
+      
+      if (initData != null && context.mounted) {
+        final url = initData['authorization_url'];
+        final ref = initData['reference'];
+        
+        await paymentService.openPaymentWebView(context, url, ref);
+        
+        if (context.mounted) {
+          ToastUtils.show(context, "Verifying Payment...", type: ToastType.info);
+          final verifyResult = await paymentService.verifyAndCreateOrder(ref);
+          
+          if (verifyResult != null && verifyResult['status'] == 'success') {
+            if (context.mounted) {
+              ToastUtils.show(context, "Payment Successful! Order resumed.", type: ToastType.success);
+              Navigator.pop(context); // Refresh
+            }
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) ToastUtils.show(context, "Payment Error: $e", type: ToastType.error);
+    }
+  }
+
+  Future<void> _confirmPayOnDelivery(OrderModel order) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Confirm Selection"),
+        content: Text("You will pay the extra cost of ${CurrencyFormatter.format(order.feeAdjustment!.amount)} to the rider upon delivery. Proceed?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL")),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("PROCEED")),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      final success = await Provider.of<OrderService>(context, listen: false)
+          .confirmFeeAdjustment(order.id, 'PayOnDelivery');
+      
+      if (success && context.mounted) {
+        ToastUtils.show(context, "Selection confirmed. Order resumed.", type: ToastType.success);
+        Navigator.pop(context); // Refresh
+      }
+    }
   }
 
   Widget _buildSummaryRow(String label, double amount, Color color, {bool isBold = false, bool isTotal = false}) {
@@ -301,7 +431,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case OrderStatus.Ready: 
       case OrderStatus.Completed: return Colors.green;
       case OrderStatus.Cancelled: return Colors.red;
-      case OrderStatus.Refunded: return Colors.pinkAccent; // [Added]
+      case OrderStatus.Refunded: return Colors.pinkAccent;
+      case OrderStatus.PendingUserConfirmation: return Colors.orange;
       default: return Colors.grey;
     }
   }
@@ -313,7 +444,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case OrderStatus.Ready: return Icons.check_circle_outline;
       case OrderStatus.Completed: return Icons.done_all;
       case OrderStatus.Cancelled: return Icons.cancel;
-      case OrderStatus.Refunded: return Icons.money_off; // [Added]
+      case OrderStatus.Refunded: return Icons.money_off; 
+      case OrderStatus.PendingUserConfirmation: return Icons.pending_actions;
       default: return Icons.help_outline;
     }
   }

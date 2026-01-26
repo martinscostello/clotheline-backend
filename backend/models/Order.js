@@ -37,7 +37,7 @@ const OrderSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ['New', 'InProgress', 'Ready', 'Completed', 'Cancelled', 'Refunded'],
+        enum: ['New', 'InProgress', 'Ready', 'Completed', 'Cancelled', 'Refunded', 'PendingUserConfirmation'],
         default: 'New'
     },
 
@@ -80,6 +80,14 @@ const OrderSchema = new mongoose.Schema({
     },
     deliveryFeeOverride: Number,
     isFeeOverridden: { type: Boolean, default: false },
+
+    // [New] Fee Adjustment Flow
+    feeAdjustment: {
+        amount: { type: Number, default: 0 },
+        status: { type: String, enum: ['None', 'Pending', 'Paid', 'PayOnDelivery'], default: 'None' },
+        paymentReference: String,
+        notified: { type: Boolean, default: false }
+    },
 
     date: { type: Date, default: Date.now }
 }, { timestamps: true });
