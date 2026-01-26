@@ -112,6 +112,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
               ),
             ),
           ),
+        ),
         );
       }
     );

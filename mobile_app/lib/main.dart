@@ -17,7 +17,6 @@ import 'services/notification_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/chat_service.dart';
 import 'services/navigation_persistence_service.dart';
-import 'services/navigation_persistence_service.dart';
 import 'services/content_service.dart'; 
 import 'services/analytics_service.dart';
 import 'services/promotion_service.dart'; // Added // Added
@@ -265,11 +264,11 @@ class _NetworkBannerState extends State<_NetworkBanner> {
       bottom: 0, left: 0, right: 0,
       child: Material(
         color: Colors.redAccent,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Icon(Icons.wifi_off, color: Colors.white, size: 14),
               SizedBox(width: 8),
               Text("No Internet Connection", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
