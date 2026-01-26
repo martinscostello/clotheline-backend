@@ -92,6 +92,7 @@ class CustomCachedImage extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
+        clipBehavior: Clip.antiAlias, // Explicit anti-aliasing
         child: imageWidget,
       ),
     );

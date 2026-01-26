@@ -632,11 +632,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 flex: 4,
                 child: Stack(
                   children: [
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16), 
-                        ),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        clipBehavior: Clip.antiAlias,
                         child: CustomCachedImage(
                             imageUrl: s.image,
                             fit: BoxFit.cover,
@@ -758,6 +756,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
+                clipBehavior: Clip.antiAlias,
                 child: content
               ),
             ),
@@ -876,7 +875,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         margin: const EdgeInsets.only(right: 15),
         decoration: BoxDecoration(
            color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
-           borderRadius: BorderRadius.circular(16),
+           borderRadius: BorderRadius.circular(20), // Standardized to 20 for product images
            boxShadow: [
              if (!isDark)
              BoxShadow(
