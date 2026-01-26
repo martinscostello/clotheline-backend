@@ -38,15 +38,7 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
-    
-    // Individual item controllers (jiggle + liquid transition)
-    _controllers = List.generate(
-      widget.items.length,
-      (index) => AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 200),
-      ),
-    );
+    _initializeControllers();
 
     // Global navbar controller (bubble physics)
     _navbarController = AnimationController(
@@ -58,6 +50,17 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.96), weight: 50),
       TweenSequenceItem(tween: Tween(begin: 0.96, end: 1.0), weight: 50),
     ]).animate(CurvedAnimation(parent: _navbarController, curve: Curves.easeInOut));
+  }
+
+  void _initializeControllers() {
+    // Individual item controllers (jiggle + liquid transition)
+    _controllers = List.generate(
+      widget.items.length,
+      (index) => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 200),
+      ),
+    );
 
     _scaleAnimations = _controllers.map((controller) {
       return TweenSequence<double>([
@@ -72,6 +75,18 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
         TweenSequenceItem(tween: Tween(begin: -3.0, end: 0.0), weight: 50),
       ]).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
     }).toList();
+  }
+
+  @override
+  void didUpdateWidget(PremiumNavBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.items.length != widget.items.length) {
+      // Clean up old controllers
+      for (var controller in _controllers) {
+        controller.dispose();
+      }
+      _initializeControllers();
+    }
   }
 
   @override
