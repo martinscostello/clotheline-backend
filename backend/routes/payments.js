@@ -65,6 +65,9 @@ router.post('/initialize', auth, async (req, res) => {
         const { totalAmount: itemsTotal } = await calculateOrderTotal(calculationItems);
 
         let finalTotal = itemsTotal;
+        let deliveryFee = 0;
+        let pickupFee = 0;
+        let totalDiscount = 0;
 
         if (scope === 'adjustment') {
             if (!orderId) return res.status(400).json({ msg: 'orderId is required for adjustments' });
@@ -76,14 +79,14 @@ router.post('/initialize', auth, async (req, res) => {
             finalTotal = order.feeAdjustment.amount;
         } else {
             // Add Logistics Fees for normal orders
-            const deliveryFee = Number(req.body.deliveryFee) || 0;
-            const pickupFee = Number(req.body.pickupFee) || 0;
+            deliveryFee = Number(req.body.deliveryFee) || 0;
+            pickupFee = Number(req.body.pickupFee) || 0;
 
             // [FIX] Subtract Discounts
             const laundryDiscounts = req.body.discountBreakdown || {};
             const totalLaundryDiscount = Object.values(laundryDiscounts).reduce((a, b) => a + (Number(b) || 0), 0);
             const storeDiscountValue = Number(req.body.storeDiscount) || 0;
-            const totalDiscount = totalLaundryDiscount + storeDiscountValue;
+            totalDiscount = totalLaundryDiscount + storeDiscountValue;
 
             finalTotal = itemsTotal + deliveryFee + pickupFee - totalDiscount;
 
