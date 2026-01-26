@@ -38,6 +38,17 @@ const UserSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Branch'
     },
+    savedAddresses: {
+        type: [{
+            label: { type: String, required: true }, // "Home", "Office", "Girlfriend's House"
+            addressLabel: { type: String, required: true },
+            lat: { type: Number, required: true },
+            lng: { type: Number, required: true },
+            city: { type: String, required: true }, // Benin, Abuja
+            landmark: { type: String }
+        }],
+        validate: [arrayLimit, '{PATH} exceeds the limit of 3']
+    },
     isRevoked: {
         type: Boolean,
         default: false
@@ -72,5 +83,9 @@ const UserSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+function arrayLimit(val) {
+    return val.length <= 3;
+}
 
 module.exports = mongoose.model('User', UserSchema);

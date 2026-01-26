@@ -12,6 +12,7 @@ import 'feedback_screen.dart'; // Added Import
 import 'manage_password_screen.dart'; // Added Import
 import 'about_screen.dart'; // Added Import
 import '../chat/chat_screen.dart'; // Added Import
+import 'manage_addresses_screen.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 
@@ -128,6 +129,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         _buildSettingTile(Icons.notifications_outlined, "Notifications", textColor, isDark, () {
                           Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()));
+                        }),
+                        _buildDivider(isDark),
+                        _buildSettingTile(Icons.bookmark_outline, "Manage Addresses", textColor, isDark, () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAddressesScreen()));
                         }),
                         _buildDivider(isDark),
                         _buildSettingTile(Icons.question_answer_outlined, "FAQs", textColor, isDark, () {

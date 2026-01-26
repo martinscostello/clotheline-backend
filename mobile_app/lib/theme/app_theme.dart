@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Figma Spec: Light Mode Colors
-  static const Color lightBgStart = Color(0xFFF8FBFF);
+  static const Color lightBgStart = Color(0xFFECECEC);
   static const Color lightBgEnd = Color(0xFFDDF2FF);
   static const Color lightPrimaryBlue = Color(0xFF2FA4FF);
   static const Color lightTextPrimary = Color(0xFF0A2540);

@@ -157,53 +157,45 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
         extendBodyBehindAppBar: true,
         backgroundColor: Colors.transparent,
         body: LaundryGlassBackground(
-          child: Stack(
+          child: Column(
             children: [
-              ListenableBuilder(
-                listenable: _cartService,
-                builder: (context, _) {
-                  if (_cartService.storeItems.isEmpty && _currentStage == 1) {
-                     return const Center(child: Text("Cart is empty"));
+              // Header
+              UnifiedGlassHeader(
+                isDark: isDark,
+                title: Text(_currentStage == 1 ? "Delivery Options" : "Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                onBack: () {
+                  if (_currentStage > 1) {
+                    setState(() => _currentStage--);
+                  } else {
+                    Navigator.pop(context);
                   }
-                  
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).padding.top + 90, 
-                      bottom: 180, // Space for bottom bar
-                      left: 20, 
-                      right: 20
-                    ),
-                    child: Column(
-                      children: [
-                        _buildStepIndicator(isDark),
-                        _buildStageContent(isDark, textColor),
-                      ],
-                    ),
-                  );
-                }
+                },
               ),
 
-              // Bottom Bar overlay
-              Positioned(
-                bottom: 0, left: 0, right: 0,
-                child: _buildBottomBar(isDark),
-              ),
-              
-              // Header
-              Positioned(
-                top: 0, left: 0, right: 0,
-                child: UnifiedGlassHeader(
-                  isDark: isDark,
-                  title: Text(_currentStage == 1 ? "Delivery Options" : "Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-                  onBack: () {
-                    if (_currentStage > 1) {
-                      setState(() => _currentStage--);
-                    } else {
-                      Navigator.pop(context);
+              // Content Area
+              Expanded(
+                child: ListenableBuilder(
+                  listenable: _cartService,
+                  builder: (context, _) {
+                    if (_cartService.storeItems.isEmpty && _currentStage == 1) {
+                       return const Center(child: Text("Cart is empty"));
                     }
-                  },
+                    
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                      child: Column(
+                        children: [
+                          _buildStepIndicator(isDark),
+                          _buildStageContent(isDark, textColor),
+                        ],
+                      ),
+                    );
+                  }
                 ),
               ),
+
+              // Bottom Area (No container)
+              _buildBottomBar(isDark),
             ],
           ),
         ),

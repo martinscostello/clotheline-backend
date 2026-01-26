@@ -45,14 +45,10 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
     double tax = cart.taxAmount;
     double total = cart.totalAmount + deliveryFee + pickupFee;
 
-    Widget content = SingleChildScrollView(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 90, 
-        bottom: 200, // Increased to allow full scrolling past sticky button
-        left: 20, 
-        right: 20
-      ),
-      child: Column(
+    Widget content = Expanded(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Laundry Items Section
@@ -159,7 +155,7 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
                        Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                      ],
                    ),
-                 )),
+                 )).toList(),
                  _buildRow("VAT (${cart.taxRate}%)", tax, textColor),
                  Divider(color: isDark ? Colors.white24 : Colors.black12, height: 20),
                  Row(
@@ -174,31 +170,27 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
           ),
         ],
       ),
-    );
+    ),
+  );
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: LaundryGlassBackground(
-        child: Stack(
+        child: Column(
           children: [
+            // Header
+            UnifiedGlassHeader(
+              isDark: isDark,
+              title: Text("Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+              onBack: () => Navigator.pop(context),
+            ),
+
             // Content
             content,
             
-            // Header
-            Positioned(
-              top: 0, left: 0, right: 0,
-              child: UnifiedGlassHeader(
-                isDark: isDark,
-                title: Text("Order Summary", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-                onBack: () => Navigator.pop(context),
-              ),
-            ),
-
-            Positioned(
-              bottom: 0, left: 0, right: 0,
-              child: _buildBottomBar(isDark, total),
-            ),
+            // Bottom Area (No container)
+            _buildBottomBar(isDark, total),
           ],
         ),
       ),
@@ -216,18 +208,9 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
   }
 
   Widget _buildBottomBar(bool isDark, double total) {
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: Container(
-          padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 20),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF101010).withOpacity(0.7) : Colors.white.withOpacity(0.7),
-            border: Border(
-              top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
-            ),
-          ),
-          child: Column(
+    return Container(
+      padding: EdgeInsets.fromLTRB(24, 10, 24, MediaQuery.of(context).padding.bottom + 20),
+      child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
@@ -257,8 +240,6 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 }

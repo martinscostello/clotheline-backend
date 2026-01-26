@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 import '../models/delivery_location_model.dart';
 import '../data/areas_data.dart';
 import '../theme/app_theme.dart';
-import '../utils/toast_utils.dart';
 import '../providers/branch_provider.dart';
 import 'glass/GlassContainer.dart';
+import '../services/location_search_service.dart';
+import '../services/address_service.dart';
+import 'dart:async';
 
 class DeliveryLocationSelector extends StatefulWidget {
   final DeliveryLocationSelection? initialValue;
@@ -27,6 +29,14 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
   late TextEditingController _landmarkController;
   late TextEditingController _searchController;
   
+  final LocationSearchService _searchService = LocationSearchService();
+  final AddressService _addressService = AddressService();
+  
+  List<GranularLocation> _suggestions = [];
+  List<SavedAddress> _savedAddresses = [];
+  Timer? _debounceTimer;
+  bool _isLoadingSaved = true;
+
   AreaModel? _selectedArea;
   LatLng? _customLatLng;
   String _source = 'manual';
@@ -46,10 +56,33 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
           (a) => a.name == widget.initialValue!.area,
           orElse: () => nigeriaAreas.first,
         );
-      } else if (_source == 'pin') {
+      } else if (_source == 'pin' || _source == 'google') {
         _customLatLng = LatLng(widget.initialValue!.lat, widget.initialValue!.lng);
       }
     }
+    _loadSavedAddresses();
+  }
+
+  Future<void> _loadSavedAddresses() async {
+    final addresses = await _addressService.getSavedAddresses();
+    if (mounted) {
+      setState(() {
+        _savedAddresses = addresses;
+        _isLoadingSaved = false;
+      });
+    }
+  }
+
+  void _selectSavedAddress(SavedAddress addr) {
+    setState(() {
+      _source = 'manual'; // Treat as preset manual to allow fee calculation via coords
+      _customLatLng = LatLng(addr.lat, addr.lng);
+      _addressLabel = addr.addressLabel;
+      _landmarkController.text = addr.landmark ?? '';
+      _searchController.text = addr.addressLabel;
+      _suggestions = [];
+    });
+    _notifyChange();
   }
 
   @override
@@ -172,6 +205,44 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
     }
   }
 
+  void _onSearchChanged(String query) {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () async {
+      if (query.isEmpty) {
+        if (mounted) setState(() => _suggestions = []);
+        return;
+      }
+
+      final branch = Provider.of<BranchProvider>(context, listen: false).selectedBranch;
+      final branchCity = branch?.name.contains("Benin") == true ? "Benin" : (branch?.name.contains("Abuja") == true ? "Abuja" : null);
+
+      final results = await _searchService.getAutocomplete(query, branchCity);
+      
+      if (mounted) {
+        setState(() {
+          // Take exactly 3 results as requested
+          _suggestions = results.take(3).toList();
+        });
+      }
+    });
+  }
+
+  void _selectSuggestion(GranularLocation loc) async {
+    // Show loading?
+    final LatLng? coords = await _searchService.getPlaceDetails(loc.placeId);
+    
+    if (coords != null && mounted) {
+      setState(() {
+        _source = 'google';
+        _customLatLng = coords;
+        _addressLabel = loc.description;
+        _searchController.text = loc.description;
+        _suggestions = [];
+      });
+      _notifyChange();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -180,8 +251,68 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Selector Type / Search (Placeholder for Google)
+        // --- Saved Addresses Quick-Select ---
+        if (!_isLoadingSaved && _savedAddresses.isNotEmpty) ...[
+          const Text("Saved Addresses", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _savedAddresses.length,
+              itemBuilder: (context, index) {
+                final addr = _savedAddresses[index];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ActionChip(
+                    avatar: const Icon(Icons.bookmark, size: 14, color: AppTheme.primaryColor),
+                    label: Text(addr.label, style: const TextStyle(fontSize: 12)),
+                    onPressed: () => _selectSavedAddress(addr),
+                    backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // --- Suggestions List Appearing ABOVE the textfield ---
+        if (_suggestions.isNotEmpty)
+          Container(
+            key: const ValueKey('location_suggestions_list'), // Added Key
+            margin: const EdgeInsets.only(bottom: 8),
+            constraints: const BoxConstraints(maxHeight: 250),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.05), blurRadius: 10, offset: const Offset(0, 4))
+              ],
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              itemCount: _suggestions.length,
+              separatorBuilder: (context, index) => Divider(height: 1, color: isDark ? Colors.white10 : Colors.black12),
+              itemBuilder: (context, index) {
+                final loc = _suggestions[index];
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.location_on, size: 18, color: AppTheme.primaryColor),
+                  title: Text(loc.mainText ?? '', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                  subtitle: Text(loc.secondaryText ?? '', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  onTap: () => _selectSuggestion(loc),
+                );
+              },
+            ),
+          ),
+
+        // 1. Selector Type / Search 
         Container(
+          key: const ValueKey('search_field_container'), // Added Key
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
@@ -195,14 +326,12 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
               Expanded(
                 child: TextField(
                   controller: _searchController,
+                  onChanged: _onSearchChanged,
                   decoration: const InputDecoration(
-                    hintText: "Search location or address...",
+                    hintText: "Type to search nearby areas...",
                     border: InputBorder.none,
                     isDense: true,
                   ),
-                  onSubmitted: (val) {
-                    ToastUtils.show(context, "Google Maps Search coming soon. Using manual fallback.", type: ToastType.info);
-                  },
                 ),
               ),
               IconButton(
@@ -216,7 +345,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
         const SizedBox(height: 12),
 
         // 2. Manual Area Dropdown
-        const Text("Select Area (Nigeria Fallback)", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+        const Text("Select Area (Local Selection)", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -225,19 +354,28 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<AreaModel>(
-              isExpanded: true,
-              value: _selectedArea,
-              hint: const Text("Choose Area"),
-              items: nigeriaAreas.map((area) {
-                return DropdownMenuItem<AreaModel>(
-                  value: area,
-                  child: Text(area.name, style: TextStyle(color: textColor)),
-                );
-              }).toList(),
-              onChanged: _onAreaChanged,
-            ),
+          child: Consumer<BranchProvider>(
+            builder: (context, branchProvider, _) {
+              final branch = branchProvider.selectedBranch;
+              final branchCity = branch?.name.contains("Benin") == true ? "Benin" : (branch?.name.contains("Abuja") == true ? "Abuja" : null);
+              
+              final filteredAreas = nigeriaAreas.where((a) => branchCity == null || a.city == branchCity).toList();
+
+              return DropdownButtonHideUnderline(
+                child: DropdownButton<AreaModel>(
+                  isExpanded: true,
+                  value: _selectedArea != null && filteredAreas.contains(_selectedArea) ? _selectedArea : null,
+                  hint: const Text("Choose Area", style: TextStyle(fontSize: 13)),
+                  items: filteredAreas.map((area) {
+                    return DropdownMenuItem<AreaModel>(
+                      value: area,
+                      child: Text(area.name, style: TextStyle(color: textColor, fontSize: 13)),
+                    );
+                  }).toList(),
+                  onChanged: _onAreaChanged,
+                ),
+              );
+            }
           ),
         ),
         const SizedBox(height: 12),

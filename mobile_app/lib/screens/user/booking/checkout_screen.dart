@@ -177,44 +177,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         extendBodyBehindAppBar: true,
         backgroundColor: Colors.transparent,
         body: LaundryGlassBackground(
-          child: Stack(
+          child: Column(
             children: [
-              ListenableBuilder(
-                listenable: _cartService,
-                builder: (context, _) {
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).padding.top + 90, 
-                      bottom: 180, // Space for bottom bar
-                      left: 20, 
-                      right: 20
-                    ),
-                    child: _buildStageContent(isDark, textColor),
-                  );
-                }
-              ),
-
-              // Bottom Bar overlay
-              Positioned(
-                bottom: 0, left: 0, right: 0,
-                child: _buildBottomBar(isDark),
-              ),
-
               // Header
-              Positioned(
-                top: 0, left: 0, right: 0,
-                child: UnifiedGlassHeader(
-                  isDark: isDark,
-                  title: Text(_getStageTitle(), style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-                  onBack: () {
-                    if (_currentStage > 1) {
-                      setState(() => _currentStage--);
-                    } else {
-                      Navigator.pop(context);
-                    }
-                  },
+              UnifiedGlassHeader(
+                isDark: isDark,
+                title: Text(_getStageTitle(), style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                onBack: () {
+                  if (_currentStage > 1) {
+                    setState(() => _currentStage--);
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+
+              // Scrollable Content
+              Expanded(
+                child: ListenableBuilder(
+                  listenable: _cartService,
+                  builder: (context, _) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                      child: _buildStageContent(isDark, textColor),
+                    );
+                  }
                 ),
               ),
+
+              // Bottom Area (No container background)
+              _buildBottomBar(isDark),
             ],
           ),
         ),
@@ -898,14 +890,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
   Widget _buildBottomBar(bool isDark) {
     return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, -5))
-        ]
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 30, 24, 30), // Extra padding for safe area handled by container usually or add safe area inside
+      padding: const EdgeInsets.fromLTRB(24, 10, 24, 30), 
       child: SafeArea(
         top: false,
         child: _currentStage == 1 
