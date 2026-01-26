@@ -172,7 +172,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                 child: Container(
-                  padding: EdgeInsets.fromLTRB(24, 16, 24, 85 + MediaQuery.of(context).viewPadding.bottom), // Dynamic padding to clear navbar
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 105), // Precise 105px to clear navbar closely
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF101010).withOpacity(0.7) : Colors.white.withOpacity(0.7),
                     border: Border(
@@ -312,7 +312,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         onRefresh: () => _fetchOrders(),
         color: AppTheme.primaryColor,
         child: ListView.builder(
-          padding: EdgeInsets.only(top: 190, bottom: 80 + MediaQuery.of(context).viewPadding.bottom, left: 20, right: 20), // Dynamic bottom padding
+          padding: const EdgeInsets.only(top: 190, bottom: 100, left: 20, right: 20), // [ADJUSTED] Padding for higher header
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final order = filtered[index];

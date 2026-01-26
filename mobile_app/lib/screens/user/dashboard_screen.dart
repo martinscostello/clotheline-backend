@@ -257,7 +257,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
               physics: const AlwaysScrollableScrollPhysics(), // Ensure scroll even if empty
               padding: EdgeInsets.only(
                 top: MediaQuery.of(context).padding.top + 112, 
-                bottom: 100 + MediaQuery.of(context).viewPadding.bottom
+                bottom: 120
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

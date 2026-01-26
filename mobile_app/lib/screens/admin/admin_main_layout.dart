@@ -95,18 +95,19 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         return Theme(
           data: AppTheme.darkTheme,
           child: Scaffold(
-            extendBody: true,
+            extendBody: false,
             resizeToAvoidBottomInset: true,
-            backgroundColor: AppTheme.darkTheme.scaffoldBackgroundColor, // Enforce dark background
-            body: LaundryGlassBackground(
+            backgroundColor: AppTheme.darkTheme.scaffoldBackgroundColor,
+            body: SafeArea(
+              bottom: true,
+              child: LaundryGlassBackground(
               child: Stack(
                 children: [
                   Positioned.fill(child: _currentScreens[_currentIndex]),
-                  if (MediaQuery.of(context).viewInsets.bottom == 0)
-                    Positioned(
-                      bottom: 0, left: 0, right: 0,
-                      child: _buildGlassNavBar(),
-                    ),
+                  Positioned(
+                    bottom: 0, left: 0, right: 0,
+                    child: _buildGlassNavBar(),
+                  ),
                 ],
               ),
             ),
@@ -117,15 +118,12 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   }
 
   Widget _buildGlassNavBar() {
-    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
-    
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          height: 85 + bottomInset,
-          padding: EdgeInsets.only(bottom: bottomInset),
+          height: 85,
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.5), 
             border: Border(top: BorderSide(color: AppTheme.secondaryColor.withValues(alpha: 0.5), width: 1.5)), 
