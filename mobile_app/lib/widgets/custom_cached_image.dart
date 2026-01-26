@@ -85,15 +85,18 @@ class CustomCachedImage extends StatelessWidget {
     return Container(
       width: width,
       height: height,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
         borderRadius: BorderRadius.circular(borderRadius),
         border: showBorder ? Border.all(color: borderColor, width: 1) : null,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
-        clipBehavior: Clip.antiAlias, // Explicit anti-aliasing
-        child: imageWidget,
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.grey.shade200,
+          child: imageWidget,
+        ),
       ),
     );
   }

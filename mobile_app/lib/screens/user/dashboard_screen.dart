@@ -489,6 +489,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
+                clipBehavior: Clip.antiAlias,
                 child: item.mediaType == 'video' 
                     ? HeroVideoPlayer(
                         videoUrl: item.imageUrl,
@@ -889,20 +890,14 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         child: Stack(
           children: [
              Positioned.fill(
-               child: Stack(
-                 fit: StackFit.expand,
-                 children: [
-                   Container(color: isDark ? Colors.white10 : Colors.grey[100]),
-                   ClipRRect(
-                     borderRadius: BorderRadius.circular(20),
-                     child: CustomCachedImage(
-                       imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : "",
-                       fit: BoxFit.cover,
-                       borderRadius: 20,
-                       // handles fallback
-                     ),
-                   ),
-                 ],
+               child: ClipRRect(
+                 borderRadius: BorderRadius.circular(20),
+                 clipBehavior: Clip.antiAlias,
+                 child: CustomCachedImage(
+                   imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : "",
+                   fit: BoxFit.cover,
+                   borderRadius: 20,
+                 ),
                ),
              ),
              // Discount Badge
