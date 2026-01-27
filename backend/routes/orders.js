@@ -7,6 +7,7 @@ const admin = require('../middleware/admin');
 // Helper to simulate auth if needed, but for now open
 router.post('/', auth, orderController.createOrder); // Secure order creation
 router.post('/batch-status', auth, admin, orderController.batchUpdateOrderStatus);
+router.get('/me', auth, orderController.getUserOrders); // GET user specific orders
 router.get('/', auth, admin, orderController.getAllOrders); // Secure list
 router.get('/user/:userId', auth, orderController.getOrdersByUserId);
 router.get('/:id', auth, orderController.getOrderById);

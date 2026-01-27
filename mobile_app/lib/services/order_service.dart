@@ -8,10 +8,11 @@ class OrderService extends ChangeNotifier {
   List<OrderModel> _orders = [];
   List<OrderModel> get orders => List.unmodifiable(_orders);
 
-  // For Admin: Fetch all orders
-  Future<void> fetchOrders() async {
+  // Fetch orders based on role
+  Future<void> fetchOrders({String role = 'user'}) async {
     try {
-      final response = await _apiService.client.get('/orders');
+      final endpoint = role == 'admin' ? '/orders' : '/orders/me';
+      final response = await _apiService.client.get(endpoint);
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         _orders = data.map((json) => OrderModel.fromJson(json)).toList();
@@ -81,7 +82,7 @@ class OrderService extends ChangeNotifier {
           // Optimistic local update? Or refetch.
           // Let's refetch to be safe, or just update local list
           // Re-fetch is safer for consistency
-          await fetchOrders(); 
+          await fetchOrders(role: 'admin'); 
         }
         return true;
       }
@@ -100,7 +101,7 @@ class OrderService extends ChangeNotifier {
         'exceptionNote': note
       });
       if (response.statusCode == 200) {
-         await fetchOrders(); 
+         await fetchOrders(role: 'admin'); 
          return true;
       }
       return false;
@@ -118,7 +119,7 @@ class OrderService extends ChangeNotifier {
         'status': status
       });
       if (response.statusCode == 200) {
-         await fetchOrders(); 
+         await fetchOrders(role: 'admin'); 
          return true;
       }
       return false;
@@ -132,7 +133,7 @@ class OrderService extends ChangeNotifier {
     try {
       final response = await _apiService.client.put('/orders/$id/override-fee', data: {'fee': fee});
       if (response.statusCode == 200) {
-        await fetchOrders(); 
+        await fetchOrders(role: 'admin'); 
         return true;
       }
       return false;
@@ -147,7 +148,7 @@ class OrderService extends ChangeNotifier {
     try {
       final response = await _apiService.client.put('/orders/$id/confirm-fee', data: {'choice': choice});
       if (response.statusCode == 200) {
-        await fetchOrders(); 
+        await fetchOrders(role: 'user'); 
         return true;
       }
       return false;

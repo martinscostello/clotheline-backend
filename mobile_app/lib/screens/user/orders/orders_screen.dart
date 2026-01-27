@@ -24,7 +24,7 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   final CartService _cartService = CartService();
-  final OrderService _orderService = OrderService();
+  late OrderService _orderService;
   bool _isLoading = true;
 
   Timer? _refreshTimer;
@@ -32,6 +32,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   void initState() {
     super.initState();
+    _orderService = Provider.of<OrderService>(context, listen: false);
     _fetchOrders();
     // Auto-refresh every 15 seconds
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {

@@ -55,7 +55,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   }
 
   Future<void> _fetchOrders({bool silent = false}) async {
-    await Provider.of<OrderService>(context, listen: false).fetchOrders();
+    await Provider.of<OrderService>(context, listen: false).fetchOrders(role: 'admin');
     // [Auto-Read Policy]
     if (mounted) {
        Provider.of<NotificationService>(context, listen: false).markAllReadByType('order');
@@ -190,7 +190,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => Provider.of<OrderService>(context, listen: false).fetchOrders(),
+            onPressed: () => Provider.of<OrderService>(context, listen: false).fetchOrders(role: 'admin'),
           )
         ],
       ),
