@@ -216,7 +216,7 @@ exports.verifyEmail = async (req, res) => {
 
         jwt.sign(payload, process.env.JWT_SECRET || 'secret123', { expiresIn: '7d' }, (err, token) => {
             if (err) throw err;
-            res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, preferredBranch: user.preferredBranch } });
+            res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, preferredBranch: user.preferredBranch, avatarId: user.avatarId } });
         });
 
     } catch (err) {
@@ -278,7 +278,8 @@ exports.login = async (req, res) => {
                     role: user.role,
                     isMasterAdmin: user.isMasterAdmin,
                     permissions: user.permissions,
-                    preferredBranch: user.preferredBranch // Return preference
+                    preferredBranch: user.preferredBranch, // Return preference
+                    avatarId: user.avatarId // [FIX] Return avatarId
                 }
             });
         });
@@ -306,7 +307,8 @@ exports.verifyToken = async (req, res) => {
                 role: user.role,
                 isMasterAdmin: user.isMasterAdmin || false,
                 permissions: user.permissions || {},
-                preferredBranch: user.preferredBranch
+                preferredBranch: user.preferredBranch,
+                avatarId: user.avatarId // [FIX] Return avatarId
             }
         });
     } catch (err) {
