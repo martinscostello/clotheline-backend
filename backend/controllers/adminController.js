@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 // Create a new Admin
 exports.createAdmin = async (req, res) => {
     try {
-        const { name, email, password, phone, permissions, isMasterAdmin } = req.body;
+        const { name, email, password, phone, permissions, isMasterAdmin, avatarId } = req.body;
 
         let user = await User.findOne({ email });
         if (user) {
@@ -20,6 +20,7 @@ exports.createAdmin = async (req, res) => {
             password: hashedPassword,
             phone,
             role: 'admin',
+            avatarId: avatarId || null,
             isVerified: true, // [FIX] Admins created by Master Admin are auto-verified
             isMasterAdmin: isMasterAdmin || false,
             permissions: permissions || {}
@@ -48,7 +49,7 @@ exports.getAllAdmins = async (req, res) => {
 // Update Admin (Permissions & Revocation)
 exports.updateAdmin = async (req, res) => {
     try {
-        const { permissions, isRevoked } = req.body;
+        const { permissions, isRevoked, avatarId } = req.body;
 
         // Find user by ID
         let user = await User.findById(req.params.id);
@@ -61,6 +62,7 @@ exports.updateAdmin = async (req, res) => {
 
         user.permissions = permissions || user.permissions;
         if (isRevoked !== undefined) user.isRevoked = isRevoked;
+        if (avatarId !== undefined) user.avatarId = avatarId;
 
         await user.save();
         res.json(user);

@@ -38,7 +38,9 @@ router.get('/messages/:threadId', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Access denied' });
         }
 
-        const messages = await ChatMessage.find({ threadId: req.params.threadId }).sort({ createdAt: 1 });
+        const messages = await ChatMessage.find({ threadId: req.params.threadId })
+            .populate('senderId', 'avatarId')
+            .sort({ createdAt: 1 });
 
         // Reset unread count
         if (user.role === 'admin') {

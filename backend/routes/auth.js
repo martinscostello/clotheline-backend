@@ -13,5 +13,6 @@ router.get('/verify-token', auth, verifyToken); // Renamed to /verify-token for 
 router.put('/fcm-token', auth, require('../controllers/authController').updateFcmToken);
 
 router.delete('/:userId', auth, admin, require('../controllers/authController').deleteUser);
+router.put('/avatar', auth, require('../controllers/authController').updateAvatar);
 
 module.exports = router;

@@ -409,3 +409,20 @@ exports.updateFcmToken = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+exports.updateAvatar = async (req, res) => {
+    try {
+        const { avatarId } = req.body;
+        if (!avatarId) return res.status(400).json({ msg: 'Avatar ID is required' });
+
+        await User.findByIdAndUpdate(
+            req.user.id,
+            { avatarId },
+            { new: true }
+        );
+
+        res.json({ msg: 'Avatar updated successfully', avatarId });
+    } catch (err) {
+        console.error("[Auth] Avatar Update Error:", err.message);
+        res.status(500).send('Server Error');
+    }
+};
