@@ -71,6 +71,7 @@ exports.getAllServices = async (req, res) => {
                 // Project Branch Data to Root for Client
                 const serviceObj = s.toObject();
                 serviceObj.name = config.customName || s.name;
+                serviceObj.image = config.customImage || s.image; // [FIX] Project Branch Image
                 serviceObj.description = config.customDescription || s.description;
                 serviceObj.isLocked = config.isLocked;
                 serviceObj.lockedLabel = config.lockedLabel;
@@ -159,6 +160,7 @@ exports.updateService = async (req, res) => {
 
             // [BRANCH OVERRIDES UPDATE]
             if (name) service.branchConfig[configIndex].customName = name;
+            if (image) service.branchConfig[configIndex].customImage = image; // [FIX] Update Branch Image
             if (description) service.branchConfig[configIndex].customDescription = description;
             if (discountPercentage !== undefined) service.branchConfig[configIndex].discountPercentage = discountPercentage;
             if (discountLabel !== undefined) service.branchConfig[configIndex].discountLabel = discountLabel;

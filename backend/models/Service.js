@@ -45,6 +45,7 @@ const ServiceSchema = new mongoose.Schema({
         // [OVERRIDES] Branch-Level Service Overrides
         customName: { type: String }, // If set, overrides global name
         customDescription: { type: String },
+        customImage: { type: String }, // [FIX] Added image override
         discountPercentage: { type: Number }, // Can differ from global
         discountLabel: { type: String },
 

@@ -9,7 +9,7 @@ router.post('/login', login);
 router.post('/verify-email', require('../controllers/authController').verifyEmail); // Matched to mobile app call /verify-email
 router.post('/resend-otp', require('../controllers/authController').resendOtp);
 router.get('/users', auth, admin, getAllUsers);
-router.get('/verify-token', auth, verifyToken); // Renamed to /verify-token for clarity
+router.get('/verify', auth, verifyToken); // [FIX] Match mobile app route '/verify'
 router.put('/fcm-token', auth, require('../controllers/authController').updateFcmToken);
 
 router.delete('/:userId', auth, admin, require('../controllers/authController').deleteUser);
