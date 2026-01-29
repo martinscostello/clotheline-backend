@@ -186,33 +186,36 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("Notifications", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        // Actions removed (Debug button)
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppTheme.primaryColor,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(text: "Inbox"),
-            Tab(text: "Compose"),
-          ],
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("Notifications", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+          // Actions removed (Debug button)
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: AppTheme.primaryColor,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white54,
+            tabs: const [
+              Tab(text: "Inbox"),
+              Tab(text: "Compose"),
+            ],
+          ),
         ),
-      ),
-      // [FIX] Use LiquidBackground for Admin Dark UI
-      body: LiquidBackground(
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildInboxTab(),
-            _buildComposeTab(),
-          ],
+        // [FIX] Use LiquidBackground for Admin Dark UI
+        body: LiquidBackground(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildInboxTab(),
+              _buildComposeTab(),
+            ],
+          ),
         ),
       ),
     );

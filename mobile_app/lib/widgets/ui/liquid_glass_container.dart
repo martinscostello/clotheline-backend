@@ -29,18 +29,16 @@ class LiquidGlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final glassColor = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.15);
     return SizedBox(
       width: width,
       height: height,
       child: Stack(
         fit: StackFit.loose,
         children: [
-          // Optimization: Cache the static background (Shadows + Glass + Rim) 
-          // so it doesn't repaint when the child (e.g. TextField cursor) updates.
+          // Removing RepaintBoundary to ensure BackdropFilter context is preserved during scroll
           Positioned.fill(
-            child: RepaintBoundary(
               child: Stack(
                 children: [
                    // 0. Shadow Layer (Depth)
@@ -66,7 +64,7 @@ class LiquidGlassContainer extends StatelessWidget {
                       borderRadius: BorderRadius.circular(radius),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(color: Colors.white.withValues(alpha: 0.15)), // Increased Opacity
+                        child: Container(color: glassColor),
                       ),
                     ),
                   ),
@@ -87,7 +85,6 @@ class LiquidGlassContainer extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
           ),
 
           // 3. Child Content

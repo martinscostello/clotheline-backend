@@ -15,6 +15,8 @@ import '../../../providers/branch_provider.dart'; // Corrected Path
 import 'package:provider/provider.dart';
 import '../../../utils/toast_utils.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
+import 'package:laundry_app/theme/app_theme.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -31,13 +33,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
   String _selectedCategory = "All";
   String _searchQuery = "";
 
+
   bool _isHydrated = false;
 
   @override
   void initState() {
     super.initState();
     _hydrateAndSync();
+    
   }
+
 
   Future<void> _hydrateAndSync() async {
     // 1. Load Content Cache
@@ -96,14 +101,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
         children: [
           RefreshIndicator(
             onRefresh: _performSilentSync,
-            color: const Color(0xFFFF5722),
+            color: AppTheme.primaryColor,
+            backgroundColor: Colors.transparent, // [FIX] No dark background
             edgeOffset: 120, // Push refresh indicator down
             child: ListenableBuilder(
               listenable: _storeService,
               builder: (context, _) {
                 final products = _filteredProducts;
                 return CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(), 
+                  physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
                   slivers: [
                     // Top Padding for Header
                     SliverPadding(padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 90)), // Reduced from 130
@@ -164,6 +170,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                        )
                     else
                       SliverPadding(
+                        // key: _listKey, // [KEY] Product Grid (Removed)
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         sliver: SliverMasonryGrid.count(
                           crossAxisCount: 2,
@@ -290,6 +297,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       listenable: _storeService,
       builder: (context, _) {
         return Container(
+          // key: _filterKey, // [KEY] Category Filter (Removed)
           height: 50,
           color: Colors.transparent, // Transparent for Glass effect
           margin: const EdgeInsets.only(top: 10),
@@ -360,39 +368,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
           MaterialPageRoute(builder: (context) => ProductDetailScreen(product: product))
         );
       },
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // 1. Shadow Layer (Rule 4)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-                    blurRadius: 20,
-                    offset: const Offset(10, 10),
-                    spreadRadius: -2,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // 2. Shell Layer (Rule 2)
-          Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Opacity(
-              opacity: isOOS ? 0.6 : 1.0,
+      child: LaundryGlassCard(
+        opacity: isDark ? 0.12 : 0.05,
+        padding: EdgeInsets.zero,
+        borderRadius: 12,
+        child: Opacity(
+          opacity: isOOS ? 0.6 : 1.0,
               child: ColorFiltered(
                 colorFilter: isOOS 
                     ? const ColorFilter.matrix([
@@ -581,10 +562,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                   ],
                 ),
-              ),
-            ),
           ),
-        ],
+        ),
       ),
     );
   }

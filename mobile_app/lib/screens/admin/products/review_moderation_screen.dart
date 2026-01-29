@@ -5,9 +5,7 @@ import '../../../../models/review_model.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LaundryGlassBackground.dart';
-import '../../../../utils/toast_utils.dart';
-import '../../../../widgets/custom_cached_image.dart';
-import '../../../../widgets/fullscreen_gallery.dart';
+import 'product_reviews_detail_screen.dart';
 
 class ReviewModerationScreen extends StatefulWidget {
   const ReviewModerationScreen({super.key});
@@ -17,8 +15,12 @@ class ReviewModerationScreen extends StatefulWidget {
 }
 
 class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
-  List<ReviewModel> _reviews = [];
+  List<ReviewModel> _allReviews = [];
+  Map<String, List<ReviewModel>> _groupedReviews = {};
+  List<String> _filteredProductIds = [];
   bool _isLoading = true;
+  bool _isSearching = false;
+  final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -31,130 +33,175 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
     final reviewService = Provider.of<ReviewService>(context, listen: false);
     final reviews = await reviewService.getAllReviewsAdmin();
     if (mounted) {
-      setState(() {
-        _reviews = reviews;
-        _isLoading = false;
-      });
+      _allReviews = reviews;
+      _groupAndFilter();
+      setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _toggleVisibility(ReviewModel review) async {
-    final reviewService = Provider.of<ReviewService>(context, listen: false);
-    final success = await reviewService.toggleVisibility(review.id);
-    if (success && mounted) {
-      ToastUtils.show(context, "Review visibility updated", type: ToastType.success);
-      _fetchReviews();
-    } else if (mounted) {
-      ToastUtils.show(context, "Failed to update visibility", type: ToastType.error);
+  void _groupAndFilter() {
+    final Map<String, List<ReviewModel>> groups = {};
+    for (var review in _allReviews) {
+      if (!groups.containsKey(review.productId)) {
+        groups[review.productId] = [];
+      }
+      groups[review.productId]!.add(review);
     }
+    _groupedReviews = groups;
+    
+    _applySearch(_searchCtrl.text);
+  }
+
+  void _applySearch(String query) {
+    if (query.isEmpty) {
+      _filteredProductIds = _groupedReviews.keys.toList();
+    } else {
+      _filteredProductIds = _groupedReviews.keys.where((id) {
+        final productName = _groupedReviews[id]!.first.productName.toLowerCase();
+        return productName.contains(query.toLowerCase());
+      }).toList();
+    }
+  }
+
+  double _calculateAverageRating(List<ReviewModel> reviews) {
+    if (reviews.isEmpty) return 0;
+    final sum = reviews.fold(0, (prev, r) => prev + r.rating);
+    return sum / reviews.length;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text("Review Moderation", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-      ),
-      body: LaundryGlassBackground(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _reviews.isEmpty
-                ? const Center(child: Text("No reviews found", style: TextStyle(color: Colors.white70)))
-                : RefreshIndicator(
-                    onRefresh: _fetchReviews,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: _reviews.length,
-                      itemBuilder: (context, index) {
-                        final review = _reviews[index];
-                        return _buildReviewCard(review);
-                      },
+        appBar: AppBar(
+          title: _isSearching 
+            ? TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: "Search product name...",
+                  hintStyle: TextStyle(color: Colors.white54),
+                  border: InputBorder.none,
+                ),
+                onChanged: (val) => setState(() => _applySearch(val)),
+              )
+            : const Text("Review Moderation", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  if (_isSearching) {
+                    _isSearching = false;
+                    _searchCtrl.clear();
+                    _applySearch("");
+                  } else {
+                    _isSearching = true;
+                  }
+                });
+              },
+            ),
+          ],
+          centerTitle: true,
+        ),
+        body: LaundryGlassBackground(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              : _filteredProductIds.isEmpty
+                  ? const Center(child: Text("No products found", style: TextStyle(color: Colors.white70)))
+                  : RefreshIndicator(
+                      onRefresh: _fetchReviews,
+                      color: Colors.white,
+                      child: ListView.builder(
+                        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 80, bottom: 40, left: 20, right: 20),
+                        itemCount: _filteredProductIds.length,
+                        itemBuilder: (context, index) {
+                          final productId = _filteredProductIds[index];
+                          final productReviews = _groupedReviews[productId]!;
+                          final productName = productReviews.first.productName;
+                          final avgRating = _calculateAverageRating(productReviews);
+
+                          return _buildProductCard(productId, productName, productReviews, avgRating);
+                        },
+                      ),
                     ),
-                  ),
+        ),
       ),
     );
   }
 
-  Widget _buildReviewCard(ReviewModel review) {
-    return GlassContainer(
-      opacity: 0.1,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildProductCard(String productId, String productName, List<ReviewModel> reviews, double avgRating) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      child: GestureDetector(
+        onTap: () async {
+          final shouldRefresh = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductReviewsDetailScreen(
+                productId: productId,
+                productName: productName,
+                reviews: reviews,
+              ),
+            ),
+          );
+          if (shouldRefresh == true) {
+            _fetchReviews();
+          }
+        },
+        child: GlassContainer(
+          opacity: 0.1,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Text(
+                productName,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(review.userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text(
-                    "Rating: ${review.rating} ⭐",
-                    style: const TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 18),
+                      const SizedBox(width: 5),
+                      Text(
+                        avgRating.toStringAsFixed(1),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white10,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Text(
+                      "${reviews.length} Reviews",
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
                   ),
                 ],
               ),
-              Switch(
-                value: !review.isHidden, 
-                onChanged: (_) => _toggleVisibility(review),
-                activeColor: Colors.green,
-              ),
             ],
           ),
-          const SizedBox(height: 10),
-          if (review.comment != null && review.comment!.isNotEmpty)
-            Text(review.comment!, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-          if (review.images.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 60,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: review.images.length,
-                itemBuilder: (context, idx) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => FullScreenGallery(
-                          imageUrls: review.images,
-                          initialIndex: idx,
-                        )));
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: CustomCachedImage(
-                          imageUrl: review.images[idx],
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-          const Divider(color: Colors.white12, height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}",
-                style: const TextStyle(color: Colors.white38, fontSize: 10),
-              ),
-              const Text("Review ID: ...", style: TextStyle(color: Colors.white38, fontSize: 10)),
-            ],
-          ),
-        ],
+        ),
       ),
-    ) as Widget; // Cast because GlassContainer might return a complex widget
+    );
   }
 }

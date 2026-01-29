@@ -88,86 +88,89 @@ class _AdminDeliverySettingsScreenState extends State<AdminDeliverySettingsScree
       );
     }
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("Delivery Centers", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createNewBranch,
-        label: const Text("Add Branch"),
-        icon: const Icon(Icons.add_location_alt),
-        backgroundColor: AppTheme.primaryColor,
-      ),
-      body: LiquidBackground(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
-          child: Consumer<BranchProvider>(
-            builder: (context, provider, _) {
-              if (provider.branches.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                       const Text("No Branches Found", style: TextStyle(color: Colors.white)),
-                       const SizedBox(height: 20),
-                       ElevatedButton.icon(
-                         icon: const Icon(Icons.download),
-                         label: const Text("Initialize Defaults (Benin/Abuja)"),
-                         style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
-                         onPressed: () async {
-                            // Call Seed Endpoint
-                            // Note: We need to add seedBranches method to provider first
-                            final success = await provider.seedBranches();
-                            if (success) {
-                              ToastUtils.show(context, "Branches Initialized!", type: ToastType.success);
-                            } else {
-                               ToastUtils.show(context, "Failed to Initialize. Check Connection.", type: ToastType.error);
-                            }
-                         }
-                       ),
-                       const SizedBox(height: 10),
-                       TextButton(
-                         child: const Text("Refresh List"),
-                         onPressed: () => provider.fetchBranches(force: true),
-                       )
-                    ],
-                  )
-                );
-              }
-              return ListView.separated(
-                itemCount: provider.branches.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 15),
-                itemBuilder: (ctx, index) {
-                  final branch = provider.branches[index];
-                  return GlassContainer(
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(15),
-                      title: Text(branch.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 5),
-                          Text(branch.address, style: const TextStyle(color: Colors.white70)),
-                          const SizedBox(height: 5),
-                          Text("Lat: ${branch.location.latitude} | Lng: ${branch.location.longitude}", style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                        ],
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
-                        child: const Icon(Icons.edit, color: Colors.white),
-                      ),
-                      onTap: () {
-                        setState(() => _editingBranch = branch);
-                      },
-                    ),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("Delivery Centers", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _createNewBranch,
+          label: const Text("Add Branch"),
+          icon: const Icon(Icons.add_location_alt),
+          backgroundColor: AppTheme.primaryColor,
+        ),
+        body: LiquidBackground(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
+            child: Consumer<BranchProvider>(
+              builder: (context, provider, _) {
+                if (provider.branches.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                         const Text("No Branches Found", style: TextStyle(color: Colors.white)),
+                         const SizedBox(height: 20),
+                         ElevatedButton.icon(
+                           icon: const Icon(Icons.download),
+                           label: const Text("Initialize Defaults (Benin/Abuja)"),
+                           style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
+                           onPressed: () async {
+                              // Call Seed Endpoint
+                              // Note: We need to add seedBranches method to provider first
+                              final success = await provider.seedBranches();
+                              if (success) {
+                                ToastUtils.show(context, "Branches Initialized!", type: ToastType.success);
+                              } else {
+                                 ToastUtils.show(context, "Failed to Initialize. Check Connection.", type: ToastType.error);
+                              }
+                           }
+                         ),
+                         const SizedBox(height: 10),
+                         TextButton(
+                           child: const Text("Refresh List"),
+                           onPressed: () => provider.fetchBranches(force: true),
+                         )
+                      ],
+                    )
                   );
-                },
-              );
-            },
+                }
+                return ListView.separated(
+                  itemCount: provider.branches.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 15),
+                  itemBuilder: (ctx, index) {
+                    final branch = provider.branches[index];
+                    return GlassContainer(
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(15),
+                        title: Text(branch.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 5),
+                            Text(branch.address, style: const TextStyle(color: Colors.white70)),
+                            const SizedBox(height: 5),
+                            Text("Lat: ${branch.location.latitude} | Lng: ${branch.location.longitude}", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                          ],
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.edit, color: Colors.white),
+                        ),
+                        onTap: () {
+                          setState(() => _editingBranch = branch);
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -471,169 +474,173 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
     final lng = double.tryParse(_lngCtrl.text) ?? widget.branch.location.longitude;
     final center = LatLng(lat, lng);
 
-    return PopScope(
-      canPop: !_isDirty,
-      onPopInvoked: (didPop) async {
-        if (didPop) return;
-        final shouldPop = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("Unsaved Changes"),
-            content: const Text("You have unsaved changes. Convert them to reality?"),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: PopScope(
+        canPop: !_isDirty,
+        onPopInvoked: (didPop) async {
+          if (didPop) return;
+          final shouldPop = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF1C1C1E),
+              title: const Text("Unsaved Changes", style: TextStyle(color: Colors.white)),
+              content: const Text("You have unsaved changes. Convert them to reality?", style: TextStyle(color: Colors.white70)),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Stay")),
+                TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Discard", style: TextStyle(color: Colors.red))),
+              ],
+            ),
+          );
+          if (shouldPop == true && context.mounted) {
+             Navigator.pop(context);
+          }
+        },
+        child: Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () {
+              if (_isDirty) {
+                 ToastUtils.show(context, "Please save or discard changes.", type: ToastType.info);
+              } else {
+                 widget.onClose();
+              }
+            }),
+            title: Text("Edit ${widget.branch.name}", style: const TextStyle(color: Colors.white)),
+            backgroundColor: Colors.transparent,
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Stay")),
-              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Discard")),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton.icon(
+                  // Logic: Enabled only if dirty and not saving
+                  onPressed: (_isDirty && !_isSaving) ? _saveChanges : null,
+                  icon: _isSaving 
+                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                     : const Icon(Icons.save, color: Colors.white),
+                  label: Text(_isSaving ? "Saving..." : "Save", style: const TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                     backgroundColor: _isDirty ? Colors.blue : Colors.grey.withValues(alpha: 0.5),
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
+                  ),
+                ),
+              )
             ],
           ),
-        );
-        if (shouldPop == true && context.mounted) {
-           Navigator.pop(context);
-        }
-      },
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () {
-            if (_isDirty) {
-               ToastUtils.show(context, "Please save or discard changes.", type: ToastType.info);
-            } else {
-               widget.onClose();
-            }
-          }),
-          title: Text("Edit ${widget.branch.name}", style: const TextStyle(color: Colors.white)),
-          backgroundColor: Colors.transparent,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton.icon(
-                // Logic: Enabled only if dirty and not saving
-                onPressed: (_isDirty && !_isSaving) ? _saveChanges : null,
-                icon: _isSaving 
-                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                   : const Icon(Icons.save, color: Colors.white),
-                label: Text(_isSaving ? "Saving..." : "Save", style: const TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                   backgroundColor: _isDirty ? Colors.blue : Colors.grey.withValues(alpha: 0.5),
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
-                ),
-              ),
-            )
-          ],
-        ),
-        body: LiquidBackground(
-          child: Row( 
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 100),
-                      
-                      // --- MAP SECTION ---
-                      SizedBox(
-                        height: 300,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white24),
-                            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)]
-                          ),
-                          child: Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: FlutterMap(
-                                  mapController: _mapController,
-                                  options: MapOptions(
-                                    initialCenter: center,
-                                    initialZoom: 11.0,
-                                    onTap: _onMapTap,
+          body: LiquidBackground(
+            child: Row( 
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 100),
+                        
+                        // --- MAP SECTION ---
+                        SizedBox(
+                          height: 300,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 20),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white24),
+                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)]
+                            ),
+                            child: Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: FlutterMap(
+                                    mapController: _mapController,
+                                    options: MapOptions(
+                                      initialCenter: center,
+                                      initialZoom: 11.0,
+                                      onTap: _onMapTap,
+                                    ),
+                                    children: [
+                                       TileLayer(
+                                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                        userAgentPackageName: 'com.clotheline.app',
+                                      ),
+                                      CircleLayer(
+                                        // Render A-D rings only.
+                                        circles: _zones.getRange(0, 4).toList().reversed.map((z) {
+                                           // Find index for color
+                                           int idx = _zones.indexOf(z);
+                                           return CircleMarker(
+                                            point: center,
+                                            color: _zoneColors[idx].withValues(alpha: 0.15),
+                                            useRadiusInMeter: true,
+                                            radius: z.radiusKm * 1000, 
+                                            borderColor: _zoneColors[idx],
+                                            borderStrokeWidth: 2
+                                          );
+                                        }).toList(),
+                                      ),
+                                      MarkerLayer(
+                                        markers: [
+                                          Marker(point: center, width: 80, height: 80, child: const Icon(Icons.location_pin, color: Colors.white, size: 40)),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  children: [
-                                     TileLayer(
-                                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                      userAgentPackageName: 'com.clotheline.app',
-                                    ),
-                                    CircleLayer(
-                                      // Render A-D rings only.
-                                      circles: _zones.getRange(0, 4).toList().reversed.map((z) {
-                                         // Find index for color
-                                         int idx = _zones.indexOf(z);
-                                         return CircleMarker(
-                                          point: center,
-                                          color: _zoneColors[idx].withValues(alpha: 0.15),
-                                          useRadiusInMeter: true,
-                                          radius: z.radiusKm * 1000, 
-                                          borderColor: _zoneColors[idx],
-                                          borderStrokeWidth: 2
-                                        );
-                                      }).toList(),
-                                    ),
-                                    MarkerLayer(
-                                      markers: [
-                                        Marker(point: center, width: 80, height: 80, child: const Icon(Icons.location_pin, color: Colors.white, size: 40)),
-                                      ],
-                                    ),
-                                  ],
                                 ),
-                              ),
-                              Positioned(
-                                bottom: 10, right: 10,
-                                child: FloatingActionButton.small(
-                                  backgroundColor: Colors.white,
-                                  onPressed: _expandMap,
-                                  child: const Icon(Icons.fullscreen, color: Colors.black),
+                                Positioned(
+                                  bottom: 10, right: 10,
+                                  child: FloatingActionButton.small(
+                                    backgroundColor: Colors.white,
+                                    onPressed: _expandMap,
+                                    child: const Icon(Icons.fullscreen, color: Colors.black),
+                                  )
                                 )
-                              )
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      
-                      const SizedBox(height: 20),
-
-                      // --- DETAILS EDITOR ---
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: GlassContainer(
+                        
+                        const SizedBox(height: 20),
+  
+                        // --- DETAILS EDITOR ---
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: GlassContainer(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text("Branch Details", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 10),
+                                _buildInput("Address", _addressCtrl),
+                                const SizedBox(height: 10),
+                                _buildInput("Phone", _phoneCtrl),
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 20),
+  
+                        // --- ZONE EDITOR ---
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text("Branch Details", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              const Text("Delivery Zones (Zones A - D)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                               const SizedBox(height: 10),
-                              _buildInput("Address", _addressCtrl),
-                              const SizedBox(height: 10),
-                              _buildInput("Phone", _phoneCtrl),
+                              // STRICT: Only render exactly 4 zones (Index 0, 1, 2, 3)
+                              ...[0, 1, 2, 3].map((i) {
+                                 return _buildZoneCard(i, _zones[i]);
+                              }),
                             ],
                           ),
                         ),
-                      ),
-                      
-                      const SizedBox(height: 20),
-
-                      // --- ZONE EDITOR ---
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text("Delivery Zones (Zones A - D)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            const SizedBox(height: 10),
-                            // STRICT: Only render exactly 4 zones (Index 0, 1, 2, 3)
-                            ...[0, 1, 2, 3].map((i) {
-                               return _buildZoneCard(i, _zones[i]);
-                            }),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 40),
-                    ],
+                        
+                        const SizedBox(height: 40),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -18,6 +18,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 class PushNotificationService {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -86,7 +87,21 @@ class PushNotificationService {
       iOS: initializationSettingsDarwin,
     );
 
-    await _localNotificationsPlugin.initialize(initializationSettings);
+    await _localNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        final payload = response.payload;
+        if (payload != null) {
+          // Handle Local Notification Tap
+          // We can parse the payload if we set it as JSON
+        }
+        // For now, always lead to orders if tapped
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 2)),
+          (route) => false,
+        );
+      },
+    );
 
     // [CRITICAL] Create the channel explicitly so Android knows it exists for Background/Dead state
     final AndroidFlutterLocalNotificationsPlugin? androidPlatform =

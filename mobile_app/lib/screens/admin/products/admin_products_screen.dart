@@ -53,8 +53,10 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text("Manage Products", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
@@ -162,8 +164,9 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
           },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildProductCard(StoreProduct product, String branchId) {
     return GestureDetector(

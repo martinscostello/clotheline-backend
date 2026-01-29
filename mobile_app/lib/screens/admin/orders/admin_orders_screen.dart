@@ -30,7 +30,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
 
   late TabController _tabController;
   Timer? _refreshTimer;
-  final List<String> _tabs = ['New', 'InProgress', 'Ready', 'Completed', 'Cancelled', 'Refunded'];
+  final List<String> _tabs = ['New', 'PendingUserConfirmation', 'InProgress', 'Ready', 'Completed', 'Cancelled', 'Refunded'];
 
   @override
   void initState() {
@@ -168,8 +168,10 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: _isSelectionMode 
              ? Text("${_selectedIds.length} Selected", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
@@ -185,7 +187,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
           labelColor: _isSelectionMode ? Colors.white : AppTheme.primaryColor,
           unselectedLabelColor: Colors.white70,
           indicatorColor: _isSelectionMode ? Colors.white : AppTheme.primaryColor,
-          tabs: _tabs.map((t) => Tab(text: t)).toList(),
+          tabs: _tabs.map((t) => Tab(text: t == 'PendingUserConfirmation' ? 'Pending' : t)).toList(),
         ),
         actions: [
           IconButton(
@@ -251,8 +253,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
           },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildBranchFilterTitle() {
     return Consumer<BranchProvider>(

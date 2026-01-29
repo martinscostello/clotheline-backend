@@ -4,6 +4,8 @@ import '../../../services/chat_service.dart';
 import '../../../providers/branch_provider.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:laundry_app/widgets/common/user_avatar.dart';
+import '../../../services/auth_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? orderId;
@@ -67,10 +69,6 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Telegram-like Colors
-    final bgColor = isDark ? const Color(0xFF0F0F1E) : const Color(0xFFABC2D0); // Muted Blue-Grey like Telegram Wallpaper
-    // Or just clean white/black as requested "Lightweight"
-    // User asked for "full-height chat screen", so let's use a solid background.
     
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -104,7 +102,12 @@ class _ChatScreenState extends State<ChatScreen> {
                                     final msg = chat.messages[index];
                                     final isMe = msg['senderType'] == 'user';
                                     
-                                    return _buildMessageBubble(msg['messageText'] ?? "", isMe, isDark, true);
+                                    String? avatarId;
+                                    if (msg['senderId'] is Map) {
+                                      avatarId = msg['senderId']['avatarId'];
+                                    }
+                                    
+                                    return _buildMessageBubble(msg['messageText'] ?? "", isMe, isDark, avatarId);
                                   },
                                 ),
                           ),
@@ -165,46 +168,62 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(String text, bool isMe, bool isDark, bool showTime) {
+  Widget _buildMessageBubble(String text, bool isMe, bool isDark, String? avatarId) {
     return Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 6),
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-          decoration: BoxDecoration(
-            color: isMe 
-              ? const Color(0xFF4A80F0) // Brand Accent
-              : (isDark ? const Color(0xFF1E1E2C) : Colors.white),
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(isMe ? 16 : 4), // Telegram style corners
-              bottomRight: Radius.circular(isMe ? 4 : 16)
-            ),
-            boxShadow: [
-              if (!isMe && !isDark) 
-                 BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 1))
-            ]
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end, // For timestamp alignment
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  text,
-                  style: TextStyle(
-                    color: isMe ? Colors.white : (isDark ? Colors.white : Colors.black87),
-                    fontSize: 15,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!isMe)
+              Padding(
+                padding: const EdgeInsets.only(right: 8, bottom: 6),
+                child: UserAvatar(avatarId: avatarId, name: "Support", radius: 16, isDark: isDark),
+              ),
+            Flexible(
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+                decoration: BoxDecoration(
+                  color: isMe 
+                    ? const Color(0xFF4A80F0) 
+                    : (isDark ? const Color(0xFF1E1E2C) : Colors.white),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft: Radius.circular(isMe ? 16 : 4),
+                    bottomRight: Radius.circular(isMe ? 4 : 16)
+                  ),
+                  boxShadow: [
+                    if (!isMe && !isDark) 
+                       BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 1))
+                  ]
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: isMe ? Colors.white : (isDark ? Colors.white : Colors.black87),
+                      fontSize: 15,
+                    ),
                   ),
                 ),
-                // Timestamp (Mock)
-                const SizedBox(height: 4),
-                // Icon(Icons.done_all, size: 12, color: Colors.white70) // Read receipt if needed
-              ],
+              ),
             ),
-          ),
+            if (isMe)
+              Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 6),
+                child: Consumer<AuthService>(
+                  builder: (context, auth, _) => UserAvatar(
+                    avatarId: auth.currentUser?['avatarId'], 
+                    name: auth.currentUser?['name'] ?? 'U', 
+                    radius: 16, 
+                    isDark: isDark
+                  ),
+                ),
+              ),
+          ],
         ),
       );
   }

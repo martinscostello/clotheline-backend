@@ -41,7 +41,6 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
   LatLng? _deliveryLatLng;
   DeliveryLocationSelection? _deliverySelection;
   double _deliveryFee = 0.0;
-  bool _isLocating = false;
 
   // Animation
   late AnimationController _breathingController;
@@ -76,59 +75,6 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     super.dispose();
   }
 
-  // LOGIC: Get Location (Standardized)
-  Future<void> _getCurrentLocation() async {
-    setState(() => _isLocating = true);
-    
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if(mounted) ToastUtils.show(context, "Location services are disabled.", type: ToastType.error);
-      setState(() => _isLocating = false);
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        if(mounted) ToastUtils.show(context, "Location permissions are denied", type: ToastType.error);
-        setState(() => _isLocating = false);
-        return;
-      }
-    }
-    
-    if (permission == LocationPermission.deniedForever) {
-      if(mounted) ToastUtils.show(context, "Location permissions are permanently denied.", type: ToastType.error);
-      setState(() => _isLocating = false);
-      return;
-    } 
-
-    try {
-      Position position = await Geolocator.getCurrentPosition();
-      final deliveryService = Provider.of<DeliveryService>(context, listen: false);
-      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-      
-      double fee = deliveryService.calculateDeliveryFee(
-        position.latitude, 
-        position.longitude,
-        branch: branchProvider.selectedBranch
-      );
-      
-      setState(() {
-         // Only Update Delivery GPS & Fee
-         _deliveryLatLng = LatLng(position.latitude, position.longitude);
-         _deliveryFee = fee;
-      });
-      
-    } catch (e) {
-      if(mounted) ToastUtils.show(context, "Error getting location: $e", type: ToastType.error);
-    } finally {
-      setState(() => _isLocating = false);
-    }
-  }
 
   Future<void> _fetchContent() async {
     final content = await _contentService.getAppContent();
@@ -283,7 +229,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
                      },
                    ),
                    const SizedBox(height: 10),
-                   _buildTextField(_contactPhoneController, "Contact Phone", Icons.phone, isDark),
+                   _buildTextField(_contactPhoneController, "Contact Phone", Icons.phone, isDark, keyboardType: TextInputType.phone),
                  ],
                ),
             ),
@@ -430,9 +376,6 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
   // ... (Helper widgets similar to CheckoutScreen) ...
   // To save space/complexity I'll inline simplest versions or copy relevant ones.
   
-  Widget _buildSectionHeader(String title, Color textColor) {
-    return Text(title, style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold));
-  }
 
   Widget _buildOptionTile({
     required int value, 
@@ -476,7 +419,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, bool isDark) {
+  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, bool isDark, {TextInputType? keyboardType}) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? Colors.black26 : Colors.white,
@@ -485,6 +428,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       ),
       child: TextField(
         controller: controller,
+        keyboardType: keyboardType,
         style: TextStyle(color: isDark ? Colors.white : Colors.black),
         decoration: InputDecoration(
           hintText: hint,
@@ -536,7 +480,6 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     ),),);
   }
 
-  final _orderService = OrderService();
   bool _isSubmitting = false;
 
   Future<void> _submitOrder() async {
@@ -740,8 +683,6 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
     }
   }
   
-  // Helper for PaymentService access if not defined in State
-  PaymentService _paymentService() => PaymentService();
 
   Widget _buildBottomBar(bool isDark) {
     return Padding(

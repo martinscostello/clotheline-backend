@@ -89,13 +89,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 
                                 Navigator.pushAndRemoveUntil(
                                    context, 
-                                   MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 1)), 
+                                   MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 2)), 
                                    (route) => false
                                 );
                              } else {
                                 Navigator.pushAndRemoveUntil(
                                    context, 
-                                   MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 1)), 
+                                   MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 2)), 
                                    (route) => false
                                 );
                              }
@@ -191,72 +191,86 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 ],
                               ),
                           )
-                          : LiquidGlassContainer(
-                            padding: const EdgeInsets.all(16),
-                            opacity: isRead ? 0.05 : 0.15, // Higher opacity for unread
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Icon
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: _getIconColor(n['type']).withOpacity(0.1),
-                                    shape: BoxShape.circle
-                                  ),
-                                  child: Icon(_getIcon(n['type']), color: _getIconColor(n['type']), size: 20),
+                          : Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1C1C1E) : Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isDark ? Colors.white10 : Colors.black12,
+                                  width: 0.5
                                 ),
-                                const SizedBox(width: 15),
-                                // Content
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(n['title'] ?? "Notification", 
-                                              style: TextStyle(
-                                                fontWeight: isRead ? FontWeight.normal : FontWeight.w800, // Bold for unread
-                                                color: isDark ? Colors.white : Colors.black87,
-                                                fontSize: 16
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            )
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _timeAgo(n['createdAt']),
-                                            style: TextStyle(
-                                               fontSize: 12, 
-                                               color: isDark ? Colors.white38 : Colors.black38,
-                                               fontWeight: isRead ? FontWeight.normal : FontWeight.bold
-                                            )
-                                          ),
-                                          if (!isRead) ...[
-                                             const SizedBox(width: 6),
-                                             Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle))
-                                          ]
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                         n['message'] ?? "", 
-                                         style: TextStyle(
-                                           color: isDark ? Colors.white70 : Colors.black54,
-                                           fontWeight: isRead ? FontWeight.normal : FontWeight.w500
-                                         ),
-                                         maxLines: 2,
-                                         overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
                                   ),
-                                )
-                              ],
+                                ],
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Icon
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: _getIconColor(n['type']).withOpacity(0.1),
+                                      shape: BoxShape.circle
+                                    ),
+                                    child: Icon(_getIcon(n['type']), color: _getIconColor(n['type']), size: 20),
+                                  ),
+                                  const SizedBox(width: 15),
+                                  // Content
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(n['title'] ?? "Notification", 
+                                                style: TextStyle(
+                                                  fontWeight: isRead ? FontWeight.normal : FontWeight.w800, // Bold for unread
+                                                  color: isDark ? Colors.white : Colors.black87,
+                                                  fontSize: 16
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              )
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _timeAgo(n['createdAt']),
+                                              style: TextStyle(
+                                                 fontSize: 12, 
+                                                 color: isDark ? Colors.white38 : Colors.black38,
+                                                 fontWeight: isRead ? FontWeight.normal : FontWeight.bold
+                                              )
+                                            ),
+                                            if (!isRead) ...[
+                                               const SizedBox(width: 6),
+                                               Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle))
+                                            ]
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                           n['message'] ?? "", 
+                                           style: TextStyle(
+                                             color: isDark ? Colors.white70 : Colors.black54,
+                                             fontWeight: isRead ? FontWeight.normal : FontWeight.w500
+                                           ),
+                                           maxLines: 2,
+                                           overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
-                          ),
                       );
                     },
                   ),

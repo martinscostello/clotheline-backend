@@ -102,72 +102,74 @@ class MyBucketScreen extends StatelessWidget {
                   ),
                 ),
     
-                ClipRRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                    child: Container(
-                      padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 20),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF101010).withOpacity(0.7) : Colors.white.withOpacity(0.7),
-                        border: Border(
-                          top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
-                        ),
+                Container(
+                  padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                    border: Border(
+                      top: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, -5),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("Subtotal", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
-                              Text(CurrencyFormatter.format(grossSubtotal), style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          // [NEW] Itemized Discounts (Category Based)
-                          ...discounts.entries.map((e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 16)),
-                                Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.w500)),
-                              ],
-                            ),
-                          )),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("VAT (${cartService.taxRate}%)", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
-                              Text(CurrencyFormatter.format(tax), style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                          const Divider(height: 32),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("Total Amount", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                              Text(CurrencyFormatter.format(grandTotal), style: const TextStyle(color: AppTheme.primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                elevation: 0,
-                              ),
-                              onPressed: () => _proceedToCheckout(context),
-                              child: const Text("CONFIRM", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            ),
-                          )
+                          Text("Subtotal", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
+                          Text(CurrencyFormatter.format(grossSubtotal), style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500)),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      // [NEW] Itemized Discounts (Category Based)
+                      ...discounts.entries.map((e) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 16)),
+                            Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                      )),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("VAT (${cartService.taxRate}%)", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
+                          Text(CurrencyFormatter.format(tax), style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                      const Divider(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Total Amount", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(CurrencyFormatter.format(grandTotal), style: const TextStyle(color: AppTheme.primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                          onPressed: () => _proceedToCheckout(context),
+                          child: const Text("CONFIRM", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      )
+                    ],
                   ),
                 ),
               ],

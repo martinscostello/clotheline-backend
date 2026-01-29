@@ -9,14 +9,19 @@ class LaundryGlassBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    // "Fresh" Colors
-    final bgColors = isDark 
-      ? [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)] // Deep Ocean
-      : [Colors.white, Colors.white]; // Pure White for Light Mode
+    if (!isDark) {
+      return Container(
+        color: const Color(0xFFECECEC), // Match AppTheme.lightBgStart
+        child: child,
+      );
+    }
+
+    // "Fresh" Colors for Dark Mode
+    final bgColors = [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)]; // Deep Ocean
 
     // Bubbles/Icons Color
-    final bubbleColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05);
-    final iconColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.1); // Stronger black for visibility
+    final bubbleColor = Colors.white.withValues(alpha: 0.05);
+    final iconColor = Colors.white.withValues(alpha: 0.05);
 
     return Stack(
       children: [
@@ -38,7 +43,7 @@ class LaundryGlassBackground extends StatelessWidget {
         _buildBubble(size: 80, left: 150, speedMs: 6000, color: bubbleColor),
         _buildBubble(size: 100, left: 350, speedMs: 8000, color: bubbleColor),
 
-        // 3. Floating Laundry Elements (Black Shapes in Light Mode)
+        // 3. Floating Laundry Elements 
         _buildFloatingIcon(Icons.checkroom, 150, 50, 100, iconColor),
         _buildFloatingIcon(Icons.dry_cleaning, 280, 300, 200, iconColor),
         _buildFloatingIcon(Icons.local_laundry_service, 400, 80, 150, iconColor),

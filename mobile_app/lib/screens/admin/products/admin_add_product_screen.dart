@@ -289,8 +289,10 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(widget.product == null ? "Add Product" : "Edit Product", style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
@@ -551,8 +553,9 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildGlassTextField({
     required TextEditingController controller, 

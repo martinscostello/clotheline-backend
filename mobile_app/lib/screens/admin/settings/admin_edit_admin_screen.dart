@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../widgets/glass/GlassContainer.dart';
+import 'package:laundry_app/widgets/common/user_avatar.dart';
 import '../../../theme/app_theme.dart';
 import '../../../../utils/toast_utils.dart';
 
@@ -31,6 +32,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
     'manageUsers': false,
   };
 
+  String? _selectedAvatarId;
   bool _isLoading = false;
 
   @override
@@ -46,6 +48,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
       if (admin['permissions'] != null) {
         _permissions = Map<String, bool>.from(admin['permissions']);
       }
+      _selectedAvatarId = admin['avatarId'];
     }
   }
 
@@ -61,6 +64,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
         'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
         'permissions': _permissions,
+        'avatarId': _selectedAvatarId,
         'isRevoked': _isRevoked,
       };
 
@@ -87,90 +91,126 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
   Widget build(BuildContext context) {
     final isEditing = widget.admin != null;
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(isEditing ? "Edit Administrator" : "New Administrator", style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: LiquidBackground(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 100, 20, 100),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GlassContainer(
-                   opacity: 0.1,
-                   padding: const EdgeInsets.all(20),
-                   child: Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                       const Text("Profile", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
-                       const SizedBox(height: 15),
-                       _buildInput("Name", _nameController),
-                       const SizedBox(height: 10),
-                       _buildInput("Email", _emailController),
-                       const SizedBox(height: 10),
-                       if (!isEditing) ...[
-                         _buildInput("Password", _passwordController, isPassword: true),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(isEditing ? "Edit Administrator" : "New Administrator", style: const TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: LiquidBackground(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 100, 20, 100),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GlassContainer(
+                     opacity: 0.1,
+                     padding: const EdgeInsets.all(20),
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         const Text("Profile", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                         const SizedBox(height: 15),
+                         Center(
+                           child: Column(
+                             children: [
+                               UserAvatar(avatarId: _selectedAvatarId, name: _nameController.text.isNotEmpty ? _nameController.text : 'A', radius: 40, isDark: true),
+                               const SizedBox(height: 10),
+                               const Text("Select Exclusive Admin Avatar", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                               const SizedBox(height: 10),
+                               SizedBox(
+                                 height: 60,
+                                 child: ListView.builder(
+                                   scrollDirection: Axis.horizontal,
+                                   itemCount: 10,
+                                   itemBuilder: (context, index) {
+                                     final avatarId = 'a_${index + 1}';
+                                     final isSelected = _selectedAvatarId == avatarId;
+                                     return GestureDetector(
+                                       onTap: () => setState(() => _selectedAvatarId = avatarId),
+                                       child: Container(
+                                         margin: const EdgeInsets.only(right: 10),
+                                         decoration: BoxDecoration(
+                                           shape: BoxShape.circle,
+                                           border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.transparent, width: 2),
+                                         ),
+                                         child: UserAvatar(avatarId: avatarId, name: "", radius: 25, isDark: true),
+                                       ),
+                                     );
+                                   },
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                         const SizedBox(height: 20),
+                         _buildInput("Name", _nameController),
                          const SizedBox(height: 10),
+                         _buildInput("Email", _emailController),
+                         const SizedBox(height: 10),
+                         if (!isEditing) ...[
+                           _buildInput("Password", _passwordController, isPassword: true),
+                           const SizedBox(height: 10),
+                         ],
+                         _buildInput("Phone", _phoneController),
                        ],
-                       _buildInput("Phone", _phoneController),
-                     ],
-                   ),
-                ),
-
-                const SizedBox(height: 20),
-
-                GlassContainer(
-                  opacity: 0.1,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Permissions", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      _buildSwitch("Access CMS (Home, Ads, Branding)", 'manageCMS'),
-                      _buildSwitch("Manage Orders", 'manageOrders'),
-                      _buildSwitch("Manage Services", 'manageServices'),
-                      _buildSwitch("Manage Products", 'manageProducts'),
-                      _buildSwitch("Manage Users (Broadcast)", 'manageUsers'),
-                    ],
+                     ),
                   ),
-                ),
-
-                const SizedBox(height: 20),
-
-                if (isEditing && widget.admin?['isMasterAdmin'] != true)
+  
+                  const SizedBox(height: 20),
+  
                   GlassContainer(
                     opacity: 0.1,
                     padding: const EdgeInsets.all(20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Revoke Access", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                        Switch(
-                          value: _isRevoked,
-                          onChanged: (val) => setState(() => _isRevoked = val),
-                          activeColor: Colors.red,
-                        ),
+                        const Text("Permissions", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 10),
+                        _buildSwitch("Access CMS (Home, Ads, Branding)", 'manageCMS'),
+                        _buildSwitch("Manage Orders", 'manageOrders'),
+                        _buildSwitch("Manage Services", 'manageServices'),
+                        _buildSwitch("Manage Products", 'manageProducts'),
+                        _buildSwitch("Manage Users (Broadcast)", 'manageUsers'),
                       ],
                     ),
                   ),
-
-                const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, padding: const EdgeInsets.symmetric(vertical: 16)),
-                    onPressed: _isLoading ? null : _saveAdmin,
-                    child: _isLoading ? const CircularProgressIndicator(color: Colors.black) : const Text("Save Administrator", style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                )
-              ],
+  
+                  const SizedBox(height: 20),
+  
+                  if (isEditing && widget.admin?['isMasterAdmin'] != true)
+                    GlassContainer(
+                      opacity: 0.1,
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Revoke Access", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                          Switch(
+                            value: _isRevoked,
+                            onChanged: (val) => setState(() => _isRevoked = val),
+                            activeColor: Colors.red,
+                          ),
+                        ],
+                      ),
+                    ),
+  
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, padding: const EdgeInsets.symmetric(vertical: 16)),
+                      onPressed: _isLoading ? null : _saveAdmin,
+                      child: _isLoading ? const CircularProgressIndicator(color: Colors.black) : const Text("Save Administrator", style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         ),

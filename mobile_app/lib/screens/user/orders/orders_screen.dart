@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:laundry_app/widgets/glass/GlassContainer.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../services/cart_service.dart';
@@ -25,7 +25,6 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   final CartService _cartService = CartService();
   late OrderService _orderService;
-  bool _isLoading = true;
 
   Timer? _refreshTimer;
 
@@ -52,7 +51,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     if (mounted) {
        Provider.of<NotificationService>(context, listen: false).markAllReadByType('order');
     }
-    if (mounted && !silent) setState(() => _isLoading = false);
   }
 
   @override
@@ -62,7 +60,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
 
     return DefaultTabController(
-      length: 6, 
+      length: 7, 
       initialIndex: widget.initialIndex, // [NEW] 
       child: Scaffold(
         backgroundColor: Colors.transparent, // Consistent Global Background
@@ -84,7 +82,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     icon: Icon(Icons.refresh, color: textColor, size: 24), // Slightly smaller for better circle fit
                     padding: EdgeInsets.zero,
                     onPressed: () {
-                      setState(() => _isLoading = true);
                       _fetchOrders();
                     },
                   )
@@ -98,6 +95,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   tabs: const [
                     Tab(text: "My Bucket"),
                     Tab(text: "New"),
+                    Tab(text: "Pending"),
                     Tab(text: "In Progress"),
                     Tab(text: "Ready"),
                     Tab(text: "Completed"),
@@ -117,6 +115,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       children: [
         _buildBucketTab(isDark, textColor, secondaryTextColor),
         _buildOrderList([OrderStatus.New], isDark, textColor, secondaryTextColor), 
+        _buildOrderList([OrderStatus.PendingUserConfirmation], isDark, textColor, secondaryTextColor), 
         _buildOrderList([OrderStatus.InProgress], isDark, textColor, secondaryTextColor),
         _buildOrderList([OrderStatus.Ready], isDark, textColor, secondaryTextColor),
         _buildOrderList([OrderStatus.Completed], isDark, textColor, secondaryTextColor),
@@ -268,59 +267,48 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: isDark 
-        ? GlassContainer(opacity: 0.1, padding: EdgeInsets.zero, child: content)
-        : Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 5), spreadRadius: 1)
-              ]
-            ),
-            child: content,
-          ),
+      child: LaundryGlassCard(
+        opacity: isDark ? 0.12 : 0.05,
+        padding: EdgeInsets.zero,
+        child: content,
+      ),
     );
   }
-
   Widget _buildOrderList(List<OrderStatus> statuses, bool isDark, Color textColor, Color secondaryTextColor) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    // Filter orders
-    final filtered = _orderService.orders.where((o) => statuses.contains(o.status)).toList();
-    // Sort by date desc
-    filtered.sort((a,b) => b.date.compareTo(a.date));
-
-    if (filtered.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.history, size: 64, color: isDark ? Colors.white24 : Colors.black26),
-            const SizedBox(height: 20),
-            Text("No orders in this category", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
-          ],
-        ),
-      );
-    }
-
     return ListenableBuilder(
       listenable: _orderService,
       builder: (context, _) {
+        // [CRITICAL FIX] Filter inside builder so it updates on notifyListeners
+        final filtered = _orderService.orders.where((o) => statuses.contains(o.status)).toList();
+        filtered.sort((a,b) => b.date.compareTo(a.date));
+
+        if (filtered.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.history, size: 64, color: isDark ? Colors.white24 : Colors.black26),
+                const SizedBox(height: 20),
+                Text("No orders in this category", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
+              ],
+            ),
+          );
+        }
+
         return RefreshIndicator(
         onRefresh: () => _fetchOrders(),
         color: AppTheme.primaryColor,
+        backgroundColor: Colors.transparent, // [FIX] No dark background
         child: ListView.builder(
-          padding: const EdgeInsets.only(top: 190, bottom: 100, left: 20, right: 20), // [ADJUSTED] Padding for higher header
+          physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
+          padding: const EdgeInsets.only(top: 190, bottom: 100, left: 20, right: 20),
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final order = filtered[index];
             final dateStr = DateFormat('MMM d, h:mm a').format(order.date.toLocal());
             
             final content = Padding(
-              padding: const EdgeInsets.all(16), // Padding inside card
+              padding: const EdgeInsets.all(12), // [TIGHTER] Padding inside card
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -328,13 +316,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                      // Badge moved to bottom to prevent overflow
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                   Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 5),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(dateStr, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11)),
                       _buildStatusBadge(order.status),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                   Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5),
-                  Text(dateStr, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12)),
                 ],
               ),
             );
@@ -346,20 +341,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ));
               },
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 15),
-                child: isDark 
-                  ? GlassContainer(opacity: 0.1, child: content)
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                           // [FIX] Soft Shadow
-                           BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 5), spreadRadius: 1)
-                        ]
-                      ),
-                      child: content,
-                    ),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: LaundryGlassCard(
+                  opacity: isDark ? 0.12 : 0.05,
+                  padding: const EdgeInsets.all(12),
+                  child: content,
+                ),
               ),
             );
           },
@@ -378,8 +365,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
       case OrderStatus.Completed: color = Colors.green; break;
       case OrderStatus.Cancelled: color = Colors.red; break;
       case OrderStatus.Refunded: color = Colors.pinkAccent; break;
-      default: color = Colors.grey;
+      case OrderStatus.PendingUserConfirmation: color = Colors.orange; break;
     }
+
+    String label = status.name.toUpperCase();
+    if (status == OrderStatus.PendingUserConfirmation) label = "PENDING CONFIRMATION";
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -388,7 +378,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
-      child: Text(status.name.toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }
 }

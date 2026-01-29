@@ -255,8 +255,10 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(widget.service == null ? "Create Service" : "Edit ${widget.service!.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
         backgroundColor: Colors.transparent,
@@ -512,6 +514,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

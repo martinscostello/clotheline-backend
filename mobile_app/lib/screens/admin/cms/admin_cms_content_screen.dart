@@ -278,8 +278,10 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
     if (widget.section == 'ads') title = "Ads & Banners";
     if (widget.section == 'branding') title = "Branding";
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
@@ -320,8 +322,9 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
                 child: _buildSectionContent(),
               ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSectionContent() {
     if (_content == null) return const Center(child: Text("Failed to load content", style: TextStyle(color: Colors.white)));

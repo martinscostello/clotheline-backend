@@ -73,8 +73,10 @@ class _AdminCMSPromotionsScreenState extends State<AdminCMSPromotionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text("Promotions Config", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
@@ -150,6 +152,7 @@ class _AdminCMSPromotionsScreenState extends State<AdminCMSPromotionsScreen> {
                 ),
               ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

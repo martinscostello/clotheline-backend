@@ -37,89 +37,89 @@ class _AdminPromotionsScreenState extends State<AdminPromotionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("Promotions", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const BackButton(color: Colors.white),
-      ),
-      floatingActionButton: Consumer<AuthService>(
-        builder: (context, auth, _) {
-           final user = auth.currentUser;
-           final isMaster = user?['isMasterAdmin'] == true;
-           final canManage = isMaster || (user?['permissions']?['managePromos'] == true);
-           
-           if (!canManage) return const SizedBox.shrink();
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("Promotions", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: const BackButton(color: Colors.white),
+        ),
+        floatingActionButton: Consumer<AuthService>(
+          builder: (context, auth, _) {
+            final user = auth.currentUser;
+            final isMaster = user?['isMasterAdmin'] == true;
+            final canManage = isMaster || (user?['permissions']?['managePromos'] == true);
+            
+            if (!canManage) return const SizedBox.shrink();
 
-           return FloatingActionButton(
-            onPressed: _showCreateDialog,
-            backgroundColor: AppTheme.primaryColor,
-            child: const Icon(Icons.add, color: Colors.black),
-          );
-        }
-      ),
-      body: LiquidBackground(
-        child: Consumer<PromotionService>(
-          builder: (context, promoService, _) {
-             // Permission Check
-             final auth = Provider.of<AuthService>(context, listen: false);
-             final user = auth.currentUser;
-             final isMaster = user?['isMasterAdmin'] == true;
-             final canManage = isMaster || (user?['permissions']?['managePromos'] == true);
+            return FloatingActionButton(
+              onPressed: _showCreateDialog,
+              backgroundColor: AppTheme.primaryColor,
+              child: const Icon(Icons.add, color: Colors.black),
+            );
+          }
+        ),
+        body: LiquidBackground(
+          child: Consumer<PromotionService>(
+            builder: (context, promoService, _) {
+              // Permission Check
+              final auth = Provider.of<AuthService>(context, listen: false);
+              final user = auth.currentUser;
+              final isMaster = user?['isMasterAdmin'] == true;
+              final canManage = isMaster || (user?['permissions']?['managePromos'] == true);
 
-             // Hide FAB if cannot manage (Logic moved to build method wrapper or FAB visibility)
-             // But simplest is to check in list builder for delete
-
-             if (promoService.isLoading && promoService.promotions.isEmpty) {
+              if (promoService.isLoading && promoService.promotions.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
-             }
+              }
 
-             if (promoService.promotions.isEmpty) {
+              if (promoService.promotions.isEmpty) {
                 return const Center(child: Text("No active promotions", style: TextStyle(color: Colors.white54)));
-             }
+              }
 
-             return ListView.builder(
-               padding: const EdgeInsets.fromLTRB(20, 100, 20, 80),
-               itemCount: promoService.promotions.length,
-               itemBuilder: (context, index) {
-                 final promo = promoService.promotions[index];
-                 final isPercent = promo['type'] == 'percentage';
-                 final valueDisplay = isPercent ? "${promo['value']}% OFF" : "₦${promo['value']} OFF";
-                 
-                 return Padding(
-                   padding: const EdgeInsets.only(bottom: 15),
-                   child: GlassContainer(
-                     opacity: 0.1,
-                     padding: const EdgeInsets.all(15),
-                     child: Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                       children: [
-                         Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             Text(promo['code'], style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.2)),
-                             const SizedBox(height: 5),
-                             Text(valueDisplay, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                             const SizedBox(height: 5),
-                             Text("Min Spend: ₦${promo['minOrderAmount']}", style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                             if (promo['usageLimit'] != null)
-                               Text("Limit: ${promo['usedCount']}/${promo['usageLimit']}", style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                           ],
-                         ),
-                         if (canManage)
-                           IconButton(
-                             icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                             onPressed: () => _delete(promo['_id']),
-                           )
-                       ],
-                     ),
-                   ),
-                 );
-               },
-             );
-          },
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 100, 20, 80),
+                itemCount: promoService.promotions.length,
+                itemBuilder: (context, index) {
+                  final promo = promoService.promotions[index];
+                  final isPercent = promo['type'] == 'percentage';
+                  final valueDisplay = isPercent ? "${promo['value']}% OFF" : "₦${promo['value']} OFF";
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 15),
+                    child: GlassContainer(
+                      opacity: 0.1,
+                      padding: const EdgeInsets.all(15),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(promo['code'], style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.2)),
+                              const SizedBox(height: 5),
+                              Text(valueDisplay, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 5),
+                              Text("Min Spend: ₦${promo['minOrderAmount']}", style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                              if (promo['usageLimit'] != null)
+                                Text("Limit: ${promo['usedCount']}/${promo['usageLimit']}", style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                            ],
+                          ),
+                          if (canManage)
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                              onPressed: () => _delete(promo['_id']),
+                            )
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );

@@ -249,8 +249,10 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
       );
     }
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text("Order #${_order!.id.substring(_order!.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
@@ -479,8 +481,9 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildGroupedItemsList() {
     // 1. Group Items

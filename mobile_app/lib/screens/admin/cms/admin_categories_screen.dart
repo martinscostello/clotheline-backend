@@ -92,13 +92,15 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("Manage Categories", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        leading: const BackButton(color: Colors.white),
-      ),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("Manage Categories", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          leading: const BackButton(color: Colors.white),
+        ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,
         backgroundColor: AppTheme.primaryColor,
@@ -136,6 +138,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
           }
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

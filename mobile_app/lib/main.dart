@@ -40,6 +40,7 @@ class BootstrapData {
   final List<dynamic> branchesJson;
   final List<dynamic> servicesJson;
   final bool isLoggedIn;
+  final bool hasSeenOnboarding; // [NEW]
 
   BootstrapData({
     this.userProfile,
@@ -48,6 +49,7 @@ class BootstrapData {
     required this.branchesJson,
     required this.servicesJson,
     required this.isLoggedIn,
+    this.hasSeenOnboarding = false, // [NEW]
   });
 }
 
@@ -59,12 +61,17 @@ Future<void> main() async {
   
   // A. Auth State
   final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+  final bool hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false; // [NEW]
   final String? savedRole = prefs.getString('saved_user_role');
   final String? savedName = prefs.getString('user_name');
   
   Map<String, dynamic>? userProfile;
   if (savedName != null) {
-     userProfile = {'name': savedName, 'email': prefs.getString('user_email') ?? ''};
+     userProfile = {
+       'name': savedName, 
+       'email': prefs.getString('user_email') ?? '',
+       'avatarId': prefs.getString('user_avatar_id'), // [FIX] Hydrate Avatar
+     };
   }
 
   // B. Business Data
@@ -92,6 +99,7 @@ Future<void> main() async {
     branchesJson: branchesJson,
     servicesJson: servicesJson,
     isLoggedIn: isLoggedIn,
+    hasSeenOnboarding: hasSeenOnboarding, // [NEW]
   );
 
   // Initialize Push Notifications (Non-blocking)
@@ -177,6 +185,7 @@ class LaundryApp extends StatelessWidget {
         builder: (_, ThemeMode currentMode, __) {
           return MaterialApp(
             title: 'Laundry Business',
+            navigatorKey: PushNotificationService.navigatorKey, // [NEW]
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
@@ -227,6 +236,10 @@ class LaundryApp extends StatelessWidget {
   // ... _determineInitialScreen ...
   Widget _determineInitialScreen(BootstrapData data) {
     if (!data.isLoggedIn) {
+       // [FIX] Show Onboarding if not seen
+       if (!data.hasSeenOnboarding) {
+         return const OnboardingScreen();
+       }
        return const LoginScreen(); 
     }
     if (data.userRole == 'admin') {

@@ -74,6 +74,7 @@ class AuthService extends ChangeNotifier {
       // [FIX] Load Profile
       final name = await _storage.read(key: 'user_name');
       final email = await _storage.read(key: 'user_email');
+      final avatarId = await _storage.read(key: 'user_avatar_id');
       
       if (role != null) {
          Map<String, dynamic> permissions = {};
@@ -88,6 +89,7 @@ class AuthService extends ChangeNotifier {
            'role': role,
            'name': name ?? '',
            'email': email ?? '',
+           'avatarId': avatarId,
            'isMasterAdmin': isMasterStr == 'true',
            'permissions': permissions
          };
@@ -126,7 +128,22 @@ class AuthService extends ChangeNotifier {
           await _storage.write(key: 'user_permissions', value: jsonEncode(user['permissions']));
         }
         
-        // Update memory
+        if (user['permissions'] != null) {
+          await _storage.write(key: 'user_permissions', value: jsonEncode(user['permissions']));
+        }
+        
+        // [FIX] Only overwrite local avatar if backend explicitly sends it
+        if (user.containsKey('avatarId')) {
+           await _storage.write(key: 'user_avatar_id', value: user['avatarId']?.toString() ?? '');
+        } else {
+           // Backend didn't send avatar (legacy/cached), but we might have it locally.
+           // Inject it into the fresh 'user' object so the UI doesn't flicker/reset.
+           final savedAvatar = await _storage.read(key: 'user_avatar_id');
+           if (savedAvatar != null && savedAvatar.isNotEmpty) {
+             user['avatarId'] = savedAvatar;
+           }
+        }
+        
         _currentUser = user; 
         
         // [NEW] Sync Token on Auto-Login
@@ -265,8 +282,17 @@ class AuthService extends ChangeNotifier {
     await _storage.write(key: 'user_name', value: user['name']?.toString() ?? '');
     await _storage.write(key: 'user_email', value: user['email']?.toString() ?? '');
 
-    // [New] Persist Branch Preference & Auth State to SharedPrefs
+    await _storage.write(key: 'user_name', value: user['name']?.toString() ?? '');
+    await _storage.write(key: 'user_email', value: user['email']?.toString() ?? '');
+    await _storage.write(key: 'user_avatar_id', value: user['avatarId']?.toString() ?? ''); // [FIX] Persist Avatar
     final prefs = await SharedPreferences.getInstance();
+    
+    // [FIX] Sync Avatar to SharedPrefs for Bootloader
+    if (user['avatarId'] != null) {
+      await prefs.setString('user_avatar_id', user['avatarId'].toString());
+    } else {
+      await prefs.remove('user_avatar_id');
+    }
     
     // 1. Branch
     if (user['preferredBranch'] != null) {
@@ -335,7 +361,6 @@ class AuthService extends ChangeNotifier {
     final name = await _storage.read(key: 'user_name');
     final email = await _storage.read(key: 'user_email');
     // If either is missing/empty, profile is invalid (Ghost)
-    return name != null && name.isNotEmpty && email != null && email.isNotEmpty;
     return name != null && name.isNotEmpty && email != null && email.isNotEmpty;
   }
 
@@ -409,6 +434,34 @@ class AuthService extends ChangeNotifier {
     } catch (e) {
       debugPrint("Error deleting user: $e");
       return false;
+    }
+  }
+
+  Future<void> updateAvatar(String avatarId) async {
+    try {
+      final response = await _apiService.client.put('/auth/avatar', data: {
+        'avatarId': avatarId
+      });
+      
+      if (response.statusCode == 200) {
+        if (_currentUser != null) {
+          _currentUser!['avatarId'] = avatarId;
+          
+          // Also persist to storage so it's available on next boot
+          await _storage.write(key: 'user_avatar_id', value: avatarId);
+          
+          // [FIX] Also sync to SharedPrefs for next cold boot
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_avatar_id', avatarId);
+          
+          notifyListeners();
+        }
+      }
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
     }
   }
 }

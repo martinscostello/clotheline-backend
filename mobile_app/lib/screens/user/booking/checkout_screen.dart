@@ -61,6 +61,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   String _branchPhone = "Loading...";
   final _contentService = ContentService();
 
+
   @override
   void initState() {
      super.initState();
@@ -89,6 +90,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     _promoController.dispose();
     super.dispose();
   }
+
 
   Future<void> _fetchContent() async {
     final content = await _contentService.getAppContent();
@@ -727,7 +729,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     );
   }
 
-  final _orderService = OrderService();
   final _paymentService = PaymentService();
   bool _isSubmitting = false;
 
@@ -921,6 +922,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
   Widget _buildBottomBar(bool isDark) {
     return Container(
+      // key: _paymentKey, // [KEY] Payment Section (Removed)
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 30), 
       child: SafeArea(
         top: false,

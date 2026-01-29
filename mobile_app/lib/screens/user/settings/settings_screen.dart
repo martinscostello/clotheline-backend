@@ -2,7 +2,7 @@ import 'package:laundry_app/main.dart'; // Access themeNotifier
 import 'package:flutter/material.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/screens/auth/login_screen.dart';
-import 'package:laundry_app/widgets/glass/GlassContainer.dart';
+import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
 import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
@@ -14,7 +14,7 @@ import 'about_screen.dart'; // Added Import
 import '../chat/chat_screen.dart'; // Added Import
 import 'manage_addresses_screen.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:laundry_app/widgets/common/user_avatar.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -24,6 +24,59 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  void _showAvatarPicker(BuildContext context, AuthService auth, bool isDark) {
+    final isAdmin = auth.currentUser?['role'] == 'admin';
+    final userAvatars = List.generate(20, (i) => 'u_${i + 1}'); // [FIX] Range matched to 20
+    final adminAvatars = List.generate(10, (i) => 'a_${i + 1}');
+    final avatars = isAdmin ? adminAvatars : userAvatars;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: 400,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.black12, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text("Select Your Avatar", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, mainAxisSpacing: 15, crossAxisSpacing: 15),
+                itemCount: 20, // [FIX] Updated to full 20 avatars
+                itemBuilder: (context, index) {
+                  final avatarId = avatars[index];
+                  final isSelected = auth.currentUser?['avatarId'] == avatarId;
+                  return GestureDetector(
+                    onTap: () {
+                      auth.updateAvatar(avatarId);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.transparent, width: 2),
+                      ),
+                      child: UserAvatar(avatarId: avatarId, name: isAdmin ? "Admin" : "User", radius: 30, isDark: isDark),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -33,11 +86,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
-      body: LaundryGlassBackground(
-        child: Stack(
+      body: Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.only(top: 130, bottom: 140, left: 20, right: 20),
+              physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
+              padding: const EdgeInsets.only(top: 120, bottom: 120, left: 16, right: 16), // [TIGHTER]
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -45,81 +98,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Consumer<AuthService>(
                     builder: (context, auth, _) {
                       final user = auth.currentUser;
-                      // [FIX] No more hardcoded guest fallback. 
-                      // If data is missing despite being logged in, it means persistence failed or is loading.
                       final name = user?['name'] ?? '';
                       final email = user?['email'] ?? '';
                       
-                      // Auto-Refresh if logged in but nameless (Ghost Fix)
                       if (user != null && (name.isEmpty || email.isEmpty)) {
                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                           // Trigger background refresh if we haven't lately
                            auth.validateSession(); 
                          });
                       }
                       
                       return Column(
                         children: [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
-                            child: Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                              style: TextStyle(fontSize: 30, color: isDark ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)
-                            ),
+                          Stack(
+                            children: [
+                              UserAvatar(
+                                avatarId: user?['avatarId'],
+                                name: name,
+                                radius: 45,
+                                isDark: isDark,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: () => _showAvatarPicker(context, auth, isDark),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: isDark ? const Color(0xFF1E1E2C) : Colors.white, width: 2),
+                                    ),
+                                    child: const Icon(Icons.edit, size: 14, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           Text(name, style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text(email, style: TextStyle(color: secondaryTextColor)),
+                          Text(email, style: TextStyle(color: secondaryTextColor, fontSize: 14)),
                         ]
                       );
                     }
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20), // [REDUCED]
 
                   // Appearance Section
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Text("Appearance", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: secondaryTextColor)),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text("Appearance", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: secondaryTextColor)),
                     ),
                   ),
                   
                   _buildSectionContainer(
                     isDark: isDark,
                     child: ListTile(
+                      dense: true, // [TIGHTER]
                       leading: const Icon(Icons.palette_outlined, color: AppTheme.primaryColor),
                       title: Text("Theme", style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
                       trailing: SizedBox(
-                        width: 140, // Fixed width for settings dropdown
-                        child: LiquidGlassDropdown<ThemeMode>(
-                          value: themeNotifier.value,
-                          isDark: isDark,
-                          items: const [
-                            DropdownMenuItem(value: ThemeMode.system, child: Text("System")),
-                            DropdownMenuItem(value: ThemeMode.light, child: Text("Light Mode")),
-                            DropdownMenuItem(value: ThemeMode.dark, child: Text("Dark Mode")),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) {
-                              themeNotifier.value = val;
-                              setState(() {});
-                            }
-                          },
+                        width: 130, // [TIGHTER]
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white10 : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<ThemeMode>(
+                              value: themeNotifier.value,
+                              dropdownColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                              icon: Icon(Icons.keyboard_arrow_down, size: 18, color: textColor),
+                              style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w500),
+                              items: const [
+                                DropdownMenuItem(value: ThemeMode.system, child: Text("System")),
+                                DropdownMenuItem(value: ThemeMode.light, child: Text("Light")),
+                                DropdownMenuItem(value: ThemeMode.dark, child: Text("Dark")),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  themeNotifier.value = val;
+                                  setState(() {});
+                                }
+                              },
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 15), // [REDUCED]
 
                   // Settings List
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Text("General", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: secondaryTextColor)),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text("General", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: secondaryTextColor)),
                     ),
                   ),
 
@@ -158,15 +237,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 25), // [REDUCED]
                   
                   SizedBox(
                     width: double.infinity,
+                    height: 50, // [FIXED HEIGHT]
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.redAccent,
                         side: const BorderSide(color: Colors.redAccent),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       ),
                       onPressed: () {
@@ -186,43 +266,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               top: 0, left: 0, right: 0,
               child: UnifiedGlassHeader(
                 isDark: isDark,
-                height: 112,
-                title: Text("Settings", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 20)),
+                height: 100, // [TIGHTER]
+                title: Text("Settings", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)), // [SMALLER]
               ),
             ),
           ],
         ),
-      ),
     );
   }
 
   Widget _buildSectionContainer({required bool isDark, required Widget child}) {
-    if (isDark) {
-      return GlassContainer(
-        opacity: 0.1,
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: child,
-      );
-    } else {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-             BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
-          ]
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: child,
-      );
-    }
+    return LaundryGlassCard(
+      opacity: isDark ? 0.12 : 0.05,
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: child,
+    );
   }
 
   Widget _buildSettingTile(IconData icon, String title, Color textColor, bool isDark, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, color: AppTheme.primaryColor),
-      title: Text(title, style: TextStyle(color: textColor)),
-      trailing: Icon(Icons.arrow_forward_ios, color: isDark ? Colors.white24 : Colors.black12, size: 16),
+      dense: true, // [TIGHTER]
+      minLeadingWidth: 20, // [TIGHTER]
+      leading: Icon(icon, color: AppTheme.primaryColor, size: 20), // [SMALLER]
+      title: Text(title, style: TextStyle(color: textColor, fontSize: 14)), // [SMALLER]
+      trailing: Icon(Icons.arrow_forward_ios, color: isDark ? Colors.white24 : Colors.black12, size: 14),
       onTap: onTap,
     );
   }

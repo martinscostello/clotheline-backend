@@ -27,24 +27,30 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // [FIX] Replaced custom implementation with LiquidGlassContainer
-    // This solves the pixelation/banding on tablets by using a proven shader/rendering stack.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    
     return SizedBox(
       width: width,
       height: height,
       child: Container(
+        padding: padding ?? const EdgeInsets.all(20),
         decoration: BoxDecoration(
+          color: color ?? backgroundColor,
           borderRadius: BorderRadius.circular(borderRadius),
-          border: border ?? Border.all(color: Colors.white10, width: 0.5),
+          border: border ?? Border.all(
+            color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black12, 
+            width: 0.5
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
-        child: LiquidGlassContainer(
-          padding: padding ?? const EdgeInsets.all(20),
-          blur: blur,
-          opacity: opacity,
-          borderRadius: BorderRadius.circular(borderRadius),
-          color: color, // Optional override
-          child: child, // Removed TextShadows as they might look blurry on tablet
-        ),
+        child: child,
       ),
     );
   }

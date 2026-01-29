@@ -21,7 +21,8 @@ import 'notifications/notifications_screen.dart';
 import '../../providers/branch_provider.dart';
 import '../common/branch_selection_screen.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
-import 'hero_video_player.dart'; // Added Import
+import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
+import 'hero_video_player.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onSwitchToStore;
@@ -46,7 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   AppContentModel? _appContent;
   bool _isHydrated = false; // The Hydration Gate
   bool _isTabActive = true; 
-
+  
   Timer? _rotationTimer;
 
   // Throttling State
@@ -90,7 +91,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     
     // Silent Sync after render
     Future.microtask(() => _performSilentSync());
+    
   }
+
   
 
   void _handleTabChange() {
@@ -253,8 +256,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
           RefreshIndicator(
             onRefresh: _handleRefresh,
             color: isDark ? Colors.white : AppTheme.primaryColor,
+            backgroundColor: Colors.transparent, // [FIX] No dark background during pull
             child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(), // Ensure scroll even if empty
+              physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
               padding: EdgeInsets.only(
                 top: MediaQuery.of(context).padding.top + 112, 
                 bottom: 120
@@ -622,6 +626,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.builder(
+        // key: _servicesKey, // [KEY] Service Grid (Removed)
         padding: EdgeInsets.zero,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -744,41 +749,10 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 builder: (context) => BookingSheet(serviceModel: s),
               );
             },
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // 1. Shadow Layer (Rule 4)
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                        if (!isDark)
-                        BoxShadow(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.05),
-                          blurRadius: 5,
-                          spreadRadius: 0,
-                        )
-                      ]
-                    ),
-                  ),
-                ),
-                // 2. Shell Layer (Rule 2)
-                Container(
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1E2C) : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: isDark ? Border.all(color: Colors.white10) : null,
-                  ),
-                  child: content,
-                ),
-              ],
+            child: LaundryGlassCard(
+              opacity: isDark ? 0.12 : 0.05,
+              padding: EdgeInsets.zero,
+              child: content,
             ),
           );
         },
@@ -866,6 +840,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         }
 
         return SizedBox(
+          // key: _featuredKey, // [KEY] Featured Products (Removed)
           height: 180, // Increased slightly for better layout
           child: ListView.builder(
             scrollDirection: Axis.horizontal,

@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_service.dart';
+import 'push_notification_service.dart'; // [NEW]
+import '../screens/user/main_layout.dart';
+import 'package:flutter/material.dart';
 
 class NotificationService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -146,7 +149,16 @@ class NotificationService extends ChangeNotifier {
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
     const InitializationSettings settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     
-    await _localNotifications.initialize(settings);
+    await _localNotifications.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (details) {
+         // Lead to Orders page on tap
+         PushNotificationService.navigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 2)), 
+            (route) => false
+         );
+      }
+    );
     
     final platform = _localNotifications.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
     await platform?.requestPermissions(
