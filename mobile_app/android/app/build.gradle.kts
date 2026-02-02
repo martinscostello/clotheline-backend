@@ -64,7 +64,7 @@ android {
             isShrinkResources = true  // ENABLED: Remove unused resources
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             ndk {
-                debugSymbolLevel = "NONE" // REDUCED: No full symbols in release
+                debugSymbolLevel = "FULL" // FIXED: Upload symbols to Play Console to silience warnings and aid debugging
             }
         }
     }

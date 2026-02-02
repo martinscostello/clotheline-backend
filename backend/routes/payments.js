@@ -11,7 +11,7 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 if (!PAYSTACK_SECRET) {
     console.warn("[Paystack] WARNING: PAYSTACK_SECRET_KEY is not defined in environment variables. Falling back to test key.");
 }
-const ACTUAL_SECRET = PAYSTACK_SECRET || 'sk_test_xxxx';
+const ACTUAL_SECRET = PAYSTACK_SECRET; // REMOVED hardcoded test key for production safety
 
 // POST /initialize
 // Initializes a transaction Securely via Paystack API
