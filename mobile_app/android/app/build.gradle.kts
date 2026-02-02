@@ -18,8 +18,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.laundry_app"
-    compileSdk = 35 // Optimized for standard CI runners
-    ndkVersion = "27.0.12077973"
+    compileSdk = 36 // Required by current dependencies
+    ndkVersion = "27.0.12077973" // Restored to version required by plugins
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -64,7 +64,7 @@ android {
             isShrinkResources = true  // ENABLED: Remove unused resources
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             ndk {
-                debugSymbolLevel = "FULL" // FIXED: Upload symbols to Play Console to silience warnings and aid debugging
+                debugSymbolLevel = "FULL" // Restored: Best for Play Console, even if local strip fails
             }
         }
     }

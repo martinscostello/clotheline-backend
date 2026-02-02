@@ -8,13 +8,8 @@ on:
 jobs:
   build:
     name: Build Android App Bundle
-    timeout-minutes: 30
-    runs-on: ubuntu-22.04
-
-    defaults:
-      run:
-        working-directory: ./mobile_app
-
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,24 +27,34 @@ jobs:
           cache: true
 
       - name: Decode Keystore
+        working-directory: ./mobile_app
         run: |
           echo "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
       - name: Create Key Properties
+        working-directory: ./mobile_app
         run: |
           echo "${{ secrets.KEY_PROPERTIES_CONTENTS }}" > android/key.properties
 
       - name: Create Google Services JSON
+        working-directory: ./mobile_app
         run: |
           echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > android/app/google-services.json
 
+      - name: Flutter Doctor
+        working-directory: ./mobile_app
+        run: flutter doctor -v
+
       - name: Clean Build
+        working-directory: ./mobile_app
         run: flutter clean
 
       - name: Get Dependencies
+        working-directory: ./mobile_app
         run: flutter pub get
 
       - name: Build App Bundle
+        working-directory: ./mobile_app
         run: flutter build appbundle --release --verbose
 
       - name: Upload Artifact
