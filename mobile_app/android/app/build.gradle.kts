@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.laundry_app"
-    compileSdk = 36 // Updated to meet plugin requirements
+    compileSdk = 35 // Optimized for standard CI runners
     ndkVersion = "27.0.12077973"
 
     compileOptions {

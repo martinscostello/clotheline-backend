@@ -300,9 +300,23 @@ exports.updateOrderStatus = async (req, res) => {
         // [TRACKING] Log status update
         console.log(`[OrderUpdate] Order ${order._id} status changed to ${status}`);
 
-        // Notify User
-        const title = `Order ${status}`;
-        const message = `Your order #${order._id.toString().slice(-6).toUpperCase()} is now ${status}`;
+        // [MODIFIED] Custom Status Messages
+        const getStatusMessage = (s, id) => {
+            const shortId = id.toString().slice(-6).toUpperCase();
+            switch (s) {
+                case 'New': return { title: 'Order Confirmed', msg: `Your order #${shortId} has been confirmed` };
+                case 'InProgress': return { title: 'Order Processing', msg: `Your order #${shortId} is now Processing` };
+                case 'Ready': return { title: 'Order Ready', msg: `Your order #${shortId} is now Ready` };
+                case 'Completed': return { title: 'Order Delivered', msg: `Your order #${shortId} has been Delivered` };
+                case 'Cancelled': return { title: 'Order Cancelled', msg: `Your order #${shortId} has been Cancelled` };
+                case 'Refunded': return { title: 'Order Refunded', msg: `Your order #${shortId} has been Refunded` };
+                default: return { title: `Order ${s}`, msg: `Your order #${shortId} is now ${s}` };
+            }
+        };
+
+        const statusData = getStatusMessage(status, order._id);
+        const title = statusData.title;
+        const message = statusData.msg;
 
         if (order.user) {
             await new Notification({
@@ -389,8 +403,22 @@ exports.batchUpdateOrderStatus = async (req, res) => {
             successCount++;
 
             if (order.user) {
-                const title = `Order ${status}`;
-                const message = `Your order #${order._id.toString().slice(-6).toUpperCase()} is now ${status}`;
+                const getStatusMessage = (s, id) => {
+                    const shortId = id.toString().slice(-6).toUpperCase();
+                    switch (s) {
+                        case 'New': return { title: 'Order Confirmed', msg: `Your order #${shortId} has been confirmed` };
+                        case 'InProgress': return { title: 'Order Processing', msg: `Your order #${shortId} is now Processing` };
+                        case 'Ready': return { title: 'Order Ready', msg: `Your order #${shortId} is now Ready` };
+                        case 'Completed': return { title: 'Order Delivered', msg: `Your order #${shortId} has been Delivered` };
+                        case 'Cancelled': return { title: 'Order Cancelled', msg: `Your order #${shortId} has been Cancelled` };
+                        case 'Refunded': return { title: 'Order Refunded', msg: `Your order #${shortId} has been Refunded` };
+                        default: return { title: `Order ${s}`, msg: `Your order #${shortId} is now ${s}` };
+                    }
+                };
+
+                const statusData = getStatusMessage(status, order._id);
+                const title = statusData.title;
+                const message = statusData.msg;
 
                 new Notification({
                     userId: order.user,
