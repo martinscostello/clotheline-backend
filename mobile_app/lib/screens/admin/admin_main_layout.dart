@@ -8,9 +8,10 @@ import 'orders/admin_orders_screen.dart';
 import 'cms/admin_cms_screen.dart';
 import 'users/admin_users_screen.dart';
 import 'chat/admin_chat_screen.dart';
-import 'admin_orders_screen.dart';
+import 'settings/admin_settings_screen.dart'; // [FIXED Path]
 import '../../widgets/navigation/NavScaffold.dart';
 import '../../widgets/navigation/PremiumNavBar.dart';
+import '../../widgets/glass/LaundryGlassBackground.dart'; // [FIXED Path]
 
 class AdminMainLayout extends StatefulWidget {
   final int initialIndex;
@@ -23,6 +24,8 @@ class AdminMainLayout extends StatefulWidget {
 
 class _AdminMainLayoutState extends State<AdminMainLayout> {
   int _currentIndex = 0;
+  List<Widget> _currentScreens = []; // [FIXED: Added missing field]
+  List<Map<String, dynamic>> _currentNavItems = []; // [FIXED: Added missing field]
 
   @override
   void initState() {

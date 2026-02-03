@@ -168,7 +168,7 @@ class PushNotificationService {
     });
   }
 
-  static void _handleMessage(BuildContext context, RemoteMessage message) {
+  static Future<void> _handleMessage(BuildContext context, RemoteMessage message) async {
      if (message.data['type'] == 'order') {
         // Deep link to orders tab
         print("Notification Tapped: ${message.data}");
