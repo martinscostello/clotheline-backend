@@ -14,7 +14,8 @@ import 'admin_order_detail_screen.dart';
 import '../../../../services/notification_service.dart';
 
 class AdminOrdersScreen extends StatefulWidget {
-  const AdminOrdersScreen({super.key});
+  final int initialTabIndex;
+  const AdminOrdersScreen({super.key, this.initialTabIndex = 0});
 
   @override
   State<AdminOrdersScreen> createState() => _AdminOrdersScreenState();
@@ -35,7 +36,11 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(
+      length: _tabs.length, 
+      vsync: this,
+      initialIndex: widget.initialTabIndex
+    );
     // Fetch orders & branches on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchOrders();

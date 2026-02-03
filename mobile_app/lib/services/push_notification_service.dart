@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../screens/user/main_layout.dart'; // [NEW]
+import '../screens/user/main_layout.dart';
+import '../screens/admin/admin_main_layout.dart'; // [NEW]
 import '../screens/user/products/submit_review_screen.dart';
 
 // Top-level function for background handling
@@ -89,17 +90,26 @@ class PushNotificationService {
 
     await _localNotificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
         final payload = response.payload;
         if (payload != null) {
           // Handle Local Notification Tap
-          // We can parse the payload if we set it as JSON
         }
-        // For now, always lead to orders if tapped
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 2)),
-          (route) => false,
-        );
+        
+        final prefs = await SharedPreferences.getInstance();
+        final role = prefs.getString('saved_user_role') ?? 'user';
+
+        if (role == 'admin') {
+          navigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AdminMainLayout(initialIndex: 1)),
+            (route) => false,
+          );
+        } else {
+          navigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 2)),
+            (route) => false,
+          );
+        }
       },
     );
 
@@ -173,14 +183,36 @@ class PushNotificationService {
         if (status == 'Cancelled' || status == 'Refunded') tabIndex = 5;
 
         try {
-          // Navigate to MainLayout -> Orders Tab (Index 2) -> Correct SubTab
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => MainLayout(
-              initialIndex: 2, 
-              initialOrderTabIndex: tabIndex
-            )),
-            (route) => false
-          );
+          final prefs = await SharedPreferences.getInstance();
+          final role = prefs.getString('saved_user_role') ?? 'user';
+
+          if (role == 'admin') {
+             // For Admin, map status to AdminOrdersScreen Tab Index
+             // _tabs = ['New', 'PendingUserConfirmation', 'InProgress', 'Ready', 'Completed', 'Cancelled', 'Refunded']
+             int adminTabIndex = 0;
+             if (status == 'PendingUserConfirmation') adminTabIndex = 1;
+             if (status == 'InProgress' || status == 'Processing') adminTabIndex = 2;
+             if (status == 'Ready') adminTabIndex = 3;
+             if (status == 'Completed') adminTabIndex = 4;
+             if (status == 'Cancelled') adminTabIndex = 5;
+             if (status == 'Refunded') adminTabIndex = 6;
+
+             Navigator.of(context).pushAndRemoveUntil(
+               MaterialPageRoute(builder: (_) => AdminMainLayout(
+                 initialIndex: 1, // Orders
+                 initialOrderTabIndex: adminTabIndex
+               )),
+               (route) => false
+             );
+          } else {
+             Navigator.of(context).pushAndRemoveUntil(
+               MaterialPageRoute(builder: (_) => MainLayout(
+                 initialIndex: 2, 
+                 initialOrderTabIndex: tabIndex
+               )),
+               (route) => false
+             );
+          }
         } catch (e) {
           print("Deep link navigation error: $e");
         }

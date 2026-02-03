@@ -8,13 +8,14 @@ import 'orders/admin_orders_screen.dart';
 import 'cms/admin_cms_screen.dart';
 import 'users/admin_users_screen.dart';
 import 'chat/admin_chat_screen.dart';
-import 'settings/admin_settings_screen.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'admin_orders_screen.dart';
 import '../../widgets/navigation/NavScaffold.dart';
 import '../../widgets/navigation/PremiumNavBar.dart';
 
 class AdminMainLayout extends StatefulWidget {
-  const AdminMainLayout({super.key});
+  final int initialIndex;
+  final int initialOrderTabIndex;
+  const AdminMainLayout({super.key, this.initialIndex = 0, this.initialOrderTabIndex = 0});
 
   @override
   State<AdminMainLayout> createState() => _AdminMainLayoutState();
@@ -22,14 +23,11 @@ class AdminMainLayout extends StatefulWidget {
 
 class _AdminMainLayoutState extends State<AdminMainLayout> {
   int _currentIndex = 0;
-  
-  // We will recompute these on every build based on Auth State
-  List<Widget> _currentScreens = [];
-  List<Map<String, dynamic>> _currentNavItems = [];
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
     // Trigger an auto-refresh if needed, though Consumer handles updates
     WidgetsBinding.instance.addPostFrameCallback((_) async {
        Provider.of<AuthService>(context, listen: false).tryAutoLogin();
@@ -50,7 +48,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
 
     // 2. Orders
     if (isMaster || permissions['manageOrders'] == true) {
-      screens.add(const AdminOrdersScreen());
+      screens.add(AdminOrdersScreen(initialTabIndex: widget.initialOrderTabIndex));
       navItems.add({'icon': Icons.list_alt, 'label': "Orders"});
     }
 
