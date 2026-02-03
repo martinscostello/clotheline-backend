@@ -359,11 +359,17 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
           Consumer<AuthService>(
             builder: (context, auth, _) {
               final name = auth.currentUser?['name']?.toString().split(" ").first ?? "Friend";
-              return Text(
-                "Hi $name,",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.white70 : Colors.black87,
+              return Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Hi $name,",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
                 ),
               );
             }
@@ -371,23 +377,32 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
           Consumer<BranchProvider>(
             builder: (context, branchProvider, _) {
               final branchName = branchProvider.selectedBranch?.name ?? "Select City";
-              return GestureDetector(
-                onTap: () {
-                   Navigator.push(context, MaterialPageRoute(builder: (_) => const BranchSelectionScreen(isModal: true)));
-                },
-                child: Row(
-                  children: [
-                    Text(
-                      branchName,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black,
+              return Flexible(
+                child: GestureDetector(
+                  onTap: () {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => const BranchSelectionScreen(isModal: true)));
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            branchName,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.keyboard_arrow_down, size: 18, color: isDark ? Colors.white54 : Colors.black54)
-                  ],
+                      const SizedBox(width: 4),
+                      Icon(Icons.keyboard_arrow_down, size: 18, color: isDark ? Colors.white54 : Colors.black54)
+                    ],
+                  ),
                 ),
               );
             }
