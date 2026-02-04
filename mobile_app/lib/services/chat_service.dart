@@ -37,7 +37,7 @@ class ChatService extends ChangeNotifier {
   }
 
   void startPolling(String branchId) {
-    _initThread(branchId);
+    initThread(branchId);
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(Duration(seconds: _pollIntervalSeconds), (_) => _sync());
   }
@@ -48,7 +48,7 @@ class ChatService extends ChangeNotifier {
     _messages = [];
   }
 
-  Future<void> _initThread(String branchId) async {
+  Future<void> initThread(String branchId) async {
     _isLoading = true;
     notifyListeners();
     try {
@@ -124,6 +124,25 @@ class ChatService extends ChangeNotifier {
         _messages[idx]['status'] = 'failed';
         notifyListeners();
       }
+    }
+  }
+
+  List<dynamic> _myThreads = [];
+  List<dynamic> get myThreads => _myThreads;
+
+  Future<void> fetchMyThreads() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await _apiService.client.get('/chat/my-threads');
+      if (response.statusCode == 200) {
+        _myThreads = List<dynamic>.from(response.data);
+      }
+    } catch (e) {
+      print("Fetch my threads error: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

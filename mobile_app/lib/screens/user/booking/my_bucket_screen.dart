@@ -8,6 +8,9 @@ import '../../../services/cart_service.dart';
 import 'checkout_screen.dart'; 
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import '../../../widgets/dialogs/guest_login_dialog.dart';
+import '../../../services/auth_service.dart';
+import 'package:provider/provider.dart';
 
 class MyBucketScreen extends StatelessWidget {
   final List<CartItem> cart;
@@ -15,6 +18,17 @@ class MyBucketScreen extends StatelessWidget {
   const MyBucketScreen({super.key, required this.cart});
 
   void _proceedToCheckout(BuildContext context) {
+    final auth = context.read<AuthService>();
+    if (auth.isGuest) {
+      showDialog(
+        context: context,
+        builder: (ctx) => const GuestLoginDialog(
+          message: "Please sign in or create an account to proceed with your laundry booking.",
+        ),
+      );
+      return;
+    }
+
     Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => const CheckoutScreen(),
     ));

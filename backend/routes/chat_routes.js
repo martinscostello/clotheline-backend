@@ -27,6 +27,19 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
+// GET /my-threads - Get all threads for current user
+router.get('/my-threads', auth, async (req, res) => {
+    try {
+        const threads = await ChatThread.find({ userId: req.user.id })
+            .populate('branchId', 'name location')
+            .sort({ lastMessageAt: -1 });
+        res.json(threads);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // GET /messages/:threadId - Get message history
 router.get('/messages/:threadId', auth, async (req, res) => {
     try {
@@ -98,6 +111,11 @@ router.post('/send', auth, async (req, res) => {
             thread.unreadCountUser += 1;
         } else {
             thread.unreadCountAdmin += 1;
+            // Reopen if user sends a message to a resolved ticket
+            if (thread.status === 'resolved') {
+                thread.status = 'open';
+                thread.resolvedAt = null;
+            }
         }
         thread.isHiddenFromAdmin = false; // [NEW] Unhide if admin deleted it previously
         await thread.save();
@@ -189,6 +207,11 @@ router.put('/admin/status/:threadId', auth, async (req, res) => {
         if (!thread) return res.status(404).json({ msg: 'Thread not found' });
 
         thread.status = status;
+        if (status === 'resolved') {
+            thread.resolvedAt = Date.now();
+        } else {
+            thread.resolvedAt = null;
+        }
         await thread.save();
         res.json(thread);
     } catch (err) {

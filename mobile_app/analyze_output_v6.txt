@@ -222,9 +222,16 @@ warning • The declaration '_callBranch' isn't referenced • lib/screens/user/
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/booking/combined_order_summary_screen.dart:204:55 • deprecated_member_use
    info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/screens/user/booking/my_bucket_screen.dart:1:8 • unnecessary_import
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/booking/my_bucket_screen.dart:128:45 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/chat/chat_screen.dart:199:54 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/chat/chat_screen.dart:239:33 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/chat/chat_screen.dart:293:73 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/chat/chat_screen.dart:103:58 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/chat/chat_screen.dart:222:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/chat/chat_screen.dart:262:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/chat/chat_screen.dart:316:73 • deprecated_member_use
+warning • Unused import: 'package:laundry_app/theme/app_theme.dart' • lib/screens/user/chat/support_tickets_screen.dart:3:8 • unused_import
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/chat/support_tickets_screen.dart:136:24 • prefer_const_constructors
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/chat/support_tickets_screen.dart:138:33 • prefer_const_constructors
+   info • Use 'const' literals as arguments to constructors of '@immutable' classes • lib/screens/user/chat/support_tickets_screen.dart:139:38 • prefer_const_literals_to_create_immutables
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/chat/support_tickets_screen.dart:171:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/chat/support_tickets_screen.dart:171:73 • deprecated_member_use
 warning • Unused import: 'package:flutter_animate/flutter_animate.dart' • lib/screens/user/dashboard_screen.dart:6:8 • unused_import
 warning • The value of the field '_rotationTimer' isn't used • lib/screens/user/dashboard_screen.dart:51:10 • unused_field
    info • Use a 'SizedBox' to add whitespace to a layout • lib/screens/user/dashboard_screen.dart:666:23 • sized_box_for_whitespace
@@ -332,14 +339,12 @@ warning • The value of the field '_breathingAnimation' isn't used • lib/scre
 warning • Unused import: 'package:liquid_glass_ui/liquid_glass_ui.dart' • lib/screens/user/settings/settings_screen.dart:6:8 • unused_import
 warning • Unused import: 'manage_password_screen.dart' • lib/screens/user/settings/settings_screen.dart:12:8 • unused_import
 warning • Unused import: '../chat/chat_screen.dart' • lib/screens/user/settings/settings_screen.dart:14:8 • unused_import
-  error • Target of URI doesn't exist: '../../widgets/dialogs/guest_login_dialog.dart' • lib/screens/user/settings/settings_screen.dart:20:8 • uri_does_not_exist
-  error • The method 'GuestLoginDialog' isn't defined for the type '_SettingsScreenState' • lib/screens/user/settings/settings_screen.dart:321:25 • undefined_method
 warning • Unused import: '../../../models/store_product.dart' • lib/screens/user/settings/support_hub_screen.dart:11:8 • unused_import
-   info • Use 'const' with the constructor to improve performance • lib/screens/user/settings/support_hub_screen.dart:82:39 • prefer_const_constructors
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/settings/support_hub_screen.dart:143:38 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/settings/support_hub_screen.dart:147:54 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/settings/support_hub_screen.dart:217:42 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/settings/support_hub_screen.dart:377:49 • deprecated_member_use
+   info • Use 'const' with the constructor to improve performance • lib/screens/user/settings/support_hub_screen.dart:83:39 • prefer_const_constructors
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/settings/support_hub_screen.dart:150:38 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/settings/support_hub_screen.dart:154:54 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/settings/support_hub_screen.dart:224:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/user/settings/support_hub_screen.dart:384:49 • deprecated_member_use
    info • Don't invoke 'print' in production code • lib/services/address_service.dart:46:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/services/address_service.dart:56:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/services/address_service.dart:66:7 • avoid_print
@@ -356,12 +361,13 @@ warning • The value of the field '_isInitialized' isn't used • lib/services/
    info • Don't invoke 'print' in production code • lib/services/cart_service.dart:229:11 • avoid_print
    info • Don't invoke 'print' in production code • lib/services/chat_service.dart:61:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/services/chat_service.dart:121:7 • avoid_print
-   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:172:7 • avoid_print
-   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:188:7 • avoid_print
-   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:200:8 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:142:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:191:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:207:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/services/chat_service.dart:219:8 • avoid_print
-   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:240:7 • avoid_print
-   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:257:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:238:8 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:259:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/chat_service.dart:276:7 • avoid_print
    info • Statements in an if should be enclosed in a block • lib/services/content_service.dart:136:46 • curly_braces_in_flow_control_structures
    info • Statements in an if should be enclosed in a block • lib/services/content_service.dart:137:75 • curly_braces_in_flow_control_structures
    info • Don't invoke 'print' in production code • lib/services/location_search_service.dart:40:7 • avoid_print
@@ -451,4 +457,4 @@ warning • Unused import: 'package:liquid_glass_ui/liquid_glass_ui.dart' • li
    info • The file name 'RefractiveRingClipper.dart' isn't a lower_case_with_underscores identifier • lib/widgets/ui/RefractiveRingClipper.dart:1:1 • file_names
    info • Use 'const' for final variables initialized to a constant value • lib/widgets/walkthrough/pulse_overlay.dart:222:5 • prefer_const_declarations
 
-389 issues found. (ran in 5.6s)
+395 issues found. (ran in 4.4s)

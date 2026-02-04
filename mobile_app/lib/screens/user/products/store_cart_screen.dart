@@ -9,6 +9,8 @@ import '../../../providers/branch_provider.dart';
 import '../../../utils/toast_utils.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import '../../../widgets/dialogs/guest_login_dialog.dart';
+import '../../../services/auth_service.dart';
 
 class StoreCartScreen extends StatelessWidget {
   const StoreCartScreen({super.key});
@@ -145,6 +147,18 @@ class StoreCartScreen extends StatelessWidget {
                  ),
                  onPressed: () {
                    if (service.storeItems.isEmpty) return;
+                   
+                   final auth = context.read<AuthService>();
+                   if (auth.isGuest) {
+                     showDialog(
+                       context: context,
+                       builder: (ctx) => const GuestLoginDialog(
+                         message: "Please sign in or create an account to proceed with your store purchase.",
+                       ),
+                     );
+                     return;
+                   }
+
                    Navigator.of(context).push(MaterialPageRoute(
                      builder: (context) => const StoreCheckoutScreen(),
                    ));

@@ -428,3 +428,20 @@ exports.updateAvatar = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+exports.deleteAccount = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        if (user.isMasterAdmin) return res.status(403).json({ msg: 'Master Admin cannot delete account via this endpoint' });
+
+        await User.deleteOne({ _id: userId });
+        res.json({ msg: 'Account deleted successfully' });
+    } catch (err) {
+        console.error("[Auth] Delete Account Error:", err.message);
+        res.status(500).send('Server Error');
+    }
+};
+

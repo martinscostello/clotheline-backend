@@ -15,6 +15,9 @@ import '../chat/chat_screen.dart'; // Added Import
 import 'manage_addresses_screen.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:laundry_app/widgets/common/user_avatar.dart';
+import 'manage_account_screen.dart';
+import 'support_hub_screen.dart';
+import '../../../widgets/dialogs/guest_login_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -202,38 +205,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
 
-                  _buildSectionContainer(
-                    isDark: isDark,
-                    child: Column(
-                      children: [
-                        _buildSettingTile(Icons.notifications_outlined, "Notifications", textColor, isDark, () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()));
-                        }),
-                        _buildDivider(isDark),
-                        _buildSettingTile(Icons.bookmark_outline, "Manage Addresses", textColor, isDark, () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAddressesScreen()));
-                        }),
-                        _buildDivider(isDark),
-                        _buildSettingTile(Icons.question_answer_outlined, "FAQs", textColor, isDark, () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const FaqsScreen()));
-                        }),
-                        _buildDivider(isDark),
-                        _buildSettingTile(Icons.bug_report_outlined, "Report Bug / Feedback", textColor, isDark, () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const FeedbackScreen()));
-                        }),
-                        _buildDivider(isDark),
-                        _buildSettingTile(Icons.lock_outline, "Manage Password", textColor, isDark, () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagePasswordScreen()));
-                        }),
-                        _buildDivider(isDark),
-                        _buildSettingTile(Icons.support_agent_rounded, "Support", textColor, isDark, () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
-                        }),
-                        _buildDivider(isDark),
-                        _buildSettingTile(Icons.info_outline, "About Clotheline", textColor, isDark, () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen()));
-                        }),
-                      ],
+                  Consumer<AuthService>(
+                    builder: (context, auth, _) => _buildSectionContainer(
+                      isDark: isDark,
+                      child: Column(
+                        children: [
+                          _buildSettingTile(Icons.notifications_outlined, "Notifications", textColor, isDark, () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()));
+                          }),
+                          _buildDivider(isDark),
+                          _buildSettingTile(Icons.bookmark_outline, "Manage Addresses", textColor, isDark, () {
+                            if (auth.isGuest) {
+                              _showGuestLoginDialog(context, "Please sign in to manage your addresses.");
+                              return;
+                            }
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAddressesScreen()));
+                          }),
+                          _buildDivider(isDark),
+                          _buildSettingTile(Icons.question_answer_outlined, "FAQs", textColor, isDark, () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const FaqsScreen()));
+                          }),
+                          _buildDivider(isDark),
+                          _buildSettingTile(Icons.bug_report_outlined, "Report Bug / Feedback", textColor, isDark, () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const FeedbackScreen()));
+                          }),
+                          _buildDivider(isDark), // [NEW] Divider requested by user
+                          _buildSettingTile(Icons.person_outline, "Manage Account", textColor, isDark, () {
+                            if (auth.isGuest) {
+                              _showGuestLoginDialog(context, "Please sign in to manage your account.");
+                              return;
+                            }
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAccountScreen()));
+                          }),
+                          _buildDivider(isDark),
+                          _buildSettingTile(Icons.support_agent_rounded, "Support", textColor, isDark, () {
+                            if (auth.isGuest) {
+                              _showGuestLoginDialog(context, "Please sign in to contact support.");
+                              return;
+                            }
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportHubScreen()));
+                          }),
+                          _buildDivider(isDark),
+                          _buildSettingTile(Icons.info_outline, "About Clotheline", textColor, isDark, () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen()));
+                          }),
+                        ],
+                      ),
                     ),
                   ),
 
@@ -296,5 +313,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildDivider(bool isDark) {
     return Divider(height: 1, color: isDark ? Colors.white10 : Colors.grey.shade100, indent: 60);
+  }
+
+  void _showGuestLoginDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => GuestLoginDialog(message: message),
+    );
   }
 }

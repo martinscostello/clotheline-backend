@@ -16,10 +16,13 @@ class AuthService extends ChangeNotifier {
   // Simple in-memory user cache for role checks
   Map<String, dynamic>? _currentUser;
   Map<String, dynamic>? get currentUser => _currentUser;
+  bool _isGuest = false;
+  bool get isGuest => _isGuest;
   bool _isInitialized = false;
 
   // [BOOTSTRAP] Synchronous Hydration
-  void hydrateSimpleProfile(Map<String, dynamic>? profile, String? role) {
+  void hydrateSimpleProfile(Map<String, dynamic>? profile, String? role, {bool isGuest = false}) {
+    _isGuest = isGuest;
     if (profile != null) {
       _currentUser = {
          ...profile,
@@ -57,6 +60,15 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> continueAsGuest() async {
+    _isGuest = true;
+    _currentUser = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_guest', true);
+    await prefs.setBool('is_logged_in', false);
+    notifyListeners();
+  }
+
   // 1. Optimistic Local Load (Fast)
   Future<bool> loadFromStorage() async {
     try {
@@ -70,6 +82,10 @@ class AuthService extends ChangeNotifier {
       final id = await _storage.read(key: 'user_id');
       final isMasterStr = await _storage.read(key: 'is_master_admin');
       final permissionsStr = await _storage.read(key: 'user_permissions');
+      
+      final prefs = await SharedPreferences.getInstance();
+      _isGuest = prefs.getBool('is_guest') ?? false;
+
       
       // [FIX] Load Profile
       final name = await _storage.read(key: 'user_name');
@@ -185,6 +201,9 @@ class AuthService extends ChangeNotifier {
       });
 
       if (response.statusCode == 200) {
+        _isGuest = false;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('is_guest');
         return _processAuthResponse(response.data);
       } else {
         throw Exception('Login Failed: ${response.statusCode}');
@@ -344,7 +363,26 @@ class AuthService extends ChangeNotifier {
     await prefs.setBool('is_logged_in', false);
     
     _currentUser = null;
+    _isGuest = false;
+    await prefs.remove('is_guest');
+    
     notifyListeners();
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      final response = await _apiService.client.delete('/auth/delete-account');
+      if (response.statusCode == 200) {
+        await logout();
+      } else {
+        throw Exception("Failed to delete account");
+      }
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
   }
 
   Future<String?> getToken() async {

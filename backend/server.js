@@ -88,4 +88,27 @@ app.use('/uploads', express.static('uploads'));
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+
+    // Background Cleanup: Auto-delete 'resolved' chat threads after 3 days
+    setInterval(async () => {
+        try {
+            const ChatThread = require('./models/ChatThread');
+            const ChatMessage = require('./models/ChatMessage');
+            const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+            const threadsToDelete = await ChatThread.find({
+                status: 'resolved',
+                resolvedAt: { $lt: threeDaysAgo }
+            }).select('_id');
+
+            if (threadsToDelete.length > 0) {
+                const ids = threadsToDelete.map(t => t._id);
+                await ChatMessage.deleteMany({ threadId: { $in: ids } });
+                await ChatThread.deleteMany({ _id: { $in: ids } });
+                console.log(`[Cleanup] Deleted ${ids.length} resolved threads + messages.`);
+            }
+        } catch (e) {
+            console.error("[Cleanup Error]", e);
+        }
+    }, 24 * 60 * 60 * 1000); // Run once a day
 });

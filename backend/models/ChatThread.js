@@ -13,8 +13,12 @@ const ChatThreadSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['open', 'closed'],
+        enum: ['open', 'resolved'],
         default: 'open'
+    },
+    resolvedAt: {
+        type: Date,
+        default: null
     },
     unreadCountUser: {
         type: Number,

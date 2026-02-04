@@ -9,7 +9,8 @@ import '../../../services/auth_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? orderId;
-  const ChatScreen({super.key, this.orderId});
+  final String? branchId;
+  const ChatScreen({super.key, this.orderId, this.branchId});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -35,8 +36,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final branchProvider = Provider.of<BranchProvider>(context, listen: false);
     final service = Provider.of<ChatService>(context, listen: false);
     
-    if (branchProvider.selectedBranch != null) {
-      service.startPolling(branchProvider.selectedBranch!.id);
+    final branchIdToUse = widget.branchId ?? branchProvider.selectedBranch?.id;
+    
+    if (branchIdToUse != null) {
+      service.startPolling(branchIdToUse);
     }
     
     _msgController.addListener(() {
@@ -89,8 +92,28 @@ class _ChatScreenState extends State<ChatScreen> {
                         return const Center(child: Text("Could not initialize chat.", style: TextStyle(color: Colors.white54)));
                       }
             
+                      final isResolved = chat.currentThread?['status'] == 'resolved';
+
                       return Column(
                         children: [
+                          if (isResolved)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              color: Colors.orangeAccent.withOpacity(0.9),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.lock_clock_outlined, color: Colors.white, size: 20),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      "Ticket Resolved. History will be deleted in 3 days. Send a message to reopen.",
+                                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           Expanded(
                             child: chat.messages.isEmpty 
                               ? _buildEmptyState(isDark)

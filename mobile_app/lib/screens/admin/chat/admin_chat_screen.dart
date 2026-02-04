@@ -172,7 +172,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: ['All', 'Open', 'Closed'].map((s) {
+              children: ['All', 'Open', 'Resolved'].map((s) {
                 final isSelected = _filterStatus == s;
                 return GestureDetector(
                   onTap: () {
@@ -341,15 +341,15 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Text(thread['status'].toString().toUpperCase(), style: TextStyle(fontSize: 10, color: thread['status'] == 'open' ? Colors.green : Colors.grey)),
+                      Text(thread['status'].toString().toUpperCase(), style: TextStyle(fontSize: 10, color: thread['status'] == 'resolved' ? Colors.green : Colors.orangeAccent)),
                     ],
                   ),
                   const Spacer(),
                   _buildActionChip(
                     thread['status'] == 'open' ? Icons.check_circle_outline : Icons.replay,
-                    thread['status'] == 'open' ? "Close" : "Reopen",
+                    thread['status'] == 'open' ? "Resolve Ticket" : "Reopen Ticket",
                     () {
-                      final newStatus = thread['status'] == 'open' ? 'closed' : 'open';
+                      final newStatus = thread['status'] == 'open' ? 'resolved' : 'open';
                       chatService.updateThreadStatus(thread['_id'], newStatus);
                     },
                   ),

@@ -11,6 +11,8 @@ class LaundryGlassBackground extends StatelessWidget {
     
     if (!isDark) {
       return Container(
+        width: double.infinity,
+        height: double.infinity,
         color: const Color(0xFFECECEC), // Match AppTheme.lightBgStart
         child: child,
       );
@@ -27,6 +29,8 @@ class LaundryGlassBackground extends StatelessWidget {
       children: [
         // 1. Background
         Container(
+          width: double.infinity,
+          height: double.infinity,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,

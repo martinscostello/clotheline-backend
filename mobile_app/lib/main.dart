@@ -40,6 +40,7 @@ class BootstrapData {
   final List<dynamic> branchesJson;
   final List<dynamic> servicesJson;
   final bool isLoggedIn;
+  final bool isGuest; // [NEW]
   final bool hasSeenOnboarding; // [NEW]
 
   BootstrapData({
@@ -49,6 +50,7 @@ class BootstrapData {
     required this.branchesJson,
     required this.servicesJson,
     required this.isLoggedIn,
+    this.isGuest = false, // [NEW]
     this.hasSeenOnboarding = false, // [NEW]
   });
 }
@@ -61,6 +63,7 @@ Future<void> main() async {
   
   // A. Auth State
   final bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+  final bool isGuest = prefs.getBool('is_guest') ?? false; // [NEW]
   final bool hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false; // [NEW]
   final String? savedRole = prefs.getString('saved_user_role');
   final String? savedName = prefs.getString('user_name');
@@ -99,6 +102,7 @@ Future<void> main() async {
     branchesJson: branchesJson,
     servicesJson: servicesJson,
     isLoggedIn: isLoggedIn,
+    isGuest: isGuest, // [NEW]
     hasSeenOnboarding: hasSeenOnboarding, // [NEW]
   );
 
@@ -156,9 +160,9 @@ class LaundryApp extends StatelessWidget {
           // We could hydrate simple user profile here if we modified AuthService,
           // but AuthService mostly relies on SecureStorage for tokens.
           // However, we can set the "Memory Cache" for user name/email if we want.
-          if (bootstrap.isLoggedIn) {
+          if (bootstrap.isLoggedIn || bootstrap.isGuest) {
              // Hack: We can pre-set the currentUser map if we want synchronous "Hi Friend"
-             auth.hydrateSimpleProfile(bootstrap.userProfile, bootstrap.userRole);
+             auth.hydrateSimpleProfile(bootstrap.userProfile, bootstrap.userRole, isGuest: bootstrap.isGuest);
           }
           // The rest (validation) happens in background
           if (bootstrap.isLoggedIn) {
@@ -236,18 +240,23 @@ class LaundryApp extends StatelessWidget {
 
   // ... _determineInitialScreen ...
   Widget _determineInitialScreen(BootstrapData data) {
-    if (!data.isLoggedIn) {
-       // [FIX] Show Onboarding if not seen
-       if (!data.hasSeenOnboarding) {
-         return const OnboardingScreen();
-       }
-       return const LoginScreen(); 
+    if (data.isLoggedIn) {
+      if (data.userRole == 'admin') {
+        return const AdminMainLayout();
+      } else {
+        return const MainLayout();
+      }
     }
-    if (data.userRole == 'admin') {
-      return const AdminMainLayout();
-    } else {
-      return const MainLayout();
+    
+    if (data.isGuest) {
+       return const MainLayout();
     }
+
+    if (!data.hasSeenOnboarding) {
+       return const OnboardingScreen();
+    }
+    
+    return const LoginScreen(); 
   }
 }
 

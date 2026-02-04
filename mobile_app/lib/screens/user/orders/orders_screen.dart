@@ -13,6 +13,8 @@ import 'order_detail_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../services/notification_service.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import '../../../widgets/dialogs/guest_login_dialog.dart';
+import '../../../services/auth_service.dart';
 
 class OrdersScreen extends StatefulWidget {
   final int initialIndex;
@@ -202,6 +204,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), 
                          ),
                          onPressed: () {
+                            final auth = context.read<AuthService>();
+                            if (auth.isGuest) {
+                              showDialog(
+                                context: context,
+                                builder: (ctx) => const GuestLoginDialog(
+                                  message: "Please sign in or create an account to resume your checkout.",
+                                ),
+                              );
+                              return;
+                            }
+
                             Navigator.of(context).push(MaterialPageRoute(
                               builder: (context) => const CheckoutScreen()
                             ));

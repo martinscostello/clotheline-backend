@@ -13,6 +13,8 @@ import '../../../../services/notification_service.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import '../products/submit_review_screen.dart';
 import '../../../../services/order_service.dart';
+import '../../../widgets/dialogs/guest_login_dialog.dart';
+import '../../../services/auth_service.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -201,6 +203,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   height: 55,
                   child: ElevatedButton(
                     onPressed: () async {
+                      final auth = context.read<AuthService>();
+                      if (auth.isGuest) {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => const GuestLoginDialog(
+                            message: "Please sign in or create an account to pay for this order.",
+                          ),
+                        );
+                        return;
+                      }
+
                       // Trigger Payment (Revised Flow)
                       final paymentService = PaymentService();
                       final email = order.guestName != null ? "guest@clotheline.com" : "user@clotheline.com"; 

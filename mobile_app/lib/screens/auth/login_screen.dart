@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import 'package:provider/provider.dart';
 import 'signup_screen.dart';
 import 'package:laundry_app/widgets/branding/WashingMachineLogo.dart';
 import '../../utils/toast_utils.dart';
@@ -9,7 +10,8 @@ import '../common/legal_screen.dart';
 import '../../widgets/dialogs/auth_error_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool hideGuestOption;
+  const LoginScreen({super.key, this.hideGuestOption = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -229,6 +231,26 @@ class _LoginScreenState extends State<LoginScreen> {
                          )
                        ],
                      ),
+                     
+                     if (!widget.hideGuestOption) ...[
+                       const SizedBox(height: 16),
+                       TextButton(
+                         onPressed: () async {
+                            await context.read<AuthService>().continueAsGuest();
+                            if (mounted) {
+                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainLayout()));
+                            }
+                         },
+                         child: Text(
+                           "Continue as Guest", 
+                           style: TextStyle(
+                             color: isDark ? Colors.white70 : Colors.black54,
+                             fontWeight: FontWeight.w500,
+                             decoration: TextDecoration.underline
+                           )
+                         ),
+                       ),
+                     ],
                      
                      const SizedBox(height: 40),
   
