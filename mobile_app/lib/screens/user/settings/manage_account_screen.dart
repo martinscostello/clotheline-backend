@@ -72,8 +72,8 @@ class ManageAccountScreen extends StatelessWidget {
                         showDialog(
                           context: context,
                           builder: (ctx) => DeleteAccountDialog(
-                            onDelete: () async {
-                              await context.read<AuthService>().deleteAccount();
+                            onDelete: (password) async {
+                              await context.read<AuthService>().deleteAccount(password);
                               if (context.mounted) {
                                 Navigator.of(context).pushAndRemoveUntil(
                                   MaterialPageRoute(builder: (_) => const LoginScreen()),

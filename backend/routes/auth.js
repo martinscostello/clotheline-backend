@@ -12,8 +12,8 @@ router.get('/users', auth, admin, getAllUsers);
 router.get('/verify', auth, verifyToken); // [FIX] Match mobile app route '/verify'
 router.put('/fcm-token', auth, require('../controllers/authController').updateFcmToken);
 
-router.delete('/:userId', auth, admin, require('../controllers/authController').deleteUser);
 router.delete('/delete-account', auth, require('../controllers/authController').deleteAccount);
+router.delete('/:userId', auth, admin, require('../controllers/authController').deleteUser);
 router.put('/avatar', auth, require('../controllers/authController').updateAvatar);
 
 module.exports = router;

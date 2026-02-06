@@ -431,11 +431,20 @@ exports.updateAvatar = async (req, res) => {
 
 exports.deleteAccount = async (req, res) => {
     try {
+        const { password } = req.body;
+        if (!password) return res.status(400).json({ msg: 'Password is required to delete account' });
+
         const userId = req.user.id;
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
         if (user.isMasterAdmin) return res.status(403).json({ msg: 'Master Admin cannot delete account via this endpoint' });
+
+        // Password Verification
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Invalid password. Account deletion aborted.' });
+        }
 
         await User.deleteOne({ _id: userId });
         res.json({ msg: 'Account deleted successfully' });

@@ -369,9 +369,12 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteAccount() async {
+  Future<void> deleteAccount(String password) async {
     try {
-      final response = await _apiService.client.delete('/auth/delete-account');
+      final response = await _apiService.client.delete(
+        '/auth/delete-account',
+        data: {'password': password},
+      );
       if (response.statusCode == 200) {
         await logout();
       } else {
