@@ -287,6 +287,52 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  // [NEW] Forgot Password
+  Future<void> forgotPassword(String email) async {
+    try {
+      final response = await _apiService.client.post('/auth/forgot-password', data: {'email': email});
+      if (response.statusCode != 200) throw Exception('Failed to request reset OTP');
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  // [NEW] Reset Password
+  Future<void> resetPassword(String email, String otp, String newPassword) async {
+    try {
+      final response = await _apiService.client.post('/auth/reset-password', data: {
+        'email': email,
+        'otp': otp,
+        'newPassword': newPassword
+      });
+      if (response.statusCode != 200) throw Exception('Failed to reset password');
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  // [NEW] Change Password (Logged-in)
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    try {
+      final response = await _apiService.client.put('/auth/change-password', data: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword
+      });
+      if (response.statusCode != 200) throw Exception('Failed to update password');
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
   // Helper to store tokens and set user
   Future<Map<String, dynamic>> _processAuthResponse(Map<String, dynamic> data) async {
     final token = data['token'];

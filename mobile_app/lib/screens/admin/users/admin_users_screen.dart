@@ -206,8 +206,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                 ],
                               ),
                             ),
-                            if (!_isSelectionMode)
+                            if (!_isSelectionMode) ...[
+                              if (isMaster && user['isMasterAdmin'] != true)
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                  onPressed: () => _confirmDeleteUser(context, user),
+                                ),
                               const Icon(Icons.chevron_right, color: Colors.white24),
+                            ],
                           ],
                         ),
                       ),
@@ -304,6 +310,41 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmDeleteUser(BuildContext context, dynamic user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF101020),
+        title: const Text("Wipe User?", style: TextStyle(color: Colors.white)),
+        content: Text(
+          "Are you sure you want to completely remove ${user['name']} from the face of the app? This action is permanent.",
+          style: const TextStyle(color: Colors.white54),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              final success = await Provider.of<AuthService>(context, listen: false).deleteUser(user['_id'].toString());
+              if (success) {
+                if (context.mounted) {
+                  ToastUtils.show(context, "User wiped from existence!", type: ToastType.success);
+                  _fetchUsers(); // Refresh list
+                }
+              } else {
+                if (context.mounted) {
+                  ToastUtils.show(context, "Failed to delete user", type: ToastType.error);
+                }
+              }
+            },
+            child: const Text("Wipe Now", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

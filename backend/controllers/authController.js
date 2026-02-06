@@ -319,14 +319,20 @@ exports.verifyToken = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
     try {
+        // [STRICT] Only Master Admin can delete other users
+        const requester = await User.findById(req.user.id);
+        if (!requester || !requester.isMasterAdmin) {
+            return res.status(403).json({ msg: 'Action restricted to Master Admin only' });
+        }
+
         const user = await User.findById(req.params.userId);
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
-        // Prevent deleting master admin (safety)
-        if (user.isMasterAdmin) return res.status(403).json({ msg: 'Cannot delete Master Admin' });
+        // Prevent deleting another master admin (safety)
+        if (user.isMasterAdmin) return res.status(403).json({ msg: 'Cannot delete a Master Admin' });
 
         await User.deleteOne({ _id: req.params.userId });
-        res.json({ msg: 'User deleted successfully' });
+        res.json({ msg: 'User wiped from the face of the app successfully' });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -450,6 +456,88 @@ exports.deleteAccount = async (req, res) => {
         res.json({ msg: 'Account deleted successfully' });
     } catch (err) {
         console.error("[Auth] Delete Account Error:", err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const normalizedEmail = email.trim().toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail });
+
+        if (!user) {
+            // Security: Don't reveal if user exists, but we'll be helpful for now
+            return res.status(404).json({ msg: 'No user found with this email' });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.otp = otp;
+        user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+        await user.save();
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Clotheline: Password Reset OTP',
+                message: `Your OTP for password reset is: ${otp}. It expires in 10 minutes.`
+            });
+            res.json({ msg: 'Reset OTP sent to email' });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ msg: 'Email could not be sent', debug_otp: otp });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        const user = await User.findOne({
+            email: email.trim().toLowerCase(),
+            otp,
+            otpExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ msg: 'Invalid or expired OTP' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        await user.save();
+
+        res.json({ msg: 'Password reset successful. You can now login.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Incorrect current password' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.json({ msg: 'Password updated successfully' });
+    } catch (err) {
+        console.error(err);
         res.status(500).send('Server Error');
     }
 };

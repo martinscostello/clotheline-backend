@@ -8,6 +8,9 @@ router.post('/signup', signup);
 router.post('/login', login);
 router.post('/verify-email', require('../controllers/authController').verifyEmail); // Matched to mobile app call /verify-email
 router.post('/resend-otp', require('../controllers/authController').resendOtp);
+router.post('/forgot-password', require('../controllers/authController').forgotPassword);
+router.post('/reset-password', require('../controllers/authController').resetPassword);
+router.put('/change-password', auth, require('../controllers/authController').changePassword);
 router.get('/users', auth, admin, getAllUsers);
 router.get('/verify', auth, verifyToken); // [FIX] Match mobile app route '/verify'
 router.put('/fcm-token', auth, require('../controllers/authController').updateFcmToken);

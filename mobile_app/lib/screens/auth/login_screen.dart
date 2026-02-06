@@ -8,6 +8,7 @@ import '../user/main_layout.dart';
 import '../admin/admin_main_layout.dart';
 import '../common/legal_screen.dart';
 import '../../widgets/dialogs/auth_error_dialog.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool hideGuestOption;
@@ -57,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
              secondaryButtonLabel: "Forgot Password?",
              onSecondaryPressed: () {
                 Navigator.pop(ctx);
-                ToastUtils.show(context, "Password Reset coming soon", type: ToastType.info);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()));
              },
            )
          );
@@ -190,8 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                        alignment: Alignment.centerRight,
                        child: TextButton(
                          onPressed: () {
-                           // TODO: Implement Forgot Password navigation
-                           ToastUtils.show(context, "Feature coming soon", type: ToastType.info); 
+                           Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()));
                          },
                          child: Text("Forgot Password?", style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
                        ),

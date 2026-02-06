@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:provider/provider.dart';
+import '../../../services/auth_service.dart';
 import '../../../utils/toast_utils.dart';
 
 class ManagePasswordScreen extends StatefulWidget {
@@ -27,16 +29,25 @@ class _ManagePasswordScreenState extends State<ManagePasswordScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Call actual API endpoint
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (mounted) {
-       setState(() => _isLoading = false);
-       _currentController.clear();
-       _newController.clear();
-       _confirmController.clear();
-       ToastUtils.show(context, "Password updated successfully", type: ToastType.success);
-       Navigator.pop(context);
+    try {
+      await context.read<AuthService>().changePassword(
+        _currentController.text,
+        _newController.text,
+      );
+      
+      if (mounted) {
+         _currentController.clear();
+         _newController.clear();
+         _confirmController.clear();
+         ToastUtils.show(context, "Password updated successfully", type: ToastType.success);
+         Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastUtils.show(context, "Update Failed: $e", type: ToastType.error);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

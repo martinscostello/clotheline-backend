@@ -18,8 +18,8 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(morgan('dev')); // Log requests to console
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
+// Initial Routes (Moving all to after connectDB for consistency)
+// Last Deployment Fix: 2026-02-06
 
 // Basic Route
 app.get('/', (req, res) => {
