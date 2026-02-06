@@ -141,7 +141,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
                         setState(() => _isDeleting = true);
                         try {
                           await widget.onDelete(_passwordController.text);
-                          if (mounted) Navigator.pop(context);
+                          // [FIX] Redundant pop removed. Parent handles navigation to Login.
                         } catch (e) {
                           if (mounted) {
                             setState(() => _isDeleting = false);

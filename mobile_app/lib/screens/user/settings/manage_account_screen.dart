@@ -75,6 +75,15 @@ class ManageAccountScreen extends StatelessWidget {
                             onDelete: (password) async {
                               await context.read<AuthService>().deleteAccount(password);
                               if (context.mounted) {
+                                // Show success feedback
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Account deleted successfully. We hope you return soon..."),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 4),
+                                  ),
+                                );
+                                
                                 Navigator.of(context).pushAndRemoveUntil(
                                   MaterialPageRoute(builder: (_) => const LoginScreen()),
                                   (route) => false,
