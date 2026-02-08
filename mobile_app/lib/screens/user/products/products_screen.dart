@@ -17,6 +17,7 @@ import '../../../utils/toast_utils.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
 import 'package:laundry_app/theme/app_theme.dart';
+import '../../../widgets/products/SalesBanner.dart'; // [NEW] 
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -428,6 +429,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 ),
                               ),
                             ),
+                          ),
+                        if (product.salesBanner != null && product.salesBanner!.isEnabled)
+                          Positioned(
+                            top: 5, left: 5,
+                            child: SalesBanner(config: product.salesBanner!, mode: SalesBannerMode.badge),
                           ),
                         if (discountPct > 0 && !isOOS)
                           Positioned(

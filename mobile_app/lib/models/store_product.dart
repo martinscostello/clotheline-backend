@@ -25,7 +25,8 @@ class StoreProduct {
   final List<ProductReview> reviews; // [NEW]
   final String category; 
   final List<ProductVariant> variants;
-  final List<BranchProductInfo> branchInfo; // [NEW]
+  final List<BranchProductInfo> branchInfo;
+  final SalesBannerConfig? salesBanner; // [NEW]
 
   StoreProduct({
     required this.id,
@@ -48,7 +49,8 @@ class StoreProduct {
     this.isOutOfStock = false, // [NEW]
     this.dealEndTime,
     this.variants = const [],
-    this.branchInfo = const [], // [NEW]
+    this.branchInfo = const [], 
+    this.salesBanner, // [NEW]
   });
   
   // Backward compatibility getter
@@ -91,6 +93,7 @@ class StoreProduct {
       branchInfo: (json['branchInfo'] is List) 
           ? (json['branchInfo'] as List).whereType<Map>().map((e) => BranchProductInfo.fromJson(Map<String, dynamic>.from(e))).toList() 
           : [],
+      salesBanner: json['salesBanner'] != null ? SalesBannerConfig.fromJson(json['salesBanner']) : null,
     );
   }
 
@@ -105,11 +108,79 @@ class StoreProduct {
       'originalPrice': originalPrice,
       'stock': stockLevel,
       'isFreeShipping': isFreeShipping,
-      'isOutOfStock': isOutOfStock, // [NEW]
-      'variations': variants.map((e) => e.toJson()).toList(),
-      'branchInfo': branchInfo.map((e) => e.toJson()).toList(),
-      // Reviews usually not sent back on product update
+       'isOutOfStock': isOutOfStock, 
+       'variations': variants.map((e) => e.toJson()).toList(),
+       'branchInfo': branchInfo.map((e) => e.toJson()).toList(),
+       'salesBanner': salesBanner?.toJson(),
     };
+  }
+}
+
+class SalesBannerConfig {
+  final bool isEnabled;
+  final int style;
+  final String primaryColor;
+  final String secondaryColor;
+  final String accentColor;
+  final String primaryText;
+  final String secondaryText;
+  final String discountText;
+
+  SalesBannerConfig({
+    this.isEnabled = false,
+    this.style = 1,
+    this.primaryColor = '#7C4DFF',
+    this.secondaryColor = '#FFD600',
+    this.accentColor = '#2979FF',
+    this.primaryText = 'SPECIAL SALE',
+    this.secondaryText = 'UP TO',
+    this.discountText = '50% OFF',
+  });
+
+  factory SalesBannerConfig.fromJson(Map<String, dynamic> json) {
+    return SalesBannerConfig(
+      isEnabled: json['isEnabled'] ?? false,
+      style: json['style'] ?? 1,
+      primaryColor: json['primaryColor'] ?? '#7C4DFF',
+      secondaryColor: json['secondaryColor'] ?? '#FFD600',
+      accentColor: json['accentColor'] ?? '#2979FF',
+      primaryText: json['primaryText'] ?? 'SPECIAL SALE',
+      secondaryText: json['secondaryText'] ?? 'UP TO',
+      discountText: json['discountText'] ?? '50% OFF',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'isEnabled': isEnabled,
+    'style': style,
+    'primaryColor': primaryColor,
+    'secondaryColor': secondaryColor,
+    'accentColor': accentColor,
+    'primaryText': primaryText,
+    'secondaryText': secondaryText,
+    'discountText': discountText,
+  };
+
+  SalesBannerConfig copyWith({
+    bool? isEnabled,
+    int? style,
+    String? primaryColor,
+    String? secondaryColor,
+    String? accentColor,
+    String? primaryText,
+    String? secondaryText,
+    String? discountText,
+  }) {
+    return SalesBannerConfig(
+      isEnabled: isEnabled ?? this.isEnabled,
+      style: style ?? this.style,
+      primaryColor: primaryColor ?? this.primaryColor,
+      secondaryColor: secondaryColor ?? this.secondaryColor,
+      accentColor: accentColor ?? this.accentColor,
+      primaryText: primaryText ?? this.primaryText,
+      secondaryText: secondaryText ?? this.secondaryText,
+      discountText: discountText ?? this.discountText,
+    );
   }
 }
 

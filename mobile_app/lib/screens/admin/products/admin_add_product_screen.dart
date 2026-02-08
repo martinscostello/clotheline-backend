@@ -10,8 +10,9 @@ import '../../../services/store_service.dart';
 import '../../../services/api_service.dart'; // For Base URL
 import '../../../models/store_product.dart';
 import '../../../utils/currency_formatter.dart';
-import '../../../widgets/custom_cached_image.dart'; // Added Import
 import '../../../utils/toast_utils.dart';
+import '../../../widgets/products/SalesBanner.dart'; // [NEW] 
+import 'package:flutter_colorpicker/flutter_colorpicker.dart'; // [NEW]
 
 class AdminAddProductScreen extends StatefulWidget {
   final StoreProduct? product; // If provided, we are editing
@@ -45,6 +46,9 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   List<ProductVariant> _variants = [];
   List<BranchProductInfo> _branchInfo = [];
 
+  // Sales Banner [NEW]
+  late SalesBannerConfig _bannerConfig;
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +65,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     _selectedCategory = p?.category ?? "Cleaning";
     _isFreeShipping = p?.isFreeShipping ?? false;
     _isOutOfStock = p?.isOutOfStock ?? false; // [NEW]
+    
+    _bannerConfig = p?.salesBanner ?? SalesBannerConfig();
     
     // Initialize existing images as 'completed' uploads
     if (p?.imageUrls != null) {
@@ -213,6 +219,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
             "originalPrice": vBase 
           };
         }).toList(),
+        "salesBanner": _bannerConfig.toJson(), // [NEW]
         // Removed Legacy "branchInfo" override
       };
 
@@ -531,6 +538,11 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                   );
                 }),
 
+                const SizedBox(height: 30),
+
+                // 6. Sales Banner Section [NEW]
+                _buildSalesBannerSection(),
+
                 const SizedBox(height: 40),
 
                 // Save Button
@@ -603,6 +615,195 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
         )
       ],
     ));
+  }
+
+  // --- SALES BANNER BUILDER [NEW] ---
+  Widget _buildSalesBannerSection() {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Sales Banner", style: TextStyle(color: AppTheme.primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
+              Switch(
+                value: _bannerConfig.isEnabled,
+                activeColor: AppTheme.primaryColor,
+                onChanged: (val) => setState(() => _bannerConfig = _bannerConfig.copyWith(isEnabled: val)),
+              ),
+            ],
+          ),
+          if (_bannerConfig.isEnabled) ...[
+            const SizedBox(height: 15),
+            
+            // Preview
+            const Text("Live Preview (Card Badge)", style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 10),
+            Center(
+              child: Container(
+                width: 150, height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 5, left: 5,
+                      child: SalesBanner(config: _bannerConfig, mode: SalesBannerMode.badge),
+                    ),
+                    const Center(child: Text("Product Image", style: TextStyle(color: Colors.white24, fontSize: 10))),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
+            const Text("Live Preview (Detail Base)", style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 10),
+            SalesBanner(config: _bannerConfig, mode: SalesBannerMode.flat),
+            
+            const SizedBox(height: 20),
+            
+            // Style Selector
+            const Text("Banner Style", style: TextStyle(color: Colors.white70, fontSize: 14)),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: 6,
+                itemBuilder: (context, index) {
+                  final style = index + 1;
+                  final isSelected = _bannerConfig.style == style;
+                  return GestureDetector(
+                    onTap: () => setState(() => _bannerConfig = _bannerConfig.copyWith(style: style)),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppTheme.primaryColor : Colors.white10,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: isSelected ? Colors.white38 : Colors.white12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text("Style $style", style: const TextStyle(color: Colors.white, fontSize: 12)),
+                    ),
+                  );
+                },
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Text Inputs
+            _buildBannerTextField(
+              label: "Primary Text", 
+              value: _bannerConfig.primaryText,
+              onChanged: (val) => setState(() => _bannerConfig = _bannerConfig.copyWith(primaryText: val)),
+            ),
+            const SizedBox(height: 10),
+            _buildBannerTextField(
+              label: "Secondary Text", 
+              value: _bannerConfig.secondaryText,
+              onChanged: (val) => setState(() => _bannerConfig = _bannerConfig.copyWith(secondaryText: val)),
+            ),
+            const SizedBox(height: 10),
+            _buildBannerTextField(
+              label: "Discount Text", 
+              value: _bannerConfig.discountText,
+              onChanged: (val) => setState(() => _bannerConfig = _bannerConfig.copyWith(discountText: val)),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Color Pickers
+            Row(
+              children: [
+                Expanded(child: _buildColorTile("Primary", _bannerConfig.primaryColor, (c) => setState(() => _bannerConfig = _bannerConfig.copyWith(primaryColor: c)))),
+                Expanded(child: _buildColorTile("Secondary", _bannerConfig.secondaryColor, (c) => setState(() => _bannerConfig = _bannerConfig.copyWith(secondaryColor: c)))),
+                Expanded(child: _buildColorTile("Accent", _bannerConfig.accentColor, (c) => setState(() => _bannerConfig = _bannerConfig.copyWith(accentColor: c)))),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBannerTextField({required String label, required String value, required Function(String) onChanged}) {
+    return TextFormField(
+      initialValue: value,
+      onChanged: onChanged,
+      style: const TextStyle(color: Colors.white, fontSize: 13),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+      ),
+    );
+  }
+
+  Widget _buildColorTile(String label, String hex, Function(String) onSet) {
+    final color = _parseColor(hex);
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+        const SizedBox(height: 5),
+        GestureDetector(
+          onTap: () => _pickColor(color, onSet),
+          child: Container(
+            width: 35, height: 35,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white24, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _pickColor(Color initialColor, Function(String) onSet) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text("Pick a Color", style: TextStyle(color: Colors.white)),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: initialColor,
+            onColorChanged: (color) {
+              final hex = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+              onSet(hex);
+            },
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Done")),
+        ],
+      ),
+    );
+  }
+
+  Color _parseColor(String hex) {
+    try {
+      hex = hex.replaceAll('#', '');
+      if (hex.length == 6) hex = "FF$hex";
+      return Color(int.parse(hex, radix: 16));
+    } catch (e) {
+      return Colors.red;
+    }
   }
 
 }

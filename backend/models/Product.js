@@ -34,7 +34,19 @@ const ProductSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Branch',
         required: true
+    },
+
+    // [NEW] Marketing Sales Banner
+    salesBanner: {
+        isEnabled: { type: Boolean, default: false },
+        style: { type: Number, default: 1 }, // 1 to 6
+        primaryColor: { type: String, default: '#7C4DFF' }, // Deep Purple
+        secondaryColor: { type: String, default: '#FFD600' }, // Yellow
+        accentColor: { type: String, default: '#2979FF' }, // Blue
+        primaryText: { type: String, default: 'SPECIAL SALE' },
+        secondaryText: { type: String, default: 'UP TO' },
+        discountText: { type: String, default: '50% OFF' }
     }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Product', ProductSchema);

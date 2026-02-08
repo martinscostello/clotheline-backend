@@ -19,6 +19,7 @@ import '../../../widgets/custom_cached_image.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import '../../../../theme/app_theme.dart';
+import '../../../widgets/products/SalesBanner.dart'; // [NEW] 
 
 class ProductDetailScreen extends StatefulWidget {
   final StoreProduct product;
@@ -227,7 +228,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                                ),
                              ),
-                           )
+                           ),
+                           if (widget.product.salesBanner != null && widget.product.salesBanner!.isEnabled)
+                             Positioned(
+                               bottom: 0, left: 0, right: 0,
+                               child: SalesBanner(config: widget.product.salesBanner!, mode: SalesBannerMode.flat),
+                             ),
                          ],
                        ),
                      ),
