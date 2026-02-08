@@ -766,7 +766,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
             ),
             const SizedBox(height: 10),
             _buildBannerTextField(
-              label: "Secondary Text (Dynamic Height)", 
+              label: "Secondary Text (Auto-Shrinks to Fit)", 
               value: _detailBannerConfig.secondaryText,
               onChanged: (val) => setState(() => _detailBannerConfig = _detailBannerConfig.copyWith(secondaryText: val)),
             ),

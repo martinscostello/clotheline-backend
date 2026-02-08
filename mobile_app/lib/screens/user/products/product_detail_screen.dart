@@ -240,12 +240,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                        child: Column(
                          crossAxisAlignment: CrossAxisAlignment.start,
                          children: [
-                            _buildDeliveryAssurance(),
                             if (widget.product.detailBanner != null && widget.product.detailBanner!.isEnabled) ...[
                               const SizedBox(height: 10),
                               SalesBanner(config: widget.product.detailBanner!, mode: SalesBannerMode.flat),
                               const SizedBox(height: 10),
                             ],
+                            _buildDeliveryAssurance(),
                            // 1. Title (Expandable)
                            _buildExpandableTitle(textColor),
                            const SizedBox(height: 6),

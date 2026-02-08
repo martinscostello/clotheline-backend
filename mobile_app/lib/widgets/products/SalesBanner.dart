@@ -51,17 +51,19 @@ class SalesBanner extends StatelessWidget {
   Widget _buildFlatDesign(Color primary, Color secondary, Color accent) {
     return Container(
       width: double.infinity,
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 5,
-              child: CustomPaint(
-                painter: AdaptiveFlatSectionPainter(color: primary, isLeft: true),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  alignment: Alignment.centerLeft,
+      height: 32, // More compact fixed height
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            flex: 5,
+            child: CustomPaint(
+              painter: AdaptiveFlatSectionPainter(color: primary, isLeft: true),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
+                alignment: Alignment.centerLeft,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
                   child: Text(
                     config.primaryText,
                     style: TextStyle(color: accent, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
@@ -69,13 +71,16 @@ class SalesBanner extends StatelessWidget {
                 ),
               ),
             ),
-            Expanded(
-              flex: 4,
-              child: CustomPaint(
-                painter: AdaptiveFlatSectionPainter(color: secondary, isLeft: false),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(30, 12, 15, 12),
-                  alignment: Alignment.centerRight,
+          ),
+          Expanded(
+            flex: 4,
+            child: CustomPaint(
+              painter: AdaptiveFlatSectionPainter(color: secondary, isLeft: false),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(25, 0, 12, 0),
+                alignment: Alignment.centerRight,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
                   child: Text(
                     config.secondaryText,
                     style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
@@ -84,8 +89,8 @@ class SalesBanner extends StatelessWidget {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
