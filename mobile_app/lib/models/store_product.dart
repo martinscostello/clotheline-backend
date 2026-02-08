@@ -26,7 +26,8 @@ class StoreProduct {
   final String category; 
   final List<ProductVariant> variants;
   final List<BranchProductInfo> branchInfo;
-  final SalesBannerConfig? salesBanner; // [NEW]
+  final SalesBannerConfig? salesBanner; // Card Badge
+  final SalesBannerConfig? detailBanner; // [NEW] Detail Page Banner
 
   StoreProduct({
     required this.id,
@@ -50,7 +51,8 @@ class StoreProduct {
     this.dealEndTime,
     this.variants = const [],
     this.branchInfo = const [], 
-    this.salesBanner, // [NEW]
+    this.salesBanner,
+    this.detailBanner,
   });
   
   // Backward compatibility getter
@@ -94,6 +96,7 @@ class StoreProduct {
           ? (json['branchInfo'] as List).whereType<Map>().map((e) => BranchProductInfo.fromJson(Map<String, dynamic>.from(e))).toList() 
           : [],
       salesBanner: json['salesBanner'] != null ? SalesBannerConfig.fromJson(json['salesBanner']) : null,
+      detailBanner: json['detailBanner'] != null ? SalesBannerConfig.fromJson(json['detailBanner']) : null, // [NEW]
     );
   }
 
@@ -112,6 +115,7 @@ class StoreProduct {
        'variations': variants.map((e) => e.toJson()).toList(),
        'branchInfo': branchInfo.map((e) => e.toJson()).toList(),
        'salesBanner': salesBanner?.toJson(),
+       'detailBanner': detailBanner?.toJson(),
     };
   }
 }
@@ -136,6 +140,14 @@ class SalesBannerConfig {
     this.secondaryText = 'UP TO',
     this.discountText = '50% OFF',
   });
+
+  factory SalesBannerConfig.defaultDetail() => SalesBannerConfig(
+    primaryColor: '#8E24AA',
+    secondaryColor: '#FFEB3B',
+    accentColor: '#FFFFFF',
+    primaryText: 'STUNNING QUALITY. AMAZING SERVICE.',
+    secondaryText: 'CLOTHELINE PREMIUM COLLECTION',
+  );
 
   factory SalesBannerConfig.fromJson(Map<String, dynamic> json) {
     return SalesBannerConfig(

@@ -46,6 +46,14 @@ const ProductSchema = new mongoose.Schema({
         primaryText: { type: String, default: 'SPECIAL SALE' },
         secondaryText: { type: String, default: 'UP TO' },
         discountText: { type: String, default: '50% OFF' }
+    },
+    detailBanner: {
+        isEnabled: { type: Boolean, default: false },
+        primaryColor: { type: String, default: '#8E24AA' },
+        secondaryColor: { type: String, default: '#FFEB3B' },
+        accentColor: { type: String, default: '#FFFFFF' },
+        primaryText: { type: String, default: 'STUNNING QUALITY. AMAZING SERVICE.' },
+        secondaryText: { type: String, default: 'CLOTHELINE PREMIUM COLLECTION' }
     }
 }, { timestamps: true });
 

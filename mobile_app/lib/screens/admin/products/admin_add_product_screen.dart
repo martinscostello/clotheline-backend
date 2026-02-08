@@ -49,6 +49,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
 
   // Sales Banner [NEW]
   late SalesBannerConfig _bannerConfig;
+  late SalesBannerConfig _detailBannerConfig; // [NEW]
 
   @override
   void initState() {
@@ -68,6 +69,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     _isOutOfStock = p?.isOutOfStock ?? false; // [NEW]
     
     _bannerConfig = p?.salesBanner ?? SalesBannerConfig();
+    _detailBannerConfig = p?.detailBanner ?? SalesBannerConfig.defaultDetail(); // [NEW]
     
     // Initialize existing images as 'completed' uploads
     if (p?.imageUrls != null) {
@@ -220,7 +222,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
             "originalPrice": vBase 
           };
         }).toList(),
-        "salesBanner": _bannerConfig.toJson(), // [NEW]
+        "salesBanner": _bannerConfig.toJson(), 
+        "detailBanner": _detailBannerConfig.toJson(), // [NEW]
         // Removed Legacy "branchInfo" override
       };
 
@@ -541,8 +544,10 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
 
                 const SizedBox(height: 30),
 
-                // 6. Sales Banner Section [NEW]
+                // 6. Sales Banner Sections
                 _buildSalesBannerSection(),
+                const SizedBox(height: 20),
+                _buildDetailBannerSection(),
 
                 const SizedBox(height: 40),
 
@@ -618,12 +623,12 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     ));
   }
 
-  // --- SALES BANNER BUILDER [NEW] ---
+  // --- SALES BANNER BUILDER ---
   Widget _buildSalesBannerSection() {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12),
       ),
@@ -633,7 +638,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Sales Banner", style: TextStyle(color: AppTheme.primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text("Store Card Badge", style: TextStyle(color: AppTheme.primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
               Switch(
                 value: _bannerConfig.isEnabled,
                 activeColor: AppTheme.primaryColor,
@@ -643,8 +648,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
           ),
           if (_bannerConfig.isEnabled) ...[
             const SizedBox(height: 15),
-            
-            // Preview
             const Text("Live Preview (Card Badge)", style: TextStyle(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 10),
             Center(
@@ -666,14 +669,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 15),
-            const Text("Live Preview (Detail Base)", style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 10),
-            SalesBanner(config: _bannerConfig, mode: SalesBannerMode.flat),
-            
             const SizedBox(height: 20),
-            
-            // Style Selector
             const Text("Banner Style", style: TextStyle(color: Colors.white70, fontSize: 14)),
             const SizedBox(height: 10),
             SizedBox(
@@ -701,41 +697,95 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 },
               ),
             ),
-            
             const SizedBox(height: 20),
-            
-            // Text Inputs
             _buildBannerTextField(
-              label: "Primary Text", 
+              label: "Primary Text (Short)", 
               value: _bannerConfig.primaryText,
               onChanged: (val) => setState(() => _bannerConfig = _bannerConfig.copyWith(primaryText: val)),
             ),
             const SizedBox(height: 10),
-            _buildBannerTextField(
-              label: "Secondary Text", 
-              value: _bannerConfig.secondaryText,
-              onChanged: (val) => setState(() => _bannerConfig = _bannerConfig.copyWith(secondaryText: val)),
-            ),
-            const SizedBox(height: 10),
-            _buildBannerTextField(
-              label: "Discount Text", 
-              value: _bannerConfig.discountText,
-              onChanged: (val) => setState(() => _bannerConfig = _bannerConfig.copyWith(discountText: val)),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Color Pickers
             Row(
               children: [
-                Expanded(child: _buildColorTile("Primary", _bannerConfig.primaryColor, (c) => setState(() => _bannerConfig = _bannerConfig.copyWith(primaryColor: c)))),
-                Expanded(child: _buildColorTile("Secondary", _bannerConfig.secondaryColor, (c) => setState(() => _bannerConfig = _bannerConfig.copyWith(secondaryColor: c)))),
-                Expanded(child: _buildColorTile("Accent", _bannerConfig.accentColor, (c) => setState(() => _bannerConfig = _bannerConfig.copyWith(accentColor: c)))),
+                Expanded(
+                  child: _buildBannerTextField(
+                    label: "Secondary", 
+                    value: _bannerConfig.secondaryText,
+                    onChanged: (val) => setState(() => _bannerConfig = _bannerConfig.copyWith(secondaryText: val)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildBannerTextField(
+                    label: "Discount", 
+                    value: _bannerConfig.discountText,
+                    onChanged: (val) => setState(() => _bannerConfig = _bannerConfig.copyWith(discountText: val)),
+                  ),
+                ),
               ],
             ),
+            const SizedBox(height: 20),
+            _buildBannerColorPickers(_bannerConfig, (updated) => setState(() => _bannerConfig = updated)),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildDetailBannerSection() {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Product Detail Banner", style: TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.bold)),
+              Switch(
+                value: _detailBannerConfig.isEnabled,
+                activeColor: Colors.orange,
+                onChanged: (val) => setState(() => _detailBannerConfig = _detailBannerConfig.copyWith(isEnabled: val)),
+              ),
+            ],
+          ),
+          if (_detailBannerConfig.isEnabled) ...[
+            const SizedBox(height: 15),
+            const Text("Live Preview (Adaptive Detail Mode)", style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 10),
+            SalesBanner(config: _detailBannerConfig, mode: SalesBannerMode.flat),
+            const SizedBox(height: 20),
+            _buildBannerTextField(
+              label: "Primary Text", 
+              value: _detailBannerConfig.primaryText,
+              onChanged: (val) => setState(() => _detailBannerConfig = _detailBannerConfig.copyWith(primaryText: val)),
+            ),
+            const SizedBox(height: 10),
+            _buildBannerTextField(
+              label: "Secondary Text (Dynamic Height)", 
+              value: _detailBannerConfig.secondaryText,
+              onChanged: (val) => setState(() => _detailBannerConfig = _detailBannerConfig.copyWith(secondaryText: val)),
+            ),
+            const SizedBox(height: 20),
+            _buildBannerColorPickers(_detailBannerConfig, (updated) => setState(() => _detailBannerConfig = updated)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBannerColorPickers(SalesBannerConfig config, Function(SalesBannerConfig) onUpdate) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildColorTile("Primary", config.primaryColor, (c) => onUpdate(config.copyWith(primaryColor: c))),
+        _buildColorTile("Secondary", config.secondaryColor, (c) => onUpdate(config.copyWith(secondaryColor: c))),
+        _buildColorTile("Accent/Text", config.accentColor, (c) => onUpdate(config.copyWith(accentColor: c))),
+      ],
     );
   }
 

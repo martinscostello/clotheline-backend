@@ -229,11 +229,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                ),
                              ),
                            ),
-                           if (widget.product.salesBanner != null && widget.product.salesBanner!.isEnabled)
-                             Positioned(
-                               bottom: 0, left: 0, right: 0,
-                               child: SalesBanner(config: widget.product.salesBanner!, mode: SalesBannerMode.flat),
-                             ),
                          ],
                        ),
                      ),
@@ -246,6 +241,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                          crossAxisAlignment: CrossAxisAlignment.start,
                          children: [
                             _buildDeliveryAssurance(),
+                            if (widget.product.detailBanner != null && widget.product.detailBanner!.isEnabled) ...[
+                              const SizedBox(height: 10),
+                              SalesBanner(config: widget.product.detailBanner!, mode: SalesBannerMode.flat),
+                              const SizedBox(height: 10),
+                            ],
                            // 1. Title (Expandable)
                            _buildExpandableTitle(textColor),
                            const SizedBox(height: 6),

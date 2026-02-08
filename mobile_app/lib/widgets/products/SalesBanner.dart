@@ -50,33 +50,37 @@ class SalesBanner extends StatelessWidget {
   // --- FLAT DESIGN (Detail Page Base) ---
   Widget _buildFlatDesign(Color primary, Color secondary, Color accent) {
     return Container(
-      height: 40,
       width: double.infinity,
-      child: ClipPath(
-        clipper: SlantClipper(),
+      child: IntrinsicHeight(
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              flex: 6,
-              child: Container(
-                color: primary,
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Text(
-                  config.primaryText,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+              flex: 5,
+              child: CustomPaint(
+                painter: AdaptiveFlatSectionPainter(color: primary, isLeft: true),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    config.primaryText,
+                    style: TextStyle(color: accent, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5),
+                  ),
                 ),
               ),
             ),
             Expanded(
               flex: 4,
-              child: Container(
-                color: secondary,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  config.secondaryText,
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+              child: CustomPaint(
+                painter: AdaptiveFlatSectionPainter(color: secondary, isLeft: false),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(30, 12, 15, 12),
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    config.secondaryText,
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
+                    textAlign: TextAlign.right,
+                  ),
                 ),
               ),
             ),
@@ -359,4 +363,34 @@ class StarburstPainter extends CustomPainter {
   }
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class AdaptiveFlatSectionPainter extends CustomPainter {
+  final Color color;
+  final bool isLeft;
+
+  AdaptiveFlatSectionPainter({required this.color, required this.isLeft});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final path = Path();
+
+    if (isLeft) {
+      path.lineTo(size.width, 0);
+      path.lineTo(size.width - 20, size.height);
+      path.lineTo(0, size.height);
+    } else {
+      path.moveTo(20, 0);
+      path.lineTo(size.width, 0);
+      path.lineTo(size.width, size.height);
+      path.lineTo(0, size.height);
+    }
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(AdaptiveFlatSectionPainter oldDelegate) => oldDelegate.color != color || oldDelegate.isLeft != isLeft;
 }

@@ -89,11 +89,11 @@ warning • Unused import: '../../user/chat/chat_screen.dart' • lib/screens/ad
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/orders/admin_orders_screen.dart:393:22 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/orders/admin_orders_screen.dart:395:41 • deprecated_member_use
 warning • The value of the field '_branchInfo' isn't used • lib/screens/admin/products/admin_add_product_screen.dart:48:27 • unused_field
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/products/admin_add_product_screen.dart:355:58 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/products/admin_add_product_screen.dart:626:29 • deprecated_member_use
-   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/products/admin_add_product_screen.dart:639:17 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/products/admin_add_product_screen.dart:751:33 • deprecated_member_use
-   info • 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion • lib/screens/admin/products/admin_add_product_screen.dart:788:37 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/products/admin_add_product_screen.dart:358:58 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/products/admin_add_product_screen.dart:644:17 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/products/admin_add_product_screen.dart:751:17 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/products/admin_add_product_screen.dart:801:33 • deprecated_member_use
+   info • 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion • lib/screens/admin/products/admin_add_product_screen.dart:838:37 • deprecated_member_use
    info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/admin/products/admin_products_screen.dart:182:39 • use_build_context_synchronously
    info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/products/product_reviews_detail_screen.dart:124:19 • deprecated_member_use
    info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/screens/admin/promotions/admin_promotions_screen.dart:163:15 • deprecated_member_use
@@ -404,15 +404,15 @@ warning • Unused import: 'package:liquid_glass_ui/liquid_glass_ui.dart' • li
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/navigation/PremiumNavBar.dart:206:44 • deprecated_member_use
    info • The file name 'SalesBanner.dart' isn't a lower_case_with_underscores identifier • lib/widgets/products/SalesBanner.dart:1:1 • file_names
    info • Use a 'SizedBox' to add whitespace to a layout • lib/widgets/products/SalesBanner.dart:52:12 • sized_box_for_whitespace
-   info • Unnecessary instance of 'Container' • lib/widgets/products/SalesBanner.dart:93:12 • avoid_unnecessary_containers
-   info • Unnecessary instance of 'Container' • lib/widgets/products/SalesBanner.dart:134:12 • avoid_unnecessary_containers
-   info • Use a 'SizedBox' to add whitespace to a layout • lib/widgets/products/SalesBanner.dart:175:12 • sized_box_for_whitespace
-   info • Use a 'SizedBox' to add whitespace to a layout • lib/widgets/products/SalesBanner.dart:196:12 • sized_box_for_whitespace
-   info • Use a 'SizedBox' to add whitespace to a layout • lib/widgets/products/SalesBanner.dart:255:12 • sized_box_for_whitespace
-   info • Use 'const' for final variables initialized to a constant value • lib/widgets/products/SalesBanner.dart:343:5 • prefer_const_declarations
-   info • Statements in an if should be enclosed in a block • lib/widgets/products/SalesBanner.dart:355:21 • curly_braces_in_flow_control_structures
-   info • Statements in an if should be enclosed in a block • lib/widgets/products/SalesBanner.dart:355:45 • curly_braces_in_flow_control_structures
+   info • Unnecessary instance of 'Container' • lib/widgets/products/SalesBanner.dart:97:12 • avoid_unnecessary_containers
+   info • Unnecessary instance of 'Container' • lib/widgets/products/SalesBanner.dart:138:12 • avoid_unnecessary_containers
+   info • Use a 'SizedBox' to add whitespace to a layout • lib/widgets/products/SalesBanner.dart:179:12 • sized_box_for_whitespace
+   info • Use a 'SizedBox' to add whitespace to a layout • lib/widgets/products/SalesBanner.dart:200:12 • sized_box_for_whitespace
+   info • Use a 'SizedBox' to add whitespace to a layout • lib/widgets/products/SalesBanner.dart:259:12 • sized_box_for_whitespace
+   info • Use 'const' for final variables initialized to a constant value • lib/widgets/products/SalesBanner.dart:347:5 • prefer_const_declarations
+   info • Statements in an if should be enclosed in a block • lib/widgets/products/SalesBanner.dart:359:21 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/widgets/products/SalesBanner.dart:359:45 • curly_braces_in_flow_control_structures
    info • The file name 'RefractiveRingClipper.dart' isn't a lower_case_with_underscores identifier • lib/widgets/ui/RefractiveRingClipper.dart:1:1 • file_names
    info • Use 'const' for final variables initialized to a constant value • lib/widgets/walkthrough/pulse_overlay.dart:222:5 • prefer_const_declarations
 
-414 issues found. (ran in 7.2s)
+414 issues found. (ran in 5.9s)
