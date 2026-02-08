@@ -117,7 +117,7 @@ class SalesBanner extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(config.secondaryText, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-                    Text(config.discountText.replaceAll(' OFF', ''), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.black)),
+                    Text(config.discountText.replaceAll(' OFF', ''), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
                     const Text("OFF", style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
                   ],
                 ),
@@ -138,7 +138,7 @@ class SalesBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.fromLTRB(10, 6, 30, 6),
             decoration: BoxDecoration(
-              color: primary.withOpacity(0.9),
+              color: primary.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -153,13 +153,13 @@ class SalesBanner extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accent,
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: const Offset(0, 2))],
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                    Text(config.secondaryText, style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
-                   Text(config.discountText.split(' ').first, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.black)),
+                   Text(config.discountText.split(' ').first, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
                    const Text("OFF", style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -180,8 +180,8 @@ class SalesBanner extends StatelessWidget {
            child: Column(
              mainAxisAlignment: MainAxisAlignment.center,
              children: [
-               Text(config.primaryText.split(' ').first, style: TextStyle(color: secondary, fontSize: 9, fontWeight: FontWeight.black)),
-               Text(config.primaryText.split(' ').last, style: TextStyle(color: secondary, fontSize: 9, fontWeight: FontWeight.black)),
+               Text(config.primaryText.split(' ').first, style: TextStyle(color: secondary, fontSize: 9, fontWeight: FontWeight.w900)),
+               Text(config.primaryText.split(' ').last, style: TextStyle(color: secondary, fontSize: 9, fontWeight: FontWeight.w900)),
                Container(height: 1, width: 25, color: Colors.white30, margin: const EdgeInsets.symmetric(vertical: 2)),
                Text(config.discountText, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
              ],
@@ -211,12 +211,12 @@ class SalesBanner extends StatelessWidget {
              child: Container(
                width: 38, height: 38,
                decoration: BoxDecoration(
-                 gradient: LinearGradient(colors: [accent, accent.withOpacity(0.8)]),
+                 gradient: LinearGradient(colors: [accent, accent.withValues(alpha: 0.8)]),
                  shape: BoxShape.circle,
                  border: Border.all(color: Colors.white, width: 1),
                ),
                child: Center(
-                 child: Text(config.discountText.split(' ').first, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.black)),
+                 child: Text(config.discountText.split(' ').first, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900)),
                ),
              ),
            )
@@ -230,11 +230,11 @@ class SalesBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: primary, width: 1.5),
         boxShadow: [
-          BoxShadow(color: primary.withOpacity(0.5), blurRadius: 8, spreadRadius: 1)
+          BoxShadow(color: primary.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 1)
         ],
       ),
       child: Row(
@@ -244,7 +244,7 @@ class SalesBanner extends StatelessWidget {
           const SizedBox(width: 4),
           Text(config.primaryText, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
           const SizedBox(width: 4),
-          Text(config.discountText, style: TextStyle(color: secondary, fontSize: 11, fontWeight: FontWeight.black)),
+          Text(config.discountText, style: TextStyle(color: secondary, fontSize: 11, fontWeight: FontWeight.w900)),
         ],
       ),
     );
@@ -275,7 +275,7 @@ class SalesBanner extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accent,
                 borderRadius: BorderRadius.circular(4),
-                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)]
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]
               ),
               alignment: Alignment.center,
               child: Text(config.discountText, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
@@ -291,21 +291,9 @@ class SalesBanner extends StatelessWidget {
 
 class SlantClipper extends CustomClipper<Path> {
   @override
-  Path getChild(Size size) {
-    final path = Path();
-    path.lineTo(size.width * 0.55, 0);
-    path.lineTo(size.width * 0.45, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-    return path;
-    // Note: Actually Row Expand handles the split, Clipper just for the slant line effect?
-    // Let's do a better clipper for the whole row.
-  }
-  
-  @override
   Path getClip(Size size) {
     final path = Path();
-    path.lineTo(size.width, 0);
+    path.lineTo(size.width * 0.9, 0);
     path.lineTo(size.width, size.height);
     path.lineTo(0, size.height);
     path.close();

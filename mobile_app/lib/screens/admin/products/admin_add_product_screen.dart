@@ -11,6 +11,7 @@ import '../../../services/api_service.dart'; // For Base URL
 import '../../../models/store_product.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../utils/toast_utils.dart';
+import '../../../widgets/custom_cached_image.dart';
 import '../../../widgets/products/SalesBanner.dart'; // [NEW] 
 import 'package:flutter_colorpicker/flutter_colorpicker.dart'; // [NEW]
 
