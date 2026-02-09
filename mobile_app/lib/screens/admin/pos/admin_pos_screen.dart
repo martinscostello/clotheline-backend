@@ -13,6 +13,8 @@ import '../../../models/store_product.dart';
 import '../../../models/booking_models.dart';
 import '../../../services/whatsapp_service.dart';
 import '../../../services/receipt_service.dart';
+import '../../../widgets/custom_cached_image.dart'; // [NEW]
+import '../../../utils/currency_formatter.dart'; // [NEW]
 
 class AdminPOSScreen extends StatefulWidget {
   const AdminPOSScreen({super.key});
@@ -28,6 +30,8 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
+  final _searchController = TextEditingController(); // [NEW]
+  String _searchQuery = ""; // [NEW]
 
   @override
   void initState() {
@@ -50,6 +54,8 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _addressController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -304,9 +310,9 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   children: service.items.map((item) {
                     return ListTile(
                       dense: true,
-                      leading: const Icon(Icons.local_laundry_service, color: Colors.white54, size: 18),
+                      leading: CustomCachedImage(imageUrl: service.image, width: 24, height: 24, borderRadius: 4),
                       title: Text(item.name, style: const TextStyle(color: Colors.white70)),
-                      subtitle: Text("Base: ₦${item.price.toStringAsFixed(0)}", style: const TextStyle(color: Colors.white24, fontSize: 10)),
+                      subtitle: Text("Base: ${CurrencyFormatter.format(item.price)}", style: const TextStyle(color: Colors.white24, fontSize: 10)),
                       trailing: IconButton(
                         icon: const Icon(Icons.add_circle_outline, color: AppTheme.secondaryColor, size: 20),
                         onPressed: () => _showLaundryTypePicker(context, service, item),
@@ -326,47 +332,123 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     return Consumer<StoreService>(
       builder: (context, storeSvc, _) {
         if (storeSvc.products.isEmpty) return const Center(child: CircularProgressIndicator());
-        return GridView.builder(
-          padding: const EdgeInsets.all(20),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 15,
-            mainAxisSpacing: 15,
-            childAspectRatio: 0.75,
-          ),
-          itemCount: storeSvc.products.length,
-          itemBuilder: (context, index) {
-            final product = storeSvc.products[index];
-            return GlassContainer(
-              opacity: 0.1,
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(10)),
-                      child: const Icon(Icons.shopping_bag_outlined, color: Colors.white24, size: 40),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(product.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1),
-                  Text("₦${product.price}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 32,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.secondaryColor, padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                      onPressed: () => _addStoreProductDialog(product),
-                      child: const Text("Add to Bucket", style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ),
-                  )
-                ],
+        
+        // Filter products based on search query
+        final filteredProducts = storeSvc.products.where((p) => 
+          p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          p.brand.toLowerCase().contains(_searchQuery.toLowerCase())
+        ).toList();
+
+        return Column(
+          children: [
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: "Search products...",
+                  hintStyle: const TextStyle(color: Colors.white24),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                  suffixIcon: _searchQuery.isNotEmpty 
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = "");
+                        },
+                      )
+                    : null,
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                ),
+                onChanged: (val) => setState(() => _searchQuery = val),
               ),
-            );
-          },
+            ),
+            
+            Expanded(
+              child: filteredProducts.isEmpty 
+                ? const Center(child: Text("No products found", style: TextStyle(color: Colors.white24)))
+                : GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 15,
+                      mainAxisSpacing: 15,
+                      childAspectRatio: 0.72,
+                    ),
+                    itemCount: filteredProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = filteredProducts[index];
+                      final hasDiscount = product.originalPrice > product.price;
+
+                      return GlassContainer(
+                        opacity: 0.1,
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05), 
+                                  borderRadius: BorderRadius.circular(10)
+                                ),
+                                child: CustomCachedImage(
+                                  imageUrl: product.imagePath,
+                                  fit: BoxFit.cover,
+                                  borderRadius: 10,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(product.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Text(
+                                  CurrencyFormatter.format(product.price), 
+                                  style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)
+                                ),
+                                if (hasDiscount) ...[
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    CurrencyFormatter.format(product.originalPrice),
+                                    style: const TextStyle(
+                                      color: Colors.white24, 
+                                      fontSize: 10, 
+                                      decoration: TextDecoration.lineThrough
+                                    ),
+                                  ),
+                                ]
+                              ],
+                            ),
+                            if (hasDiscount) 
+                               Text(
+                                 "${product.discountPercent}% OFF", 
+                                 style: const TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold)
+                               ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 32,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.secondaryColor, padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                                onPressed: () => _addStoreProductDialog(product),
+                                child: const Text("Add to Bucket", style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+            ),
+          ],
         );
       },
     );
@@ -398,7 +480,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              Text("Total: ₦${(item.price * variant.priceMultiplier * qty).toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
+              Text("Total: ${CurrencyFormatter.format(item.price * variant.priceMultiplier * qty)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
             ],
           ),
           actions: [
@@ -490,7 +572,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              Text("Total: ₦${(product.price * qty).toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
+              Text("Total: ${CurrencyFormatter.format(product.price * qty)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
             ],
           ),
           actions: [
@@ -558,7 +640,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                         child: Column(
                           children: [
                             Text(zone.name, style: TextStyle(color: selected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                            Text("₦${zone.baseFee.toStringAsFixed(0)}", style: TextStyle(color: selected ? Colors.black54 : Colors.white54, fontSize: 10)),
+                            Text(CurrencyFormatter.format(zone.baseFee), style: TextStyle(color: selected ? Colors.black54 : Colors.white54, fontSize: 10)),
                           ],
                         ),
                       ),
@@ -619,11 +701,11 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    _buildSummaryRow("Subtotal", "₦${pos.subtotal.toStringAsFixed(0)}"),
+                    _buildSummaryRow("Subtotal", CurrencyFormatter.format(pos.subtotal)),
                     const SizedBox(height: 10),
-                    _buildSummaryRow("Delivery Fee", "₦${pos.deliveryFee.toStringAsFixed(0)}"),
-                    const Divider(color: Colors.white10, height: 30),
-                    _buildSummaryRow("Total Amount", "₦${pos.totalAmount.toStringAsFixed(0)}", isBold: true),
+                    _buildSummaryRow("Delivery Fee", CurrencyFormatter.format(pos.deliveryFee)),
+                    const Divider(color: Colors.white10),
+                    _buildSummaryRow("Total Amount", CurrencyFormatter.format(pos.totalAmount), isBold: true),
                   ],
                 ),
               ),
@@ -803,16 +885,16 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   );
                }),
                const SizedBox(height: 10),
-               _buildActionButton("Send WhatsApp", Icons.message, () {
-                  final pos = Provider.of<AdminPOSProvider>(context, listen: false);
-                  WhatsAppService.sendOrderUpdate(
-                    phone: pos.guestPhone ?? '',
-                    orderNumber: order['_id'] ?? 'N/A',
-                    amount: pos.totalAmount,
-                    status: order['status'] ?? 'New',
-                    guestName: pos.guestName,
-                  );
-               }),
+                _buildActionButton("Send WhatsApp Receipt", Icons.send_and_archive, () {
+                   final pos = Provider.of<AdminPOSProvider>(context, listen: false);
+                   WhatsAppService.sendOrderUpdate(
+                     phone: pos.guestPhone ?? '',
+                     orderNumber: order['_id'] ?? 'N/A',
+                     amount: pos.totalAmount,
+                     status: order['status'] ?? 'New',
+                     guestName: pos.guestName,
+                   );
+                }, color: Colors.green),
                const SizedBox(height: 10),
                TextButton(
                  onPressed: () {
@@ -830,17 +912,18 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     );
   }
 
-  Widget _buildActionButton(String label, IconData icon, VoidCallback onTap) {
+  Widget _buildActionButton(String label, IconData icon, VoidCallback onTap, {Color? color}) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white.withOpacity(0.05),
+          backgroundColor: color?.withOpacity(0.15) ?? Colors.white.withOpacity(0.05),
+          foregroundColor: color ?? Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 12),
-          side: const BorderSide(color: Colors.white10),
+          side: BorderSide(color: color?.withOpacity(0.5) ?? Colors.white10),
         ),
         onPressed: onTap,
-        icon: Icon(icon, color: AppTheme.secondaryColor),
+        icon: Icon(icon, color: color ?? AppTheme.secondaryColor),
         label: Text(label, style: const TextStyle(color: Colors.white)),
       ),
     );
