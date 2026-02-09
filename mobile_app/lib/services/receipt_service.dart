@@ -41,7 +41,7 @@ class ReceiptService {
                 ),
               ),
               pw.SizedBox(height: 10),
-              pw.Text("Order #: $orderNumber"),
+              pw.Text("Order #: ${orderNumber.length > 6 ? orderNumber.substring(orderNumber.length - 6).toUpperCase() : orderNumber.toUpperCase()}"),
               pw.Text("Customer: $customerName"),
               pw.Text("Date: ${DateTime.now().toString().substring(0, 16)}"),
               pw.Text("Type: Walk-in POS"),

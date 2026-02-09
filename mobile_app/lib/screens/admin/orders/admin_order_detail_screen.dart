@@ -499,24 +499,44 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
 
               const SizedBox(height: 30),
 
-              // Refund Action
-              if (_order!.paymentStatus == PaymentStatus.Paid) 
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.withValues(alpha: 0.2),
-                      foregroundColor: Colors.redAccent,
-                      side: const BorderSide(color: Colors.redAccent),
-                    ),
-                    icon: const Icon(Icons.undo),
-                    label: const Text("INITIATE REFUND"),
-                    onPressed: () {
-                      _showRefundDialog();
-                    },
-                  ),
-                ),
+              // Action Buttons
+              Row(
+                children: [
+                   Expanded(
+                     child: SizedBox(
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.secondaryColor.withValues(alpha: 0.2),
+                            foregroundColor: AppTheme.secondaryColor,
+                            side: const BorderSide(color: AppTheme.secondaryColor),
+                          ),
+                          icon: const Icon(Icons.print),
+                          label: const Text("PRINT RECEIPT"),
+                          onPressed: () => ReceiptService.printReceiptFromOrder(_order!),
+                        ),
+                     ),
+                   ),
+                   if (_order!.paymentStatus == PaymentStatus.Paid) ...[
+                     const SizedBox(width: 15),
+                     Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.withValues(alpha: 0.2),
+                              foregroundColor: Colors.redAccent,
+                              side: const BorderSide(color: Colors.redAccent),
+                            ),
+                            icon: const Icon(Icons.undo),
+                            label: const Text("REFUND"), // Shortened for space
+                            onPressed: () => _showRefundDialog(),
+                          ),
+                        ),
+                     ),
+                   ],
+                ],
+              ),
               
               const SizedBox(height: 50),
             ],

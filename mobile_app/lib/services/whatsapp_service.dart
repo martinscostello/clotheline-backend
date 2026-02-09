@@ -38,13 +38,17 @@ class WhatsAppService {
     String? guestName,
   }) async {
     final String name = guestName ?? "Customer";
+    final String shortId = orderNumber.length > 6 
+        ? orderNumber.substring(orderNumber.length - 6).toUpperCase() 
+        : orderNumber.toUpperCase();
+
     final String message = 
-      "Hello $name!\n\n"
-      "Your order #$orderNumber at Clotheline has been recorded.\n"
-      "Total: ₦${amount.toStringAsFixed(0)}\n"
+      "Hello $name\n\n"
+      "Your order #$shortId at Clotheline has been recorded.\n"
       "Status: $status\n\n"
-      "You can track your order here: https://clotheline.ng/track/$orderNumber\n\n"
-      "Thank you for choosing Clotheline!";
+      "You can download our mobile app from Google Playstore and Apple App Store\n"
+      "\"Clotheline\"\n\n"
+      "Thank you for choosing Clotheline";
 
     await _launchWhatsApp(phone, message);
   }
@@ -53,9 +57,13 @@ class WhatsAppService {
     required String orderNumber,
   }) async {
     const String supportPhone = '2348000000000'; // TODO: Get from dynamic settings?
+    final String shortId = orderNumber.length > 6 
+        ? orderNumber.substring(orderNumber.length - 6).toUpperCase() 
+        : orderNumber.toUpperCase();
+
     final String message = 
       "Hello Clotheline Support!\n\n"
-      "I need help with my order #$orderNumber.\n\n"
+      "I need help with my order #$shortId.\n\n"
       "Thank you!";
 
     await _launchWhatsApp(supportPhone, message);
