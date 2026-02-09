@@ -1,5 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+import '../utils/currency_formatter.dart';
 
 class WhatsAppService {
   static Future<void> _launchWhatsApp(String phone, String message) async {
@@ -26,7 +27,6 @@ class WhatsAppService {
       }
     } catch (e) {
       print("Error launching WhatsApp: $e");
-      // Optional: Show toast if context was available, but we'll leave it to caller or internal print for now.
     }
   }
 
@@ -42,9 +42,12 @@ class WhatsAppService {
         ? orderNumber.substring(orderNumber.length - 6).toUpperCase() 
         : orderNumber.toUpperCase();
 
+    final String formattedAmount = CurrencyFormatter.format(amount);
+
     final String message = 
       "Hello $name\n\n"
       "Your order #$shortId at Clotheline has been recorded.\n"
+      "Total: $formattedAmount\n"
       "Status: $status\n\n"
       "You can download our mobile app from Google Playstore and Apple App Store\n"
       "\"Clotheline\"\n\n"
