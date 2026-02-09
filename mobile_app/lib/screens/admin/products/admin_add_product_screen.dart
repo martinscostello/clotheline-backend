@@ -87,8 +87,28 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     
     // Fetch latest categories
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<StoreService>(context, listen: false).fetchCategories();
+      final store = Provider.of<StoreService>(context, listen: false);
+      store.fetchCategories();
+      
+      if (widget.product == null) {
+        _loadLatestPresets(store);
+      }
     });
+  }
+
+  Future<void> _loadLatestPresets(StoreService store) async {
+    final presets = await store.fetchLatestPresets(widget.branchId);
+    if (mounted) {
+      setState(() {
+        if (presets['salesBanner'] != null) {
+          // Inherit style/text/colors but keep isEnabled false for the new product initially
+          _bannerConfig = presets['salesBanner']!.copyWith(isEnabled: false);
+        }
+        if (presets['detailBanner'] != null) {
+          _detailBannerConfig = presets['detailBanner']!.copyWith(isEnabled: false);
+        }
+      });
+    }
   }
 
   @override

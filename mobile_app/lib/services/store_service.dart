@@ -255,4 +255,20 @@ class StoreService extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<Map<String, SalesBannerConfig?>> fetchLatestPresets(String branchId) async {
+    try {
+      final response = await _apiService.client.get('/products/presets?branchId=$branchId');
+      if (response.statusCode == 200) {
+        final data = response.data;
+        return {
+          'salesBanner': data['salesBanner'] != null ? SalesBannerConfig.fromJson(data['salesBanner']) : null,
+          'detailBanner': data['detailBanner'] != null ? SalesBannerConfig.fromJson(data['detailBanner']) : null,
+        };
+      }
+    } catch (e) {
+      debugPrint("Error fetching presets: $e");
+    }
+    return {'salesBanner': null, 'detailBanner': null};
+  }
 }

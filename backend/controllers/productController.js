@@ -49,23 +49,29 @@ exports.createProduct = async (req, res) => {
         }
 
         // [PRESET LOGIC] 
-        // If banners are not provided or isEnabled is explicitly false but we want to "remember" last settings,
-        // we fetch the most recent product from this branch.
-        let defaultSalesBanner = salesBanner;
-        let defaultDetailBanner = detailBanner;
+        let finalSalesBanner = salesBanner;
+        let finalDetailBanner = detailBanner;
 
-        // Note: Even if incoming is {isEnabled: false}, we might want the TEXT/COLORS from last time
-        // so the admin doesn't have to re-type them if they decide to toggle it on.
-        const lastProduct = await Product.findOne({ branchId }).sort({ createdAt: -1 });
+        const lastProduct = await Product.findOne({ branchId, isActive: true }).sort({ createdAt: -1 });
 
         if (lastProduct) {
-            // Merge defaults from last product if current values are missing or are "default starters"
+            // Inheritance: If incoming is default or missing, merge with last product
+            // BUT: Preserve the 'isEnabled' flag from the current request!
             if (!salesBanner || !salesBanner.primaryText || salesBanner.primaryText === 'SPECIAL SALE') {
-                // If the app didn't send a customized banner, use the last one
-                defaultSalesBanner = lastProduct.salesBanner;
+                const currentIsEnabled = salesBanner?.isEnabled ?? false;
+                const lastBanner = lastProduct.salesBanner ? lastProduct.salesBanner.toObject() : {};
+                finalSalesBanner = {
+                    ...lastBanner,
+                    isEnabled: currentIsEnabled
+                };
             }
             if (!detailBanner || !detailBanner.primaryText || detailBanner.primaryText === 'STUNNING QUALITY. AMAZING SERVICE.') {
-                defaultDetailBanner = lastProduct.detailBanner;
+                const currentIsEnabled = detailBanner?.isEnabled ?? false;
+                const lastDetail = lastProduct.detailBanner ? lastProduct.detailBanner.toObject() : {};
+                finalDetailBanner = {
+                    ...lastDetail,
+                    isEnabled: currentIsEnabled
+                };
             }
         }
 
@@ -82,8 +88,8 @@ exports.createProduct = async (req, res) => {
             discountPercentage: discountPercentage || 0,
             stock: stock || 0,
             originalPrice: originalPrice || price,
-            salesBanner: defaultSalesBanner, // [FIXED]
-            detailBanner: defaultDetailBanner, // [FIXED]
+            salesBanner: finalSalesBanner,
+            detailBanner: finalDetailBanner,
             isActive: true
         });
 
@@ -91,6 +97,31 @@ exports.createProduct = async (req, res) => {
         res.json(product);
     } catch (err) {
         console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.getLatestPresets = async (req, res) => {
+    try {
+        const { branchId } = req.query;
+        if (!branchId) return res.status(400).json({ msg: "Branch ID required" });
+
+        const lastProduct = await Product.findOne({ branchId, isActive: true })
+            .sort({ createdAt: -1 })
+            .select('salesBanner detailBanner');
+
+        if (!lastProduct) {
+            return res.json({
+                salesBanner: null,
+                detailBanner: null
+            });
+        }
+
+        res.json({
+            salesBanner: lastProduct.salesBanner,
+            detailBanner: lastProduct.detailBanner
+        });
+    } catch (err) {
         res.status(500).send('Server Error');
     }
 };

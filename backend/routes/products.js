@@ -6,13 +6,15 @@ const {
     updateProduct,
     deleteProduct,
     getCategories,
-    migrateLegacyProducts // Added
+    migrateLegacyProducts,
+    getLatestPresets // [NEW]
 } = require('../controllers/productController');
 
 // Public/Admin shared routes
 router.get('/', getAllProducts);
 router.get('/categories', getCategories);
-router.get('/migrate/fix', migrateLegacyProducts); // Clean Migration Route
+router.get('/presets', getLatestPresets); // [NEW]
+router.get('/migrate/fix', migrateLegacyProducts);
 
 // Admin routes
 router.post('/', createProduct);
