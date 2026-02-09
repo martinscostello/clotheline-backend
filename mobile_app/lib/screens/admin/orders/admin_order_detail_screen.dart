@@ -391,7 +391,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                                 tooltip: "Message User",
                               ),
                               IconButton(
-                                icon: const Icon(Icons.whatsapp, color: Colors.green),
+                                icon: const Icon(Icons.send_rounded, color: Colors.green),
                                 onPressed: () {
                                   if (_order!.guestPhone != null) {
                                     WhatsAppService.sendOrderUpdate(

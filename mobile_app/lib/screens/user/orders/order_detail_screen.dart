@@ -291,7 +291,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       },
                     ),
                     TextButton.icon(
-                      icon: const Icon(Icons.whatsapp, color: Colors.green),
+                      icon: const Icon(Icons.send_rounded, color: Colors.green),
                       label: const Text("Contact Support via WhatsApp", style: TextStyle(color: Colors.green)),
                       onPressed: () {
                          WhatsAppService.contactSupport(orderNumber: order.id);
