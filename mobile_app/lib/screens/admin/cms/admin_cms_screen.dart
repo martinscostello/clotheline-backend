@@ -122,6 +122,10 @@ class AdminCMSScreen extends StatelessWidget {
               ),
             ),
           );
+        },
+      );
+  }
+
   void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
     final auth = Provider.of<AuthService>(context, listen: false);
     final user = auth.currentUser;
@@ -167,7 +171,6 @@ class AdminCMSScreen extends StatelessWidget {
           )
         ],
       )
-    );
     );
   }
 

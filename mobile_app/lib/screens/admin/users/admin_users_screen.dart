@@ -130,7 +130,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     items: [
                       const DropdownMenuItem<String?>(
                          value: null, 
-                         child: Text(\"All\", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))
+                         child: Text("All", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))
                       ),
                       ...branchProvider.branches.map((b) => DropdownMenuItem(
                         value: b.id,
