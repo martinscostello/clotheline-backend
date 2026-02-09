@@ -12,8 +12,8 @@ class FloatingObjectsBackground extends StatelessWidget {
     
     // In light mode, objects are faint dark gray. In dark mode, faint white.
     final objectColor = isDark 
-        ? Colors.white.withValues(alpha: 0.05) 
-        : Colors.black.withValues(alpha: 0.05);
+        ? Colors.white.withOpacity(0.05) 
+        : Colors.black.withOpacity(0.05);
 
     // Background is handled by Scaffold, but we can add a very subtle gradient for depth
     // based on the theme mode.

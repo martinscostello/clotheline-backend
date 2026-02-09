@@ -261,7 +261,7 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: (n['isRead'] == true ? Colors.grey : AppTheme.primaryColor).withValues(alpha: 0.2),
+                            color: (n['isRead'] == true ? Colors.grey : AppTheme.primaryColor).withOpacity(0.2),
                             shape: BoxShape.circle
                           ),
                           child: Icon(
@@ -392,7 +392,7 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
       hintText: hint,
       hintStyle: const TextStyle(color: Colors.white24),
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.05),
+      fillColor: Colors.white.withOpacity(0.05),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)
     );

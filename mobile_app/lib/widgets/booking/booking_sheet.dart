@@ -267,7 +267,7 @@ class _BookingSheetState extends State<BookingSheet> {
             color: bgColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
             boxShadow: [
-               if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, -5))
+               if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5))
             ]
           ),
           padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 40),
@@ -301,7 +301,7 @@ class _BookingSheetState extends State<BookingSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
                     ),
@@ -336,7 +336,7 @@ class _BookingSheetState extends State<BookingSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
                     ),
@@ -403,7 +403,7 @@ class _BookingSheetState extends State<BookingSheet> {
               // Bucket Preview (Mini Cart)
               if (cartItems.isNotEmpty) ...[
                  const SizedBox(height: 30),
-                 Divider(color: secondaryTextColor.withValues(alpha: 0.2)),
+                 Divider(color: secondaryTextColor.withOpacity(0.2)),
                  const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -424,7 +424,7 @@ class _BookingSheetState extends State<BookingSheet> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        shadowColor: AppTheme.primaryColor.withValues(alpha: 0.5),
+                        shadowColor: AppTheme.primaryColor.withOpacity(0.5),
                         elevation: 10,
                       ),
                      onPressed: _proceedToCheckout,

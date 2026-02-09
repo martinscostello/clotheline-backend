@@ -252,12 +252,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.1),
+          color: isDark ? Colors.white10 : Colors.black.withOpacity(0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -491,7 +491,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFFE0B2),
                                   borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3))
+                                  border: Border.all(color: Colors.orange.withOpacity(0.3))
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,

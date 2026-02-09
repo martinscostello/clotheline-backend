@@ -107,7 +107,7 @@ class _ProductSelectionSheetState extends State<ProductSelectionSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFFF5722).withValues(alpha: 0.1) : (isDark ? Colors.white10 : Colors.grey.shade100),
+                      color: isSelected ? const Color(0xFFFF5722).withOpacity(0.1) : (isDark ? Colors.white10 : Colors.grey.shade100),
                       border: Border.all(color: isSelected ? const Color(0xFFFF5722) : Colors.transparent),
                       borderRadius: BorderRadius.circular(20),
                     ),

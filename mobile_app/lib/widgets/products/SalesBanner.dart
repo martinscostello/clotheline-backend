@@ -147,7 +147,7 @@ class SalesBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.fromLTRB(10, 6, 30, 6),
             decoration: BoxDecoration(
-              color: primary.withValues(alpha: 0.9),
+              color: primary.withOpacity(0.9),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -220,7 +220,7 @@ class SalesBanner extends StatelessWidget {
              child: Container(
                width: 38, height: 38,
                decoration: BoxDecoration(
-                 gradient: LinearGradient(colors: [accent, accent.withValues(alpha: 0.8)]),
+                 gradient: LinearGradient(colors: [accent, accent.withOpacity(0.8)]),
                  shape: BoxShape.circle,
                  border: Border.all(color: Colors.white, width: 1),
                ),
@@ -239,11 +239,11 @@ class SalesBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.7),
+        color: Colors.black.withOpacity(0.7),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: primary, width: 1.5),
         boxShadow: [
-          BoxShadow(color: primary.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 1)
+          BoxShadow(color: primary.withOpacity(0.5), blurRadius: 8, spreadRadius: 1)
         ],
       ),
       child: Row(

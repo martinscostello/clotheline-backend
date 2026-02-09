@@ -227,7 +227,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                       padding: const EdgeInsets.only(top: 4.0),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
+                                        decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
                                         child: const Text("Admin", style: TextStyle(color: Colors.redAccent, fontSize: 10)),
                                       ),
                                     )
@@ -279,7 +279,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 maxLines: 4,
                 decoration: InputDecoration(
                   hintText: "Type your announcement...",
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
                   filled: true,
                   fillColor: Colors.white10,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),

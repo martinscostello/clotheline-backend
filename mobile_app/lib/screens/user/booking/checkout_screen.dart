@@ -338,7 +338,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.1) : (isDark ? Colors.white10 : Colors.grey.shade50),
+          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : (isDark ? Colors.white10 : Colors.grey.shade50),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.transparent),
         ),

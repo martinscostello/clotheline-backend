@@ -293,7 +293,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                             image: _imageUrl.isNotEmpty ? DecorationImage(
                               image: NetworkImage(_imageUrl),
                               fit: BoxFit.cover,
-                              colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.3), BlendMode.darken)
+                              colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken)
                             ) : null
                           ),
                           child: _imageUrl.isEmpty ? const Icon(Icons.add_a_photo, color: Colors.white24, size: 50) : null,

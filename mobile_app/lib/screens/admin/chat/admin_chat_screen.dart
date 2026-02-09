@@ -139,7 +139,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
           decoration: BoxDecoration(
             color: AppTheme.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+            border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -399,7 +399,7 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
                         hintStyle: const TextStyle(fontSize: 14, color: Colors.white54),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.1),
+                        fillColor: Colors.white.withOpacity(0.1),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       ),
                     ),
@@ -456,9 +456,9 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
+                  color: Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3))
+                  border: Border.all(color: Colors.orange.withOpacity(0.3))
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -500,7 +500,7 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.5)),
+          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.5)),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(

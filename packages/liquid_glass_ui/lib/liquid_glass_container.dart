@@ -51,7 +51,7 @@ class LiquidGlassContainer extends StatelessWidget {
                 borderRadius: effectiveBorderRadius,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2 * opacity), 
+                    color: Colors.black.withOpacity(0.2 * opacity), 
                     blurRadius: 15,
                     spreadRadius: 1,
                     offset: const Offset(0, 8), 
@@ -67,7 +67,7 @@ class LiquidGlassContainer extends StatelessWidget {
               borderRadius: effectiveBorderRadius,
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), 
-                child: Container(color: color ?? Colors.white.withValues(alpha: 0.02 * opacity)), 
+                child: Container(color: color ?? Colors.white.withOpacity(0.02 * opacity)), 
               ),
             ),
           ),
@@ -79,7 +79,7 @@ class LiquidGlassContainer extends StatelessWidget {
                 painter: _InnerShadowPainter(
                   radius: radius,
                   borderRadius: effectiveBorderRadius, // Pass effective radius
-                  color: Colors.white.withValues(alpha: 0.2 * opacity), 
+                  color: Colors.white.withOpacity(0.2 * opacity), 
                   blur: 2, 
                   offset: const Offset(0, 0), 
                   strokeWidth: 1.2, 

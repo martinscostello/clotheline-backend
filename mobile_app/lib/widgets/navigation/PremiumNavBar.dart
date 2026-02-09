@@ -116,8 +116,8 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
     
     // Background Colors (High contrast for dark mode)
     final Color backgroundColor = isDark 
-        ? const Color(0xFF1C1C1E).withValues(alpha: 0.9) // Solid charcoal feel
-        : Colors.white.withValues(alpha: 0.85); // Airy but visible
+        ? const Color(0xFF1C1C1E).withOpacity(0.9) // Solid charcoal feel
+        : Colors.white.withOpacity(0.85); // Airy but visible
     
     const Color activeColor = Color(0xFF007AFF); // Telegram Blue
     

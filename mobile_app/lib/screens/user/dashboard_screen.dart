@@ -499,7 +499,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Colors.black.withOpacity(0.2),
                     blurRadius: 15,
                     spreadRadius: 2,
                     offset: const Offset(0, 8),
@@ -536,7 +536,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black.withValues(alpha: 0.0)],
+                        colors: [Colors.transparent, Colors.black.withOpacity(0.0)],
                       ),
                     ),
                     padding: const EdgeInsets.all(24),
@@ -946,7 +946,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                        gradient: LinearGradient(
                          begin: Alignment.topCenter,
                          end: Alignment.bottomCenter,
-                         colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+                         colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
                        ),
                      ),
                    ),

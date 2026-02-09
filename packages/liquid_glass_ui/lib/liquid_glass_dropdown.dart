@@ -104,7 +104,7 @@ class _LiquidGlassDropdownState<T> extends State<LiquidGlassDropdown<T>> {
                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                                      decoration: BoxDecoration(
                                         color: isSelected 
-                                            ? (widget.isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05))
+                                            ? (widget.isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05))
                                             : null,
                                      ),
                                      child: DefaultTextStyle(

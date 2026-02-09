@@ -156,7 +156,7 @@ class _PulseOverlayState extends State<PulseOverlay> with SingleTickerProviderSt
                             color: const Color(0xFF0EA5E9),
                             borderRadius: BorderRadius.circular(30),
                             boxShadow: [
-                              BoxShadow(color: const Color(0xFF0EA5E9).withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4))
+                              BoxShadow(color: const Color(0xFF0EA5E9).withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))
                             ]
                           ),
                           child: const Text(
@@ -200,7 +200,7 @@ class _HoleOverlayPainter extends CustomPainter {
 
     canvas.drawPath(
       clipPath, 
-      Paint()..color = Colors.black.withValues(alpha: 0.85) // Darker background (85%)
+      Paint()..color = Colors.black.withOpacity(0.85) // Darker background (85%)
     );
   }
 
@@ -229,7 +229,7 @@ class _PulsePainter extends CustomPainter {
         final opacity = (1.0 - shift) * (1.0 - shift); 
         
         final paint = Paint()
-          ..color = color.withValues(alpha: opacity * 0.8) // [FIX] .withValues
+          ..color = color.withOpacity(opacity * 0.8) // [FIX] .withValues
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3 * opacity
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
@@ -239,7 +239,7 @@ class _PulsePainter extends CustomPainter {
     
     // Glowing Core Border
     final borderPaint = Paint()
-      ..color = color.withValues(alpha: 0.8)
+      ..color = color.withOpacity(0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
       ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 4);

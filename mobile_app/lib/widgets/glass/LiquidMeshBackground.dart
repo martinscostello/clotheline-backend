@@ -85,7 +85,7 @@ class LiquidMeshBackground extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: color.withValues(alpha: 0.6),
+          color: color.withOpacity(0.6),
         ),
       )
       .animate(onPlay: (controller) => controller.repeat(reverse: true))

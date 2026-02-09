@@ -422,7 +422,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                         circleId: gmaps.CircleId(z.name),
                         center: center,
                         radius: z.radiusKm * 1000,
-                        fillColor: _zoneColors[idx].withValues(alpha: 0.15),
+                        fillColor: _zoneColors[idx].withOpacity(0.15),
                         strokeColor: _zoneColors[idx],
                         strokeWidth: 2,
                       );
@@ -532,7 +532,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
       onTap: onTap,
       child: Container(
         width: 44, height: 44,
-        decoration: BoxDecoration(color: isActive ? AppTheme.primaryColor : Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(12), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)]),
+        decoration: BoxDecoration(color: isActive ? AppTheme.primaryColor : Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(12), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)]),
         child: Icon(icon, color: isActive ? Colors.black : Colors.black87),
       ),
     );
@@ -543,7 +543,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
       onTap: () => setState(() => _isEditLocationEnabled = !_isEditLocationEnabled),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(color: _isEditLocationEnabled ? Colors.blue : Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(30), border: Border.all(color: _isEditLocationEnabled ? Colors.white38 : Colors.white12)),
+        decoration: BoxDecoration(color: _isEditLocationEnabled ? Colors.blue : Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(30), border: Border.all(color: _isEditLocationEnabled ? Colors.white38 : Colors.white12)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -601,7 +601,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                   onPressed: (_isDirty && !_isSaving) ? _saveChanges : null,
                   icon: _isSaving ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save, color: Colors.white),
                   label: Text(_isSaving ? "Saving..." : "Save", style: const TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(backgroundColor: _isDirty ? Colors.blue : Colors.grey.withValues(alpha: 0.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                  style: ElevatedButton.styleFrom(backgroundColor: _isDirty ? Colors.blue : Colors.grey.withOpacity(0.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
                 ),
               )
             ],
@@ -638,7 +638,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                                   circleId: gmaps.CircleId(z.name),
                                   center: center,
                                   radius: z.radiusKm * 1000,
-                                  fillColor: _zoneColors[idx].withValues(alpha: 0.15),
+                                  fillColor: _zoneColors[idx].withOpacity(0.15),
                                   strokeColor: _zoneColors[idx],
                                   strokeWidth: 2,
                                 );
@@ -748,7 +748,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
      
      return Container(
        margin: const EdgeInsets.only(bottom: 12),
-       decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.5))),
+       decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.5))),
        padding: const EdgeInsets.all(12),
        child: Column(
          children: [

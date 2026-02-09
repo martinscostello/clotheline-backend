@@ -270,7 +270,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
                    decoration: BoxDecoration(
                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
                      borderRadius: BorderRadius.circular(15),
-                     border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                     border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
                    ),
                    child: Row(
                      children: [
@@ -323,7 +323,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
           decoration: BoxDecoration(
             color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+            border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
           ),
       child: Column(
         children: [
@@ -393,7 +393,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.1) : (isDark ? Colors.white10 : Colors.grey.shade50),
+          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : (isDark ? Colors.white10 : Colors.grey.shade50),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.transparent),
         ),
@@ -457,7 +457,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
           decoration: BoxDecoration(
             color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05), style: BorderStyle.solid),
+            border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05), style: BorderStyle.solid),
           ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

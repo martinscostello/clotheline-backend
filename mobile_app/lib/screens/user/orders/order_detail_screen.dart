@@ -114,7 +114,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                          color: AppTheme.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8)
                         ),
                         child: Text("${item.quantity}x", style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),

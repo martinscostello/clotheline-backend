@@ -30,7 +30,7 @@ class LiquidGlassContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final glassColor = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.15);
+    final glassColor = isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.15);
     return SizedBox(
       width: width,
       height: height,
@@ -48,7 +48,7 @@ class LiquidGlassContainer extends StatelessWidget {
                         borderRadius: BorderRadius.circular(radius),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2), // Tuned Intensity
+                            color: Colors.black.withOpacity(0.2), // Tuned Intensity
                             blurRadius: 15,
                             spreadRadius: 1,
                             offset: const Offset(0, 8), 
@@ -75,7 +75,7 @@ class LiquidGlassContainer extends StatelessWidget {
                       child: CustomPaint(
                         painter: _InnerShadowPainter(
                           radius: radius,
-                          color: Colors.white.withValues(alpha: 0.2), // Tuned Opacity
+                          color: Colors.white.withOpacity(0.2), // Tuned Opacity
                           blur: 2, // Matches Lens Blur
                           offset: const Offset(0, 0), // Uniform
                           strokeWidth: 1.2, // Tuned Spread

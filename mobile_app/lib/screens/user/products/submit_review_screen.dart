@@ -401,7 +401,7 @@ class _DottedPlaceHolder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.3);
+    final color = isDark ? Colors.white.withOpacity(0.3) : Colors.black.withOpacity(0.3);
     final iconColor = isDark ? Colors.white70 : Colors.black87;
 
     return CustomPaint(

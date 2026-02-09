@@ -508,7 +508,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                         height: 50,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.secondaryColor.withValues(alpha: 0.2),
+                            backgroundColor: AppTheme.secondaryColor.withOpacity(0.2),
                             foregroundColor: AppTheme.secondaryColor,
                             side: const BorderSide(color: AppTheme.secondaryColor),
                           ),
@@ -525,7 +525,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                           height: 50,
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.withValues(alpha: 0.2),
+                              backgroundColor: Colors.red.withOpacity(0.2),
                               foregroundColor: Colors.redAccent,
                               side: const BorderSide(color: Colors.redAccent),
                             ),
