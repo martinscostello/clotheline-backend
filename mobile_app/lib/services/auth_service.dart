@@ -472,9 +472,10 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<List<dynamic>> fetchAllUsers() async {
+  Future<List<dynamic>> fetchAllUsers({String? branchId}) async {
     try {
-      final response = await _apiService.client.get('/auth/users');
+      final url = branchId != null ? '/auth/users?branchId=$branchId' : '/auth/users';
+      final response = await _apiService.client.get(url);
       if (response.statusCode == 200) {
         return response.data as List<dynamic>;
       }
@@ -549,6 +550,18 @@ class AuthService extends ChangeNotifier {
       rethrow;
     } catch (e) {
       throw Exception(e.toString());
+    }
+  }
+
+  Future<void> logPermissionViolation(String feature) async {
+    try {
+      await _apiService.client.post('/auth/violation-log', data: {
+        'feature': feature,
+        'timestamp': DateTime.now().toIso8601String()
+      });
+      debugPrint("Permission Violation Logged: $feature");
+    } catch (e) {
+      debugPrint("Failed to log violation: $e");
     }
   }
 }

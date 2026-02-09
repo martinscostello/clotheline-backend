@@ -24,6 +24,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   final Set<String> _selectedUserIds = {};
   bool _isSelectionMode = false;
   final TextEditingController _searchController = TextEditingController();
+  String? _selectedBranchId; // [New]
 
   @override
   void initState() {
@@ -40,27 +41,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   Future<void> _fetchUsers() async {
     try {
-      final users = await Provider.of<AuthService>(context, listen: false).fetchAllUsers();
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final users = await auth.fetchAllUsers(branchId: _selectedBranchId);
+      
       if (mounted) {
-        // [BRANCH AWARENESS Check]
-        // Ideally backend does this, but for now we filter frontend.
-        // We need to know current admin branch.
-        final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-        // If master, show all. If branch admin, show only users assigned to branch OR users who ordered from branch?
-        // User model has 'assignedBranch'.
-        // Simplified Logic: If user has 'branchId' matching admin's selected branch.
-        
-        List<dynamic> relevantUsers = users;
-        /*
-        // [Future Restriction]
-        if (branchProvider.selectedBranch != null && !branchProvider.isMaster) {
-           relevantUsers = users.where((u) => u['branchId'] == branchProvider.selectedBranch!.id).toList();
-        }
-        */
-
         setState(() {
-          _allUsers = relevantUsers;
-          _filteredUsers = relevantUsers;
+          _allUsers = users;
+          _filteredUsers = users;
           _isLoading = false;
         });
       }
@@ -70,6 +57,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         ToastUtils.show(context, "Error fetching users: $e", type: ToastType.error);
       }
     }
+  }
+
+  void _onBranchChanged(String? newBranchId) {
+    if (_selectedBranchId == newBranchId) return;
+    setState(() {
+      _selectedBranchId = newBranchId;
+      _isLoading = true;
+    });
+    _fetchUsers();
   }
 
   void _filterUsers() {
@@ -120,6 +116,31 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ? IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() { _isSelectionMode = false; _selectedUserIds.clear(); }))
           : const BackButton(color: Colors.white),
         actions: [
+          if (!_isSelectionMode)
+            Consumer<BranchProvider>(
+              builder: (context, branchProvider, _) {
+                if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
+                return DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    dropdownColor: const Color(0xFF2C2C2E),
+                    value: _selectedBranchId,
+                    hint: const Icon(Icons.store, color: AppTheme.secondaryColor, size: 20),
+                    icon: const SizedBox.shrink(),
+                    onChanged: _onBranchChanged,
+                    items: [
+                      const DropdownMenuItem<String?>(
+                         value: null, 
+                         child: Text(\"All\", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))
+                      ),
+                      ...branchProvider.branches.map((b) => DropdownMenuItem(
+                        value: b.id,
+                        child: Text(b.name, style: const TextStyle(color: Colors.white70, fontSize: 12))
+                      ))
+                    ],
+                  ),
+                );
+              }
+            ),
           if (_isSelectionMode)
             IconButton(
               icon: const Icon(Icons.campaign, color: AppTheme.primaryColor), 

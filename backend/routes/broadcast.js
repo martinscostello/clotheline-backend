@@ -24,12 +24,20 @@ router.post('/', auth, async (req, res) => {
 
         // Filter by Audience
         if (targetAudience === 'active_orders') {
-            // Find users with active orders
             const activeOrders = await Order.find({
                 status: { $in: ['New', 'InProgress', 'Ready'] }
-            }).distinct('userId'); // Get unique user IDs
-
+            }).distinct('userId');
             query._id = { $in: activeOrders };
+        } else if (targetAudience === 'cancelled_orders') {
+            const cancelledOrders = await Order.find({
+                status: 'Cancelled'
+            }).distinct('userId');
+            query._id = { $in: cancelledOrders };
+        } else if (targetAudience === 'zero_orders') {
+            const allOrderUsers = await Order.find().distinct('userId');
+            query._id = { $not: { $in: allOrderUsers } };
+        } else if (targetAudience === 'benin' || targetAudience === 'abuja') {
+            query['savedAddresses.city'] = { $regex: new RegExp(targetAudience, 'i') };
         }
         // else 'all' implies default query
 

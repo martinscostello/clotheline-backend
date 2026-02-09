@@ -43,6 +43,10 @@ const ChatThreadSchema = new mongoose.Schema({
     isHiddenFromAdmin: {
         type: Boolean,
         default: false
+    },
+    autoResponseSent: {
+        type: Boolean,
+        default: false
     }
 });
 

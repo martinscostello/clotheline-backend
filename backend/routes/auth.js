@@ -18,5 +18,6 @@ router.put('/fcm-token', auth, require('../controllers/authController').updateFc
 router.delete('/delete-account', auth, require('../controllers/authController').deleteAccount);
 router.delete('/:userId', auth, admin, require('../controllers/authController').deleteUser);
 router.put('/avatar', auth, require('../controllers/authController').updateAvatar);
+router.post('/violation-log', auth, (req, res) => res.json({ msg: 'Violation logged' }));
 
 module.exports = router;

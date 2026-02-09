@@ -109,12 +109,37 @@ router.post('/send', auth, async (req, res) => {
         thread.lastMessageAt = Date.now();
         if (isAdmin) {
             thread.unreadCountUser += 1;
+            thread.autoResponseSent = false; // [NEW] Reset if admin replies
         } else {
             thread.unreadCountAdmin += 1;
             // Reopen if user sends a message to a resolved ticket
             if (thread.status === 'resolved') {
                 thread.status = 'open';
                 thread.resolvedAt = null;
+                thread.autoResponseSent = false; // [NEW] Reset if reopened
+            }
+
+            // [AUTO-RESPONSE LOGIC]
+            if (!thread.autoResponseSent) {
+                const autoReplyText = "Your ticket has been created, an agent will respond to you shortly. 🤖";
+
+                // Find an admin to be the "sender" (usually the first admin or a system dummy)
+                const systemAdmin = await User.findOne({ role: 'admin' });
+
+                if (systemAdmin) {
+                    const autoMessage = new ChatMessage({
+                        threadId,
+                        senderType: 'admin',
+                        senderId: systemAdmin._id,
+                        messageText: autoReplyText
+                    });
+                    await autoMessage.save();
+
+                    thread.lastMessageText = autoReplyText;
+                    thread.lastMessageAt = Date.now();
+                    thread.unreadCountUser += 1;
+                    thread.autoResponseSent = true;
+                }
             }
         }
         thread.isHiddenFromAdmin = false; // [NEW] Unhide if admin deleted it previously

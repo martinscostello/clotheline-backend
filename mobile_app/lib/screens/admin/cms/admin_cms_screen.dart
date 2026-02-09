@@ -41,113 +41,133 @@ class AdminCMSScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (canManageCMS) ...[
-                      const Text("App Appearance", style: TextStyle(color: Colors.white54, fontSize: 14)),
-                      const SizedBox(height: 10),
-                      _buildCMSCard(
-                        title: "Home Screen",
-                        subtitle: "Hero carousel & Featured services.",
-                        icon: Icons.home_filled,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'home'))),
-                      ),
-                      const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Ads & Banners",
-                        subtitle: "Manage promotional banners across the app.",
-                        icon: Icons.campaign,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads'))),
-                      ),
-                      const SizedBox(height: 15),
-                      const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Branding & Delivery Assurance",
-                        subtitle: "Update brands, slogans and delivery banners.",
-                        icon: Icons.text_fields,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding'))),
-                      ),
-                      const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Promotions",
-                        subtitle: "Free shipping thresholds & global offers.",
-                        icon: Icons.local_offer,
-                        color: Colors.greenAccent,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSPromotionsScreen())),
-                      ),
-                      const SizedBox(height: 30),
-                    ],
+                    const Text("App Appearance", style: TextStyle(color: Colors.white54, fontSize: 14)),
+                    const SizedBox(height: 10),
+                    _buildCMSCard(
+                      title: "Home Screen",
+                      subtitle: "Hero carousel & Featured services.",
+                      icon: Icons.home_filled,
+                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Home Screen", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'home')))),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildCMSCard(
+                      title: "Ads & Banners",
+                      subtitle: "Manage promotional banners across the app.",
+                      icon: Icons.campaign,
+                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Ads & Banners", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads')))),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildCMSCard(
+                      title: "Branding & Delivery Assurance",
+                      subtitle: "Update brands, slogans and delivery banners.",
+                      icon: Icons.text_fields,
+                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Branding", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding')))),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildCMSCard(
+                      title: "Promotions",
+                      subtitle: "Free shipping thresholds & global offers.",
+                      icon: Icons.local_offer,
+                      color: Colors.greenAccent,
+                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Promotions", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSPromotionsScreen()))),
+                    ),
+                    const SizedBox(height: 30),
 
-                    if (canManageOrders || canManageServices || canManageProducts)
-                      const Text("Store Data", style: TextStyle(color: Colors.white54, fontSize: 14)),
+                    const Text("Store Data", style: TextStyle(color: Colors.white54, fontSize: 14)),
                     const SizedBox(height: 10),
 
-                    if (canManageOrders) ...[
-                      const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Manage Orders",
-                        subtitle: "View & Update Order Status.",
-                        icon: Icons.assignment_outlined,
-                        color: Colors.pinkAccent,
-                        onTap: () {
-                           Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()));
-                        },
-                      ),
-                    ],
+                    _buildCMSCard(
+                      title: "Manage Orders",
+                      subtitle: "View & Update Order Status.",
+                      icon: Icons.assignment_outlined,
+                      color: Colors.pinkAccent,
+                      onTap: () => _checkAndNavigate(context, 'manageOrders', "Orders", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
+                    ),
                     
-                    if (canManageServices) ...[
-                      const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Manage Service Categories", 
-                        subtitle: "Update service categories & prices.",
-                        icon: Icons.category, 
-                        color: Colors.blueAccent,
-                        onTap: () {
-                           Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
-                        },
-                      ),
-                    ],
+                    const SizedBox(height: 15),
+                    _buildCMSCard(
+                      title: "Manage Service Categories", 
+                      subtitle: "Update service categories & prices.",
+                      icon: Icons.category, 
+                      color: Colors.blueAccent,
+                      onTap: () => _checkAndNavigate(context, 'manageServices', "Services", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()))),
+                    ),
 
-                    if (canManageProducts) ...[
-                      const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Manage Product Categories", 
-                        subtitle: "Create & edit store categories (e.g. Fragrance).",
-                        icon: Icons.category_outlined, 
-                        color: Colors.orangeAccent,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCategoriesScreen())),
-                      ),
-                      const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Manage Products", 
-                        subtitle: "Update store inventory and descriptions.",
-                        icon: Icons.shopping_bag, 
-                        color: Colors.purpleAccent,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen())),
-                      ),
-                      const SizedBox(height: 15),
-                      _buildCMSCard(
-                        title: "Review Moderation", 
-                        subtitle: "View and hide product reviews.",
-                        icon: Icons.rate_review_outlined, 
-                        color: Colors.yellowAccent,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewModerationScreen())),
-                      ),
-                    ],
-
-                    if (canManageServices) ...[
-                      const SizedBox(height: 15),
-                      // _buildCMSCard(
-                      //   title: "Delivery Fees",
-                      //   subtitle: "Set delivery charges.",
-                      //   icon: Icons.local_shipping,
-                      //   onTap: () {},
-                      // ),
-                    ],
+                    const SizedBox(height: 15),
+                    _buildCMSCard(
+                      title: "Manage Product Categories", 
+                      subtitle: "Create & edit store categories (e.g. Fragrance).",
+                      icon: Icons.category_outlined, 
+                      color: Colors.orangeAccent,
+                      onTap: () => _checkAndNavigate(context, 'manageProducts', "Product Categories", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCategoriesScreen()))),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildCMSCard(
+                      title: "Manage Products", 
+                      subtitle: "Update store inventory and descriptions.",
+                      icon: Icons.shopping_bag, 
+                      color: Colors.purpleAccent,
+                      onTap: () => _checkAndNavigate(context, 'manageProducts', "Products", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen()))),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildCMSCard(
+                      title: "Review Moderation", 
+                      subtitle: "View and hide product reviews.",
+                      icon: Icons.rate_review_outlined, 
+                      color: Colors.yellowAccent,
+                      onTap: () => _checkAndNavigate(context, 'manageProducts', "Reviews", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewModerationScreen()))),
+                    ),
                   ],
                 ),
               ),
             ),
           );
-      }
+  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final user = auth.currentUser;
+    if (user == null) return;
+    if (user['isMasterAdmin'] == true) {
+      onGranted();
+      return;
+    }
+
+    final permissions = user['permissions'] ?? {};
+    if (permissions[permissionKey] == true) {
+      onGranted();
+    } else {
+      _showDeniedDialog(context);
+      auth.logPermissionViolation(featureName);
+    }
+  }
+
+  void _showDeniedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colors.redAccent, width: 2)
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
+            SizedBox(width: 10),
+            Text("Access Denied", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          "You do not have permission to access this page, an auto request has been sent to the master admin of your attempt to access this page",
+          style: TextStyle(color: Colors.white70)
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("OK", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold))
+          )
+        ],
+      )
+    );
     );
   }
 

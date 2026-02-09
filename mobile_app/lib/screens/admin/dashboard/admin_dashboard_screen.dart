@@ -264,21 +264,97 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  bool _hasPermission(String feature) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final user = auth.currentUser;
+    if (user == null) return false;
+    if (user['isMasterAdmin'] == true) return true;
+
+    final permissions = user['permissions'] ?? {};
+    bool allowed = false;
+
+    switch (feature) {
+      case 'Orders':
+        allowed = permissions['manageOrders'] == true;
+        break;
+      case 'Services':
+        allowed = permissions['manageServices'] == true;
+        break;
+      case 'Products':
+        allowed = permissions['manageProducts'] == true;
+        break;
+      case 'Promos':
+        allowed = permissions['manageCMS'] == true;
+        break;
+      case 'Reports':
+        // Financials typically master only
+        allowed = user['isMasterAdmin'] == true;
+        break;
+      default:
+        allowed = true;
+    }
+
+    if (!allowed) {
+      _showDeniedDialog(feature);
+      auth.logPermissionViolation(feature);
+    }
+    return allowed;
+  }
+
+  void _showDeniedDialog(String feature) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colors.redAccent, width: 2)
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
+            SizedBox(width: 10),
+            Text("Access Denied", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          "You do not have permission to access this page, an auto request has been sent to the master admin of your attempt to access this page",
+          style: TextStyle(color: Colors.white70)
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("OK", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold))
+          )
+        ],
+      )
+    );
+  }
+
   Widget _buildQuickActionsRow(BuildContext context) {
-    // Condensed single row scroll
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildQuickAction(context, "Orders", Icons.list_alt, Colors.blueAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
+          _buildQuickAction(context, "Orders", Icons.list_alt, Colors.blueAccent, () {
+            if (_hasPermission("Orders")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()));
+          }),
           const SizedBox(width: 15),
-          _buildQuickAction(context, "Services", Icons.local_laundry_service, Colors.purpleAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()))),
+          _buildQuickAction(context, "Services", Icons.local_laundry_service, Colors.purpleAccent, () {
+            if (_hasPermission("Services")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
+          }),
           const SizedBox(width: 15),
-          _buildQuickAction(context, "Products", Icons.inventory_2, Colors.orangeAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen()))),
+          _buildQuickAction(context, "Products", Icons.inventory_2, Colors.orangeAccent, () {
+            if (_hasPermission("Products")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen()));
+          }),
           const SizedBox(width: 15),
-          _buildQuickAction(context, "Promos", Icons.local_offer, Colors.pinkAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPromotionsScreen()))),
-           const SizedBox(width: 15),
-          _buildQuickAction(context, "Reports", Icons.bar_chart, Colors.tealAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialDashboard()))),
+          _buildQuickAction(context, "Promos", Icons.local_offer, Colors.pinkAccent, () {
+            if (_hasPermission("Promos")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPromotionsScreen()));
+          }),
+          const SizedBox(width: 15),
+          _buildQuickAction(context, "Reports", Icons.bar_chart, Colors.tealAccent, () {
+            if (_hasPermission("Reports")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialDashboard()));
+          }),
         ],
       ),
     );

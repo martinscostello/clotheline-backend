@@ -341,7 +341,12 @@ exports.deleteUser = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().select('-password').sort({ date: -1 });
+        const { branchId } = req.query;
+        let query = {};
+        if (branchId) {
+            query.preferredBranch = branchId;
+        }
+        const users = await User.find(query).select('-password').sort({ createdAt: -1 });
         res.json(users);
     } catch (err) {
         console.error(err.message);

@@ -37,51 +37,81 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
     });
   }
 
-  void _calculateTabs(AuthService authService) {
-    List<Widget> screens = [];
-    List<Map<String, dynamic>> navItems = [];
-    
-    final user = authService.currentUser;
-    final permissions = user != null ? (user['permissions'] ?? {}) : {};
-    final isMaster = user != null && user['isMasterAdmin'] == true;
+  void _calculateTabs() {
+    // All screens are now visible to all admins
+    _currentScreens = [
+      const AdminDashboardScreen(),
+      AdminOrdersScreen(initialTabIndex: widget.initialOrderTabIndex),
+      const AdminCMSScreen(),
+      const AdminUsersScreen(),
+      const AdminChatScreen(),
+      const AdminSettingsScreen(),
+    ];
 
-    // 1. Dashboard (Always)
-    screens.add(const AdminDashboardScreen());
-    navItems.add({'icon': Icons.dashboard_outlined, 'label': "Dash"});
+    _currentNavItems = [
+      {'icon': Icons.dashboard_outlined, 'label': "Dash", 'permission': null},
+      {'icon': Icons.list_alt, 'label': "Orders", 'permission': 'manageOrders'},
+      {'icon': Icons.edit_note, 'label': "CMS", 'permission': ['manageCMS', 'manageServices', 'manageProducts']},
+      {'icon': Icons.people_outline, 'label': "Users", 'permission': 'manageUsers'},
+      {'icon': Icons.chat_outlined, 'label': "Chat", 'permission': null},
+      {'icon': Icons.settings_outlined, 'label': "Settings", 'permission': null},
+    ];
+  }
 
-    // 2. Orders
-    if (isMaster || permissions['manageOrders'] == true) {
-      screens.add(AdminOrdersScreen(initialTabIndex: widget.initialOrderTabIndex));
-      navItems.add({'icon': Icons.list_alt, 'label': "Orders"});
+  bool _checkPermission(int index) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final user = auth.currentUser;
+    if (user == null) return false;
+    if (user['isMasterAdmin'] == true) return true;
+
+    final permissionRequirement = _currentNavItems[index]['permission'];
+    if (permissionRequirement == null) return true;
+
+    final permissions = user['permissions'] ?? {};
+    bool hasAccess = false;
+
+    if (permissionRequirement is String) {
+      hasAccess = permissions[permissionRequirement] == true;
+    } else if (permissionRequirement is List) {
+      hasAccess = permissionRequirement.any((p) => permissions[p] == true);
     }
 
-    // 3. CMS
-    if (isMaster || permissions['manageCMS'] == true || permissions['manageServices'] == true || permissions['manageProducts'] == true) {
-      screens.add(const AdminCMSScreen());
-      navItems.add({'icon': Icons.edit_note, 'label': "CMS"});
+    if (!hasAccess) {
+      _showRestrictionPopup(_currentNavItems[index]['label']);
+      auth.logPermissionViolation(_currentNavItems[index]['label']);
     }
 
-    // 4. Users
-    if (isMaster || permissions['manageUsers'] == true) {
-      screens.add(const AdminUsersScreen());
-      navItems.add({'icon': Icons.people_outline, 'label': "Users"});
-    }
+    return hasAccess;
+  }
 
-    // 5. Chat (Always for Admins)
-    screens.add(const AdminChatScreen());
-    navItems.add({'icon': Icons.chat_outlined, 'label': "Chat"});
-
-    // 6. Settings (Always)
-    screens.add(const AdminSettingsScreen());
-    navItems.add({'icon': Icons.settings_outlined, 'label': "Settings"});
-    
-    _currentScreens = screens;
-    _currentNavItems = navItems;
-    
-    // Safety Correction if permissions change while on a tab that disappears
-    if(_currentIndex >= _currentScreens.length) {
-      _currentIndex = 0;
-    }
+  void _showRestrictionPopup(String feature) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colors.redAccent, width: 2)
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
+            SizedBox(width: 10),
+            Text("Access Denied", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          "You do not have permission to access this page, an auto request has been sent to the master admin of your attempt to access this page",
+          style: TextStyle(color: Colors.white70)
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("OK", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold))
+          )
+        ],
+      )
+    );
   }
 
   @override
@@ -89,7 +119,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
     // Listen to Auth Changes
     return Consumer<AuthService>(
       builder: (context, authService, child) {
-        _calculateTabs(authService);
+        _calculateTabs();
         
         // Show loading if auth is absolutely initializing? 
         // Or just show Dash/Settings (default) until permissions load.
@@ -111,7 +141,11 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
             data: AppTheme.darkTheme,
             child: NavScaffold(
               currentIndex: _currentIndex,
-              onTabTap: (index) => setState(() => _currentIndex = index),
+              onTabTap: (index) {
+                if (_checkPermission(index)) {
+                  setState(() => _currentIndex = index);
+                }
+              },
               navMargin: EdgeInsets.zero,
               navBorderRadius: const BorderRadius.vertical(top: Radius.circular(35)),
               navItems: _currentNavItems.map((item) => PremiumNavItem(
