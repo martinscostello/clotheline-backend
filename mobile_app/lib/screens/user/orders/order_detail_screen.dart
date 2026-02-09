@@ -267,8 +267,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   height: 55,
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                       final receiptService = ReceiptService();
-                       await receiptService.downloadReceipt(order);
+                       await ReceiptService.printReceiptFromOrder(order);
                     },
                     icon: Icon(Icons.download, color: textColor),
                     label: Text("DOWNLOAD RECEIPT", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),

@@ -122,10 +122,10 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
             // Financials
             subtotal: finalSubtotal,
-            tax: finalTax,
+            taxAmount: finalTax, // [FIXED] Mismatched field name
             deliveryFee: finalDelivery,
-            pickupFee: finalPickup, // Added missing field
-            discount: finalDiscount,
+            pickupFee: finalPickup,
+            discountAmount: finalDiscount, // [FIXED] Mismatched field name
             promoCode: promoCode || null,
             totalAmount: finalTotal,
 
@@ -300,8 +300,12 @@ exports.createOrder = async (req, res) => {
         const order = await exports.createOrderInternal(req.body, req.user.id);
         res.json(order);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        console.error("HTTP createOrder Error:", err.message);
+        res.status(500).json({
+            msg: 'Server Error',
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 };
 

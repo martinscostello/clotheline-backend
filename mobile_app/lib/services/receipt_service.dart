@@ -104,4 +104,57 @@ class ReceiptService {
       onLayout: (PdfPageFormat format) async => pdf.save(),
     );
   }
+
+  static Future<void> printReceiptFromOrder(dynamic order) async {
+    // Handle both OrderModel and Map (from API)
+    String id = order is Map ? (order['_id'] ?? 'N/A') : order.id;
+    String name = order is Map ? (order['guestInfo']?['name'] ?? 'Guest') : (order.guestName ?? (order.userName ?? 'Customer'));
+    String branch = order is Map ? (order['branchId'] ?? 'Clotheline') : (order.branchId ?? 'Clotheline');
+    
+    List<CartItem> laundry = [];
+    List<StoreCartItem> store = [];
+    
+    final items = order is Map ? (order['items'] as List? ?? []) : order.items;
+    for (var item in items) {
+      if (item is Map) {
+         if (item['itemType'] == 'Service') {
+            laundry.add(CartItem(
+              item: ClothingItem(id: item['itemId'] ?? '', name: item['name'] ?? '', basePrice: (item['price'] as num?)?.toDouble() ?? 0.0),
+              serviceType: ServiceType(id: item['serviceType'] ?? '', name: item['serviceType'] ?? '', priceMultiplier: 1.0),
+              quantity: item['quantity'] ?? 1,
+            ));
+         } else {
+            store.add(StoreCartItem(
+              product: StoreProduct(id: item['itemId'] ?? '', name: item['name'] ?? '', price: (item['price'] as num?)?.toDouble() ?? 0.0, originalPrice: (item['price'] as num?)?.toDouble() ?? 0.0, description: '', imageUrls: [], category: 'Generic', stockLevel: 0, variants: []),
+              quantity: item['quantity'] ?? 1,
+            ));
+         }
+      } else {
+        if (item.itemType == 'Service') {
+          laundry.add(CartItem(
+            item: ClothingItem(id: item.itemId, name: item.name, basePrice: item.price),
+            serviceType: ServiceType(id: item.serviceType ?? 'Standard', name: item.serviceType ?? 'Standard'),
+            quantity: item.quantity,
+          ));
+        } else {
+          store.add(StoreCartItem(
+            product: StoreProduct(id: item.itemId, name: item.name, price: item.price, originalPrice: item.price, description: '', imageUrls: [], category: 'Generic', stockLevel: 0, variants: []),
+            quantity: item.quantity,
+          ));
+        }
+      }
+    }
+
+    await printReceipt(
+      orderNumber: id,
+      customerName: name,
+      branchName: branch,
+      laundryItems: laundry,
+      storeItems: store,
+      subtotal: order is Map ? (order['subtotal'] as num?)?.toDouble() ?? 0.0 : order.subtotal,
+      deliveryFee: order is Map ? (order['deliveryFee'] as num?)?.toDouble() ?? 0.0 : order.deliveryFee,
+      total: order is Map ? (order['totalAmount'] as num?)?.toDouble() ?? 0.0 : order.totalAmount,
+      paymentMethod: order is Map ? (order['paymentMethod'] ?? 'cash') : (order.paymentMethod ?? 'cash'),
+    );
+  }
 }
