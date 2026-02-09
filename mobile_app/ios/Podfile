@@ -1,4 +1,4 @@
-platform :ios, '13.0'
+platform :ios, '14.0'
 use_modular_headers!
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
@@ -55,6 +55,9 @@ post_install do |installer|
 
       config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
       
+      # Force IPHONEOS_DEPLOYMENT_TARGET to 14.0
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+
       base_config = config.base_configuration_reference
       if base_config
         xcconfig_path = base_config.real_path
