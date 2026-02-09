@@ -84,15 +84,32 @@ class AdminSettingsScreen extends StatelessWidget {
                       final isMaster = auth.currentUser != null && auth.currentUser!['isMasterAdmin'] == true;
                       return Column(
                         children: [
-                          if (isMaster)
-                            _buildSettingTile(Icons.admin_panel_settings, "Manage Administrators", () {
+                          _buildSettingTile(Icons.admin_panel_settings, "Manage Administrators", () {
+                             final permissions = auth.currentUser?['permissions'] ?? {};
+                             if (isMaster || permissions['manageAdmins'] == true) {
                                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManageAdminsScreen()));
-                            }),
+                             } else {
+                               _showDeniedDialog(context, "Admin Management");
+                               auth.logPermissionViolation("Admin Management");
+                             }
+                          }),
                           _buildSettingTile(Icons.local_shipping, "Delivery Zones & Fees", () {
-                             Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
+                             final permissions = auth.currentUser?['permissions'] ?? {};
+                             if (isMaster || permissions['manageSettings'] == true) {
+                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
+                             } else {
+                               _showDeniedDialog(context, "Delivery Settings");
+                               auth.logPermissionViolation("Delivery Settings");
+                             }
                           }),
                           _buildSettingTile(Icons.percent, "Tax Settings (VAT)", () {
-                             Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxSettingsScreen()));
+                             final permissions = auth.currentUser?['permissions'] ?? {};
+                             if (isMaster || permissions['manageSettings'] == true) {
+                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxSettingsScreen()));
+                             } else {
+                               _showDeniedDialog(context, "Tax Settings");
+                               auth.logPermissionViolation("Tax Settings");
+                             }
                           }),
                         ],
                       );
@@ -140,6 +157,36 @@ class AdminSettingsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showDeniedDialog(BuildContext context, String feature) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colors.redAccent, width: 2)
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
+            SizedBox(width: 10),
+            Text("Access Denied", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          "You do not have permission to access $feature, an auto request has been sent to the master admin of your attempt to access this page",
+          style: const TextStyle(color: Colors.white70)
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("OK", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold))
+          )
+        ],
+      )
     );
   }
 

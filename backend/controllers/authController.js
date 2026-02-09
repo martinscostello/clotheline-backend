@@ -342,10 +342,13 @@ exports.deleteUser = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
     try {
         const { branchId } = req.query;
-        let query = {};
-        if (branchId) {
+        // [STRICT] Only show real customers/users here. Admins are in the Config section.
+        let query = { role: 'user' };
+
+        if (branchId && branchId !== 'null' && branchId !== 'undefined') {
             query.preferredBranch = branchId;
         }
+
         const users = await User.find(query).select('-password').sort({ createdAt: -1 });
         res.json(users);
     } catch (err) {

@@ -49,7 +49,8 @@ class _SignupScreenState extends State<SignupScreen> {
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
-        phone: _phoneController.text.trim()
+        phone: _phoneController.text.trim(),
+        branchId: _selectedBranch?.id, // [FIX] Pass selected branch ID
       );
 
       if (!mounted) return;

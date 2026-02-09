@@ -51,10 +51,10 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
     _currentNavItems = [
       {'icon': Icons.dashboard_outlined, 'label': "Dash", 'permission': null},
       {'icon': Icons.list_alt, 'label': "Orders", 'permission': 'manageOrders'},
-      {'icon': Icons.edit_note, 'label': "CMS", 'permission': ['manageCMS', 'manageServices', 'manageProducts']},
+      {'icon': Icons.edit_note, 'label': "CMS", 'permission': null}, // Always open, check inner modules
       {'icon': Icons.people_outline, 'label': "Users", 'permission': 'manageUsers'},
-      {'icon': Icons.chat_outlined, 'label': "Chat", 'permission': null},
-      {'icon': Icons.settings_outlined, 'label': "Settings", 'permission': null},
+      {'icon': Icons.chat_outlined, 'label': "Chat", 'permission': 'manageChat'},
+      {'icon': Icons.settings_outlined, 'label': "Settings", 'permission': ['manageSettings', 'manageAdmins']},
     ];
   }
 

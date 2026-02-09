@@ -26,10 +26,18 @@ class _AdminManageAdminsScreenState extends State<AdminManageAdminsScreen> {
 
   Future<void> _fetchAdmins() async {
     try {
-      final admins = await Provider.of<AuthService>(context, listen: false).fetchAdmins();
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final admins = await auth.fetchAdmins();
+      final isMaster = auth.currentUser != null && auth.currentUser!['isMasterAdmin'] == true;
+
       if (mounted) {
         setState(() {
-          _admins = admins;
+          // [FIX] Master Admin is never visible to other non-master admins
+          if (isMaster) {
+            _admins = admins;
+          } else {
+            _admins = admins.where((a) => a['isMasterAdmin'] != true).toList();
+          }
           _isLoading = false;
         });
       }

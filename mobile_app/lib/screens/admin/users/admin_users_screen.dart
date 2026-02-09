@@ -29,6 +29,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   @override
   void initState() {
     super.initState();
+    // [FIX] Initialize from current global branch selection
+    final bp = Provider.of<BranchProvider>(context, listen: false);
+    _selectedBranchId = bp.selectedBranch?.id;
+
     _fetchUsers();
     _searchController.addListener(_filterUsers);
   }
@@ -72,6 +76,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredUsers = _allUsers.where((user) {
+        // [FIX] Double protection: Filter out admins here too
+        if (user['role'] == 'admin') return false;
+
         final name = (user['name'] ?? "").toLowerCase();
         final email = (user['email'] ?? "").toLowerCase();
         final phone = (user['phone'] ?? "").toLowerCase();

@@ -49,7 +49,7 @@ exports.getAllAdmins = async (req, res) => {
 // Update Admin (Permissions & Revocation)
 exports.updateAdmin = async (req, res) => {
     try {
-        const { permissions, isRevoked, avatarId } = req.body;
+        const { name, email, phone, permissions, isRevoked, avatarId } = req.body;
 
         // Find user by ID
         let user = await User.findById(req.params.id);
@@ -60,9 +60,16 @@ exports.updateAdmin = async (req, res) => {
             return res.status(400).json({ msg: 'Cannot revoke Master Admin access' });
         }
 
-        user.permissions = permissions || user.permissions;
-        if (isRevoked !== undefined) user.isRevoked = isRevoked;
+        if (name) user.name = name;
+        if (email) user.email = email;
+        if (phone) user.phone = phone;
         if (avatarId !== undefined) user.avatarId = avatarId;
+        if (isRevoked !== undefined) user.isRevoked = isRevoked;
+        
+        if (permissions) {
+            user.permissions = permissions;
+            user.markModified('permissions');
+        }
 
         await user.save();
         res.json(user);

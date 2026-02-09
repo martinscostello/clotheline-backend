@@ -287,7 +287,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         allowed = permissions['manageCMS'] == true;
         break;
       case 'Reports':
-        // Financials typically master only
+        // Financials strictly master only
         allowed = user['isMasterAdmin'] == true;
         break;
       default:
