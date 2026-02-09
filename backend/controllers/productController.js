@@ -40,15 +40,37 @@ exports.createProduct = async (req, res) => {
         const {
             name, price, category, imageUrls, variations,
             description, isFreeShipping, discountPercentage,
-            stock, originalPrice, brand, branchId // Required
+            stock, originalPrice, brand, branchId,
+            salesBanner, detailBanner // [NEW] Explicitly extract
         } = req.body;
 
         if (!branchId) {
             return res.status(400).json({ msg: "Branch ID is required" });
         }
 
+        // [PRESET LOGIC] 
+        // If banners are not provided or isEnabled is explicitly false but we want to "remember" last settings,
+        // we fetch the most recent product from this branch.
+        let defaultSalesBanner = salesBanner;
+        let defaultDetailBanner = detailBanner;
+
+        // Note: Even if incoming is {isEnabled: false}, we might want the TEXT/COLORS from last time
+        // so the admin doesn't have to re-type them if they decide to toggle it on.
+        const lastProduct = await Product.findOne({ branchId }).sort({ createdAt: -1 });
+
+        if (lastProduct) {
+            // Merge defaults from last product if current values are missing or are "default starters"
+            if (!salesBanner || !salesBanner.primaryText || salesBanner.primaryText === 'SPECIAL SALE') {
+                // If the app didn't send a customized banner, use the last one
+                defaultSalesBanner = lastProduct.salesBanner;
+            }
+            if (!detailBanner || !detailBanner.primaryText || detailBanner.primaryText === 'STUNNING QUALITY. AMAZING SERVICE.') {
+                defaultDetailBanner = lastProduct.detailBanner;
+            }
+        }
+
         const newProduct = new Product({
-            branchId, // [STRICT OWNERSHIP]
+            branchId,
             name,
             brand: brand || "Generic",
             price,
@@ -60,6 +82,8 @@ exports.createProduct = async (req, res) => {
             discountPercentage: discountPercentage || 0,
             stock: stock || 0,
             originalPrice: originalPrice || price,
+            salesBanner: defaultSalesBanner, // [FIXED]
+            detailBanner: defaultDetailBanner, // [FIXED]
             isActive: true
         });
 
@@ -78,8 +102,14 @@ exports.updateProduct = async (req, res) => {
         if (!product) return res.status(404).json({ msg: 'Product not found' });
 
         // Update fields dynamically
+        // Use set() for nested objects to ensure sub-document validation and persistence
         Object.keys(fields).forEach(key => {
-            product[key] = fields[key];
+            if (typeof fields[key] === 'object' && fields[key] !== null && !Array.isArray(fields[key])) {
+                // Handle nested banner objects carefully
+                product[key] = { ...product[key], ...fields[key] };
+            } else {
+                product[key] = fields[key];
+            }
         });
 
         await product.save();
