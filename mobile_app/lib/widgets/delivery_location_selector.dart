@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
+import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:provider/provider.dart';
 import '../models/delivery_location_model.dart';
 import '../data/areas_data.dart';
@@ -180,12 +180,13 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
   Future<void> _pickOnMap() async {
     final branch = Provider.of<BranchProvider>(context, listen: false).selectedBranch;
     final center = _customLatLng ?? _selectedArea?.centroid ?? LatLng(branch?.location.lat ?? 6.33, branch?.location.lng ?? 5.60);
+    final initialPos = gmaps.LatLng(center.latitude, center.longitude);
 
-    final result = await showGeneralDialog<LatLng>(
+    final result = await showGeneralDialog<gmaps.LatLng>(
       context: context,
       barrierDismissible: false,
       pageBuilder: (ctx, anim1, anim2) {
-        LatLng currentPos = center;
+        gmaps.LatLng currentPos = initialPos;
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Scaffold(
@@ -202,22 +203,12 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
               ),
               body: Stack(
                 children: [
-                  FlutterMap(
-                    options: MapOptions(
-                      initialCenter: center,
-                      initialZoom: 15.0,
-                      onPositionChanged: (pos, hasGesture) {
-                        if (hasGesture) {
-                          currentPos = pos.center!;
-                        }
-                      },
-                    ),
-                    children: [
-                      TileLayer(
-                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.clotheline.app',
-                      ),
-                    ],
+                  gmaps.GoogleMap(
+                    initialCameraPosition: gmaps.CameraPosition(target: initialPos, zoom: 15.0),
+                    onCameraMove: (pos) => currentPos = pos.target,
+                    myLocationButtonEnabled: true,
+                    myLocationEnabled: true,
+                    zoomControlsEnabled: false,
                   ),
                   const Center(
                     child: Padding(
@@ -233,7 +224,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                         child: Text(
                           "Drag the map to position the pin exactly where you want us to deliver.",
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
                         ),
                       ),
                     ),
@@ -248,7 +239,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
 
     if (result != null) {
       setState(() {
-        _customLatLng = result;
+        _customLatLng = LatLng(result.latitude, result.longitude);
         _source = 'pin';
         _addressLabel = "Custom Address";
       });
@@ -309,7 +300,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
                 child: const Icon(Icons.check, color: AppTheme.primaryColor),
               ),
               const SizedBox(width: 16),
@@ -370,7 +361,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                   avatar: const Icon(Icons.bookmark, size: 14, color: AppTheme.primaryColor),
                   label: Text(addr.label, style: const TextStyle(fontSize: 12)),
                   onPressed: () => _selectSavedAddress(addr),
-                  backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                  backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
               )).toList(),
@@ -383,7 +374,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                     avatar: const Icon(Icons.add, size: 14, color: AppTheme.primaryColor),
                     label: Text(_savedAddresses.isEmpty ? "Add Address" : "", style: const TextStyle(fontSize: 12)),
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAddressesScreen())).then((_) => _loadSavedAddresses()),
-                    backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                    backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                 ),
@@ -403,7 +394,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(isDark ? 0.3 : 0.05), blurRadius: 10, offset: const Offset(0, 4))
+                BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05), blurRadius: 10, offset: const Offset(0, 4))
               ],
             ),
             child: ListView.separated(
@@ -429,7 +420,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
           key: const ValueKey('search_field_container'), // Added Key
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
           ),
@@ -464,7 +455,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
           ),
@@ -500,7 +491,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
           ),

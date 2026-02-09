@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../providers/branch_provider.dart';
 import '../../../../models/branch_model.dart';
 import '../../../../theme/app_theme.dart';
@@ -196,22 +196,19 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
   late TextEditingController _phoneCtrl;
   late TextEditingController _latCtrl;
   late TextEditingController _lngCtrl;
-  
-  final MapController _mapController = MapController();
   bool _isSaving = false;
-  bool _isDirty = false; // Tracks if any changes have been made
+  bool _isDirty = false;
+  bool _isEditLocationEnabled = false; // [FIX] Mistap protection
+  gmaps.MapType _activeMapType = gmaps.MapType.normal; // [NEW] Map view types
   
-  // Strict: Always 5 Zones internally (A, B, C, D, E). 
-  // We only render/edit A-D. E is inclusive of everything beyond D.
   List<DeliveryZone> _zones = [];
 
-  // Strict Color Mapping
   final List<Color> _zoneColors = [
-    const Color(0xFF2ECC71), // Zone A - Green
-    const Color(0xFFF1C40F), // Zone B - Yellow
-    const Color(0xFFE67E22), // Zone C - Orange
-    const Color(0xFFE74C3C), // Zone D - Red
-    const Color(0xFF9E9E9E), // Zone E - Grey (Implicit)
+    const Color(0xFF2ECC71),
+    const Color(0xFFF1C40F),
+    const Color(0xFFE67E22),
+    const Color(0xFFE74C3C),
+    const Color(0xFF9E9E9E),
   ];
 
   @override
@@ -225,7 +222,6 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
     
     _initializeZones();
     
-    // Listen to text changes to mark as dirty
     void markDirty() {
       if (!_isDirty) setState(() => _isDirty = true);
     }
@@ -272,12 +268,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
         double start = (i == 0) ? 0 : _zones[i-1].radiusKm;
         double end = _zones[i].radiusKm;
         
-        String desc;
-        if (i == _zones.length - 1) {
-           desc = "> $start km (Out of Service)";
-        } else {
-           desc = "${start.toStringAsFixed(1)} - ${end.toStringAsFixed(1)} km";
-        }
+        String desc = (i == _zones.length - 1) ? "> $start km (Out of Service)" : "${start.toStringAsFixed(1)} - ${end.toStringAsFixed(1)} km";
         
         // Update keeping other props
         _zones[i] = DeliveryZone(
@@ -291,10 +282,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
   }
 
   // Helper: Start of a zone is End of previous
-  double _getStartDistance(int index) {
-    if (index == 0) return 0;
-    return _zones[index - 1].radiusKm;
-  }
+  double _getStartDistance(int index) => (index == 0) ? 0 : _zones[index - 1].radiusKm;
 
   void _updateZoneRadius(int index, String val) {
     final double? newRadius = double.tryParse(val);
@@ -385,7 +373,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
       setState(() => _isSaving = false);
       
       if (result['success'] == true) {
-        setState(() => _isDirty = false); // Clear dirty flag on success
+        setState(() { _isDirty = false; _isEditLocationEnabled = false; }); // Clear dirty flag on success
         if (mounted) {
            ToastUtils.show(context, "Delivery zones updated successfully", type: ToastType.success);
         }
@@ -399,64 +387,85 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
     }
   }
   
-  void _expandMap() {
+  Future<void> _launchStreetView() async {
     final lat = double.tryParse(_latCtrl.text) ?? widget.branch.location.latitude;
     final lng = double.tryParse(_lngCtrl.text) ?? widget.branch.location.longitude;
-    final center = LatLng(lat, lng);
-    
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog.fullscreen(
-        backgroundColor: Colors.black,
-        child: Stack(
-          children: [
-            FlutterMap(
-              options: MapOptions(
-                initialCenter: center,
-                initialZoom: 12.0,
-                onTap: (pos, point) {
-                  _latCtrl.text = point.latitude.toStringAsFixed(6);
-                  _lngCtrl.text = point.longitude.toStringAsFixed(6);
-                  setState(() => _isDirty = true);
-                },
-              ),
-              children: [
-                 TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.clotheline.app'),
-                 CircleLayer(
-                    // Render A-D rings. 
-                    circles: _zones.getRange(0, 4).toList().reversed.map((z) {
-                       int idx = _zones.indexOf(z);
-                       return CircleMarker(
-                        point: LatLng(double.parse(_latCtrl.text), double.parse(_lngCtrl.text)),
-                        color: _zoneColors[idx].withValues(alpha: 0.15),
-                        useRadiusInMeter: true,
-                        radius: z.radiusKm * 1000,
-                        borderColor: _zoneColors[idx],
-                        borderStrokeWidth: 2
-                      );
-                    }).toList(),
-                 ),
-                 MarkerLayer(markers: [Marker(point: LatLng(double.parse(_latCtrl.text), double.parse(_lngCtrl.text)), width: 80, height: 80, child: const Icon(Icons.location_pin, color: Colors.white, size: 40))]),
-              ],
-            ),
-            Positioned(
-               top: 40, left: 20,
-               child: IconButton(icon: const Icon(Icons.close, color: Colors.black, size: 30), onPressed: () => Navigator.pop(ctx)),
-            ),
-            const Positioned(
-              bottom: 40, left: 20, right: 20,
-              child: GlassContainer(child: Text("Tap anywhere to move Delivery Center", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))
-            )
-          ],
-        ),
-      )
-    ).then((_) => setState((){})); 
+    final url = 'google.streetview:cbll=$lat,$lng';
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
+    } else {
+      final webUrl = 'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=$lat,$lng';
+      await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+    }
   }
 
-  void _onMapTap(TapPosition pos, LatLng point) {
+  void _onMapTap(gmaps.LatLng point) {
+    if (!_isEditLocationEnabled) return; // [FIX] Lock movements
     _latCtrl.text = point.latitude.toStringAsFixed(6);
     _lngCtrl.text = point.longitude.toStringAsFixed(6);
     setState(() => _isDirty = true); 
+  }
+
+  void _showViewSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Map View Type", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 20),
+            _viewOption("Normal", gmaps.MapType.normal, Icons.map_outlined),
+            _viewOption("Satellite", gmaps.MapType.satellite, Icons.satellite_alt_outlined),
+            _viewOption("Hybrid", gmaps.MapType.hybrid, Icons.layers_outlined),
+            _viewOption("Terrain", gmaps.MapType.terrain, Icons.terrain_outlined),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _viewOption(String label, gmaps.MapType type, IconData icon) {
+    final isSelected = _activeMapType == type;
+    return _listAction(
+      label: label, icon: icon, color: isSelected ? AppTheme.primaryColor : Colors.white70,
+      onTap: () {
+        setState(() => _activeMapType = type);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  Widget _mapControlBtn(IconData icon, VoidCallback onTap, {bool isActive = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44, height: 44,
+        decoration: BoxDecoration(color: isActive ? AppTheme.primaryColor : Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(12), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)]),
+        child: Icon(icon, color: isActive ? Colors.black : Colors.black87),
+      ),
+    );
+  }
+
+  Widget _editLocationToggle() {
+    return GestureDetector(
+      onTap: () => setState(() => _isEditLocationEnabled = !_isEditLocationEnabled),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(color: _isEditLocationEnabled ? Colors.blue : Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(30), border: Border.all(color: _isEditLocationEnabled ? Colors.white38 : Colors.white12)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_isEditLocationEnabled ? Icons.location_on : Icons.location_off, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(_isEditLocationEnabled ? "CLICK MAP TO MOVE" : "LOCATION LOCKED (TAP TO EDIT)", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
   }
 
   Color _parseColor(String s) {
@@ -472,7 +481,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
   Widget build(BuildContext context) {
     final lat = double.tryParse(_latCtrl.text) ?? widget.branch.location.latitude;
     final lng = double.tryParse(_lngCtrl.text) ?? widget.branch.location.longitude;
-    final center = LatLng(lat, lng);
+    final center = gmaps.LatLng(lat, lng);
 
     return Theme(
       data: AppTheme.darkTheme,
@@ -485,26 +494,21 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
             builder: (context) => AlertDialog(
               backgroundColor: const Color(0xFF1C1C1E),
               title: const Text("Unsaved Changes", style: TextStyle(color: Colors.white)),
-              content: const Text("You have unsaved changes. Convert them to reality?", style: TextStyle(color: Colors.white70)),
+              content: const Text("You have unsaved changes. Discard them?", style: TextStyle(color: Colors.white70)),
               actions: [
                 TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Stay")),
                 TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Discard", style: TextStyle(color: Colors.red))),
               ],
             ),
           );
-          if (shouldPop == true && context.mounted) {
-             Navigator.pop(context);
-          }
+          if (shouldPop == true && context.mounted) Navigator.pop(context);
         },
         child: Scaffold(
           extendBodyBehindAppBar: true,
           appBar: AppBar(
             leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () {
-              if (_isDirty) {
-                 ToastUtils.show(context, "Please save or discard changes.", type: ToastType.info);
-              } else {
-                 widget.onClose();
-              }
+              if (_isDirty) ToastUtils.show(context, "Please save or discard changes.", type: ToastType.info);
+              else widget.onClose();
             }),
             title: Text("Edit ${widget.branch.name}", style: const TextStyle(color: Colors.white)),
             backgroundColor: Colors.transparent,
@@ -512,138 +516,126 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: ElevatedButton.icon(
-                  // Logic: Enabled only if dirty and not saving
                   onPressed: (_isDirty && !_isSaving) ? _saveChanges : null,
-                  icon: _isSaving 
-                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                     : const Icon(Icons.save, color: Colors.white),
+                  icon: _isSaving ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save, color: Colors.white),
                   label: Text(_isSaving ? "Saving..." : "Save", style: const TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                     backgroundColor: _isDirty ? Colors.blue : Colors.grey.withValues(alpha: 0.5),
-                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: _isDirty ? Colors.blue : Colors.grey.withOpacity(0.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
                 ),
               )
             ],
           ),
           body: LiquidBackground(
-            child: Row( 
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 100),
+                  
+                  // --- GOOGLE MAP SECTION ---
+                  SizedBox(
+                    height: 400,
+                    child: Container(
+                      margin: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.white12), boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 15)]),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Stack(
+                          children: [
+                            gmaps.GoogleMap(
+                              initialCameraPosition: gmaps.CameraPosition(target: center, zoom: 12),
+                              mapType: _activeMapType,
+                              onMapCreated: (c) => {}, // Changed to empty sink if controller not strictly needed
+                              onTap: _onMapTap,
+                              myLocationButtonEnabled: false,
+                              zoomControlsEnabled: false,
+                              circles: [0, 1, 2, 3].reversed.map((idx) {
+                                final z = _zones[idx];
+                                return gmaps.Circle(
+                                  circleId: gmaps.CircleId(z.name),
+                                  center: center,
+                                  radius: z.radiusKm * 1000,
+                                  fillColor: _zoneColors[idx].withOpacity(0.15),
+                                  strokeColor: _zoneColors[idx],
+                                  strokeWidth: 2,
+                                );
+                              }).toSet(),
+                              markers: {
+                                gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(gmaps.BitmapDescriptor.hueAzure)),
+                              },
+                            ),
+
+                            // Map Controls
+                            Positioned(
+                              top: 20, right: 20,
+                              child: Column(
+                                children: [
+                                  _mapControlBtn(Icons.layers_outlined, () => _showViewSelector()),
+                                  const SizedBox(height: 10),
+                                  _mapControlBtn(Icons.streetview, _launchStreetView),
+                                ],
+                              ),
+                            ),
+                            
+                            // Edit Mode Toggle
+                            Positioned(
+                              bottom: 20, left: 20, right: 20,
+                              child: Center(
+                                child: _editLocationToggle(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // --- DETAILS EDITOR ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: GlassContainer(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Branch Details", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          _buildInput("Address", _addressCtrl),
+                          const SizedBox(height: 10),
+                          _buildInput("Phone", _phoneCtrl),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+
+                  // --- ZONE EDITOR ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 100),
-                        
-                        // --- MAP SECTION ---
-                        SizedBox(
-                          height: 300,
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 20),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white24),
-                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)]
-                            ),
-                            child: Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: FlutterMap(
-                                    mapController: _mapController,
-                                    options: MapOptions(
-                                      initialCenter: center,
-                                      initialZoom: 11.0,
-                                      onTap: _onMapTap,
-                                    ),
-                                    children: [
-                                       TileLayer(
-                                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                        userAgentPackageName: 'com.clotheline.app',
-                                      ),
-                                      CircleLayer(
-                                        // Render A-D rings only.
-                                        circles: _zones.getRange(0, 4).toList().reversed.map((z) {
-                                           // Find index for color
-                                           int idx = _zones.indexOf(z);
-                                           return CircleMarker(
-                                            point: center,
-                                            color: _zoneColors[idx].withValues(alpha: 0.15),
-                                            useRadiusInMeter: true,
-                                            radius: z.radiusKm * 1000, 
-                                            borderColor: _zoneColors[idx],
-                                            borderStrokeWidth: 2
-                                          );
-                                        }).toList(),
-                                      ),
-                                      MarkerLayer(
-                                        markers: [
-                                          Marker(point: center, width: 80, height: 80, child: const Icon(Icons.location_pin, color: Colors.white, size: 40)),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 10, right: 10,
-                                  child: FloatingActionButton.small(
-                                    backgroundColor: Colors.white,
-                                    onPressed: _expandMap,
-                                    child: const Icon(Icons.fullscreen, color: Colors.black),
-                                  )
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 20),
-  
-                        // --- DETAILS EDITOR ---
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: GlassContainer(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text("Branch Details", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 10),
-                                _buildInput("Address", _addressCtrl),
-                                const SizedBox(height: 10),
-                                _buildInput("Phone", _phoneCtrl),
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 20),
-  
-                        // --- ZONE EDITOR ---
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text("Delivery Zones (Zones A - D)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                              const SizedBox(height: 10),
-                              // STRICT: Only render exactly 4 zones (Index 0, 1, 2, 3)
-                              ...[0, 1, 2, 3].map((i) {
-                                 return _buildZoneCard(i, _zones[i]);
-                              }),
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 40),
+                        const Text("Delivery Zones (Zones A - D)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 10),
+                        ...[0, 1, 2, 3].map((i) => _buildZoneCard(i, _zones[i])),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  // Define _listAction inline since it might be missing
+  Widget _listAction({required String label, required IconData icon, required Color color, required VoidCallback onTap}) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(label, style: TextStyle(color: color)),
+      onTap: onTap,
     );
   }
 
@@ -664,18 +656,12 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
   }
 
   Widget _buildZoneCard(int index, DeliveryZone z) {
-     if (index >= _zoneColors.length) return const SizedBox();
-     
      final Color color = _zoneColors[index];
      final startKm = _getStartDistance(index);
      
      return Container(
        margin: const EdgeInsets.only(bottom: 12),
-       decoration: BoxDecoration(
-         color: color.withValues(alpha:0.1),
-         borderRadius: BorderRadius.circular(12),
-         border: Border.all(color: color.withValues(alpha:0.5)),
-       ),
+       decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.5))),
        padding: const EdgeInsets.all(12),
        child: Column(
          children: [
@@ -683,16 +669,12 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
              children: [
                Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                const SizedBox(width: 10),
-               Expanded(
-                 child: Text(z.name, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16))
-               ),
-               
+               Expanded(child: Text(z.name, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16))),
                const Text("Ends:", style: TextStyle(color: Colors.white54, fontSize: 12)),
                const SizedBox(width: 5),
                SizedBox(
                  width: 50,
                  child: TextFormField(
-                   // Key ensures rebuild when calculated value changes
                    key: ValueKey("radius_${z.radiusKm}"),
                    initialValue: z.radiusKm.toString(),
                    keyboardType: TextInputType.number,
@@ -709,22 +691,11 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
            Row(
              mainAxisAlignment: MainAxisAlignment.spaceBetween,
              children: [
-                Text(
-                  "${startKm.toStringAsFixed(1)} - ${z.radiusKm.toStringAsFixed(1)} km",
-                  style: const TextStyle(color: Colors.white70, fontSize: 13)
-                ),
+                Text("${startKm.toStringAsFixed(1)} - ${z.radiusKm.toStringAsFixed(1)} km", style: const TextStyle(color: Colors.white70, fontSize: 13)),
                 SizedBox(
                   width: 100,
                   child: TextField(
-                    decoration: InputDecoration(
-                       prefixText: "N ", 
-                       prefixStyle: const TextStyle(color: Colors.white54),
-                       filled: true, 
-                       fillColor: Colors.black26,
-                       isDense: true,
-                       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none)
-                    ),
+                    decoration: InputDecoration(prefixText: "N ", prefixStyle: const TextStyle(color: Colors.white54), filled: true, fillColor: Colors.black26, isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none)),
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     keyboardType: TextInputType.number,
                     controller: TextEditingController(text: z.baseFee.toStringAsFixed(0))..selection = TextSelection.collapsed(offset: z.baseFee.toStringAsFixed(0).length),
