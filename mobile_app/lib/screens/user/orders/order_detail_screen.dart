@@ -15,6 +15,7 @@ import '../products/submit_review_screen.dart';
 import '../../../../services/order_service.dart';
 import '../../../widgets/dialogs/guest_login_dialog.dart';
 import '../../../services/auth_service.dart';
+import '../../../../services/whatsapp_service.dart'; // [NEW]
 
 class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -280,12 +281,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
               const SizedBox(height: 20),
               Center(
-                child: TextButton.icon(
-                  icon: const Icon(Icons.help_outline),
-                  label: const Text("Need Help with this Order?"),
-                  onPressed: () {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(orderId: order.id)));
-                  },
+                child: Column(
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.help_outline),
+                      label: const Text("Need Help with this Order?"),
+                      onPressed: () {
+                         Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(orderId: order.id)));
+                      },
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.whatsapp, color: Colors.green),
+                      label: const Text("Contact Support via WhatsApp", style: TextStyle(color: Colors.green)),
+                      onPressed: () {
+                         WhatsAppService.contactSupport(orderNumber: order.id);
+                      },
+                    ),
+                  ],
                 ),
               )
             ],

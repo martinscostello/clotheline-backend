@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../utils/toast_utils.dart';
 import '../../user/chat/chat_screen.dart';
 import '../chat/admin_chat_screen.dart'; // [FIX] Import AdminChatScreen
+import '../../../../services/whatsapp_service.dart'; // [NEW]
 
 class AdminOrderDetailScreen extends StatefulWidget {
   final OrderModel? order;
@@ -386,11 +387,28 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                              const Text("Customer Info", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
                              IconButton(
                                icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primaryColor),
-                               onPressed: _contactCustomer,
-                               tooltip: "Message User",
-                             )
-                           ],
-                         ),
+                                onPressed: _contactCustomer,
+                                tooltip: "Message User",
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.whatsapp, color: Colors.green),
+                                onPressed: () {
+                                  if (_order!.guestPhone != null) {
+                                    WhatsAppService.sendOrderUpdate(
+                                      phone: _order!.guestPhone!,
+                                      orderNumber: _order!.id,
+                                      amount: _order!.totalAmount,
+                                      status: _order!.status.name,
+                                      guestName: _order!.guestName ?? _order!.userName,
+                                    );
+                                  } else {
+                                    ToastUtils.show(context, "No phone number available", type: ToastType.error);
+                                  }
+                                },
+                                tooltip: "WhatsApp Customer",
+                              )
+                            ],
+                          ),
                         const SizedBox(height: 5),
                         _buildInfoRow(Icons.person, _order!.userName ?? _order!.guestName ?? "Guest"),
                         _buildInfoRow(Icons.email, _order!.userEmail ?? _order!.guestEmail ?? "No Email"),

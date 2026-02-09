@@ -118,14 +118,20 @@ class NotificationService extends ChangeNotifier {
 
   void _checkForAlerts() {
      if (_notifications.isEmpty) return;
+     
+     // [FIX] If app is in foreground and active, skip polling alerts. 
+     // FCM (PushNotificationService) handles real-time foreground alerts.
+     // Polling is mainly for updating the UI badges and catching missed items.
+     if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        _syncLastAlert();
+        return;
+     }
+
      // Filter only unread
      final unread = _notifications.where((n) => n['isRead'] == false).toList();
      if (unread.isEmpty) return;
 
      final latest = unread.first;
-     
-     // If _lastAlertedId is null (fresh start), we might trigger if we didn't populate it on init.
-     // We need to sync _lastAlertedId on the first 'alert: false' run too.
      
      if (latest['_id'] != _lastAlertedId) {
         _lastAlertedId = latest['_id'];

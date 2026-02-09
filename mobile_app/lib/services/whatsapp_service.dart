@@ -32,5 +32,24 @@ class WhatsAppService {
     } else {
       throw 'Could not launch $whatsappUrl';
     }
+  } // This closing brace was missing
+
+  static Future<void> contactSupport({
+    required String orderNumber,
+  }) async {
+    const String supportPhone = '2348000000000'; // TODO: Get from dynamic settings?
+    final String message = Uri.encodeComponent(
+      "Hello Clotheline Support!\n\n"
+      "I need help with my order #$orderNumber.\n\n"
+      "Thank you!"
+    );
+
+    final Uri whatsappUrl = Uri.parse("https://wa.me/$supportPhone?text=$message");
+
+    if (await canLaunchUrl(whatsappUrl)) {
+      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Could not launch $whatsappUrl';
+    }
   }
 }

@@ -5,6 +5,11 @@ import '../models/booking_models.dart';
 import '../models/store_product.dart';
 
 class ReceiptService {
+  static String _truncate(String text, int length) {
+    if (text.length <= length) return text;
+    return '${text.substring(0, length)}...';
+  }
+
   static Future<void> printReceipt({
     required String orderNumber,
     required String customerName,
@@ -47,7 +52,9 @@ class ReceiptService {
                 ...laundryItems.map((i) => pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text("${i.item.name} (${i.serviceType.name}) x${i.quantity}", style: const pw.TextStyle(fontSize: 9)),
+                    pw.Expanded(
+                      child: pw.Text(_truncate("${i.item.name} (${i.serviceType.name}) x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
+                    ),
                     pw.Text("N${i.totalPrice.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
                   ],
                 )),
@@ -59,7 +66,9 @@ class ReceiptService {
                 ...storeItems.map((i) => pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text("${i.product.name} x${i.quantity}", style: const pw.TextStyle(fontSize: 9)),
+                    pw.Expanded(
+                      child: pw.Text(_truncate("${i.product.name} x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
+                    ),
                     pw.Text("N${i.totalPrice.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
                   ],
                 )),
