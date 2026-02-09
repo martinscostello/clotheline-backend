@@ -18,6 +18,7 @@ import '../settings/admin_tax_settings_screen.dart';
 import '../settings/admin_delivery_settings_screen.dart';
 import '../orders/admin_orders_screen.dart'; 
 import '../promotions/admin_promotions_screen.dart'; 
+import '../pos/admin_pos_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -338,6 +339,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         children: [
           _buildQuickAction(context, "Orders", Icons.list_alt, Colors.blueAccent, () {
             if (_hasPermission("Orders")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()));
+          }),
+          const SizedBox(width: 15),
+          _buildQuickAction(context, "POS", Icons.point_of_sale, Colors.greenAccent, () {
+            if (_hasPermission("Orders")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPOSScreen()));
           }),
           const SizedBox(width: 15),
           _buildQuickAction(context, "Services", Icons.local_laundry_service, Colors.purpleAccent, () {

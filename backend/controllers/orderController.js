@@ -60,6 +60,11 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             taxAmount,
             totalAmount,
 
+            // [NEW] POS Fields
+            isWalkIn,
+            paymentMethod,
+            paymentStatus: manualPaymentStatus,
+
             // [New] Rich Location Support
             deliveryLocation,
             pickupLocation,
@@ -96,12 +101,19 @@ exports.createOrderInternal = async (orderData, userId = null) => {
         console.log(`[OrderTrigger] Creating Order for User: ${userId}, Branch: ${branchId}, Total: ${finalTotal}`);
 
         // [STRICT AUTH]
-        if (!userId) {
+        // For POS/Walk-in, we allow missing userId if created by Admin
+        if (!userId && !isWalkIn) {
             throw new Error("Order creation failed: Missing Authenticated User ID");
         }
 
         // [VISIBILITY FIX] Explicitly cast to ObjectId
-        const userObjectId = (typeof userId === 'string') ? new mongoose.Types.ObjectId(userId) : userId;
+        const userObjectId = (userId && !isWalkIn)
+            ? ((typeof userId === 'string') ? new mongoose.Types.ObjectId(userId) : userId)
+            : null;
+
+        const adminObjectId = (isWalkIn && userId)
+            ? ((typeof userId === 'string') ? new mongoose.Types.ObjectId(userId) : userId)
+            : null;
 
         const newOrder = new Order({
             user: userObjectId,
@@ -119,7 +131,12 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
             // Status
             status: 'New',
-            paymentStatus: 'Pending', // Will be updated to Paid by caller usually
+            paymentStatus: manualPaymentStatus || (isWalkIn ? 'Paid' : 'Pending'),
+
+            // [NEW] POS Logic
+            isWalkIn: isWalkIn || false,
+            paymentMethod: paymentMethod || (isWalkIn ? 'cash' : 'paystack'),
+            createdByAdmin: adminObjectId,
 
             // Logistics
             pickupOption: pickupOption || 'None',

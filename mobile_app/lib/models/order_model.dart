@@ -8,6 +8,7 @@ class OrderModel {
   final double totalAmount;
   final OrderStatus status;
   final PaymentStatus paymentStatus;
+  final String? paymentMethod; // [NEW] cash, pos, transfer, pay_on_delivery, paystack
   final OrderExceptionStatus exceptionStatus; // [NEW]
   final String? exceptionNote; // [NEW]
   
@@ -61,6 +62,7 @@ class OrderModel {
     this.taxRate = 0,
     required this.status,
     required this.paymentStatus,
+    this.paymentMethod,
     this.exceptionStatus = OrderExceptionStatus.None, 
     this.exceptionNote, 
     required this.pickupOption,
@@ -99,6 +101,7 @@ class OrderModel {
       taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0.0,
       status: OrderStatus.values.firstWhere((e) => e.name == json['status'], orElse: () => OrderStatus.New),
       paymentStatus: PaymentStatus.values.firstWhere((e) => e.name == json['paymentStatus'], orElse: () => PaymentStatus.Pending),
+      paymentMethod: json['paymentMethod'],
       exceptionStatus: OrderExceptionStatus.values.firstWhere((e) => e.name == (json['exceptionStatus'] ?? 'None'), orElse: () => OrderExceptionStatus.None),
       exceptionNote: json['exceptionNote'],
       pickupOption: json['pickupOption'],

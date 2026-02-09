@@ -271,6 +271,30 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // [NEW] Payment Pending Banner for POD/Manual
+              if (_order!.paymentStatus == PaymentStatus.Pending && _order!.paymentMethod != 'paystack')
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.15),
+                    border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.payment, color: Colors.amber),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          "PAYMENT PENDING",
+                          style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // 0. Exception Banner
               if (_order!.exceptionStatus != OrderExceptionStatus.None)
                 Container(

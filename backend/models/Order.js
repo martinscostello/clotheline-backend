@@ -12,6 +12,13 @@ const OrderSchema = new mongoose.Schema({
         email: String,
         phone: String
     },
+    isWalkIn: { type: Boolean, default: false }, // [NEW] POS Orders
+    paymentMethod: {
+        type: String,
+        enum: ['paystack', 'cash', 'transfer', 'pos', 'pay_on_delivery', 'other'],
+        default: 'paystack'
+    },
+    createdByAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // [NEW] Staff Tracking
 
     // Items can be Mixed? Or separate arrays for Laundry vs Store?
     // Let's use a flexible structure.
