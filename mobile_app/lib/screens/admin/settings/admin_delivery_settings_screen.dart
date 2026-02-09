@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,9 +32,7 @@ class _AdminDeliverySettingsScreenState extends State<AdminDeliverySettingsScree
 
   void _createNewBranch() {
       final nameCtrl = TextEditingController();
-      final addressCtrl = TextEditingController(); // Assuming prompt logic similar to before
-      final latCtrl = TextEditingController(text: "6.335");
-      final lngCtrl = TextEditingController(text: "5.603");
+      final addressCtrl = TextEditingController(); 
 
       showDialog(
         context: context, 
@@ -123,6 +123,7 @@ class _AdminDeliverySettingsScreenState extends State<AdminDeliverySettingsScree
                               // Call Seed Endpoint
                               // Note: We need to add seedBranches method to provider first
                               final success = await provider.seedBranches();
+                              if (!mounted) return;
                               if (success) {
                                 ToastUtils.show(context, "Branches Initialized!", type: ToastType.success);
                               } else {
@@ -387,6 +388,93 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
     }
   }
   
+  void _expandMap() {
+    final lat = double.tryParse(_latCtrl.text) ?? widget.branch.location.latitude;
+    final lng = double.tryParse(_lngCtrl.text) ?? widget.branch.location.longitude;
+    final center = gmaps.LatLng(lat, lng);
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      pageBuilder: (ctx, anim1, anim2) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              body: Stack(
+                children: [
+                  gmaps.GoogleMap(
+                    initialCameraPosition: gmaps.CameraPosition(target: center, zoom: 15),
+                    mapType: _activeMapType,
+                    onTap: (point) {
+                      _onMapTap(point);
+                      setDialogState(() {}); // Refresh dialog markers
+                    },
+                    myLocationButtonEnabled: true,
+                    myLocationEnabled: true,
+                    zoomControlsEnabled: true,
+                    gestureRecognizers: {
+                      Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+                    },
+                    circles: [0, 1, 2, 3].reversed.map((idx) {
+                      final z = _zones[idx];
+                      return gmaps.Circle(
+                        circleId: gmaps.CircleId(z.name),
+                        center: center,
+                        radius: z.radiusKm * 1000,
+                        fillColor: _zoneColors[idx].withValues(alpha: 0.15),
+                        strokeColor: _zoneColors[idx],
+                        strokeWidth: 2,
+                      );
+                    }).toSet(),
+                    markers: {
+                      gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(gmaps.BitmapDescriptor.hueAzure)),
+                    },
+                  ),
+
+                  // Close Button
+                  Positioned(
+                    top: 50, left: 20,
+                    child: _mapControlBtn(Icons.close, () => Navigator.pop(context), isActive: true),
+                  ),
+
+                  // Map Controls
+                  Positioned(
+                    top: 50, right: 20,
+                    child: Column(
+                      children: [
+                        _mapControlBtn(Icons.layers_outlined, () {
+                          _showViewSelector();
+                          setDialogState(() {});
+                        }),
+                        const SizedBox(height: 10),
+                        _mapControlBtn(Icons.streetview, _launchStreetView),
+                      ],
+                    ),
+                  ),
+                  
+                  // Edit Mode Toggle
+                  Positioned(
+                    bottom: 40, left: 20, right: 20,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() => _isEditLocationEnabled = !_isEditLocationEnabled);
+                          setDialogState(() {});
+                        },
+                        child: _editLocationToggle(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+        );
+      },
+    );
+  }
+
   Future<void> _launchStreetView() async {
     final lat = double.tryParse(_latCtrl.text) ?? widget.branch.location.latitude;
     final lng = double.tryParse(_lngCtrl.text) ?? widget.branch.location.longitude;
@@ -468,15 +556,6 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
     );
   }
 
-  Color _parseColor(String s) {
-    try {
-      final hex = s.replaceFirst('#', '');
-      return Color(int.parse('FF$hex', radix: 16));
-    } catch (_) {
-      return Colors.grey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final lat = double.tryParse(_latCtrl.text) ?? widget.branch.location.latitude;
@@ -487,7 +566,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
       data: AppTheme.darkTheme,
       child: PopScope(
         canPop: !_isDirty,
-        onPopInvoked: (didPop) async {
+        onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
           final shouldPop = await showDialog<bool>(
             context: context,
@@ -507,8 +586,11 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
           extendBodyBehindAppBar: true,
           appBar: AppBar(
             leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () {
-              if (_isDirty) ToastUtils.show(context, "Please save or discard changes.", type: ToastType.info);
-              else widget.onClose();
+              if (_isDirty) {
+                ToastUtils.show(context, "Please save or discard changes.", type: ToastType.info);
+              } else {
+                widget.onClose();
+              }
             }),
             title: Text("Edit ${widget.branch.name}", style: const TextStyle(color: Colors.white)),
             backgroundColor: Colors.transparent,
@@ -519,7 +601,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                   onPressed: (_isDirty && !_isSaving) ? _saveChanges : null,
                   icon: _isSaving ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save, color: Colors.white),
                   label: Text(_isSaving ? "Saving..." : "Save", style: const TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(backgroundColor: _isDirty ? Colors.blue : Colors.grey.withOpacity(0.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                  style: ElevatedButton.styleFrom(backgroundColor: _isDirty ? Colors.blue : Colors.grey.withValues(alpha: 0.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
                 ),
               )
             ],
@@ -543,17 +625,20 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                             gmaps.GoogleMap(
                               initialCameraPosition: gmaps.CameraPosition(target: center, zoom: 12),
                               mapType: _activeMapType,
-                              onMapCreated: (c) => {}, // Changed to empty sink if controller not strictly needed
+                              onMapCreated: (c) => {}, 
                               onTap: _onMapTap,
                               myLocationButtonEnabled: false,
                               zoomControlsEnabled: false,
+                              gestureRecognizers: {
+                                Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+                              },
                               circles: [0, 1, 2, 3].reversed.map((idx) {
                                 final z = _zones[idx];
                                 return gmaps.Circle(
                                   circleId: gmaps.CircleId(z.name),
                                   center: center,
                                   radius: z.radiusKm * 1000,
-                                  fillColor: _zoneColors[idx].withOpacity(0.15),
+                                  fillColor: _zoneColors[idx].withValues(alpha: 0.15),
                                   strokeColor: _zoneColors[idx],
                                   strokeWidth: 2,
                                 );
@@ -571,6 +656,8 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                                   _mapControlBtn(Icons.layers_outlined, () => _showViewSelector()),
                                   const SizedBox(height: 10),
                                   _mapControlBtn(Icons.streetview, _launchStreetView),
+                                  const SizedBox(height: 10),
+                                  _mapControlBtn(Icons.fullscreen, _expandMap),
                                 ],
                               ),
                             ),
@@ -661,7 +748,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
      
      return Container(
        margin: const EdgeInsets.only(bottom: 12),
-       decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.5))),
+       decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.5))),
        padding: const EdgeInsets.all(12),
        child: Column(
          children: [
