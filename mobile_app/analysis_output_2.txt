@@ -102,8 +102,6 @@ Analyzing mobile_app...
    info • The constant name 'Delay' isn't a lowerCamelCase identifier • lib/models/order_model.dart:3:50 • constant_identifier_names
    info • The constant name 'MissingItem' isn't a lowerCamelCase identifier • lib/models/order_model.dart:3:57 • constant_identifier_names
    info • The constant name 'Other' isn't a lowerCamelCase identifier • lib/models/order_model.dart:3:70 • constant_identifier_names
-  error • All final variables must be initialized, but 'lockedLabel' isn't • lib/models/service_model.dart:19:3 • final_not_initialized_constructor
-  error • The named parameter 'lockedLabel' isn't defined • lib/models/service_model.dart:52:7 • undefined_named_parameter
 warning • The declaration '_init' isn't referenced • lib/providers/branch_provider.dart:35:16 • unused_element
    info • Don't invoke 'print' in production code • lib/providers/branch_provider.dart:53:9 • avoid_print
    info • Don't invoke 'print' in production code • lib/providers/branch_provider.dart:91:7 • avoid_print
@@ -196,15 +194,8 @@ warning • The value of the field '_branchInfo' isn't used • lib/screens/admi
    info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/screens/admin/promotions/admin_promotions_screen.dart:163:15 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/services/admin_edit_service_screen.dart:296:74 • deprecated_member_use
    info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/services/admin_edit_service_screen.dart:447:28 • deprecated_member_use
-  error • Undefined class 'ServiceModel' • lib/screens/admin/services/admin_services_screen.dart:77:31 • undefined_class
-   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/services/admin_services_screen.dart:95:58 • use_build_context_synchronously
-  error • The name 'ServiceModel' isn't a type, so it can't be used as a type argument • lib/screens/admin/services/admin_services_screen.dart:172:40 • non_type_as_type_argument
-  error • Undefined class 'ServiceModel' • lib/screens/admin/services/admin_services_screen.dart:217:28 • undefined_class
-  error • The argument type 'BorderRadius' can't be assigned to the parameter type 'double'.  • lib/screens/admin/services/admin_services_screen.dart:258:31 • argument_type_not_assignable
-  error • Undefined class 'ServiceModel' • lib/screens/admin/services/admin_services_screen.dart:291:32 • undefined_class
-warning • The declaration '_getIconData' isn't referenced • lib/screens/admin/services/admin_services_screen.dart:328:12 • unused_element
-warning • The declaration '_getIconData' isn't referenced • lib/screens/admin/services/admin_services_screen.dart:340:12 • unused_element
-  error • Expected a method, getter, setter or operator declaration • lib/screens/admin/services/admin_services_screen.dart:350:1 • expected_executable
+   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/services/admin_services_screen.dart:96:58 • use_build_context_synchronously
+warning • The declaration '_getIconData' isn't referenced • lib/screens/admin/services/admin_services_screen.dart:329:12 • unused_element
    info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/admin/settings/admin_delivery_settings_screen.dart:128:49 • use_build_context_synchronously
    info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/admin/settings/admin_delivery_settings_screen.dart:130:50 • use_build_context_synchronously
    info • 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion • lib/screens/admin/settings/admin_delivery_settings_screen.dart:331:38 • deprecated_member_use
@@ -220,18 +211,12 @@ warning • The declaration '_getIconData' isn't referenced • lib/screens/admi
    info • The private field _isLoading could be 'final' • lib/screens/admin/settings/admin_notification_settings_screen.dart:18:8 • prefer_final_fields
 warning • The value of the field '_isLoading' isn't used • lib/screens/admin/settings/admin_notification_settings_screen.dart:18:8 • unused_field
    info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/settings/admin_notification_settings_screen.dart:200:7 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/settings/admin_settings_screen.dart:55:66 • deprecated_member_use
-   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/settings/admin_settings_screen.dart:141:51 • deprecated_member_use
-  error • Undefined name 'ToastUtils' • lib/screens/admin/settings/admin_settings_screen.dart:246:7 • undefined_identifier
-   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/settings/admin_settings_screen.dart:246:23 • use_build_context_synchronously
-  error • Undefined name 'ToastType' • lib/screens/admin/settings/admin_settings_screen.dart:246:66 • undefined_identifier
-   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/settings/admin_settings_screen.dart:248:55 • use_build_context_synchronously
-  error • Undefined name 'ToastUtils' • lib/screens/admin/settings/admin_settings_screen.dart:256:9 • undefined_identifier
-   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/settings/admin_settings_screen.dart:256:25 • use_build_context_synchronously
-  error • Undefined name 'ToastType' • lib/screens/admin/settings/admin_settings_screen.dart:256:79 • undefined_identifier
-  error • Undefined name 'ToastUtils' • lib/screens/admin/settings/admin_settings_screen.dart:260:7 • undefined_identifier
-   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/settings/admin_settings_screen.dart:260:23 • use_build_context_synchronously
-  error • Undefined name 'ToastType' • lib/screens/admin/settings/admin_settings_screen.dart:260:59 • undefined_identifier
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/settings/admin_settings_screen.dart:56:66 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/settings/admin_settings_screen.dart:142:51 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/settings/admin_settings_screen.dart:247:23 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/settings/admin_settings_screen.dart:249:55 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/settings/admin_settings_screen.dart:257:25 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/admin/settings/admin_settings_screen.dart:261:23 • use_build_context_synchronously
    info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/admin/settings/admin_tax_settings_screen.dart:126:30 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/settings/admin_tax_settings_screen.dart:144:56 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/admin/users/admin_user_profile_screen.dart:149:67 • deprecated_member_use
@@ -617,4 +602,4 @@ warning • Unused import: 'package:liquid_glass_ui/liquid_glass_ui.dart' • li
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/walkthrough/pulse_overlay.dart:232:27 • deprecated_member_use
    info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/walkthrough/pulse_overlay.dart:242:23 • deprecated_member_use
 
-551 issues found. (ran in 1.7s)
+536 issues found. (ran in 3.2s)

@@ -26,6 +26,7 @@ class ServiceModel {
     this.discountPercentage = 0,
     this.discountLabel = "",
     this.isLocked = false,
+    this.lockedLabel = "Coming Soon",
     this.order = 0, // [NEW]
     this.items = const [],
     this.serviceTypes = const [],

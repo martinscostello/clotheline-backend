@@ -6,6 +6,7 @@ import '../../../../theme/app_theme.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
 import 'admin_edit_service_screen.dart';
+import '../../../../models/service_model.dart';
 
 class AdminServicesScreen extends StatefulWidget {
   const AdminServicesScreen({super.key});
@@ -255,7 +256,7 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
               flex: 2,
               child: GlassContainer(
                 opacity: 0.05,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                borderRadius: 20.0,
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
@@ -324,18 +325,6 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
       ),
     );
   }
-
-  IconData _getIconData(String iconName) {
-    switch (iconName) {
-      case 'dry_cleaning': return Icons.dry_cleaning;
-      case 'local_laundry_service': return Icons.local_laundry_service;
-      case 'do_not_step': return Icons.do_not_step;
-      case 'water_drop': return Icons.water_drop;
-      case 'house': return Icons.house;
-      default: return Icons.category;
-    }
-  }
-}
 
   IconData _getIconData(String iconName) {
     switch (iconName) {
