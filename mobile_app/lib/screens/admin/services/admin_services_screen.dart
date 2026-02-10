@@ -254,32 +254,28 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
             // CONTENT BELOW
             Expanded(
               flex: 2,
-              child: GlassContainer(
-                opacity: 0.05,
-                borderRadius: 20.0,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        service.name,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      const SizedBox(height: 4),
-                      if (service.isLocked)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(4)), // Match User App blue lock
-                          child: Text(service.lockedLabel, style: const TextStyle(color: Colors.white, fontSize: 9)),
-                        )
-                      else if (service.discountPercentage > 0)
-                        Text("-${service.discountPercentage.toInt()}% OFF", style: const TextStyle(color: Colors.pinkAccent, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      service.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.visible,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, height: 1.1),
+                    ),
+                    const SizedBox(height: 6),
+                    if (service.isLocked)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(6)), 
+                        child: Text(service.lockedLabel, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      )
+                    else if (service.discountPercentage > 0)
+                      Text("-${service.discountPercentage.toInt()}% OFF", style: const TextStyle(color: Colors.pinkAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ],
                 ),
               ),
             ),

@@ -232,9 +232,8 @@ exports.deleteService = async (req, res) => {
         let service = await Service.findById(req.params.id);
         if (!service) return res.status(404).json({ msg: 'Service not found' });
 
-        service.isActive = false;
-        await service.save();
-        res.json({ msg: 'Service removed' });
+        await Service.findByIdAndDelete(req.params.id);
+        res.json({ msg: 'Service permanently deleted' });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
