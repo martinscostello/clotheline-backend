@@ -95,79 +95,86 @@ class _AdminFinancialDashboardState extends State<AdminFinancialDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("Financial Reports", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const BackButton(color: Colors.white),
-        actions: [
-          // Branch Selector
-          Consumer<BranchProvider>(
-            builder: (context, branchProvider, _) {
-              if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
-              
-              return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String?>(
-                    dropdownColor: const Color(0xFF2C2C2E),
-                    value: _selectedBranchId,
-                    hint: const Text("All", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    icon: const Icon(Icons.store, color: AppTheme.secondaryColor, size: 20),
-                    onChanged: _onBranchChanged,
-                    items: [
-                      const DropdownMenuItem<String?>(
-                         value: null, 
-                         child: Text("All", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
-                      ),
-                      ...branchProvider.branches.map((b) => DropdownMenuItem(
-                        value: b.id,
-                        child: Text(b.name, style: const TextStyle(color: Colors.white70))
-                      ))
-                    ],
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("Financial Reports", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: const BackButton(color: Colors.white),
+          actions: [
+            // Branch Selector
+            Consumer<BranchProvider>(
+              builder: (context, branchProvider, _) {
+                if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
+                
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      dropdownColor: const Color(0xFF1E1E2C),
+                      value: _selectedBranchId,
+                      hint: const Text("All", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      icon: const Icon(Icons.store, color: AppTheme.secondaryColor, size: 20),
+                      onChanged: _onBranchChanged,
+                      items: [
+                        const DropdownMenuItem<String?>(
+                           value: null, 
+                           child: Text("All", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                        ),
+                        ...branchProvider.branches.map((b) => DropdownMenuItem(
+                          value: b.id,
+                          child: Text(b.name, style: const TextStyle(color: Colors.white70))
+                        ))
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }
-          ),
-          
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.calendar_today, color: Colors.white),
-            onSelected: _updateRange,
-            itemBuilder: (context) => ["Today", "This Week", "This Month", "All Time"].map((c) => PopupMenuItem(value: c, child: Text(c))).toList(),
-          )
-        ],
-      ),
-      body: LiquidBackground(
-        child: _isLoading 
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Period: $_rangeLabel", style: const TextStyle(color: Colors.white54)),
-                  const SizedBox(height: 20),
-                  
-                  // Summary Cards
-                  _buildSummaryGrid(),
-                 
-                  const SizedBox(height: 30),
-                  
-                  // Provider Breakdown
-                  const Text("Payment Methods", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 15),
-                  _buildProviderBreakdown(),
-
-                  const SizedBox(height: 30),
-                  const Text("Breakdown", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 15),
-                  _buildDetailedStats(),
-                ],
-              ),
+                );
+              }
             ),
+            
+            PopupMenuButton<String>(
+              color: const Color(0xFF1E1E2C),
+              icon: const Icon(Icons.calendar_today, color: Colors.white),
+              onSelected: _updateRange,
+              itemBuilder: (context) => ["Today", "This Week", "This Month", "All Time"].map((c) => PopupMenuItem(
+                value: c, 
+                child: Text(c, style: const TextStyle(color: Colors.white))
+              )).toList(),
+            )
+          ],
+        ),
+        body: LiquidBackground(
+          child: _isLoading 
+            ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+            : SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Period: $_rangeLabel", style: const TextStyle(color: Colors.white54)),
+                    const SizedBox(height: 20),
+                    
+                    // Summary Cards
+                    _buildSummaryGrid(),
+                   
+                    const SizedBox(height: 30),
+                    
+                    // Provider Breakdown
+                    const Text("Payment Methods", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 15),
+                    _buildProviderBreakdown(),
+  
+                    const SizedBox(height: 30),
+                    const Text("Breakdown", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 15),
+                    _buildDetailedStats(),
+                  ],
+                ),
+              ),
+        ),
       ),
     );
   }
