@@ -18,6 +18,7 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
   // We listen to LaundryService for data
   // We use BranchProvider for context
   bool _isLoading = false;
+  bool _isEditMode = false; // [NEW]
 
   @override
   void initState() {
@@ -69,6 +70,36 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
     if(mounted) setState(() => _isLoading = false);
   }
 
+  void _toggleEditMode() {
+    setState(() => _isEditMode = !_isEditMode);
+  }
+
+  Future<void> _deleteService(ServiceModel service) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        title: const Text("Delete Service?", style: TextStyle(color: Colors.white)),
+        content: Text("Are you sure you want to delete '${service.name}'? This action cannot be undone.", style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text("Delete", style: TextStyle(color: Colors.redAccent))
+          ),
+        ],
+      )
+    );
+
+    if (confirm == true) {
+      final laundryService = Provider.of<LaundryService>(context, listen: false);
+      final success = await laundryService.deleteService(service.id);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${service.name} deleted")));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Theme(
@@ -80,6 +111,11 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
           backgroundColor: Colors.transparent,
           leading: const BackButton(color: Colors.white),
           actions: [
+            // EDIT MODE TOGGLE
+            IconButton(
+              icon: Icon(_isEditMode ? Icons.check : Icons.edit, color: Colors.white),
+              onPressed: _toggleEditMode,
+            ),
             // BRANCH SELECTOR
             Consumer<BranchProvider>(
               builder: (context, branchProvider, _) {
@@ -120,92 +156,39 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
               }
               
               final services = laundryService.services;
+
+              if (_isEditMode) {
+                return ReorderableListView.builder(
+                  padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
+                  itemCount: services.length,
+                  itemBuilder: (context, index) {
+                    final service = services[index];
+                    return _buildServiceEditTile(service, index);
+                  },
+                  onReorder: (oldIndex, newIndex) {
+                    if (newIndex > oldIndex) newIndex -= 1;
+                    if (oldIndex == newIndex) return;
+                    
+                    final items = List<ServiceModel>.from(services);
+                    final item = items.removeAt(oldIndex);
+                    items.insert(newIndex, item);
+                    laundryService.updateServiceOrder(items);
+                  },
+                );
+              }
               
               return GridView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
+                padding: const EdgeInsets.fromLTRB(20, 100, 20, 120),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 15,
                   mainAxisSpacing: 15,
-                  childAspectRatio: 0.85,
+                  childAspectRatio: 0.8, 
                 ),
                 itemCount: services.length,
                 itemBuilder: (context, index) {
                   final service = services[index];
-                  return GestureDetector(
-                    onTap: () async {
-                      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-                      // Pass Scope!
-                      await Navigator.push(
-                        context, 
-                        MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
-                          service: service, 
-                          scopeBranch: branchProvider.selectedBranch
-                        ))
-                      );
-                      // Refresh
-                      if(branchProvider.selectedBranch != null) {
-                        _loadData();
-                      }
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        image: service.image.startsWith('http') || service.image.startsWith('assets') ? DecorationImage(
-                          image: service.image.startsWith('http') ? NetworkImage(service.image) : AssetImage(service.image) as ImageProvider,
-                          fit: BoxFit.cover,
-                          colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.6), BlendMode.darken),
-                        ) : null,
-                      ),
-                      child: GlassContainer(
-                        opacity: 0.05, 
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Icon
-                            if (!service.image.startsWith('http')) 
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Color(int.parse(service.color.replaceAll('#', '0xFF'))).withOpacity(0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  _getIconData(service.icon),
-                                  color: Color(int.parse(service.color.replaceAll('#', '0xFF'))),
-                                  size: 32,
-                                ),
-                              ),
-                            const SizedBox(height: 12),
-                            // Name
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Text(
-                                service.name,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            // Status Badge
-                            const SizedBox(height: 8),
-                            if (service.isLocked)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(4)),
-                                child: Text(service.lockedLabel, style: const TextStyle(color: Colors.white, fontSize: 10)),
-                              )
-                            else if (service.discountPercentage > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
-                                child: Text("-${service.discountPercentage}% OFF", style: const TextStyle(color: Colors.white, fontSize: 10)),
-                              )
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
+                  return _buildServiceCard(service);
                 },
               );
             }
@@ -230,6 +213,129 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
       ),
     );
   }
+
+  Widget _buildServiceCard(ServiceModel service) {
+    return GestureDetector(
+      onTap: () async {
+        final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+        await Navigator.push(
+          context, 
+          MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
+            service: service, 
+            scopeBranch: branchProvider.selectedBranch
+          ))
+        );
+        _loadData();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: const Color(0xFF1E1E2C),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          children: [
+            // IMAGE AT TOP
+            Expanded(
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  image: DecorationImage(
+                    image: service.image.startsWith('http') 
+                        ? NetworkImage(service.image) 
+                        : AssetImage(service.image) as ImageProvider,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+            // CONTENT BELOW
+            Expanded(
+              flex: 2,
+              child: GlassContainer(
+                opacity: 0.05,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        service.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      if (service.isLocked)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(4)), // Match User App blue lock
+                          child: Text(service.lockedLabel, style: const TextStyle(color: Colors.white, fontSize: 9)),
+                        )
+                      else if (service.discountPercentage > 0)
+                        Text("-${service.discountPercentage.toInt()}% OFF", style: const TextStyle(color: Colors.pinkAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServiceEditTile(ServiceModel service, int index) {
+    return Container(
+      key: ValueKey(service.id),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: GlassContainer(
+        opacity: 0.1,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          leading: Container(
+            width: 50, height: 50,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              image: DecorationImage(
+                image: service.image.startsWith('http') 
+                    ? NetworkImage(service.image) 
+                    : AssetImage(service.image) as ImageProvider,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          title: Text(service.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          subtitle: Text(service.description, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                onPressed: () => _deleteService(service),
+              ),
+              const Icon(Icons.drag_handle, color: Colors.white24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'dry_cleaning': return Icons.dry_cleaning;
+      case 'local_laundry_service': return Icons.local_laundry_service;
+      case 'do_not_step': return Icons.do_not_step;
+      case 'water_drop': return Icons.water_drop;
+      case 'house': return Icons.house;
+      default: return Icons.category;
+    }
+  }
+}
 
   IconData _getIconData(String iconName) {
     switch (iconName) {

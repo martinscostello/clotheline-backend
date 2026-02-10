@@ -550,3 +550,21 @@ exports.changePassword = async (req, res) => {
     }
 };
 
+exports.updateAdminNotificationPreferences = async (req, res) => {
+    try {
+        const { preferences } = req.body;
+        if (!preferences) return res.status(400).json({ msg: 'Preferences required' });
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { adminNotificationPreferences: preferences },
+            { new: true }
+        ).select('-password');
+
+        res.json({ msg: 'Admin notification preferences updated', user });
+    } catch (err) {
+        console.error("[Auth] Admin Prefs Update Error:", err.message);
+        res.status(500).send('Server Error');
+    }
+};
+

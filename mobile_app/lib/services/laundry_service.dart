@@ -101,4 +101,45 @@ class LaundryService extends ChangeNotifier {
       return null;
     }
   }
+
+  // [NEW] Delete Service (Admin)
+  Future<bool> deleteService(String serviceId) async {
+    try {
+      final response = await _apiService.client.delete('/services/$serviceId');
+      if (response.statusCode == 200) {
+        _services.removeWhere((s) => s.id == serviceId);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint("Error deleting service: $e");
+    }
+    return false;
+  }
+
+  // [NEW] Bulk Reorder (Admin)
+  Future<bool> updateServiceOrder(List<ServiceModel> reorderedList) async {
+    try {
+      final List<Map<String, dynamic>> orderData = [];
+      for (int i = 0; i < reorderedList.length; i++) {
+        orderData.add({
+           'id': reorderedList[i].id,
+           'order': i
+        });
+      }
+
+      final response = await _apiService.client.put('/services/reorder', data: {
+        'orders': orderData
+      });
+
+      if (response.statusCode == 200) {
+        _services = List.from(reorderedList);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint("Error updating service order: $e");
+    }
+    return false;
+  }
 }

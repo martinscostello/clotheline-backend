@@ -65,6 +65,18 @@ const UserSchema = new mongoose.Schema({
         adminBroadcasts: { type: Boolean, default: true },
         bucketUpdates: { type: Boolean, default: true }
     },
+    adminNotificationPreferences: {
+        newOrder: { type: Boolean, default: true },
+        newChat: { type: Boolean, default: true },
+        systemAlerts: { type: Boolean, default: true },
+        quietHoursEnabled: { type: Boolean, default: false },
+        quietHoursStart: { type: String, default: '22:00' },
+        quietHoursEnd: { type: String, default: '07:00' },
+        subscribedBranches: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Branch'
+        }]
+    },
     permissions: {
         manageCMS: { type: Boolean, default: false }, // Home, Ads, Branding
         manageOrders: { type: Boolean, default: false },

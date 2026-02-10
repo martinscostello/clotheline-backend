@@ -564,4 +564,40 @@ class AuthService extends ChangeNotifier {
       debugPrint("Failed to log violation: $e");
     }
   }
+
+  Future<bool> updateAdminNotificationPreferences(Map<String, dynamic> prefs) async {
+    try {
+      final response = await _apiService.client.put('/auth/admin-notification-preferences', data: {
+        'preferences': prefs
+      });
+      
+      if (response.statusCode == 200) {
+        if (_currentUser != null) {
+          _currentUser!['adminNotificationPreferences'] = prefs;
+          notifyListeners();
+        }
+        return true;
+      }
+      return false;
+    } on DioException catch (e) {
+      debugPrint("Error updating admin notification prefs: $e");
+      return false;
+    } catch (e) {
+      debugPrint("Error updating admin notification prefs: $e");
+      return false;
+    }
+  }
+
+  Future<String?> backupDatabase() async {
+    try {
+      final response = await _apiService.client.get('/admin/backup');
+      if (response.statusCode == 200) {
+        return jsonEncode(response.data);
+      }
+      return null;
+    } catch (e) {
+      debugPrint("Backup Download Error: $e");
+      return null;
+    }
+  }
 }

@@ -234,31 +234,14 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
   }
   
   void _initializeZones() {
-    List<DeliveryZone> source = List.from(widget.branch.deliveryZones);
+    _zones = List.from(widget.branch.deliveryZones);
     
     // Sort logic to identify existing zones by radius
-    source.sort((a, b) => a.radiusKm.compareTo(b.radiusKm));
+    _zones.sort((a, b) => a.radiusKm.compareTo(b.radiusKm));
 
-    // Ensure we have exactly 5 zones suitable for A-E logic
-    List<DeliveryZone> normalized = [];
-    
-    // Helper to get or default
-    DeliveryZone getOrDefault(int index, String name, double r, double fee, String colorHex) {
-       if (index < source.length) {
-         // Force the correct name and color, but keep radius/fee if reasonable
-         var s = source[index];
-         return DeliveryZone(name: name, description: s.description, radiusKm: s.radiusKm, baseFee: s.baseFee, color: colorHex);
-       }
-       return DeliveryZone(name: name, description: "", radiusKm: r, baseFee: fee, color: colorHex);
+    if (_zones.isEmpty) {
+      _zones.add(DeliveryZone(name: "Zone A", description: "0 - 5.0 km", radiusKm: 5.0, baseFee: 500, color: '#2ECC71'));
     }
-
-    normalized.add(getOrDefault(0, "Zone A: Immediate Coverage", 2.5, 500, '#2ECC71'));
-    normalized.add(getOrDefault(1, "Zone B: Core City", 5.5, 1000, '#F1C40F'));
-    normalized.add(getOrDefault(2, "Zone C: Extended City", 9.0, 2000, '#E67E22'));
-    normalized.add(getOrDefault(3, "Zone D: Outskirts", 14.0, 3000, '#E74C3C'));
-    normalized.add(getOrDefault(4, "Zone E: Outside Service Area", 9999, 99999, '#9E9E9E'));
-
-    _zones = normalized;
     
     // Force descriptions to align with ranges initially
     _recalculateDescriptions();
@@ -269,7 +252,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
         double start = (i == 0) ? 0 : _zones[i-1].radiusKm;
         double end = _zones[i].radiusKm;
         
-        String desc = (i == _zones.length - 1) ? "> $start km (Out of Service)" : "${start.toStringAsFixed(1)} - ${end.toStringAsFixed(1)} km";
+        String desc = "${start.toStringAsFixed(1)} - ${end.toStringAsFixed(1)} km";
         
         // Update keeping other props
         _zones[i] = DeliveryZone(
@@ -306,7 +289,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
       );
       
       // Cascade push: Ensure next zones are strictly greater
-      for (int i = index + 1; i < _zones.length - 1; i++) { // Don't push Zone E (9999)
+      for (int i = index + 1; i < _zones.length; i++) { 
          if (_zones[i].radiusKm <= _zones[i-1].radiusKm + 0.5) {
              _zones[i] = DeliveryZone(
                name: _zones[i].name, description: "", 
@@ -337,6 +320,34 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
          );
       });
     }
+  }
+
+  void _addZone() {
+    setState(() {
+      _isDirty = true;
+      double lastRadius = _zones.isEmpty ? 0 : _zones.last.radiusKm;
+      
+      final nextColor = _zoneColors[_zones.length % _zoneColors.length];
+      final colorHex = '#${nextColor.value.toRadixString(16).substring(2).toUpperCase()}';
+
+      _zones.add(DeliveryZone(
+        name: "Zone ${String.fromCharCode(65 + _zones.length)}",
+        description: "",
+        radiusKm: lastRadius + 5.0,
+        baseFee: 1000,
+        color: colorHex,
+      ));
+      _recalculateDescriptions();
+    });
+  }
+
+  void _removeZone(int index) {
+    if (_zones.length <= 1) return;
+    setState(() {
+      _isDirty = true;
+      _zones.removeAt(index);
+      _recalculateDescriptions();
+    });
   }
 
   Future<void> _saveChanges() async {
@@ -416,17 +427,18 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                     gestureRecognizers: {
                       Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
                     },
-                    circles: [0, 1, 2, 3].reversed.map((idx) {
+                    circles: List.generate(_zones.length, (idx) {
                       final z = _zones[idx];
+                      final color = Color(int.parse(z.color.replaceAll('#', '0xFF')));
                       return gmaps.Circle(
-                        circleId: gmaps.CircleId(z.name),
+                        circleId: gmaps.CircleId(z.name + idx.toString()),
                         center: center,
                         radius: z.radiusKm * 1000,
-                        fillColor: _zoneColors[idx].withOpacity(0.15),
-                        strokeColor: _zoneColors[idx],
+                        fillColor: color.withOpacity(0.15),
+                        strokeColor: color,
                         strokeWidth: 2,
                       );
-                    }).toSet(),
+                    }).reversed.toSet(),
                     markers: {
                       gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(gmaps.BitmapDescriptor.hueAzure)),
                     },
@@ -632,17 +644,18 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                               gestureRecognizers: {
                                 Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
                               },
-                              circles: [0, 1, 2, 3].reversed.map((idx) {
+                              circles: List.generate(_zones.length, (idx) {
                                 final z = _zones[idx];
+                                final color = Color(int.parse(z.color.replaceAll('#', '0xFF')));
                                 return gmaps.Circle(
-                                  circleId: gmaps.CircleId(z.name),
+                                  circleId: gmaps.CircleId(z.name + idx.toString()),
                                   center: center,
                                   radius: z.radiusKm * 1000,
-                                  fillColor: _zoneColors[idx].withOpacity(0.15),
-                                  strokeColor: _zoneColors[idx],
+                                  fillColor: color.withOpacity(0.15),
+                                  strokeColor: color,
                                   strokeWidth: 2,
                                 );
-                              }).toSet(),
+                              }).reversed.toSet(),
                               markers: {
                                 gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(gmaps.BitmapDescriptor.hueAzure)),
                               },
@@ -700,9 +713,20 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Delivery Zones (Zones A - D)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Delivery Zones", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                            TextButton.icon(
+                              onPressed: _addZone,
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text("Add Zone"),
+                              style: TextButton.styleFrom(foregroundColor: AppTheme.secondaryColor),
+                            )
+                          ],
+                        ),
                         const SizedBox(height: 10),
-                        ...[0, 1, 2, 3].map((i) => _buildZoneCard(i, _zones[i])),
+                        ...List.generate(_zones.length, (i) => _buildZoneCard(i, _zones[i])),
                       ],
                     ),
                   ),
@@ -743,7 +767,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
   }
 
   Widget _buildZoneCard(int index, DeliveryZone z) {
-     final Color color = _zoneColors[index];
+     final Color color = _zoneColors[index % _zoneColors.length];
      final startKm = _getStartDistance(index);
      
      return Container(
@@ -762,7 +786,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                SizedBox(
                  width: 50,
                  child: TextFormField(
-                   key: ValueKey("radius_${z.radiusKm}"),
+                   key: ValueKey("radius_${z.radiusKm}_$index"),
                    initialValue: z.radiusKm.toString(),
                    keyboardType: TextInputType.number,
                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -772,6 +796,13 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                  ),
                ),
                const Text("km", style: TextStyle(color: Colors.white54, fontSize: 12)),
+               if (_zones.length > 1)
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 20),
+                    onPressed: () => _removeZone(index),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
              ],
            ),
            const Divider(color: Colors.white10),

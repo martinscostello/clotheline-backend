@@ -20,6 +20,10 @@ const ServiceSchema = new mongoose.Schema({
         type: String,
         default: 'assets/images/service_laundry.png'
     },
+    order: {
+        type: Number,
+        default: 0
+    },
     // Global State
     isActive: {
         type: Boolean,

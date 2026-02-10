@@ -4,7 +4,7 @@ exports.getAllServices = async (req, res) => {
     try {
         const { branchId, includeHidden } = req.query;
 
-        let services = await Service.find();
+        let services = await Service.find().sort({ order: 1 });
 
         if (branchId) {
             // STRICT BRANCH ISOLATION
@@ -106,12 +106,13 @@ exports.getAllServices = async (req, res) => {
 
 exports.createService = async (req, res) => {
     try {
-        const { name, icon, color, description, image, discountPercentage, discountLabel } = req.body;
+        const { name, icon, color, description, image, discountPercentage, discountLabel, order } = req.body;
         const newService = new Service({
             name, icon, color, description,
             image: image || 'assets/images/service_laundry.png',
             discountPercentage: discountPercentage || 0,
-            discountLabel: discountLabel || ''
+            discountLabel: discountLabel || '',
+            order: order || 0
         });
         const service = await newService.save();
         res.json(service);
@@ -127,7 +128,7 @@ exports.updateService = async (req, res) => {
             name, icon, color, description, image,
             discountPercentage, discountLabel, isActive,
             isLocked, lockedLabel, items, serviceTypes,
-            branchId // [NEW] Context
+            branchId, order // [NEW] Context & Order
         } = req.body;
 
         console.log(`UPDATE SERVICE: ${req.params.id} | Branch: ${branchId || 'Global'}`);
@@ -198,6 +199,7 @@ exports.updateService = async (req, res) => {
             if (isActive !== undefined) service.isActive = isActive;
             if (isLocked !== undefined) service.isLocked = isLocked;
             if (lockedLabel) service.lockedLabel = lockedLabel;
+            if (order !== undefined) service.order = order;
 
             // Handle Items (Global Base Price Update)
             if (items) {
@@ -233,6 +235,25 @@ exports.deleteService = async (req, res) => {
         service.isActive = false;
         await service.save();
         res.json({ msg: 'Service removed' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.reorderServices = async (req, res) => {
+    try {
+        const { orders } = req.body; // Array of { id: string, order: number }
+        if (!orders || !Array.isArray(orders)) {
+            return res.status(400).json({ msg: 'Invalid request data' });
+        }
+
+        const updatePromises = orders.map(item =>
+            Service.findByIdAndUpdate(item.id, { $set: { order: item.order } })
+        );
+
+        await Promise.all(updatePromises);
+        res.json({ msg: 'Order updated successfully' });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

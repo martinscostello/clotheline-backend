@@ -61,46 +61,49 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(_currentStep == 0 ? "Walk-in POS" : "New Order: ${_nameController.text}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () {
-            Provider.of<AdminPOSProvider>(context, listen: false).reset();
-            Navigator.pop(context);
-          },
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(_currentStep == 0 ? "Walk-in POS" : "New Order: ${_nameController.text}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () {
+              Provider.of<AdminPOSProvider>(context, listen: false).reset();
+              Navigator.pop(context);
+            },
+          ),
+          actions: [
+            if (_currentStep >= 2)
+              Padding(
+                padding: const EdgeInsets.only(right: 15.0),
+                child: Consumer<AdminPOSProvider>(
+                  builder: (context, pos, _) {
+                    int total = pos.laundryItems.length + pos.storeItems.length;
+                    return Badge(
+                      label: Text("$total", style: const TextStyle(fontSize: 10)),
+                      isLabelVisible: total > 0,
+                      child: const Icon(Icons.shopping_basket_outlined, color: AppTheme.secondaryColor),
+                    );
+                  }
+                ),
+              ),
+          ],
         ),
-        actions: [
-          if (_currentStep >= 2)
-            Padding(
-              padding: const EdgeInsets.only(right: 15.0),
-              child: Consumer<AdminPOSProvider>(
-                builder: (context, pos, _) {
-                  int total = pos.laundryItems.length + pos.storeItems.length;
-                  return Badge(
-                    label: Text("$total", style: const TextStyle(fontSize: 10)),
-                    isLabelVisible: total > 0,
-                    child: const Icon(Icons.shopping_basket_outlined, color: AppTheme.secondaryColor),
-                  );
-                }
-              ),
+        body: LiquidBackground(
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildStepIndicator(),
+                Expanded(
+                  child: _buildCurrentStep(),
+                ),
+                _buildBottomNavigation(),
+              ],
             ),
-        ],
-      ),
-      body: LiquidBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildStepIndicator(),
-              Expanded(
-                child: _buildCurrentStep(),
-              ),
-              _buildBottomNavigation(),
-            ],
           ),
         ),
       ),

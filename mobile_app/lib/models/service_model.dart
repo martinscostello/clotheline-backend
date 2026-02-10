@@ -14,6 +14,7 @@ class ServiceModel {
   final List<BranchPrice> branchPricing; // [NEW]
   final double discountPercentage;
   final String discountLabel;
+  final int order; // [NEW] Sort order
 
   ServiceModel({
     required this.id,
@@ -25,7 +26,7 @@ class ServiceModel {
     this.discountPercentage = 0,
     this.discountLabel = "",
     this.isLocked = false,
-    this.lockedLabel = "Coming Soon",
+    this.order = 0, // [NEW]
     this.items = const [],
     this.serviceTypes = const [],
     this.branchPricing = const [], // [NEW]
@@ -49,6 +50,7 @@ class ServiceModel {
       discountLabel: json['discountLabel'] ?? "",
       isLocked: json['isLocked'] ?? false,
       lockedLabel: json['lockedLabel'] ?? "Coming Soon",
+      order: json['order'] ?? 0,
       items: (json['items'] as List?)?.map((e) => ServiceItem.fromJson(e)).toList() ?? [],
       serviceTypes: (json['serviceTypes'] as List?)?.map((e) => ServiceVariant.fromJson(e)).toList() ?? [],
       branchPricing: (json['branchPricing'] as List?)?.map((e) => BranchPrice.fromJson(e)).toList() ?? [],
@@ -80,6 +82,7 @@ class ServiceModel {
       'discountLabel': discountLabel,
       'isLocked': isLocked,
       'lockedLabel': lockedLabel,
+      'order': order,
       'items': items.map((e) => e.toJson()).toList(),
       'serviceTypes': serviceTypes.map((e) => e.toJson()).toList(),
       'branchPricing': branchPricing.map((e) => e.toJson()).toList(),

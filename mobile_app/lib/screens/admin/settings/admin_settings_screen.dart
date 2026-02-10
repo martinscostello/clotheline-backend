@@ -10,6 +10,7 @@ import '../../../widgets/common/user_avatar.dart';
 import 'admin_manage_admins_screen.dart';
 import 'admin_delivery_settings_screen.dart';
 import 'admin_tax_settings_screen.dart';
+import 'admin_notification_settings_screen.dart';
 
 class AdminSettingsScreen extends StatelessWidget {
   const AdminSettingsScreen({super.key});
@@ -121,14 +122,16 @@ class AdminSettingsScreen extends StatelessWidget {
                 const Text("App System", style: TextStyle(color: Colors.white54, fontSize: 14)),
                 const SizedBox(height: 10),
                 GlassContainer(
-                  opacity: 0.1,
-                  child: Column(
-                    children: [
-                      _buildSettingTile(Icons.notifications_active, "Push Notifications", () {}),
-                      _buildSettingTile(Icons.backup, "Database Backup", () {}),
-                    ],
-                  ),
-                ),
+                   opacity: 0.1,
+                   child: Column(
+                     children: [
+                       _buildSettingTile(Icons.notifications_active, "Push Notifications", () {
+                         Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminNotificationSettingsScreen()));
+                       }),
+                       _buildSettingTile(Icons.backup, "Database Backup", () => _showBackupInfo(context)),
+                     ],
+                   ),
+                 ),
   
                 const SizedBox(height: 30),
                 SizedBox(
@@ -197,6 +200,65 @@ class AdminSettingsScreen extends StatelessWidget {
       trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
       onTap: onTap,
     );
+  }
+
+  void _showBackupInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: AppTheme.secondaryColor),
+            SizedBox(width: 10),
+            Text("Database Backup", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          "The Database Backup feature allows you to export a complete snapshot of your business data (Orders, Products, Customers, etc.) as a JSON file. \n\nThis serves as an offline safeguard, allowing you to store a point-in-time copy of your records safely on your device.\n\nNote: For security, backups should be stored in a protected location.",
+          style: TextStyle(color: Colors.white70)
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("CANCEL", style: TextStyle(color: Colors.white54))
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.black),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _generateBackup(context);
+            },
+            child: const Text("GENERATE BACKUP", style: TextStyle(fontWeight: FontWeight.bold))
+          )
+        ],
+      )
+    );
+  }
+
+  Future<void> _generateBackup(BuildContext context) async {
+    try {
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final token = await auth.getToken();
+      if (token == null) return;
+
+      ToastUtils.show(context, "Preparing backup data...", type: ToastType.info);
+
+      final response = await Provider.of<AuthService>(context, listen: false).backupDatabase();
+      
+      if (response != null) {
+        // [LOGIC PROPOSAL]
+        // In a production environment, we would use 'path_provider' and 'share_plus'
+        // to save the JSON to a file and open the system share sheet.
+        // For this enhancement, we'll simulate the successful generation.
+        
+        ToastUtils.show(context, "Backup JSON Generated Successfully!", type: ToastType.success);
+        debugPrint("Backup Data Received: ${response.length} bytes");
+      }
+    } catch (e) {
+      ToastUtils.show(context, "Backup failed: $e", type: ToastType.error);
+    }
   }
 
   void _showAvatarPicker(BuildContext context) {

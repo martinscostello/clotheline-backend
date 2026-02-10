@@ -65,7 +65,7 @@ exports.updateAdmin = async (req, res) => {
         if (phone) user.phone = phone;
         if (avatarId !== undefined) user.avatarId = avatarId;
         if (isRevoked !== undefined) user.isRevoked = isRevoked;
-        
+
         if (permissions) {
             user.permissions = permissions;
             user.markModified('permissions');
@@ -76,6 +76,38 @@ exports.updateAdmin = async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Database Backup (JSON Export)
+exports.getDatabaseBackup = async (req, res) => {
+    try {
+        const Order = require('../models/Order');
+        const Service = require('../models/Service');
+        const Product = require('../models/Product');
+        const Branch = require('../models/Branch');
+
+        const orders = await Order.find();
+        const services = await Service.find();
+        const products = await Product.find();
+        const users = await User.find().select('-password');
+        const branches = await Branch.find();
+
+        const backupData = {
+            exportDate: new Date().toISOString(),
+            data: {
+                orders,
+                services,
+                products,
+                users,
+                branches
+            }
+        };
+
+        res.json(backupData);
+    } catch (err) {
+        console.error("[Admin] Backup Error:", err.message);
         res.status(500).send('Server Error');
     }
 };
