@@ -10,6 +10,12 @@ class ReceiptService {
     return '${text.substring(0, length)}...';
   }
 
+  static String _getBrandedName(String? branchName) {
+    if (branchName == null) return 'CLOTHELINE';
+    if (branchName.toLowerCase().contains('abuja')) return 'Brimarck';
+    return 'CLOTHELINE';
+  }
+
   static Future<void> printReceipt({
     required String orderNumber,
     required String customerName,
@@ -22,6 +28,7 @@ class ReceiptService {
     required String paymentMethod,
   }) async {
     final pdf = pw.Document();
+    final String brand = _getBrandedName(branchName);
 
     pdf.addPage(
       pw.Page(
@@ -33,7 +40,7 @@ class ReceiptService {
               pw.Center(
                 child: pw.Column(
                   children: [
-                    pw.Text("CLOTHELINE", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18)),
+                    pw.Text(brand.toUpperCase(), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18)),
                     pw.Text("Laundry & Store", style: pw.TextStyle(fontSize: 10)),
                     pw.Text(branchName, style: pw.TextStyle(fontSize: 10)),
                     pw.Divider(),

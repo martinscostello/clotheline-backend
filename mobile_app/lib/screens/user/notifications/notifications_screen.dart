@@ -6,6 +6,7 @@ import '../main_layout.dart';
 import '../chat/chat_screen.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import '../../../theme/app_theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -73,32 +74,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           }
 
                           if (n['type'] == 'order') {
-                             if (n['metadata'] != null && n['metadata']['orderId'] != null) {
-                                // Navigate to specific order
-                                // We need to handle this via a route or direct push
-                                // Assuming OrderDetailScreen exists and takes an ID or Model
-                                // For now, let's go to Orders Tab but we should ideally open the detail.
-                                // Let's check if we can push OrderDetailScreen.
-                                // We need to fetch the order first? 
-                                // Better: Go to MainLayout index 1 (Orders) BUT pass an argument? 
-                                // Simplest robust fix: Go to Orders tab.
-                                // IMPROVEMENT: Check if we have orderId and push detail.
-                                
-                                // If we have the screen:
-                                // import '../../orders/order_detail_screen.dart'; (Need to verify path)
-                                
-                                Navigator.pushAndRemoveUntil(
-                                   context, 
-                                   MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 2)), 
-                                   (route) => false
-                                );
-                             } else {
-                                Navigator.pushAndRemoveUntil(
-                                   context, 
-                                   MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 2)), 
-                                   (route) => false
-                                );
-                             }
+                             Navigator.pushAndRemoveUntil(
+                                context, 
+                                MaterialPageRoute(builder: (_) => const MainLayout(initialIndex: 2)), 
+                                (route) => false
+                             );
                           } else if (n['type'] == 'chat') {
                              Navigator.push(
                                context, 
@@ -109,7 +89,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                context: context, 
                                builder: (_) => AlertDialog(
                                  backgroundColor: isDark ? const Color(0xFF1E1E2C) : Colors.white,
-                                 title: Text(n['title'] ?? "Broadcast", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                 title: Text(n['title'] ?? "Broadcast", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
                                  content: Text(n['message'] ?? "", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
                                  actions: [
                                    TextButton(
@@ -121,156 +102,92 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                              );
                           }
                         },
-                        child: isDark 
-                          ? Container(
-                            // Telegram-style Dark Mode
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                              decoration: const BoxDecoration(
-                                border: Border(bottom: BorderSide(color: Colors.white10, width: 0.5))
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Icon
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: _getIconColor(n['type']).withOpacity(0.1),
-                                      shape: BoxShape.circle
-                                    ),
-                                    child: Icon(_getIcon(n['type']), color: _getIconColor(n['type']), size: 20),
-                                  ),
-                                  const SizedBox(width: 15),
-                                  // Content
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(n['title'] ?? "Notification", 
-                                                style: TextStyle(
-                                                  fontWeight: isRead ? FontWeight.normal : FontWeight.w600, // Slightly less bold for cleanest read
-                                                  color: Colors.white,
-                                                  fontSize: 16
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              )
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              _timeAgo(n['createdAt']),
-                                              style: TextStyle(
-                                                 fontSize: 12, 
-                                                 color: Colors.white38,
-                                                 fontWeight: isRead ? FontWeight.normal : FontWeight.w500
-                                              )
-                                            ),
-                                            if (!isRead) ...[
-                                               const SizedBox(width: 8),
-                                               Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.blueAccent, shape: BoxShape.circle))
-                                            ]
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                           n['message'] ?? "", 
-                                           style: TextStyle(
-                                             color: isRead ? Colors.white54 : Colors.white70,
-                                             fontWeight: isRead ? FontWeight.normal : FontWeight.normal
-                                           ),
-                                           maxLines: 2,
-                                           overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                ],
-                              ),
-                          )
-                          : Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF1C1C1E) : Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: isDark ? Colors.white10 : Colors.black12,
-                                  width: 0.5
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Icon
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: _getIconColor(n['type']).withOpacity(0.1),
-                                      shape: BoxShape.circle
-                                    ),
-                                    child: Icon(_getIcon(n['type']), color: _getIconColor(n['type']), size: 20),
-                                  ),
-                                  const SizedBox(width: 15),
-                                  // Content
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(n['title'] ?? "Notification", 
-                                                style: TextStyle(
-                                                  fontWeight: isRead ? FontWeight.normal : FontWeight.w800, // Bold for unread
-                                                  color: isDark ? Colors.white : Colors.black87,
-                                                  fontSize: 16
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              )
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              _timeAgo(n['createdAt']),
-                                              style: TextStyle(
-                                                 fontSize: 12, 
-                                                 color: isDark ? Colors.white38 : Colors.black38,
-                                                 fontWeight: isRead ? FontWeight.normal : FontWeight.bold
-                                              )
-                                            ),
-                                            if (!isRead) ...[
-                                               const SizedBox(width: 6),
-                                               Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle))
-                                            ]
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                           n['message'] ?? "", 
-                                           style: TextStyle(
-                                             color: isDark ? Colors.white70 : Colors.black54,
-                                             fontWeight: isRead ? FontWeight.normal : FontWeight.w500
-                                           ),
-                                           maxLines: 2,
-                                           overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                ],
-                              ),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: isDark ? (isRead ? Colors.white.withOpacity(0.1) : AppTheme.primaryColor.withOpacity(0.3)) : Colors.black12,
+                              width: isRead ? 1 : 1.5
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: _getIconColor(n['type']).withOpacity(0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(_getIcon(n['type']), color: _getIconColor(n['type']), size: 24),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(n['title'] ?? "Notification", 
+                                            style: TextStyle(
+                                              fontWeight: isRead ? FontWeight.w500 : FontWeight.bold,
+                                              color: isDark ? Colors.white : Colors.black87,
+                                              fontSize: 17
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          )
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _timeAgo(n['createdAt']),
+                                          style: TextStyle(
+                                             fontSize: 11, 
+                                             color: isDark ? Colors.white38 : Colors.black38,
+                                          )
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                       n['message'] ?? "", 
+                                       style: TextStyle(
+                                         color: isDark ? Colors.white70 : Colors.black54,
+                                         fontSize: 14,
+                                         height: 1.4,
+                                       ),
+                                       maxLines: 4,
+                                       overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (!isRead) ...[
+                                       const SizedBox(height: 10),
+                                       Container(
+                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                         decoration: BoxDecoration(
+                                           color: AppTheme.primaryColor.withOpacity(0.2),
+                                           borderRadius: BorderRadius.circular(10),
+                                         ),
+                                         child: const Text("NEW", style: TextStyle(color: AppTheme.primaryColor, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                                       ),
+                                    ]
+                                  ],
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
                       );
                     },
                   ),

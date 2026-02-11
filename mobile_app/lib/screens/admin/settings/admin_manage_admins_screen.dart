@@ -49,6 +49,45 @@ class _AdminManageAdminsScreenState extends State<AdminManageAdminsScreen> {
     }
   }
 
+  Future<void> _confirmDeleteAdmin(dynamic admin) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        title: const Text("Delete Admin", style: TextStyle(color: Colors.white)),
+        content: Text("Are you sure you want to permanently delete ${admin['name']}?", style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      setState(() => _isLoading = true);
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final success = await auth.deleteAdmin(admin['_id']);
+      
+      if (mounted) {
+        if (success) {
+          _fetchAdmins();
+        } else {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to delete admin. Permission denied?"))
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Theme(
@@ -116,14 +155,23 @@ class _AdminManageAdminsScreenState extends State<AdminManageAdminsScreen> {
                                 ],
                               ),
                             ),
-                            if (!isMaster) // Cannot edit Master Admin
-                                IconButton(
-                                icon: const Icon(Icons.edit, color: AppTheme.secondaryColor),
-                                onPressed: () {
-                                  Navigator.push(context, MaterialPageRoute(
-                                    builder: (_) => AdminEditAdminScreen(admin: admin)
-                                  )).then((_) => _fetchAdmins());
-                                },
+                            if (!isMaster) // Cannot edit/delete Master Admin
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: AppTheme.secondaryColor),
+                                    onPressed: () {
+                                      Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => AdminEditAdminScreen(admin: admin)
+                                      )).then((_) => _fetchAdmins());
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                    onPressed: () => _confirmDeleteAdmin(admin),
+                                  ),
+                                ],
                               ),
                           ],
                         ),

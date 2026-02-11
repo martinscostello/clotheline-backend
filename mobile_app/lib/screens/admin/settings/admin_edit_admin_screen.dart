@@ -33,6 +33,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
     'manageChat': false,
     'manageSettings': false,
     'manageAdmins': false,
+    'managePOS': false,
   };
 
   String? _selectedAvatarId;
@@ -183,6 +184,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
                         _buildSwitch("Manage Chat threads", 'manageChat'),
                         _buildSwitch("Manage App Settings (Tax/Fees)", 'manageSettings'),
                         _buildSwitch("Manage Admin accounts", 'manageAdmins'),
+                        _buildSwitch("Access POS Checkout", 'managePOS'),
                       ],
                     ),
                   ),

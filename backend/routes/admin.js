@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const { createAdmin, getAllAdmins, updateAdmin, getDatabaseBackup } = require('../controllers/adminController');
+const { createAdmin, getAllAdmins, updateAdmin, deleteAdmin, getDatabaseBackup } = require('../controllers/adminController');
 
 // All routes are protected
 router.use(auth);
@@ -17,5 +17,8 @@ router.get('/', getAllAdmins);
 
 // Update Admin (Permissions / Revoke)
 router.put('/:id', updateAdmin);
+
+// Delete Admin
+router.delete('/:id', deleteAdmin);
 
 module.exports = router;

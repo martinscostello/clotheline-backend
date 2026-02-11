@@ -30,42 +30,98 @@ class WhatsAppService {
     }
   }
 
+  static String _getBrandedName(String? branchName) {
+    if (branchName == null) return 'Clotheline';
+    if (branchName.toLowerCase().contains('abuja')) return 'Brimarck';
+    return 'Clotheline';
+  }
+
+  static String _getDownloadLink() {
+    // Shorter link for WhatsApp convenience
+    return "https://www.brimarcglobal.com/clotheline-download.html";
+  }
+
   static Future<void> sendOrderUpdate({
     required String phone,
     required String orderNumber,
     required double amount,
     required String status,
     String? guestName,
+    String? branchName,
+    String? logisticsType, // 'delivery' or 'pickup'
   }) async {
     final String name = guestName ?? "Customer";
+    final String brand = _getBrandedName(branchName);
     final String shortId = orderNumber.length > 6 
         ? orderNumber.substring(orderNumber.length - 6).toUpperCase() 
         : orderNumber.toUpperCase();
 
     final String formattedAmount = CurrencyFormatter.format(amount);
+    final String downloadUrl = _getDownloadLink();
+    
+    String message = "";
+    final String normalizedStatus = status.toLowerCase();
 
-    final String message = 
-      "Hello $name\n\n"
-      "Your order #$shortId at Clotheline has been recorded.\n"
-      "Total: $formattedAmount\n"
-      "Status: $status\n\n"
-      "You can download our mobile app from Google Playstore and Apple App Store\n"
-      "\"Clotheline\"\n\n"
-      "Thank you for choosing Clotheline";
+    if (normalizedStatus == 'new' || normalizedStatus == 'pending') {
+      message = 
+        "Hello $name\n\n"
+        "Your order $shortId at $brand has been recorded.\n"
+        "Total: $formattedAmount\n"
+        "Status: NEW\n\n"
+        "Download our app: $downloadUrl\n\n"
+        "Thank you for choosing $brand!";
+    } else if (normalizedStatus == 'inprogress') {
+      message = 
+        "Hello $name\n\n"
+        "Your order $shortId at $brand has been Updated.\n"
+        "Status: InProgress\n\n"
+        "Download our app: $downloadUrl\n\n"
+        "Thank you for choosing $brand!";
+    } else if (normalizedStatus == 'ready') {
+      final String logisticsSuffix = (logisticsType?.toLowerCase() == 'delivery') ? "delivery" : "Pick up";
+      message = 
+        "Hello $name\n\n"
+        "Your order $shortId Is now Ready for $logisticsSuffix\n\n"
+        "Download our app: $downloadUrl\n\n"
+        "Thank you for choosing $brand!";
+    } else if (normalizedStatus == 'completed') {
+       final String logisticsDone = (logisticsType?.toLowerCase() == 'delivery') ? "delivered" : "Picked up";
+       message = 
+        "Hello $name\n\n"
+        "Your order $shortId has been $logisticsDone\n\n"
+        "Download our app: $downloadUrl\n\n"
+        "Thank you for choosing $brand!";
+    } else if (normalizedStatus == 'cancelled') {
+        message = 
+        "Hello $name\n\n"
+        "Your order $shortId has been cancelled\n\n"
+        "Download our app: $downloadUrl\n\n"
+        "Thank you for choosing $brand!";
+    } else {
+      // Fallback for any other status
+      message = 
+        "Hello $name\n\n"
+        "Your order $shortId at $brand has been updated.\n"
+        "Status: ${status.toUpperCase()}\n\n"
+        "Download our app: $downloadUrl\n\n"
+        "Thank you for choosing $brand!";
+    }
 
     await _launchWhatsApp(phone, message);
   }
 
   static Future<void> contactSupport({
     required String orderNumber,
+    String? branchName,
   }) async {
-    const String supportPhone = '2348000000000'; // TODO: Get from dynamic settings?
+    const String supportPhone = '2348000000000'; 
+    final String brand = _getBrandedName(branchName);
     final String shortId = orderNumber.length > 6 
         ? orderNumber.substring(orderNumber.length - 6).toUpperCase() 
         : orderNumber.toUpperCase();
 
     final String message = 
-      "Hello Clotheline Support!\n\n"
+      "Hello $brand Support!\n\n"
       "I need help with my order #$shortId.\n\n"
       "Thank you!";
 

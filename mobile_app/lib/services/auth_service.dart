@@ -525,6 +525,16 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteAdmin(String adminId) async {
+    try {
+      final response = await _apiService.client.delete('/admin/$adminId');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error deleting admin: $e");
+      return false;
+    }
+  }
+
   Future<void> updateAvatar(String avatarId) async {
     try {
       final response = await _apiService.client.put('/auth/avatar', data: {

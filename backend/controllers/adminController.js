@@ -111,3 +111,22 @@ exports.getDatabaseBackup = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// Delete Admin
+exports.deleteAdmin = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ msg: 'Admin not found' });
+
+        // Security: Prevent deleting Master Admin
+        if (user.isMasterAdmin) {
+            return res.status(400).json({ msg: 'Cannot delete Master Admin' });
+        }
+
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ msg: 'Admin removed successfully' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
