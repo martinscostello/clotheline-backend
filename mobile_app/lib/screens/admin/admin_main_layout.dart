@@ -7,6 +7,7 @@ import 'dashboard/admin_dashboard_screen.dart';
 import 'orders/admin_orders_screen.dart';
 import 'cms/admin_cms_screen.dart';
 import 'users/admin_users_screen.dart';
+import 'staff/admin_staff_screen.dart'; // [NEW] Staff Screen
 import 'chat/admin_chat_screen.dart';
 import 'settings/admin_settings_screen.dart'; // [FIXED Path]
 import '../../widgets/navigation/NavScaffold.dart';
@@ -44,6 +45,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
       AdminOrdersScreen(initialTabIndex: widget.initialOrderTabIndex),
       const AdminCMSScreen(),
       const AdminUsersScreen(),
+      const AdminStaffScreen(), // [NEW] Staff Management
       const AdminChatScreen(),
       const AdminSettingsScreen(),
     ];
@@ -53,6 +55,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
       {'icon': Icons.list_alt, 'label': "Orders", 'permission': 'manageOrders'},
       {'icon': Icons.edit_note, 'label': "CMS", 'permission': null}, // Always open, check inner modules
       {'icon': Icons.people_outline, 'label': "Users", 'permission': 'manageUsers'},
+      {'icon': Icons.badge_outlined, 'label': "Staff", 'permission': 'manageStaff'}, // [NEW]
       {'icon': Icons.chat_outlined, 'label': "Chat", 'permission': 'manageChat'},
       {'icon': Icons.settings_outlined, 'label': "Settings", 'permission': ['manageSettings', 'manageAdmins']},
     ];
