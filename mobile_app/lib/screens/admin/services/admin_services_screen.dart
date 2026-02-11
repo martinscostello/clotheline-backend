@@ -322,14 +322,4 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
     );
   }
 
-  IconData _getIconData(String iconName) {
-    switch (iconName) {
-      case 'dry_cleaning': return Icons.dry_cleaning;
-      case 'local_laundry_service': return Icons.local_laundry_service;
-      case 'do_not_step': return Icons.do_not_step;
-      case 'water_drop': return Icons.water_drop;
-      case 'house': return Icons.house;
-      default: return Icons.category;
-    }
-  }
 }

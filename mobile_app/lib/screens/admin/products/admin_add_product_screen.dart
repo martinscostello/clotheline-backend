@@ -45,8 +45,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
 
   // Variants
   List<ProductVariant> _variants = [];
-  List<BranchProductInfo> _branchInfo = [];
-
   // Sales Banner [NEW]
   late SalesBannerConfig _bannerConfig;
   late SalesBannerConfig _detailBannerConfig; // [NEW]
@@ -83,7 +81,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
 
   
     _variants = p?.variants ?? [];
-    _branchInfo = List.from(p?.branchInfo ?? []);
+
     
     // Fetch latest categories
     WidgetsBinding.instance.addPostFrameCallback((_) {

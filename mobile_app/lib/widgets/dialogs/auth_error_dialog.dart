@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
 import 'dart:ui';
 
 class AuthErrorDialog extends StatelessWidget {

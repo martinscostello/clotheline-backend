@@ -5,7 +5,6 @@ import '../../../providers/branch_provider.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../widgets/glass/GlassContainer.dart';
 import '../../../theme/app_theme.dart';
-import '../../../models/branch_model.dart';
 import '../../../services/laundry_service.dart';
 import '../../../services/store_service.dart';
 import '../../../models/service_model.dart';

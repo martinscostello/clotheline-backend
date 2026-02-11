@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/notification_service.dart';
-import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 import '../main_layout.dart'; 
 import '../chat/chat_screen.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';

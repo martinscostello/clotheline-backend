@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/widgets/booking/booking_sheet.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:laundry_app/services/content_service.dart';
 import 'package:laundry_app/models/app_content_model.dart';
 import 'package:laundry_app/services/laundry_service.dart';
@@ -91,7 +90,16 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     
     // Silent Sync after render
     Future.microtask(() => _performSilentSync());
-    
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _rotationTimer?.cancel();
+    _carouselTimer?.cancel();
+    _pageController.dispose();
+    widget.tabNotifier?.removeListener(_handleTabChange);
+    super.dispose();
   }
 
   

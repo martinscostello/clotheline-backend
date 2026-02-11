@@ -17,7 +17,7 @@ class StaffService {
       }
       return null;
     } catch (e) {
-      throw Exception('Failed to upload image: $e');
+      rethrow;
     }
   }
 
@@ -30,7 +30,7 @@ class StaffService {
       }
       return [];
     } catch (e) {
-      throw Exception('Failed to fetch staff: $e');
+      rethrow;
     }
   }
 
@@ -39,7 +39,7 @@ class StaffService {
       final response = await _apiService.client.post('/staff', data: data);
       return Staff.fromJson(response.data);
     } catch (e) {
-      throw Exception('Failed to create staff: $e');
+      rethrow;
     }
   }
 
@@ -48,7 +48,7 @@ class StaffService {
       final response = await _apiService.client.put('/staff/$id', data: data);
       return Staff.fromJson(response.data);
     } catch (e) {
-      throw Exception('Failed to update staff: $e');
+      rethrow;
     }
   }
 
@@ -57,7 +57,7 @@ class StaffService {
       final response = await _apiService.client.post('/staff/warning', data: data);
       return Staff.fromJson(response.data);
     } catch (e) {
-      throw Exception('Failed to add warning: $e');
+      rethrow;
     }
   }
 
@@ -65,7 +65,7 @@ class StaffService {
     try {
       await _apiService.client.put('/staff/$id/archive', data: {'archiveReason': reason});
     } catch (e) {
-      throw Exception('Failed to archive staff: $e');
+      rethrow;
     }
   }
 
@@ -73,7 +73,7 @@ class StaffService {
     try {
       await _apiService.client.delete('/staff/$id');
     } catch (e) {
-      throw Exception('Failed to delete staff: $e');
+      rethrow;
     }
   }
 

@@ -284,7 +284,6 @@ class ReceiptService {
     // Handle both OrderModel and Map (from API)
     String id = order is Map ? (order['_id'] ?? 'N/A') : order.id;
     String name = order is Map ? (order['guestInfo']?['name'] ?? 'Guest') : (order.guestName ?? (order.userName ?? 'Customer'));
-    String branch = order is Map ? (order['branchId'] ?? 'Clotheline') : (order.branchId ?? 'Clotheline');
     
     List<CartItem> laundry = [];
     List<StoreCartItem> store = [];

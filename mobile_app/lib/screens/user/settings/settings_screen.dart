@@ -3,15 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/screens/auth/login_screen.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
-import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
 import 'notification_settings_screen.dart';
 import 'faqs_screen.dart'; // Added Import
 import 'feedback_screen.dart'; // Added Import
-import 'manage_password_screen.dart'; // Added Import
 import 'about_screen.dart'; // Added Import
-import '../chat/chat_screen.dart'; // Added Import
 import 'manage_addresses_screen.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:laundry_app/widgets/common/user_avatar.dart';

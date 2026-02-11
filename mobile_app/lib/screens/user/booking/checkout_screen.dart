@@ -3,9 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../services/cart_service.dart';
 import '../../../services/content_service.dart';
-import '../../../services/order_service.dart';
 import '../../../services/delivery_service.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../main_layout.dart';
 import '../../../providers/branch_provider.dart';
@@ -50,11 +48,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   LatLng? _deliveryLatLng;
   double _pickupFee = 0.0;
   double _deliveryFee = 0.0;
-  bool _isLocating = false;
 
   // Animation
   late AnimationController _breathingController;
-  late Animation<double> _breathingAnimation;
 
   // Branch Info
   String _branchAddress = "Loading...";
@@ -74,11 +70,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
        vsync: this,
        duration: const Duration(milliseconds: 1500),
      )..repeat(reverse: true);
-     
-     _breathingAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-       CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut)
-     );
-  }
+   }
 
   @override
   void dispose() {
@@ -109,65 +101,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     return "Checkout";
   }
   
-  // LOGIC: Get Location
-  Future<void> _getCurrentLocation(bool isPickup) async {
-    setState(() => _isLocating = true);
-    
-    bool serviceEnabled;
-    LocationPermission permission;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if(mounted) ToastUtils.show(context, "Location services are disabled.", type: ToastType.error);
-      setState(() => _isLocating = false);
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        if(mounted) ToastUtils.show(context, "Location permissions are denied", type: ToastType.error);
-        setState(() => _isLocating = false);
-        return;
-      }
-    }
-    
-    if (permission == LocationPermission.deniedForever) {
-      if(mounted) ToastUtils.show(context, "Location permissions are permanently denied, we cannot request permissions.", type: ToastType.error);
-      setState(() => _isLocating = false);
-      return;
-    } 
-
-    try {
-      Position position = await Geolocator.getCurrentPosition();
-      final deliveryService = Provider.of<DeliveryService>(context, listen: false);
-      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-      
-      double fee = deliveryService.calculateDeliveryFee(
-        position.latitude, 
-        position.longitude,
-        branch: branchProvider.selectedBranch
-      );
-      
-      setState(() {
-        if (isPickup) {
-          _pickupLatLng = LatLng(position.latitude, position.longitude);
-          _pickupFee = fee;
-          // Note: NOT updating address controller text
-        } else {
-          _deliveryLatLng = LatLng(position.latitude, position.longitude);
-          _deliveryFee = fee;
-          // Note: NOT updating address controller text
-        }
-      });
-      
-    } catch (e) {
-      if(mounted) ToastUtils.show(context, "Error getting location: $e", type: ToastType.error);
-    } finally {
-      setState(() => _isLocating = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -365,9 +299,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   Widget _buildAddressInputs(bool isPickup, {String labelPrefix = "Pickup"}) {
-    // Check if GPS/Selection is active for this field
-    bool isGpsActive = isPickup ? _pickupSelection != null : _deliverySelection != null;
-
     return Padding(
       padding: const EdgeInsets.only(left: 20, right: 10, bottom: 20, top: 5),
       child: Column(
@@ -629,106 +560,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildPromoSection(bool isDark, Color textColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white10 : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.local_offer, color: AppTheme.primaryColor, size: 20),
-              const SizedBox(width: 8),
-              Text("Promotions / Promo Code", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          
-          if (_cartService.appliedPromotion != null)
-             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.withOpacity(0.3))
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle, size: 16, color: Colors.green),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "${_cartService.appliedPromotion!['code']} applied",
-                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)
-                    )
-                  ),
-                  InkWell(
-                    onTap: () {
-                      _cartService.removePromo();
-                      setState(() {});
-                    },
-                    child: const Icon(Icons.close, size: 18, color: Colors.grey)
-                  )
-                ],
-              ),
-            )
-          else
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.black26 : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
-                    ),
-                    child: TextField(
-                      controller: _promoController,
-                      style: TextStyle(color: textColor),
-                      decoration: InputDecoration(
-                        hintText: "Enter Code",
-                        hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: InputBorder.none,
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
-                  ),
-                  onPressed: () async {
-                    if (_promoController.text.trim().isEmpty) return;
-                    FocusScope.of(context).unfocus();
-                    
-                    final error = await _cartService.applyPromoCode(_promoController.text.trim());
-                    if (error != null) {
-                      if(mounted) ToastUtils.show(context, error, type: ToastType.error);
-                    } else {
-                      _promoController.clear();
-                      if(mounted) ToastUtils.show(context, "Discount Applied!", type: ToastType.success);
-                    }
-                    setState(() {}); // Rebuild to show applied status
-                  },
-                  child: const Text("Apply"),
-                )
-              ],
-            )
-        ],
-      ),
-    );
-  }
-
   final _paymentService = PaymentService();
   bool _isSubmitting = false;
 
@@ -901,22 +732,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     } catch (e) {
       if(mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
       setState(() => _isSubmitting = false);
-    }
-  }
-
-  // Dialer
-  Future<void> _callBranch() async {
-    final cleanPhone = _branchPhone.replaceAll(RegExp(r'[^\d+]'), ''); // Keep digits and +
-    if (cleanPhone.isEmpty) return;
-    
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: cleanPhone,
-    );
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    } else {
-      if(mounted) ToastUtils.show(context, "Could not launch dialer", type: ToastType.error);
     }
   }
 

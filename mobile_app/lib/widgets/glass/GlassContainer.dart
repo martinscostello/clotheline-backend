@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_ui/liquid_glass_ui.dart';
 
 class GlassContainer extends StatelessWidget {
   final Widget child;

@@ -251,6 +251,11 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
     final salaryStr = _baseSalaryController.text.replaceAll(',', '');
     final baseSalary = double.tryParse(salaryStr) ?? 0;
 
+    if (_selectedBranch == null) {
+      ToastUtils.show(context, "Please select a branch first", type: ToastType.warning);
+      return;
+    }
+
     final data = {
       'name': _nameController.text,
       'email': _emailController.text,

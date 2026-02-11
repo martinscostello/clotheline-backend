@@ -15,7 +15,6 @@ class AdminNotificationSettingsScreen extends StatefulWidget {
 }
 
 class _AdminNotificationSettingsScreenState extends State<AdminNotificationSettingsScreen> {
-  bool _isLoading = false;
   bool _isSaving = false;
   Map<String, dynamic> _prefs = {};
   List<String> _subscribedBranches = [];

@@ -4,9 +4,7 @@ import '../../../theme/app_theme.dart';
 import '../../../services/cart_service.dart';
 import '../../../services/content_service.dart';
 // import '../../../models/app_content_model.dart';
-import '../../../services/order_service.dart';
 import '../../../services/delivery_service.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../../utils/currency_formatter.dart';
@@ -44,7 +42,6 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
 
   // Animation
   late AnimationController _breathingController;
-  late Animation<double> _breathingAnimation;
 
   // Branch Info
   String _branchAddress = "Loading...";
@@ -63,10 +60,6 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
        vsync: this,
        duration: const Duration(milliseconds: 1500),
      )..repeat(reverse: true);
-     
-     _breathingAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-       CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut)
-     );
   }
 
   @override

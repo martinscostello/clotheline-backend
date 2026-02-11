@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';

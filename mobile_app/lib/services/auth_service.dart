@@ -13,12 +13,14 @@ class AuthService extends ChangeNotifier {
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
+
   // Simple in-memory user cache for role checks
   Map<String, dynamic>? _currentUser;
   Map<String, dynamic>? get currentUser => _currentUser;
   bool _isGuest = false;
   bool get isGuest => _isGuest;
-  bool _isInitialized = false;
 
   // [BOOTSTRAP] Synchronous Hydration
   void hydrateSimpleProfile(Map<String, dynamic>? profile, String? role, {bool isGuest = false}) {
@@ -28,7 +30,6 @@ class AuthService extends ChangeNotifier {
          ...profile,
          'role': role ?? 'user'
       };
-      _isInitialized = true;
     }
   }
   

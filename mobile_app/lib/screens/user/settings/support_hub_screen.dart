@@ -8,7 +8,6 @@ import '../../../services/order_service.dart';
 import '../../../services/store_service.dart';
 import '../../../services/chat_service.dart';
 import '../../../models/order_model.dart';
-import '../../../models/store_product.dart';
 import '../../../utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
 import '../chat/chat_screen.dart';

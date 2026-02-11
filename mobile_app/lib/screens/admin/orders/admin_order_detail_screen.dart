@@ -10,7 +10,6 @@ import '../../../../services/chat_service.dart'; // [FIX] Import ChatService
 
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../utils/toast_utils.dart';
-import '../../user/chat/chat_screen.dart';
 import '../chat/admin_chat_screen.dart'; // [FIX] Import AdminChatScreen
 import '../../../../services/whatsapp_service.dart';
 import '../../../../services/receipt_service.dart'; // [NEW]

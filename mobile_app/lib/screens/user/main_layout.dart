@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/glass/LaundryGlassBackground.dart';
 import '../../widgets/navigation/NavScaffold.dart';
 import '../../widgets/navigation/PremiumNavBar.dart';
@@ -67,6 +66,12 @@ class _MainLayoutState extends State<MainLayout> {
      _tabNotifier.value = index; // Notify listeners
      final prefs = await SharedPreferences.getInstance();
      prefs.setInt('last_tab_index', index);
+  }
+
+  @override
+  void dispose() {
+    _tabNotifier.dispose();
+    super.dispose();
   }
 
   @override
