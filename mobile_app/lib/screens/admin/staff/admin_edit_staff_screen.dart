@@ -251,6 +251,8 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
     final salaryStr = _baseSalaryController.text.replaceAll(',', '');
     final baseSalary = double.tryParse(salaryStr) ?? 0;
 
+    print("Submitting Employment Date: ${_employmentDate.toIso8601String()}");
+
     if (_selectedBranch == null) {
       ToastUtils.show(context, "Please select a branch first", type: ToastType.warning);
       return;
@@ -561,12 +563,15 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
   }
 
   Widget _buildSimpleDropdown(String value, List<String> items, Function(String?) onChanged) {
+    // Ensure value is in list, otherwise add it temporarily or specific handling
+    final effectiveItems = items.contains(value) ? items : [value, ...items];
+    
     return GlassContainer(
       opacity: 0.1,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: DropdownButtonFormField<String>(
-        value: items.contains(value) ? value : items.first,
-        items: items.map((i) => DropdownMenuItem(value: i, child: Text(i, style: const TextStyle(color: Colors.white, fontSize: 13)))).toList(),
+        value: value,
+        items: effectiveItems.map((i) => DropdownMenuItem(value: i, child: Text(i, style: const TextStyle(color: Colors.white, fontSize: 13)))).toList(),
         onChanged: onChanged,
         dropdownColor: const Color(0xFF1E1E2C),
         decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.zero),

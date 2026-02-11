@@ -701,16 +701,22 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         const Text("Digital Signature", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
         const SizedBox(height: 10),
         GlassContainer(
-          height: 180, // Made bigger
+          height: 250, // Even bigger
           width: double.infinity,
            opacity: 0.1,
            child: staff.signature != null && staff.signature!.isNotEmpty
-             ? Align(
-                 alignment: Alignment.centerLeft, // Put to the left
-                 child: Padding(
-                   padding: const EdgeInsets.all(15.0),
-                   child: AspectRatio(
-                     aspectRatio: 2.0, // Match capture ratio
+             ? ClipRRect(
+                 borderRadius: BorderRadius.circular(15),
+                 child: InteractiveViewer(
+                   panEnabled: true,
+                   boundaryMargin: const EdgeInsets.all(20),
+                   minScale: 0.5,
+                   maxScale: 4.0,
+                   child: Container(
+                     color: Colors.white, // Ensure white background for contrast
+                     width: double.infinity,
+                     height: double.infinity,
+                     alignment: Alignment.center,
                      child: staff.signature!.startsWith('data:image') 
                        ? Image.memory(base64Decode(staff.signature!.split(',').last), fit: BoxFit.contain)
                        : Image.network(staff.signature!, fit: BoxFit.contain),
