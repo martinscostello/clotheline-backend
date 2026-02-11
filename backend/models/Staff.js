@@ -92,8 +92,21 @@ const StaffSchema = new mongoose.Schema({
 // Auto-generate Staff ID before saving
 StaffSchema.pre('save', async function (next) {
     if (!this.staffId) {
-        const count = await this.constructor.countDocuments();
-        this.staffId = `CL-${(count + 1).toString().padStart(4, '0')}`;
+        try {
+            const lastStaff = await this.constructor.findOne({}, {}, { sort: { 'createdAt': -1 } });
+            let nextId = 1;
+            if (lastStaff && lastStaff.staffId) {
+                const lastIdNum = parseInt(lastStaff.staffId.split('-')[1]);
+                if (!isNaN(lastIdNum)) {
+                    nextId = lastIdNum + 1;
+                }
+            }
+            this.staffId = `CL-${nextId.toString().padStart(4, '0')}`;
+        } catch (err) {
+            console.error("Staff ID generation error:", err);
+            // Fallback to timestamp if something goes wrong
+            this.staffId = `CL-${Date.now().toString().slice(-4)}`;
+        }
     }
     next();
 });

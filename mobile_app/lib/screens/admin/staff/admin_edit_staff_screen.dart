@@ -187,30 +187,40 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
                 )
               ],
             ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              child: Text("Please sign horizontally in the box below", style: TextStyle(color: Colors.black38, fontSize: 14)),
+            ),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Signature(
-                      controller: sigController,
-                      backgroundColor: Colors.white,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: AspectRatio(
+                    aspectRatio: 2.0, // Landscape box
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        border: Border.all(color: Colors.grey.shade300, width: 2),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Signature(
+                          controller: sigController,
+                          backgroundColor: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.only(bottom: 40),
               child: TextButton.icon(
                 onPressed: () => sigController.clear(),
-                icon: const Icon(Icons.clear, color: Colors.red),
-                label: const Text("Clear Signature", style: TextStyle(color: Colors.red)),
+                icon: const Icon(Icons.refresh, color: Colors.blue),
+                label: const Text("Clear and Restart", style: TextStyle(color: Colors.blue)),
               ),
             ),
           ],
@@ -285,7 +295,17 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
       }
       Navigator.pop(context, true);
     } catch (e) {
-      ToastUtils.show(context, "Error: $e", type: ToastType.error);
+      String errorMsg = e.toString();
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response?.data;
+        if (data is Map && data.containsKey('msg')) {
+          errorMsg = data['msg'];
+        } else if (data is String) {
+          errorMsg = data;
+        }
+      }
+      setState(() => _isSaving = false);
+      ToastUtils.show(context, "Error: $errorMsg", type: ToastType.error);
     } finally {
       setState(() => _isSaving = false);
     }
@@ -522,7 +542,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
             width: double.infinity,
             opacity: 0.1,
             child: _signatureBase64 != null 
-              ? Image.memory(base64Decode(_signatureBase64!.split(',').last), color: Colors.white, fit: BoxFit.contain)
+              ? Image.memory(base64Decode(_signatureBase64!.split(',').last), fit: BoxFit.contain)
               : const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,

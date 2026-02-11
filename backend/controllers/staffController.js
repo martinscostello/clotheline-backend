@@ -29,8 +29,12 @@ exports.createStaff = async (req, res) => {
         await staff.save();
         res.json(staff);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        console.error("===== CREATE STAFF ERROR =====");
+        console.error(err);
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ msg: `Validation Error: ${Object.values(err.errors).map(e => e.message).join(', ')}` });
+        }
+        res.status(500).send(`Server Error: ${err.message}`);
     }
 };
 
