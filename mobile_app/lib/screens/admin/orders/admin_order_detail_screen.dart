@@ -392,9 +392,25 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                                icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.primaryColor),
                                 onPressed: _contactCustomer,
                                 tooltip: "Message User",
+                             ),
+                             IconButton(
+                                icon: const Icon(Icons.picture_as_pdf, color: Colors.green),
+                                onPressed: () {
+                                  if (_order!.guestPhone != null) {
+                                    final branchName = Provider.of<BranchProvider>(context, listen: false)
+                                        .branches
+                                        .firstWhere((b) => b.id == _order!.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', phone: '', location: BranchLocation(lat: 0, lng: 0), deliveryZones: []))
+                                        .name;
+                                    
+                                    ReceiptService.shareReceiptFromOrder(_order!, branchName);
+                                  } else {
+                                    ToastUtils.show(context, "No phone number available", type: ToastType.error);
+                                  }
+                                },
+                                tooltip: "Share Receipt (WhatsApp)",
                               ),
                               IconButton(
-                                icon: const Icon(Icons.send_rounded, color: Colors.green),
+                                icon: const Icon(Icons.chat_outlined, color: Colors.green),
                                 onPressed: () {
                                   if (_order!.guestPhone != null) {
                                     final branchName = Provider.of<BranchProvider>(context, listen: false)
@@ -414,7 +430,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                                     ToastUtils.show(context, "No phone number available", type: ToastType.error);
                                   }
                                 },
-                                tooltip: "WhatsApp Customer",
+                                tooltip: "Send WhatsApp Update",
                               )
                             ],
                           ),
@@ -522,7 +538,13 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                           ),
                           icon: const Icon(Icons.print),
                           label: const Text("PRINT RECEIPT"),
-                          onPressed: () => ReceiptService.printReceiptFromOrder(_order!),
+                          onPressed: () {
+                            final branchName = Provider.of<BranchProvider>(context, listen: false)
+                                .branches
+                                .firstWhere((b) => b.id == _order!.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', phone: '', location: BranchLocation(lat: 0, lng: 0), deliveryZones: []))
+                                .name;
+                            ReceiptService.printReceiptFromOrder(_order!, branchName);
+                          },
                         ),
                      ),
                    ),

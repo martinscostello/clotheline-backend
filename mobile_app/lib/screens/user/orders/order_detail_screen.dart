@@ -170,6 +170,76 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               )),
 
               const SizedBox(height: 25),
+              Text("Logistics", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 15),
+
+              LaundryGlassCard(
+                opacity: isDark ? 0.12 : 0.05,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.local_shipping_outlined, size: 20, color: AppTheme.primaryColor),
+                            const SizedBox(width: 10),
+                            Text("Pickup", style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                        Text(
+                          order.pickupOption,
+                          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    if (order.pickupOption != 'Dropoff') ...[
+                      const SizedBox(height: 5),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            "Fee: ${order.pickupFee > 0 ? CurrencyFormatter.format(order.pickupFee) : 'Free'}",
+                            style: TextStyle(color: order.pickupFee > 0 ? textColor : Colors.green, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const Divider(height: 25),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.delivery_dining_outlined, size: 20, color: AppTheme.primaryColor),
+                            const SizedBox(width: 10),
+                            Text("Delivery", style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                        Text(
+                          order.deliveryOption,
+                          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    if (order.deliveryOption != 'Pickup') ...[
+                      const SizedBox(height: 5),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            "Fee: ${order.deliveryFee > 0 ? CurrencyFormatter.format(order.deliveryFee) : 'Free'}",
+                            style: TextStyle(color: order.deliveryFee > 0 ? textColor : Colors.green, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 25),
               Text("Payment Summary", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 15),
 
@@ -270,7 +340,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   height: 55,
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                       await ReceiptService.printReceiptFromOrder(order);
+                       final branchName = Provider.of<BranchProvider>(context, listen: false)
+                           .branches
+                           .firstWhere((b) => b.id == order.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', phone: '', location: BranchLocation(lat: 0, lng: 0), deliveryZones: []))
+                           .name;
+                       await ReceiptService.printReceiptFromOrder(order, branchName);
                     },
                     icon: Icon(Icons.download, color: textColor),
                     label: Text("DOWNLOAD RECEIPT", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),

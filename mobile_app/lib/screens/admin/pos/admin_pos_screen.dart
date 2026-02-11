@@ -888,7 +888,22 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   );
                }),
                const SizedBox(height: 10),
-                _buildActionButton("Send WhatsApp Receipt", Icons.send_and_archive, () {
+                _buildActionButton("Send Receipt (WhatsApp)", Icons.picture_as_pdf, () {
+                   final pos = Provider.of<AdminPOSProvider>(context, listen: false);
+                   ReceiptService.shareReceipt(
+                     orderNumber: order['_id'] ?? 'N/A',
+                     customerName: pos.guestName ?? 'Guest',
+                     branchName: pos.selectedBranch?.name ?? 'Clotheline',
+                     laundryItems: pos.laundryItems,
+                     storeItems: pos.storeItems,
+                     subtotal: pos.subtotal,
+                     deliveryFee: pos.deliveryFee,
+                     total: pos.totalAmount,
+                     paymentMethod: pos.paymentMethod,
+                   );
+                }, color: Colors.green),
+                const SizedBox(height: 10),
+                _buildActionButton("Send Update (WhatsApp)", Icons.chat, () {
                    final pos = Provider.of<AdminPOSProvider>(context, listen: false);
                    WhatsAppService.sendOrderUpdate(
                      phone: pos.guestPhone ?? '',
