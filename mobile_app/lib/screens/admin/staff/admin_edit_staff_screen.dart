@@ -357,7 +357,8 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
                   'Manager', 'Supervisor', 'Secretary', 'POS Attendant', 'Laundry Worker', 'Dispatch'
                 ], (val) => setState(() => _posController.text = val!)),
                 _buildBranchPicker(),
-                _buildDatePicker("Employment Date", _employmentDate, (date) => setState(() => _employmentDate = date)),
+                _buildBranchPicker(),
+                _buildDateListSelector("Employment Date", _employmentDate, (date) => setState(() => _employmentDate = date)),
 
                 const SizedBox(height: 30),
                 _buildSectionHeader("Account Details"),
@@ -489,13 +490,89 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
     );
   }
 
-  Widget _buildDatePicker(String label, DateTime value, Function(DateTime) onPicked) {
-    return GestureDetector(
-      onTap: () async {
-        final d = await showDatePicker(context: context, initialDate: value, firstDate: DateTime(2000), lastDate: DateTime(2100));
-        if (d != null) onPicked(d);
-      },
-      child: _buildInput(label, TextEditingController(text: DateFormat('MMM dd, yyyy').format(value)), Icons.calendar_today),
+  Widget _buildDateListSelector(String label, DateTime currentDate, Function(DateTime) onChanged) {
+    // Generate lists
+    final days = List.generate(31, (index) => (index + 1).toString());
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final currentYear = DateTime.now().year;
+    final years = List.generate(50, (index) => (currentYear - index).toString()); // Last 50 years
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            // Day
+            Expanded(
+              flex: 2,
+              child: _buildSimpleDropdown(
+                currentDate.day.toString(), 
+                days, 
+                (val) {
+                  final newDay = int.parse(val!);
+                  // Handle month length overflow (e.g. Feb 30)
+                  final lastDayOfMonth = DateTime(currentDate.year, currentDate.month + 1, 0).day;
+                  final validDay = newDay > lastDayOfMonth ? lastDayOfMonth : newDay;
+                  onChanged(DateTime(currentDate.year, currentDate.month, validDay));
+                }
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Month
+            Expanded(
+              flex: 3,
+              child: _buildSimpleDropdown(
+                months[currentDate.month - 1], 
+                months, 
+                (val) {
+                  final newMonth = months.indexOf(val!) + 1;
+                  // Handle day overflow when switching months
+                  final lastDayOfNewMonth = DateTime(currentDate.year, newMonth + 1, 0).day;
+                  final validDay = currentDate.day > lastDayOfNewMonth ? lastDayOfNewMonth : currentDate.day;
+                  onChanged(DateTime(currentDate.year, newMonth, validDay));
+                }
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Year
+            Expanded(
+              flex: 3,
+              child: _buildSimpleDropdown(
+                currentDate.year.toString(), 
+                years, 
+                (val) {
+                  final newYear = int.parse(val!);
+                  // Handle leap year overflow (Feb 29)
+                  final lastDayOfNewMonth = DateTime(newYear, currentDate.month + 1, 0).day;
+                  final validDay = currentDate.day > lastDayOfNewMonth ? lastDayOfNewMonth : currentDate.day;
+                  onChanged(DateTime(newYear, currentDate.month, validDay));
+                }
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 15),
+      ],
+    );
+  }
+
+  Widget _buildSimpleDropdown(String value, List<String> items, Function(String?) onChanged) {
+    return GlassContainer(
+      opacity: 0.1,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: DropdownButtonFormField<String>(
+        value: items.contains(value) ? value : items.first,
+        items: items.map((i) => DropdownMenuItem(value: i, child: Text(i, style: const TextStyle(color: Colors.white, fontSize: 13)))).toList(),
+        onChanged: onChanged,
+        dropdownColor: const Color(0xFF1E1E2C),
+        decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.zero),
+        icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+        isExpanded: true,
+      ),
     );
   }
 
