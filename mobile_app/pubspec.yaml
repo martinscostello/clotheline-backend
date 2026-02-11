@@ -1,7 +1,7 @@
 name: laundry_app
 description: "A new Flutter project for Laundry Business."
 publish_to: 'none'
-version: 1.1.0+24
+version: 1.2.0+25
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
