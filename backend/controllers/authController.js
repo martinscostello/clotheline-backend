@@ -346,7 +346,18 @@ exports.getAllUsers = async (req, res) => {
         let query = { role: 'user' };
 
         if (branchId && branchId !== 'null' && branchId !== 'undefined') {
-            query.preferredBranch = branchId;
+            // [SMART FILTER] Allow fallback to city-based filtering for legacy users
+            const Branch = require('../models/Branch');
+            const branch = await Branch.findById(branchId);
+
+            if (branch) {
+                query.$or = [
+                    { preferredBranch: branchId },
+                    { 'savedAddresses.city': { $regex: new RegExp(`^${branch.name}$`, 'i') } }
+                ];
+            } else {
+                query.preferredBranch = branchId;
+            }
         }
 
         const users = await User.find(query).select('-password').sort({ createdAt: -1 });
