@@ -359,7 +359,6 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
                   'Manager', 'Supervisor', 'Secretary', 'POS Attendant', 'Laundry Worker', 'Dispatch'
                 ], (val) => setState(() => _posController.text = val!)),
                 _buildBranchPicker(),
-                _buildBranchPicker(),
                 _buildDateListSelector("Employment Date", _employmentDate, (date) => setState(() => _employmentDate = date)),
 
                 const SizedBox(height: 30),
