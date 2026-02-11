@@ -14,6 +14,7 @@ import '../../user/chat/chat_screen.dart';
 import '../chat/admin_chat_screen.dart'; // [FIX] Import AdminChatScreen
 import '../../../../services/whatsapp_service.dart';
 import '../../../../services/receipt_service.dart'; // [NEW]
+import '../../../../providers/branch_provider.dart'; // [NEW]
 
 class AdminOrderDetailScreen extends StatefulWidget {
   final OrderModel? order;
@@ -395,12 +396,18 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                                 icon: const Icon(Icons.send_rounded, color: Colors.green),
                                 onPressed: () {
                                   if (_order!.guestPhone != null) {
+                                    final branchName = Provider.of<BranchProvider>(context, listen: false)
+                                        .branches
+                                        .firstWhere((b) => b.id == _order!.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', location: {'lat': 0, 'lng': 0}))
+                                        .name;
+                                    
                                     WhatsAppService.sendOrderUpdate(
                                       phone: _order!.guestPhone!,
                                       orderNumber: _order!.id,
                                       amount: _order!.totalAmount,
                                       status: _order!.status.name,
                                       guestName: _order!.guestName ?? _order!.userName,
+                                      branchName: branchName,
                                     );
                                   } else {
                                     ToastUtils.show(context, "No phone number available", type: ToastType.error);

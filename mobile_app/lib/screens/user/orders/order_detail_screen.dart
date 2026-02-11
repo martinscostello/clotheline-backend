@@ -16,6 +16,7 @@ import '../../../../services/order_service.dart';
 import '../../../widgets/dialogs/guest_login_dialog.dart';
 import '../../../services/auth_service.dart';
 import '../../../../services/whatsapp_service.dart'; // [NEW]
+import '../../../../providers/branch_provider.dart'; // [NEW]
 
 class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -294,7 +295,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       icon: const Icon(Icons.send_rounded, color: Colors.green),
                       label: const Text("Contact Support via WhatsApp", style: TextStyle(color: Colors.green)),
                       onPressed: () {
-                         WhatsAppService.contactSupport(orderNumber: order.id);
+                         final branchName = Provider.of<BranchProvider>(context, listen: false)
+                             .branches
+                             .firstWhere((b) => b.id == order.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', location: {'lat': 0, 'lng': 0}))
+                             .name;
+                         WhatsAppService.contactSupport(orderNumber: order.id, branchName: branchName);
                       },
                     ),
                   ],

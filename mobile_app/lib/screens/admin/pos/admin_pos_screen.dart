@@ -896,6 +896,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                      amount: pos.totalAmount,
                      status: order['status'] ?? 'New',
                      guestName: pos.guestName,
+                     branchName: pos.selectedBranch?.name,
                    );
                 }, color: Colors.green),
                const SizedBox(height: 10),
