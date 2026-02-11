@@ -110,23 +110,37 @@ You currently have $warningCount warning(s) on record.
 
 Management.''';
 
-    final encodedMessage = Uri.encodeComponent(message);
+    // Use queryParameters to handle encoding automatically
+    final nativeUri = Uri.parse('whatsapp://send').replace(queryParameters: {
+      'phone': cleanPhone,
+      'text': message,
+    });
     
-    // Try native app scheme first
-    final nativeUrl = Uri.parse('whatsapp://send?phone=$cleanPhone&text=$encodedMessage');
-    // Fallback to web
-    final webUrl = Uri.parse('https://wa.me/$cleanPhone?text=$encodedMessage');
+    final webUri = Uri.parse('https://wa.me/$cleanPhone').replace(queryParameters: {
+      'text': message,
+    });
+
+    print("Attempting to launch WhatsApp. Phone: $cleanPhone");
 
     try {
-      if (await canLaunchUrl(nativeUrl)) {
-        await launchUrl(nativeUrl, mode: LaunchMode.externalApplication);
-      } else if (await canLaunchUrl(webUrl)) {
-        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      if (await canLaunchUrl(nativeUri)) {
+        await launchUrl(nativeUri, mode: LaunchMode.externalApplication);
       } else {
-        throw 'Both native and web WhatsApp launch failed';
+        print("Native WhatsApp not found, trying web fallback: $webUri");
+        // For web fallback, use platformDefault mode which is often more reliable for opening browsing intents
+        if (await canLaunchUrl(webUri)) {
+             await launchUrl(webUri, mode: LaunchMode.externalApplication);
+        } else {
+             // As a last resort, try launching without checking canLaunchUrl, sometimes check fails but launch works
+             try {
+                await launchUrl(webUri, mode: LaunchMode.externalApplication);
+             } catch (e) {
+                throw 'Could not launch WhatsApp (Web fallback failed: $e)';
+             }
+        }
       }
     } catch (e) {
-      // In case canLaunchUrl throws or logic fails
+      print("WhatsApp launch error: $e");
       throw Exception('Could not launch WhatsApp: $e');
     }
   }
