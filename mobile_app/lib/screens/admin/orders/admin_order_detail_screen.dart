@@ -15,6 +15,7 @@ import '../chat/admin_chat_screen.dart'; // [FIX] Import AdminChatScreen
 import '../../../../services/whatsapp_service.dart';
 import '../../../../services/receipt_service.dart'; // [NEW]
 import '../../../../providers/branch_provider.dart'; // [NEW]
+import '../../../../models/branch_model.dart'; // [NEW]
 
 class AdminOrderDetailScreen extends StatefulWidget {
   final OrderModel? order;
@@ -398,7 +399,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                                   if (_order!.guestPhone != null) {
                                     final branchName = Provider.of<BranchProvider>(context, listen: false)
                                         .branches
-                                        .firstWhere((b) => b.id == _order!.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', location: {'lat': 0, 'lng': 0}))
+                                        .firstWhere((b) => b.id == _order!.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', phone: '', location: BranchLocation(lat: 0, lng: 0), deliveryZones: []))
                                         .name;
                                     
                                     WhatsAppService.sendOrderUpdate(
