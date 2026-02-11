@@ -647,16 +647,50 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
 
   Widget _buildProbationSection(Staff staff) {
     final months = staff.probation?.durationMonths ?? 3;
-    final status = staff.probation?.status ?? 'On Probation';
+    final employmentDate = staff.employmentDate;
+    final now = DateTime.now();
+    
+    // Calculate if probation is over
+    final probationEndDate = DateTime(
+      employmentDate.year, 
+      employmentDate.month + months, 
+      employmentDate.day
+    );
+    
+    final isCompleted = now.isAfter(probationEndDate);
+    final status = isCompleted ? 'Completed' : (staff.probation?.status ?? 'On Probation');
+    
+    // Progress calculation
+    double progress = 0.0;
+    if (isCompleted) {
+      progress = 1.0;
+    } else {
+      final totalDays = probationEndDate.difference(employmentDate).inDays;
+      final elapsedDays = now.difference(employmentDate).inDays;
+      progress = (elapsedDays / totalDays).clamp(0.0, 1.0);
+    }
+
     return _buildInfoSection("Probation System", [
       _buildDetailRow("Duration", "$months Months"),
       _buildDetailRow("Status", status),
       const SizedBox(height: 10),
-      LinearProgressIndicator(
-        value: status == 'Completed' ? 1.0 : 0.4,
-        backgroundColor: Colors.white10,
-        valueColor: AlwaysStoppedAnimation<Color>(status == 'Completed' ? Colors.green : Colors.amber),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(5),
+        child: LinearProgressIndicator(
+          value: progress,
+          minHeight: 8,
+          backgroundColor: Colors.white10,
+          valueColor: AlwaysStoppedAnimation<Color>(isCompleted ? Colors.green : Colors.amber),
+        ),
       ),
+      if (!isCompleted)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(
+            "${probationEndDate.difference(now).inDays} days remaining", 
+            style: const TextStyle(color: Colors.white24, fontSize: 10)
+          ),
+        ),
     ]);
   }
 
@@ -667,12 +701,22 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         const Text("Digital Signature", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
         const SizedBox(height: 10),
         GlassContainer(
-          height: 100, width: double.infinity,
+          height: 180, // Made bigger
+          width: double.infinity,
            opacity: 0.1,
            child: staff.signature != null && staff.signature!.isNotEmpty
-             ? (staff.signature!.startsWith('data:image') 
-                 ? Image.memory(base64Decode(staff.signature!.split(',').last), fit: BoxFit.contain)
-                 : Image.network(staff.signature!, fit: BoxFit.contain))
+             ? Align(
+                 alignment: Alignment.centerLeft, // Put to the left
+                 child: Padding(
+                   padding: const EdgeInsets.all(15.0),
+                   child: AspectRatio(
+                     aspectRatio: 2.0, // Match capture ratio
+                     child: staff.signature!.startsWith('data:image') 
+                       ? Image.memory(base64Decode(staff.signature!.split(',').last), fit: BoxFit.contain)
+                       : Image.network(staff.signature!, fit: BoxFit.contain),
+                   ),
+                 ),
+               )
              : const Center(child: Text("No signature captured", style: TextStyle(color: Colors.white24, fontSize: 12))),
         ),
       ],
