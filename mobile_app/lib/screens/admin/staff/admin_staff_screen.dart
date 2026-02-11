@@ -453,41 +453,83 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
   void _showGuarantorModal(Staff staff) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E2C),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(25),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Guarantor Details", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-            const Divider(color: Colors.white10, height: 30),
-            _buildDetailRow("Full Name", staff.guarantor?.name ?? "N/A"),
-            _buildDetailRow("Phone", staff.guarantor?.phone ?? "N/A"),
-            _buildDetailRow("Address", staff.guarantor?.address ?? "N/A"),
-            _buildDetailRow("Relationship", staff.guarantor?.relationship ?? "N/A"),
-            _buildDetailRow("Occupation", staff.guarantor?.occupation ?? "N/A"),
-            const SizedBox(height: 20),
-            if (staff.guarantor?.idImage != null)
-              Container(
-                height: 150, width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  image: DecorationImage(image: NetworkImage(staff.guarantor!.idImage!), fit: BoxFit.cover),
-                  border: Border.all(color: Colors.white10)
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E2C),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        padding: EdgeInsets.only(
+          left: 25, right: 25, top: 25,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 40,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(2)),
                 ),
               ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text("CLOSE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-              ),
-            )
-          ],
+              const SizedBox(height: 20),
+              const Text("Guarantor Details", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              const Divider(color: Colors.white10, height: 30),
+              _buildDetailRow("Full Name", staff.guarantor?.name ?? "N/A"),
+              _buildDetailRow("Phone", staff.guarantor?.phone ?? "N/A"),
+              _buildDetailRow("Address", staff.guarantor?.address ?? "N/A"),
+              _buildDetailRow("Relationship", staff.guarantor?.relationship ?? "N/A"),
+              _buildDetailRow("Occupation", staff.guarantor?.occupation ?? "N/A"),
+              const SizedBox(height: 20),
+              if (staff.guarantor?.idImage != null) ...[
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("ID Card / Document", style: TextStyle(color: Colors.white38, fontSize: 10)),
+                    const SizedBox(height: 8),
+                    AspectRatio(
+                      aspectRatio: 1.586, // Standard ID card ratio
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          color: Colors.white.withOpacity(0.05),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Image.network(
+                            staff.guarantor!.idImage!, 
+                            fit: BoxFit.contain,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                            },
+                            errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.broken_image, color: Colors.white24)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
+              ],
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("CLOSE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -629,8 +671,8 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
            opacity: 0.1,
            child: staff.signature != null && staff.signature!.isNotEmpty
              ? (staff.signature!.startsWith('data:image') 
-                 ? Image.memory(base64Decode(staff.signature!.split(',').last), color: Colors.white)
-                 : Image.network(staff.signature!, color: Colors.white))
+                 ? Image.memory(base64Decode(staff.signature!.split(',').last), fit: BoxFit.contain)
+                 : Image.network(staff.signature!, fit: BoxFit.contain))
              : const Center(child: Text("No signature captured", style: TextStyle(color: Colors.white24, fontSize: 12))),
         ),
       ],
