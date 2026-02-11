@@ -9,7 +9,8 @@ const {
     removeWarning,
     archiveStaff,
     updateStaff,
-    deleteStaff
+    deleteStaff,
+    recordPayment
 } = require('../controllers/staffController');
 
 // Middleware to check manageStaff permission
@@ -57,5 +58,9 @@ router.put('/:id', updateStaff);
 // @route   DELETE /api/staff/:id
 // @desc    Permanently delete staff
 router.delete('/:id', deleteStaff);
+
+// @route   POST /api/staff/payment
+// @desc    Record salary payment
+router.post('/payment', recordPayment);
 
 module.exports = router;

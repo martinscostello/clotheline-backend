@@ -64,6 +64,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
   bool _isUploadingGuarantor = false;
   bool _isUploadingIdCard = false;
   String? _idCardImage;
+  String _salaryStatus = 'Pending';
 
   final NumberFormat _currencyFormat = NumberFormat("#,##0", "en_US");
 
@@ -93,6 +94,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
     final baseSal = s?.salary?.baseSalary ?? 0;
     _baseSalaryController = TextEditingController(text: _currencyFormat.format(baseSal));
     _paymentCycle = s?.salary?.cycle ?? 'Monthly';
+    _salaryStatus = s?.salary?.status ?? 'Pending';
     _probationMonths = s?.probation?.durationMonths ?? 3;
 
     _passportPhoto = s?.passportPhoto;
@@ -292,7 +294,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
         'grade': _salaryGrade,
         'baseSalary': baseSalary,
         'cycle': _paymentCycle,
-        'status': 'Pending',
+        'status': _salaryStatus,
       },
       'probation': {
         'durationMonths': _probationMonths,

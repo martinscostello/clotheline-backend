@@ -21,6 +21,7 @@ class Staff {
   final bool isSuspended;
   final bool isArchived;
   final String? archiveReason;
+  final List<StaffPayment> paymentHistory;
   final DateTime createdAt;
 
   Staff({
@@ -46,6 +47,7 @@ class Staff {
     this.isSuspended = false,
     this.isArchived = false,
     this.archiveReason,
+    this.paymentHistory = const [],
     required this.createdAt,
   });
 
@@ -75,6 +77,9 @@ class Staff {
       isSuspended: json['isSuspended'] ?? false,
       isArchived: json['isArchived'] ?? false,
       archiveReason: json['archiveReason'],
+      paymentHistory: (json['paymentHistory'] as List? ?? [])
+          .map((p) => StaffPayment.fromJson(p))
+          .toList(),
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );
   }
@@ -96,9 +101,41 @@ class Staff {
       'salary': salary?.toJson(),
       'performance': performance?.toJson(),
       'probation': probation?.toJson(),
+      'paymentHistory': paymentHistory.map((p) => p.toJson()).toList(),
       'status': status,
     };
   }
+}
+
+class StaffPayment {
+  final String id;
+  final double amount;
+  final DateTime date;
+  final String? reference;
+  final String status;
+
+  StaffPayment({
+    required this.id,
+    required this.amount,
+    required this.date,
+    this.reference,
+    this.status = 'Paid',
+  });
+
+  factory StaffPayment.fromJson(Map<String, dynamic> json) => StaffPayment(
+    id: json['_id'] ?? json['id'] ?? '',
+    amount: (json['amount'] ?? 0).toDouble(),
+    date: DateTime.parse(json['date'] ?? DateTime.now().toIso8601String()),
+    reference: json['reference'],
+    status: json['status'] ?? 'Paid',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'amount': amount,
+    'date': date.toIso8601String(),
+    'reference': reference,
+    'status': status,
+  };
 }
 
 class BankDetails {

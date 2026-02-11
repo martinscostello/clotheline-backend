@@ -433,14 +433,14 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: Colors.white38, fontSize: 12)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+          Text(value, style: TextStyle(color: valueColor ?? Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -559,7 +559,15 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
             _buildDetailRow("Grade", staff.salary?.grade ?? "Level 1"),
             _buildDetailRow("Base Salary", NumberFormat.currency(symbol: '₦', decimalDigits: 0).format(staff.salary?.baseSalary ?? 0)),
             _buildDetailRow("Cycle", staff.salary?.cycle ?? "Monthly"),
-            _buildDetailRow("Status", staff.salary?.status ?? "Pending"),
+            GestureDetector(
+              onTap: () => _showPaymentDialog(staff),
+              child: _buildDetailRow("Status", staff.salary?.status ?? "Pending", valueColor: staff.salary?.status == 'Paid' ? Colors.green : Colors.amber),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => _showPaymentHistoryModal(staff),
+              child: const Text("View History", style: TextStyle(color: AppTheme.primaryColor, fontSize: 12, decoration: TextDecoration.underline)),
+            ),
           ]),
         ),
         const SizedBox(width: 15),
@@ -588,6 +596,10 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
+              const Text("Benefits", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 10),
+              _buildFutureReadySection("Coming Soon"),
             ],
           ),
         ),
@@ -971,12 +983,139 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     );
   }
 
-  Widget _buildDialogInput(String label, TextEditingController controller, {int maxLines = 1}) {
+  void _showPaymentDialog(Staff staff) {
+    final amountController = TextEditingController(text: (staff.salary?.baseSalary ?? 0).toStringAsFixed(0));
+    final refController = TextEditingController(text: "PAY-${DateFormat('yyyyMM').format(DateTime.now())}");
+    String method = 'Transfer';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: const Text("Record Salary Payment", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildDialogInput("Amount (₦)", amountController, keyboard: TextInputType.number),
+                const SizedBox(height: 15),
+                const Text("Payment Method", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                DropdownButton<String>(
+                  value: method,
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF1A1A2E),
+                  style: const TextStyle(color: Colors.white),
+                  items: ['Cash', 'Transfer'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  onChanged: (val) => setDialogState(() => method = val!),
+                ),
+                const SizedBox(height: 15),
+                _buildDialogInput("Reference / Month", refController),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL", style: TextStyle(color: Colors.white54))),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              onPressed: () => _recordPayment(staff.id, double.tryParse(amountController.text) ?? 0, method, refController.text),
+              child: const Text("RECORD PAID", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _recordPayment(String staffId, double amount, String method, String reference) async {
+    Navigator.pop(context); // Close dialog
+    setState(() => _isLoading = true);
+    try {
+      await _staffService.recordPayment(staffId, amount, method, reference);
+      await _fetchStaff(); // Refresh data
+      if (mounted) ToastUtils.show(context, "Payment Recorded Successfully", type: ToastType.success);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ToastUtils.show(context, "Failed to record payment: $e", type: ToastType.error);
+      }
+    }
+  }
+
+  void _showPaymentHistoryModal(Staff staff) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Payment History", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            if (staff.paymentHistory.isEmpty)
+              const Expanded(child: Center(child: Text("No payment records found", style: TextStyle(color: Colors.white24))))
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: staff.paymentHistory.length,
+                  itemBuilder: (ctx, index) {
+                    final p = staff.paymentHistory[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(p.reference ?? "Salary Payment", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              Text(DateFormat('MMM dd, yyyy').format(p.date), style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(NumberFormat.currency(symbol: '₦', decimalDigits: 0).format(p.amount), style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                              Text(p.status, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDialogInput(String label, TextEditingController controller, {int maxLines = 1, TextInputType keyboard = TextInputType.text}) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      keyboardType: keyboard,
       style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(labelText: label, labelStyle: const TextStyle(color: Colors.white54)),
+      decoration: InputDecoration(
+        labelText: label, 
+        labelStyle: const TextStyle(color: Colors.white54),
+        enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
+        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.primaryColor)),
+      ),
     );
   }
 }

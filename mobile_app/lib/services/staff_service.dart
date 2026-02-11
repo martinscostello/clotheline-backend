@@ -156,4 +156,19 @@ Management.''';
       throw Exception('Could not launch WhatsApp: $e');
     }
   }
+
+  Future<Staff> recordPayment(String staffId, double amount, String method, String reference) async {
+    try {
+      final response = await _apiService.client.post('/staff/payment', data: {
+        'staffId': staffId,
+        'amount': amount,
+        'paymentDate': DateTime.now().toIso8601String(),
+        'method': method,
+        'reference': reference
+      });
+      return Staff.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

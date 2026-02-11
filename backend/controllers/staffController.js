@@ -174,3 +174,44 @@ exports.removeWarning = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// Record Salary Payment
+exports.recordPayment = async (req, res) => {
+    try {
+        const { staffId, amount, paymentDate, method, reference } = req.body;
+
+        const staff = await Staff.findById(staffId);
+        if (!staff) return res.status(404).json({ msg: 'Staff not found' });
+
+        // Ensure arrays exist
+        if (!staff.paymentHistory) staff.paymentHistory = [];
+        if (!staff.salary) staff.salary = {};
+
+        // Add to history
+        staff.paymentHistory.unshift({
+            amount,
+            date: paymentDate || new Date(),
+            reference: reference || `PAY-${Date.now()}`,
+            status: 'Paid'
+        });
+
+        // Update Salary Status
+        staff.salary.lastPaidDate = paymentDate || new Date();
+        staff.salary.status = 'Paid';
+
+        // Calculate Next Due Date (Simple +1 month logic for now)
+        const lastPaid = new Date(staff.salary.lastPaidDate);
+        if (staff.salary.cycle === 'Weekly') {
+            lastPaid.setDate(lastPaid.getDate() + 7);
+        } else {
+            lastPaid.setMonth(lastPaid.getMonth() + 1);
+        }
+        staff.salary.nextPaymentDueDate = lastPaid;
+
+        await staff.save();
+        res.json(staff);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
