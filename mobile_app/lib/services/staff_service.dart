@@ -111,13 +111,23 @@ You currently have $warningCount warning(s) on record.
 Management.''';
 
     final encodedMessage = Uri.encodeComponent(message);
-    final url = 'https://wa.me/$cleanPhone?text=$encodedMessage';
     
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      throw Exception('Could not launch WhatsApp');
+    // Try native app scheme first
+    final nativeUrl = Uri.parse('whatsapp://send?phone=$cleanPhone&text=$encodedMessage');
+    // Fallback to web
+    final webUrl = Uri.parse('https://wa.me/$cleanPhone?text=$encodedMessage');
+
+    try {
+      if (await canLaunchUrl(nativeUrl)) {
+        await launchUrl(nativeUrl, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(webUrl)) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Both native and web WhatsApp launch failed';
+      }
+    } catch (e) {
+      // In case canLaunchUrl throws or logic fails
+      throw Exception('Could not launch WhatsApp: $e');
     }
   }
 }
