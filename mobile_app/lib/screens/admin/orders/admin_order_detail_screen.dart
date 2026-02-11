@@ -476,15 +476,22 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                        Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text("Payment Status", style: TextStyle(color: Colors.white, fontSize: 16)),
+                          const Text("Payment Status", style: TextStyle(color: Colors.white70, fontSize: 14)),
                            Text(_order!.paymentStatus.name.toUpperCase(), 
                             style: TextStyle(
                               color: _order!.paymentStatus == PaymentStatus.Paid ? Colors.green : Colors.orange, 
-                              fontWeight: FontWeight.bold
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14
                             )
                           ),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      _buildSummaryRow("Subtotal", _order!.subtotal),
+                      if (_order!.pickupFee > 0) _buildSummaryRow("Pickup Fee", _order!.pickupFee),
+                      if (_order!.deliveryFee > 0) _buildSummaryRow("Delivery Fee", _order!.deliveryFee),
+                      if (_order!.discountAmount > 0) _buildSummaryRow("Discount", -_order!.discountAmount, color: Colors.green),
+                      if (_order!.taxAmount > 0) _buildSummaryRow("VAT (${_order!.taxRate.toStringAsFixed(0)}%)", _order!.taxAmount),
                       const Divider(color: Colors.white10, height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -686,6 +693,19 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
           Icon(icon, color: Colors.white54, size: 16),
           const SizedBox(width: 10),
           Expanded(child: Text(text, style: TextStyle(color: Colors.white, fontSize: isSmall ? 13 : 14))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, double amount, {Color color = Colors.white70}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: color, fontSize: 13)),
+          Text("₦${amount.toStringAsFixed(0)}", style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
         ],
       ),
     );
