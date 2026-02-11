@@ -25,6 +25,12 @@ const StaffSchema = new mongoose.Schema({
     },
     warnings: [WarningSchema],
     salaryNotes: { type: String },
+    status: {
+        type: String,
+        enum: ['Active', 'Suspended', 'Resigned', 'Dismissed'],
+        default: 'Active'
+    },
+    isSuspended: { type: Boolean, default: false },
     isArchived: { type: Boolean, default: false },
     archiveReason: { type: String },
     createdAt: { type: Date, default: Date.now }

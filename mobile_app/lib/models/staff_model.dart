@@ -7,6 +7,8 @@ class Staff {
   final String branchId;
   final List<StaffWarning> warnings;
   final String? salaryNotes;
+  final String status;
+  final bool isSuspended;
   final bool isArchived;
   final String? archiveReason;
   final DateTime createdAt;
@@ -20,6 +22,8 @@ class Staff {
     required this.branchId,
     required this.warnings,
     this.salaryNotes,
+    this.status = 'Active',
+    this.isSuspended = false,
     this.isArchived = false,
     this.archiveReason,
     required this.createdAt,
@@ -37,6 +41,8 @@ class Staff {
           .map((w) => StaffWarning.fromJson(w))
           .toList(),
       salaryNotes: json['salaryNotes'],
+      status: json['status'] ?? 'Active',
+      isSuspended: json['isSuspended'] ?? false,
       isArchived: json['isArchived'] ?? false,
       archiveReason: json['archiveReason'],
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),

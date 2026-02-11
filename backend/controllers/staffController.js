@@ -101,3 +101,17 @@ exports.updateStaff = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// Permanent Delete Staff
+exports.deleteStaff = async (req, res) => {
+    try {
+        const staff = await Staff.findById(req.params.id);
+        if (!staff) return res.status(404).json({ msg: 'Staff not found' });
+
+        await Staff.findByIdAndDelete(req.params.id);
+        res.json({ msg: 'Staff permanently removed' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};

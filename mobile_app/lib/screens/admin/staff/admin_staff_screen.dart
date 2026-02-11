@@ -150,7 +150,15 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(staff.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        Text(staff.position, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                        Row(
+                          children: [
+                            Text(staff.position, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                            if (staff.isSuspended) ...[
+                              const SizedBox(width: 8),
+                              const Text("• SUSPENDED", style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ]
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -187,6 +195,8 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildProfileHeader(staff),
+          const SizedBox(height: 15),
+          _buildStatusActions(staff),
           const SizedBox(height: 25),
           const Text("Internal Notes", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
@@ -224,10 +234,19 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
           
           const SizedBox(height: 40),
           Center(
-            child: TextButton.icon(
-              icon: const Icon(Icons.archive_outlined, color: Colors.white38),
-              label: const Text("Archive Staff Member", style: TextStyle(color: Colors.white38)),
-              onPressed: () => _confirmArchiveStaff(staff),
+            child: Column(
+              children: [
+                TextButton.icon(
+                  icon: const Icon(Icons.archive_outlined, color: Colors.white38),
+                  label: const Text("Archive Staff Member", style: TextStyle(color: Colors.white38)),
+                  onPressed: () => _confirmArchiveStaff(staff),
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.delete_forever_outlined, color: Colors.redAccent, size: 16),
+                  label: const Text("Permanently Delete staff", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                  onPressed: () => _confirmPermanentDelete(staff),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 100),
@@ -252,7 +271,19 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(staff.name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    Text(staff.name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                    if (staff.isSuspended) ...[
+                       const SizedBox(width: 10),
+                       Container(
+                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                         decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                         child: const Text("SUSPENDED", style: TextStyle(color: Colors.redAccent, fontSize: 8, fontWeight: FontWeight.bold)),
+                       ),
+                    ]
+                  ],
+                ),
                 Text(staff.position, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 14)),
                 const SizedBox(height: 8),
                 Row(
@@ -275,6 +306,38 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatusActions(Staff staff) {
+    return Row(
+      children: [
+        Expanded(
+          child: GlassContainer(
+            opacity: 0.05,
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Staff Status", style: TextStyle(color: Colors.white38, fontSize: 10)),
+                    Text(staff.isSuspended ? "Suspended" : "Active", style: TextStyle(color: staff.isSuspended ? Colors.redAccent : Colors.green, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                Switch(
+                  value: !staff.isSuspended,
+                  activeColor: Colors.green,
+                  inactiveThumbColor: Colors.redAccent,
+                  inactiveTrackColor: Colors.redAccent.withOpacity(0.2),
+                  onChanged: (val) => _toggleSuspension(staff),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -360,6 +423,54 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       // Mark as sent in backend? Ideally, but currently URL-based.
     } catch (e) {
       ToastUtils.show(context, 'WhatsApp error: $e', type: ToastType.error);
+    }
+  }
+
+  Future<void> _toggleSuspension(Staff staff) async {
+    try {
+      final newStatus = !staff.isSuspended;
+      await _staffService.updateStaff(staff.id, {
+        'isSuspended': newStatus,
+        'status': newStatus ? 'Suspended' : 'Active'
+      });
+      _fetchStaff();
+      if (_selectedStaff?.id == staff.id) {
+        // Optimistic UI update or just wait for fetch
+      }
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "Error updating status: $e", type: ToastType.error);
+    }
+  }
+
+  Future<void> _confirmPermanentDelete(Staff staff) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        title: const Text("Delete permanently?", style: TextStyle(color: Colors.white)),
+        content: Text("This will permanently remove ${staff.name} and all their records. This action cannot be undone.", style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("DELETE PERMANENTLY"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _staffService.deleteStaff(staff.id);
+        _fetchStaff();
+        if (mounted) {
+          setState(() => _selectedStaff = null);
+          ToastUtils.show(context, "Staff permanently deleted", type: ToastType.success);
+        }
+      } catch (e) {
+        if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+      }
     }
   }
 
@@ -512,9 +623,9 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       try {
         await _staffService.archiveStaff(staff.id, reasonController.text);
         _fetchStaff();
-        setState(() => _selectedStaff = null);
+        if (mounted) setState(() => _selectedStaff = null);
       } catch (e) {
-        ToastUtils.show(context, "Error: $e", type: ToastType.error);
+        if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
       }
     }
   }

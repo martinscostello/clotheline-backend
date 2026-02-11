@@ -7,7 +7,8 @@ const {
     getStaffByBranch,
     addWarning,
     archiveStaff,
-    updateStaff
+    updateStaff,
+    deleteStaff
 } = require('../controllers/staffController');
 
 // Middleware to check manageStaff permission
@@ -46,5 +47,9 @@ router.put('/:id/archive', archiveStaff);
 // @route   PUT /api/staff/:id
 // @desc    Update staff details
 router.put('/:id', updateStaff);
+
+// @route   DELETE /api/staff/:id
+// @desc    Permanently delete staff
+router.delete('/:id', deleteStaff);
 
 module.exports = router;

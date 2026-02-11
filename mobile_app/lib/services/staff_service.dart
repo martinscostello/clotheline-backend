@@ -53,6 +53,14 @@ class StaffService {
     }
   }
 
+  Future<void> deleteStaff(String id) async {
+    try {
+      await _apiService.client.delete('/staff/$id');
+    } catch (e) {
+      throw Exception('Failed to delete staff: $e');
+    }
+  }
+
   // --- WhatsApp Integration ---
   
   Future<void> sendWarningToWhatsApp({
