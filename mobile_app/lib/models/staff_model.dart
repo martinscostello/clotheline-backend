@@ -7,6 +7,7 @@ class Staff {
   final String? address;
   final String position;
   final String? passportPhoto;
+  final String? idCardImage;
   final String? signature;
   final DateTime employmentDate;
   final String branchId;
@@ -31,6 +32,7 @@ class Staff {
     this.address,
     required this.position,
     this.passportPhoto,
+    this.idCardImage,
     this.signature,
     required this.employmentDate,
     required this.branchId,
@@ -57,6 +59,7 @@ class Staff {
       address: json['address'],
       position: json['position'] ?? '',
       passportPhoto: json['passportPhoto'],
+      idCardImage: json['idCardImage'],
       signature: json['signature'],
       employmentDate: DateTime.parse(json['employmentDate'] ?? DateTime.now().toIso8601String()),
       branchId: json['branchId'] ?? '',
@@ -84,6 +87,7 @@ class Staff {
       'address': address,
       'position': position,
       'passportPhoto': passportPhoto,
+      'idCardImage': idCardImage,
       'signature': signature,
       'employmentDate': employmentDate.toIso8601String(),
       'branchId': branchId,

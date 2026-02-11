@@ -6,6 +6,7 @@ const {
     createStaff,
     getStaffByBranch,
     addWarning,
+    removeWarning,
     archiveStaff,
     updateStaff,
     deleteStaff
@@ -38,7 +39,12 @@ router.get('/', getStaffByBranch);
 
 // @route   POST /api/staff/warning
 // @desc    Add warning to staff
+// @desc    Add warning to staff
 router.post('/warning', addWarning);
+
+// @route   POST /api/staff/warning/remove
+// @desc    Remove warning from staff
+router.post('/warning/remove', removeWarning);
 
 // @route   PUT /api/staff/:id/archive
 // @desc    Archive staff

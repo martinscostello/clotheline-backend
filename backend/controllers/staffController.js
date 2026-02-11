@@ -6,7 +6,7 @@ exports.createStaff = async (req, res) => {
     try {
         const {
             name, email, phone, address, position, branchId,
-            passportPhoto, signature, bankDetails, guarantor,
+            passportPhoto, idCardImage, signature, bankDetails, guarantor,
             salary, probation, employmentDate
         } = req.body;
 
@@ -18,6 +18,7 @@ exports.createStaff = async (req, res) => {
             position,
             branchId,
             passportPhoto,
+            idCardImage,
             signature,
             bankDetails,
             guarantor,
@@ -74,6 +75,17 @@ exports.addWarning = async (req, res) => {
         };
 
         staff.warnings.push(warning);
+
+        // Dynamic Performance Calculation
+        const deductions = { 'Low': 0.25, 'Medium': 0.5, 'Severe': 0.75 };
+        const penalty = deductions[severity] || 0;
+
+        // Ensure rating doesn't go below 0
+        if (staff.performance && staff.performance.rating !== undefined) {
+            let newRating = staff.performance.rating - penalty;
+            staff.performance.rating = Math.max(0, newRating);
+        }
+
         await staff.save();
 
         res.json(staff);
@@ -125,6 +137,38 @@ exports.deleteStaff = async (req, res) => {
 
         await Staff.findByIdAndDelete(req.params.id);
         res.json({ msg: 'Staff permanently removed' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Remove Warning & Restore Performance
+exports.removeWarning = async (req, res) => {
+    try {
+        const { staffId, warningId } = req.body;
+
+        const staff = await Staff.findById(staffId);
+        if (!staff) return res.status(404).json({ msg: 'Staff not found' });
+
+        const warningIndex = staff.warnings.findIndex(w => w._id.toString() === warningId);
+        if (warningIndex === -1) return res.status(404).json({ msg: 'Warning not found' });
+
+        const warning = staff.warnings[warningIndex];
+
+        // Restore Performance
+        const deductions = { 'Low': 0.25, 'Medium': 0.5, 'Severe': 0.75 };
+        const restoreAmount = deductions[warning.severity] || 0;
+
+        if (staff.performance && staff.performance.rating !== undefined) {
+            let newRating = staff.performance.rating + restoreAmount;
+            staff.performance.rating = Math.min(5, newRating); // Cap at 5
+        }
+
+        staff.warnings.splice(warningIndex, 1);
+        await staff.save();
+
+        res.json(staff);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

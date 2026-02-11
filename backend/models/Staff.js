@@ -25,6 +25,7 @@ const StaffSchema = new mongoose.Schema({
         enum: ['Manager', 'Supervisor', 'Secretary', 'POS Attendant', 'Laundry Worker', 'Dispatch']
     },
     passportPhoto: { type: String }, // URL/Path to image
+    idCardImage: { type: String }, // Staff ID Card image
     signature: { type: String }, // Base64 or URL
     employmentDate: { type: Date, default: Date.now },
     branchId: {
@@ -64,7 +65,7 @@ const StaffSchema = new mongoose.Schema({
     }],
     // Performance
     performance: {
-        rating: { type: Number, default: 0, min: 0, max: 5 },
+        rating: { type: Number, default: 5.0, min: 0, max: 5 },
         notes: String,
         log: [{
             date: { type: Date, default: Date.now },

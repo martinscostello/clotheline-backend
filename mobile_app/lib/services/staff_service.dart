@@ -61,6 +61,18 @@ class StaffService {
     }
   }
 
+  Future<Staff> removeWarning(String staffId, String warningId) async {
+    try {
+      final response = await _apiService.client.post('/staff/warning/remove', data: {
+        'staffId': staffId,
+        'warningId': warningId,
+      });
+      return Staff.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> archiveStaff(String id, String reason) async {
     try {
       await _apiService.client.put('/staff/$id/archive', data: {'archiveReason': reason});

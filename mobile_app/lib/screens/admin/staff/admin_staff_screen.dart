@@ -346,7 +346,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                           children: [
                             Text(staff.name.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
                             Text(staff.position, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12, fontWeight: FontWeight.w500)),
-                            const Spacer(),
+                          const Spacer(),
                             _buildIDCardInfo("BRANCH", branchName),
                             _buildIDCardInfo("STAFF ID", staff.staffId),
                           ],
@@ -355,13 +355,29 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          QrImageView(
-                            data: staff.staffId,
-                            version: QrVersions.auto,
-                            size: 50.0,
-                            eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.white),
-                            dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.white),
-                          ),
+                          if (staff.idCardImage != null)
+                             GestureDetector(
+                               onTap: () => showDialog(
+                                 context: context,
+                                 builder: (_) => InteractiveViewer(child: Dialog(backgroundColor: Colors.transparent, child: Image.network(staff.idCardImage!)))
+                               ),
+                               child: Container(
+                                 width: 50, height: 35,
+                                 decoration: BoxDecoration(
+                                   borderRadius: BorderRadius.circular(5),
+                                   image: DecorationImage(image: NetworkImage(staff.idCardImage!), fit: BoxFit.cover),
+                                   boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]
+                                 ),
+                               ),
+                             )
+                          else
+                             QrImageView(
+                               data: staff.staffId,
+                               version: QrVersions.auto,
+                               size: 50.0,
+                               eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.white),
+                               dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.white),
+                             ),
                           const SizedBox(height: 5),
                           const Text("VERIFIED", style: TextStyle(color: Colors.greenAccent, fontSize: 6, fontWeight: FontWeight.bold)),
                         ],
@@ -633,9 +649,19 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Issued by: ${warning.issuedBy ?? 'Admin'}", style: const TextStyle(color: Colors.white24, fontSize: 10)),
-                IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.green, size: 20),
-                  onPressed: () => _sendWhatsAppWarning(staff, warning),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chat_bubble_outline, color: Colors.green, size: 20),
+                      onPressed: () => _sendWhatsAppWarning(staff, warning),
+                      tooltip: "Send via WhatsApp",
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                      onPressed: () => _removeWarning(staff, warning.id),
+                      tooltip: "Remove Warning",
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -779,6 +805,35 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       if (mounted) _fetchStaff();
     } catch (e) {
       if (mounted) ToastUtils.show(context, "Status error: $e", type: ToastType.error);
+    }
+  }
+
+  Future<void> _removeWarning(Staff staff, String warningId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        title: const Text("Remove Warning?", style: TextStyle(color: Colors.white)),
+        content: const Text("This will remove the warning and restore the performance rating deduction. Continue?", style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL", style: TextStyle(color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("REMOVE", style: TextStyle(color: Colors.redAccent))),
+        ],
+      )
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _staffService.removeWarning(staff.id, warningId);
+      await _fetchStaff(); // Refresh list to get updated rating
+      if (mounted) ToastUtils.show(context, "Warning removed and rating restored", type: ToastType.success);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ToastUtils.show(context, "Failed to remove warning: $e", type: ToastType.error);
+      }
     }
   }
 

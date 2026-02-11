@@ -62,6 +62,8 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
   bool _isSaving = false;
   bool _isUploadingPassport = false;
   bool _isUploadingGuarantor = false;
+  bool _isUploadingIdCard = false;
+  String? _idCardImage;
 
   final NumberFormat _currencyFormat = NumberFormat("#,##0", "en_US");
 
@@ -94,6 +96,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
     _probationMonths = s?.probation?.durationMonths ?? 3;
 
     _passportPhoto = s?.passportPhoto;
+    _idCardImage = s?.idCardImage;
     _signatureBase64 = s?.signature;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -129,20 +132,22 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage(bool isPassport) async {
+  Future<void> _pickImage(int type) async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
     if (image != null) {
       setState(() {
-        if (isPassport) _isUploadingPassport = true;
-        else _isUploadingGuarantor = true;
+        if (type == 0) _isUploadingPassport = true;
+        else if (type == 1) _isUploadingGuarantor = true;
+        else _isUploadingIdCard = true;
       });
       try {
         final url = await _staffService.uploadImage(image.path);
         if (url != null) {
           setState(() {
-            if (isPassport) _passportPhoto = url;
-            else _gIdImage = url;
+            if (type == 0) _passportPhoto = url;
+            else if (type == 1) _gIdImage = url;
+            else _idCardImage = url; // Type 2 = ID Card
           });
           ToastUtils.show(context, "Image Uploaded", type: ToastType.success);
         }
@@ -150,8 +155,9 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
         ToastUtils.show(context, "Upload Failed: $e", type: ToastType.error);
       } finally {
         setState(() {
-          if (isPassport) _isUploadingPassport = false;
-          else _isUploadingGuarantor = false;
+          if (type == 0) _isUploadingPassport = false;
+          else if (type == 1) _isUploadingGuarantor = false;
+          else _isUploadingIdCard = false;
         });
       }
     }
@@ -267,6 +273,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
       'branchId': _selectedBranch!.id,
       'employmentDate': _employmentDate.toIso8601String(),
       'passportPhoto': _passportPhoto,
+      'idCardImage': _idCardImage,
       'signature': _signatureBase64,
       'bankDetails': {
         'bankName': _bankNameController.text,
@@ -349,7 +356,15 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
               children: [
                 _buildSectionHeader("Basic Information"),
                 const SizedBox(height: 15),
-                _buildPassportPicker(),
+                const SizedBox(height: 15),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Column(children: [const Text("Passport", style: TextStyle(color: Colors.white54, fontSize: 12)), const SizedBox(height: 5), _buildPassportPicker()]),
+                    const SizedBox(width: 20),
+                    Column(children: [const Text("Staff ID Card", style: TextStyle(color: Colors.white54, fontSize: 12)), const SizedBox(height: 5), _buildIdCardPicker()]),
+                  ],
+                ),
                 const SizedBox(height: 20),
                 _buildInput("Full Name", _nameController, Icons.person, required: true),
                 _buildInput("Phone Number", _phoneController, Icons.phone, required: true, keyboard: TextInputType.phone),
@@ -583,7 +598,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
   Widget _buildPassportPicker() {
     return Center(
       child: GestureDetector(
-        onTap: () => _pickImage(true),
+        onTap: () => _pickImage(0),
         child: Container(
           width: 100, height: 120,
           decoration: BoxDecoration(
@@ -600,6 +615,26 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
     );
   }
 
+  Widget _buildIdCardPicker() {
+    return Center(
+      child: GestureDetector(
+        onTap: () => _pickImage(2),
+        child: Container(
+          width: 100, height: 120,
+          decoration: BoxDecoration(
+            color: Colors.white10,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: AppTheme.primaryColor.withOpacity(0.5)),
+            image: _idCardImage != null ? DecorationImage(image: NetworkImage(_idCardImage!), fit: BoxFit.cover) : null
+          ),
+          child: _isUploadingIdCard 
+            ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+            : (_idCardImage == null ? const Icon(Icons.badge, color: Colors.white38, size: 30) : null),
+        ),
+      ),
+    );
+  }
+
   Widget _buildGuarantorIDPicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,7 +645,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
           trailing: _isUploadingGuarantor 
             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
             : const Icon(Icons.add_a_photo, color: AppTheme.primaryColor),
-          onTap: () => _pickImage(false),
+          onTap: () => _pickImage(1),
         ),
         if (_gIdImage != null)
            Container(height: 100, width: double.infinity, decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), 
