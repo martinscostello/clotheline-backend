@@ -90,7 +90,7 @@ const StaffSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-generate Staff ID before saving
-StaffSchema.pre('save', async function (next) {
+StaffSchema.pre('save', async function () {
     if (!this.staffId) {
         try {
             const lastStaff = await this.constructor.findOne({}, {}, { sort: { 'createdAt': -1 } });
@@ -108,7 +108,6 @@ StaffSchema.pre('save', async function (next) {
             this.staffId = `CL-${Date.now().toString().slice(-4)}`;
         }
     }
-    next();
 });
 
 module.exports = mongoose.model('Staff', StaffSchema);
