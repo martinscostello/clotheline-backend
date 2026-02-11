@@ -14,17 +14,70 @@ const WarningSchema = new mongoose.Schema({
 });
 
 const StaffSchema = new mongoose.Schema({
+    staffId: { type: String, unique: true }, // Auto-generated ID
     name: { type: String, required: true },
     email: { type: String },
     phone: { type: String, required: true },
-    position: { type: String, required: true },
+    address: { type: String },
+    position: {
+        type: String,
+        required: true,
+        enum: ['Manager', 'Supervisor', 'Secretary', 'POS Attendant', 'Laundry Worker', 'Dispatch']
+    },
+    passportPhoto: { type: String }, // URL/Path to image
+    signature: { type: String }, // Base64 or URL
+    employmentDate: { type: Date, default: Date.now },
     branchId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Branch',
         required: true
     },
+    // Account Details
+    bankDetails: {
+        bankName: String,
+        accountNumber: String,
+        accountName: String
+    },
+    // Guarantor Details
+    guarantor: {
+        name: String,
+        phone: String,
+        address: String,
+        relationship: String,
+        occupation: String,
+        idImage: String
+    },
+    // Salary System
+    salary: {
+        grade: { type: String, default: 'Level 1' },
+        baseSalary: { type: Number, default: 0 },
+        cycle: { type: String, enum: ['Monthly', 'Weekly'], default: 'Monthly' },
+        lastPaidDate: Date,
+        nextPaymentDueDate: Date,
+        status: { type: String, enum: ['Paid', 'Pending', 'Overdue'], default: 'Pending' }
+    },
+    paymentHistory: [{
+        amount: Number,
+        date: { type: Date, default: Date.now },
+        reference: String,
+        status: String
+    }],
+    // Performance
+    performance: {
+        rating: { type: Number, default: 0, min: 0, max: 5 },
+        notes: String,
+        log: [{
+            date: { type: Date, default: Date.now },
+            note: String,
+            rating: Number
+        }]
+    },
+    // Probation
+    probation: {
+        durationMonths: { type: Number, default: 3 },
+        status: { type: String, enum: ['On Probation', 'Completed', 'Extended'], default: 'On Probation' }
+    },
     warnings: [WarningSchema],
-    salaryNotes: { type: String },
     status: {
         type: String,
         enum: ['Active', 'Suspended', 'Resigned', 'Dismissed'],
@@ -35,5 +88,14 @@ const StaffSchema = new mongoose.Schema({
     archiveReason: { type: String },
     createdAt: { type: Date, default: Date.now }
 }, { timestamps: true });
+
+// Auto-generate Staff ID before saving
+StaffSchema.pre('save', async function (next) {
+    if (!this.staffId) {
+        const count = await this.constructor.countDocuments();
+        this.staffId = `CL-${(count + 1).toString().padStart(4, '0')}`;
+    }
+    next();
+});
 
 module.exports = mongoose.model('Staff', StaffSchema);

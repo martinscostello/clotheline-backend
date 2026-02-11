@@ -45,7 +45,6 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
       AdminOrdersScreen(initialTabIndex: widget.initialOrderTabIndex),
       const AdminCMSScreen(),
       const AdminUsersScreen(),
-      const AdminStaffScreen(), // [NEW] Staff Management
       const AdminChatScreen(),
       const AdminSettingsScreen(),
     ];
@@ -55,7 +54,6 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
       {'icon': Icons.list_alt, 'label': "Orders", 'permission': 'manageOrders'},
       {'icon': Icons.edit_note, 'label': "CMS", 'permission': null}, // Always open, check inner modules
       {'icon': Icons.people_outline, 'label': "Users", 'permission': 'manageUsers'},
-      {'icon': Icons.badge_outlined, 'label': "Staff", 'permission': 'manageStaff'}, // [NEW]
       {'icon': Icons.chat_outlined, 'label': "Chat", 'permission': 'manageChat'},
       {'icon': Icons.settings_outlined, 'label': "Settings", 'permission': ['manageSettings', 'manageAdmins']},
     ];

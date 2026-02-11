@@ -11,6 +11,7 @@ import 'admin_manage_admins_screen.dart';
 import 'admin_delivery_settings_screen.dart';
 import 'admin_tax_settings_screen.dart';
 import 'admin_notification_settings_screen.dart';
+import '../staff/admin_staff_screen.dart'; // [NEW]
 import '../../../utils/toast_utils.dart';
 
 class AdminSettingsScreen extends StatelessWidget {
@@ -95,6 +96,15 @@ class AdminSettingsScreen extends StatelessWidget {
                                auth.logPermissionViolation("Admin Management");
                              }
                           }),
+                           _buildSettingTile(Icons.badge_outlined, "Staff Profiles", () {
+                              final permissions = auth.currentUser?['permissions'] ?? {};
+                              if (isMaster || permissions['manageStaff'] == true) {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminStaffScreen()));
+                              } else {
+                                _showDeniedDialog(context, "Staff Management");
+                                auth.logPermissionViolation("Staff Management");
+                              }
+                           }),
                           _buildSettingTile(Icons.local_shipping, "Delivery Zones & Fees", () {
                              final permissions = auth.currentUser?['permissions'] ?? {};
                              if (isMaster || permissions['manageSettings'] == true) {

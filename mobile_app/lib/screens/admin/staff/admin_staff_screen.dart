@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/glass/GlassContainer.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
@@ -9,7 +11,7 @@ import '../../../models/branch_model.dart';
 import '../../../services/staff_service.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../utils/toast_utils.dart';
-import '../../../services/auth_service.dart';
+import 'admin_edit_staff_screen.dart';
 
 class AdminStaffScreen extends StatefulWidget {
   const AdminStaffScreen({super.key});
@@ -38,6 +40,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
   }
 
   Future<void> _fetchStaff() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final staff = await _staffService.fetchStaff(branchId: _currentBranch?.id);
@@ -46,8 +49,18 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
           _staffList = staff;
           _isLoading = false;
           // Auto-select first staff on tablet if none selected
-          if (_selectedStaff == null && staff.isNotEmpty && MediaQuery.of(context).size.width >= 840) {
-            _selectedStaff = staff.first;
+          if (staff.isNotEmpty && MediaQuery.of(context).size.width >= 840) {
+            if (_selectedStaff == null) {
+              _selectedStaff = staff.first;
+            } else {
+              try {
+                _selectedStaff = staff.firstWhere((s) => s.id == _selectedStaff!.id);
+              } catch (_) {
+                _selectedStaff = staff.first;
+              }
+            }
+          } else if (staff.isEmpty) {
+            _selectedStaff = null;
           }
         });
       }
@@ -59,57 +72,92 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     }
   }
 
+  void _onBranchChanged(String? newId) {
+    if (newId == null) return;
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final branch = branchProvider.branches.firstWhere((b) => b.id == newId);
+    branchProvider.selectBranch(branch);
+    setState(() {
+      _currentBranch = branch;
+      _selectedStaff = null;
+    });
+    _fetchStaff();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<BranchProvider>(
-      builder: (context, branchProvider, _) {
-        // Sync branch if changed globally
-        if (_currentBranch?.id != branchProvider.selectedBranch?.id) {
-          _currentBranch = branchProvider.selectedBranch;
-          _fetchStaff();
-        }
-
-        return Scaffold(
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(
-            title: const Text("Staff Profiles", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline, color: AppTheme.primaryColor),
-                onPressed: _showAddStaffDialog,
-                tooltip: "Add Staff Member",
-              ),
-              const SizedBox(width: 10),
-            ],
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text("Staff Profiles", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          Consumer<BranchProvider>(
+            builder: (context, branchProvider, _) {
+              if (branchProvider.branches.isEmpty) return const SizedBox();
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white24)
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    dropdownColor: const Color(0xFF1E1E2C),
+                    value: branchProvider.selectedBranch?.id,
+                    icon: const Icon(Icons.keyboard_arrow_down, color: AppTheme.primaryColor, size: 20),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    onChanged: _onBranchChanged,
+                    items: branchProvider.branches.map((b) {
+                      return DropdownMenuItem(value: b.id, child: Text(b.name));
+                    }).toList(),
+                  ),
+                ),
+              );
+            },
           ),
-          body: LiquidBackground(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isTablet = constraints.maxWidth >= 840;
-                
-                if (isTablet) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 100),
-                    child: Row(
-                      children: [
-                        Expanded(flex: 3, child: _buildStaffList(isTablet)),
-                        const VerticalDivider(color: Colors.white10, width: 1),
-                        Expanded(flex: 5, child: _selectedStaff == null 
-                          ? const Center(child: Text("Select a staff member", style: TextStyle(color: Colors.white24)))
-                          : _buildStaffProfile(_selectedStaff!, isTablet)),
-                      ],
-                    ),
-                  );
-                } else {
-                  return _buildStaffList(false);
-                }
-              },
-            ),
+          const SizedBox(width: 10),
+          IconButton(
+            icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor, size: 28),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AdminEditStaffScreen(branch: _currentBranch))
+              );
+              if (result == true) _fetchStaff();
+            },
+            tooltip: "Add Staff Member",
           ),
-        );
-      }
+          const SizedBox(width: 15),
+        ],
+      ),
+      body: LiquidBackground(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isTablet = constraints.maxWidth >= 840;
+            
+            if (isTablet) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 100),
+                child: Row(
+                  children: [
+                    Expanded(flex: 3, child: _buildStaffList(true)),
+                    const VerticalDivider(color: Colors.white10, width: 1),
+                    Expanded(flex: 7, child: _selectedStaff == null 
+                      ? const Center(child: Text("Select a staff member", style: TextStyle(color: Colors.white24)))
+                      : _buildStaffProfile(_selectedStaff!, true)),
+                  ],
+                ),
+              );
+            } else {
+              return _buildStaffList(false);
+            }
+          },
+        ),
+      ),
     );
   }
 
@@ -136,29 +184,18 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
               }
             },
             child: GlassContainer(
-              opacity: isSelected ? 0.2 : 0.1,
+              opacity: isSelected ? 0.25 : 0.1,
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
-                    child: Text(staff.name[0].toUpperCase(), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
-                  ),
+                  _buildProfileImage(staff, radius: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(staff.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        Row(
-                          children: [
-                            Text(staff.position, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                            if (staff.isSuspended) ...[
-                              const SizedBox(width: 8),
-                              const Text("• SUSPENDED", style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
-                            ]
-                          ],
-                        ),
+                        Text(staff.position, style: const TextStyle(color: Colors.white54, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -175,7 +212,6 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                         style: TextStyle(color: warningCount >= 3 ? Colors.red : Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
-                  const SizedBox(width: 8),
                   const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
                 ],
               ),
@@ -186,174 +222,354 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     );
   }
 
-  Widget _buildStaffProfile(Staff staff, bool isTablet) {
-    final warningCount = staff.warnings.length;
+  Widget _buildProfileImage(Staff staff, {double radius = 40}) {
+    if (staff.passportPhoto != null && staff.passportPhoto!.isNotEmpty) {
+       return CircleAvatar(
+         radius: radius,
+         backgroundImage: NetworkImage(staff.passportPhoto!),
+       );
+    }
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
+      child: Text(staff.name[0].toUpperCase(), style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: radius * 0.8)),
+    );
+  }
 
+  Widget _buildStaffProfile(Staff staff, bool isTablet) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildProfileHeader(staff),
-          const SizedBox(height: 15),
-          _buildStatusActions(staff),
-          const SizedBox(height: 25),
-          const Text("Internal Notes", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          GlassContainer(
-            opacity: 0.05,
-            padding: const EdgeInsets.all(15),
-            child: Text(staff.salaryNotes ?? "No salary or internal notes added.", style: const TextStyle(color: Colors.white70)),
-          ),
+          _buildActionHeader(staff),
+          const SizedBox(height: 20),
+          _buildVisualIDCard(staff),
           const SizedBox(height: 30),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Warning History", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.report_problem_outlined, size: 16),
-                label: const Text("Issue Warning"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent.withOpacity(0.2),
-                  foregroundColor: Colors.redAccent,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Colors.redAccent)),
-                ),
-                onPressed: () => _showIssueWarningDialog(staff),
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          if (warningCount == 0)
-            const Center(child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Text("Exemplary Staff: Zero Warnings.", style: TextStyle(color: Colors.green, fontStyle: FontStyle.italic)),
-            ))
-          else
-            ...staff.warnings.reversed.map((w) => _buildWarningCard(w, staff)),
-          
-          const SizedBox(height: 40),
-          Center(
-            child: Column(
-              children: [
-                TextButton.icon(
-                  icon: const Icon(Icons.archive_outlined, color: Colors.white38),
-                  label: const Text("Archive Staff Member", style: TextStyle(color: Colors.white38)),
-                  onPressed: () => _confirmArchiveStaff(staff),
-                ),
-                TextButton.icon(
-                  icon: const Icon(Icons.delete_forever_outlined, color: Colors.redAccent, size: 16),
-                  label: const Text("Permanently Delete staff", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
-                  onPressed: () => _confirmPermanentDelete(staff),
-                ),
-              ],
-            ),
-          ),
+          _buildInfoSection("Account Details", [
+            _buildDetailRow("Residential Address", staff.address ?? "Not Set"),
+            _buildDetailRow("Bank Name", staff.bankDetails?.bankName ?? "Not Set"),
+            _buildDetailRow("Account Number", staff.bankDetails?.accountNumber ?? "Not Set"),
+            _buildDetailRow("Account Name", staff.bankDetails?.accountName ?? "Not Set"),
+          ]),
+          const SizedBox(height: 20),
+          _buildGuarantorSection(staff),
+          const SizedBox(height: 20),
+          _buildSalaryPerformanceSection(staff),
+          const SizedBox(height: 20),
+          _buildWarningSection(staff),
+          const SizedBox(height: 20),
+          _buildProbationSection(staff),
+          const SizedBox(height: 20),
+          _buildSignatureSection(staff),
+          const SizedBox(height: 20),
+          _buildFutureReadySection("Attendance (Coming Soon)"),
+          const SizedBox(height: 60),
+          _buildSystemActions(staff),
           const SizedBox(height: 100),
         ],
       ),
     );
   }
 
-  Widget _buildProfileHeader(Staff staff) {
-    return GlassContainer(
-      opacity: 0.1,
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 35,
-            backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-            child: Text(staff.name[0].toUpperCase(), style: const TextStyle(color: AppTheme.primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildActionHeader(Staff staff) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+             Text(staff.isSuspended ? "SUSPENDED" : "ACTIVE", 
+              style: TextStyle(color: staff.isSuspended ? Colors.redAccent : Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+             const Text("Staff Status", style: TextStyle(color: Colors.white38, fontSize: 10)),
+          ],
+        ),
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: AppTheme.secondaryColor),
+              onPressed: () async {
+                final res = await Navigator.push(context, MaterialPageRoute(builder: (_) => AdminEditStaffScreen(staff: staff)));
+                if (res == true) _fetchStaff();
+              },
+            ),
+            Switch(
+              value: !staff.isSuspended,
+              activeColor: Colors.green,
+              onChanged: (val) => _toggleSuspension(staff),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVisualIDCard(Staff staff) {
+    return Consumer<BranchProvider>(
+      builder: (context, bp, _) {
+        final branchName = bp.branches.any((b) => b.id == staff.branchId)
+            ? bp.branches.firstWhere((b) => b.id == staff.branchId).name
+            : "N/A";
+
+        return Center(
+          child: Container(
+            width: 300,
+            height: 180,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1A237E), Color(0xFF0D47A1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(color: Colors.black45, blurRadius: 10, offset: const Offset(0, 5))
+              ],
+              border: Border.all(color: Colors.white10)
+            ),
+            child: Stack(
               children: [
-                Row(
-                  children: [
-                    Text(staff.name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                    if (staff.isSuspended) ...[
-                       const SizedBox(width: 10),
-                       Container(
-                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                         decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                         child: const Text("SUSPENDED", style: TextStyle(color: Colors.redAccent, fontSize: 8, fontWeight: FontWeight.bold)),
-                       ),
-                    ]
-                  ],
+                Positioned(
+                  right: -20, top: -20,
+                  child: Opacity(opacity: 0.1, child: const Icon(Icons.badge, size: 150, color: Colors.white))
                 ),
-                Text(staff.position, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 14)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.phone, color: Colors.white38, size: 14),
-                    const SizedBox(width: 5),
-                    Text(staff.phone, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
-                ),
-                if (staff.email != null && staff.email!.isNotEmpty)
-                  Row(
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
                     children: [
-                      const Icon(Icons.email, color: Colors.white38, size: 14),
-                      const SizedBox(width: 5),
-                      Text(staff.email!, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                      _buildIDCardPhoto(staff),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(staff.name.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+                            Text(staff.position, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12, fontWeight: FontWeight.w500)),
+                            const Spacer(),
+                            _buildIDCardInfo("BRANCH", branchName),
+                            _buildIDCardInfo("STAFF ID", staff.staffId),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          QrImageView(
+                            data: staff.staffId,
+                            version: QrVersions.auto,
+                            size: 50.0,
+                            eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.white),
+                            dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.white),
+                          ),
+                          const SizedBox(height: 5),
+                          const Text("VERIFIED", style: TextStyle(color: Colors.greenAccent, fontSize: 6, fontWeight: FontWeight.bold)),
+                        ],
+                      )
                     ],
                   ),
+                ),
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildIDCardPhoto(Staff staff) {
+    final image = staff.passportPhoto;
+    return Container(
+      width: 70, height: 90,
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white24),
+        image: image != null ? DecorationImage(image: NetworkImage(image), fit: BoxFit.cover) : null
+      ),
+      child: image == null ? const Icon(Icons.person, color: Colors.white24, size: 40) : null,
+    );
+  }
+
+  Widget _buildIDCardInfo(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 8)),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+
+  Widget _buildInfoSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 10),
+        GlassContainer(
+          opacity: 0.05,
+          padding: const EdgeInsets.all(15),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  Widget _buildStatusActions(Staff staff) {
-    return Row(
+  Widget _buildGuarantorSection(Staff staff) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: GlassContainer(
-            opacity: 0.05,
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Staff Status", style: TextStyle(color: Colors.white38, fontSize: 10)),
-                    Text(staff.isSuspended ? "Suspended" : "Active", style: TextStyle(color: staff.isSuspended ? Colors.redAccent : Colors.green, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                Switch(
-                  value: !staff.isSuspended,
-                  activeColor: Colors.green,
-                  inactiveThumbColor: Colors.redAccent,
-                  inactiveTrackColor: Colors.redAccent.withOpacity(0.2),
-                  onChanged: (val) => _toggleSuspension(staff),
-                ),
-              ],
-            ),
+        const Text("Guarantor Details", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 10),
+        GlassContainer(
+          opacity: 0.1,
+          child: ListTile(
+            leading: const Icon(Icons.security, color: Colors.blueAccent),
+            title: Text(staff.guarantor?.name ?? "No Guarantor Set", style: const TextStyle(color: Colors.white, fontSize: 14)),
+            subtitle: Text(staff.guarantor?.relationship ?? "Tap to view details", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            trailing: const Icon(Icons.open_in_new, color: Colors.white24, size: 16),
+            onTap: () => _showGuarantorModal(staff),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildWarningCard(StaffWarning warning, Staff staff) {
-    Color severityColor;
-    switch (warning.severity) {
-      case 'Severe': severityColor = Colors.red; break;
-      case 'Medium': severityColor = Colors.orange; break;
-      default: severityColor = Colors.yellow;
-    }
+  void _showGuarantorModal(Staff staff) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E2C),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Guarantor Details", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            const Divider(color: Colors.white10, height: 30),
+            _buildDetailRow("Full Name", staff.guarantor?.name ?? "N/A"),
+            _buildDetailRow("Phone", staff.guarantor?.phone ?? "N/A"),
+            _buildDetailRow("Address", staff.guarantor?.address ?? "N/A"),
+            _buildDetailRow("Relationship", staff.guarantor?.relationship ?? "N/A"),
+            _buildDetailRow("Occupation", staff.guarantor?.occupation ?? "N/A"),
+            const SizedBox(height: 20),
+            if (staff.guarantor?.idImage != null)
+              Container(
+                height: 150, width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  image: DecorationImage(image: NetworkImage(staff.guarantor!.idImage!), fit: BoxFit.cover),
+                  border: Border.all(color: Colors.white10)
+                ),
+              ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("CLOSE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildSalaryPerformanceSection(Staff staff) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildInfoSection("Salary System", [
+            _buildDetailRow("Grade", staff.salary?.grade ?? "Level 1"),
+            _buildDetailRow("Base Salary", NumberFormat.currency(symbol: '₦', decimalDigits: 0).format(staff.salary?.baseSalary ?? 0)),
+            _buildDetailRow("Cycle", staff.salary?.cycle ?? "Monthly"),
+            _buildDetailRow("Status", staff.salary?.status ?? "Pending"),
+          ]),
+        ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Performance", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 10),
+              GlassContainer(
+                opacity: 0.1,
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) => Icon(
+                        index < (staff.performance?.rating ?? 0) ? Icons.star : Icons.star_border,
+                        color: Colors.amber, size: 20,
+                      )),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text("Rating History", style: TextStyle(color: Colors.white38, fontSize: 10)),
+                    const SizedBox(height: 5),
+                    const Text("View Logs", style: TextStyle(color: AppTheme.primaryColor, fontSize: 12, decoration: TextDecoration.underline)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWarningSection(Staff staff) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text("Warning System", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14)),
+            TextButton.icon(
+              icon: const Icon(Icons.add, size: 16, color: Colors.redAccent),
+              label: const Text("Issue Warning", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+              onPressed: () => _showIssueWarningDialog(staff),
+            ),
+          ],
+        ),
+        if (staff.warnings.isEmpty)
+           const Padding(
+             padding: EdgeInsets.symmetric(vertical: 20),
+             child: Center(child: Text("Consistent Performance. No Warnings.", style: TextStyle(color: Colors.green, fontSize: 12, fontStyle: FontStyle.italic))),
+           )
+        else
+          ...staff.warnings.reversed.map((w) => _buildWarningCard(w, staff)),
+      ],
+    );
+  }
+
+  Widget _buildWarningCard(StaffWarning warning, Staff staff) {
+    Color severityColor = warning.severity == 'Severe' ? Colors.red : (warning.severity == 'Medium' ? Colors.orange : Colors.yellow);
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
+      margin: const EdgeInsets.only(bottom: 10),
       child: GlassContainer(
         opacity: 0.08,
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -361,29 +577,23 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(color: severityColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: severityColor.withOpacity(0.5))),
-                  child: Text(warning.severity.toUpperCase(), style: TextStyle(color: severityColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                  child: Text(warning.severity.toUpperCase(), style: TextStyle(color: severityColor, fontSize: 8, fontWeight: FontWeight.bold)),
                 ),
-                Text(DateFormat('MMM dd, yyyy').format(warning.timestamp), style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                Text(DateFormat('MMM dd, yyyy').format(warning.timestamp), style: const TextStyle(color: Colors.white38, fontSize: 10)),
               ],
             ),
-            const SizedBox(height: 10),
-            Text(warning.reason, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            if (warning.notes != null && warning.notes!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(warning.notes!, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-              ),
+            const SizedBox(height: 5),
+            Text(warning.reason, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
             const Divider(color: Colors.white10, height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Issued by: ${warning.issuedBy ?? 'Admin'}", style: const TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic)),
-                TextButton.icon(
+                Text("Issued by: ${warning.issuedBy ?? 'Admin'}", style: const TextStyle(color: Colors.white24, fontSize: 10)),
+                IconButton(
+                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.green, size: 20),
                   onPressed: () => _sendWhatsAppWarning(staff, warning),
-                  icon: const Icon(Icons.whatsapp, color: Colors.green, size: 18),
-                  label: const Text("Send via WhatsApp", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
                 ),
               ],
             ),
@@ -393,17 +603,59 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     );
   }
 
-  // --- Actions ---
+  Widget _buildProbationSection(Staff staff) {
+    final months = staff.probation?.durationMonths ?? 3;
+    final status = staff.probation?.status ?? 'On Probation';
+    return _buildInfoSection("Probation System", [
+      _buildDetailRow("Duration", "$months Months"),
+      _buildDetailRow("Status", status),
+      const SizedBox(height: 10),
+      LinearProgressIndicator(
+        value: status == 'Completed' ? 1.0 : 0.4,
+        backgroundColor: Colors.white10,
+        valueColor: AlwaysStoppedAnimation<Color>(status == 'Completed' ? Colors.green : Colors.amber),
+      ),
+    ]);
+  }
 
-  void _showMobileStaffDetails(Staff staff) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF101020),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
-      builder: (ctx) => SizedBox(
-        height: MediaQuery.of(context).size.height * 0.85,
-        child: _buildStaffProfile(staff, false),
+  Widget _buildSignatureSection(Staff staff) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Digital Signature", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 10),
+        GlassContainer(
+          height: 100, width: double.infinity,
+           opacity: 0.1,
+           child: staff.signature != null && staff.signature!.isNotEmpty
+             ? (staff.signature!.startsWith('data:image') 
+                 ? Image.memory(base64Decode(staff.signature!.split(',').last), color: Colors.white)
+                 : Image.network(staff.signature!, color: Colors.white))
+             : const Center(child: Text("No signature captured", style: TextStyle(color: Colors.white24, fontSize: 12))),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFutureReadySection(String title) {
+    return GlassContainer(
+      opacity: 0.05,
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(child: Text(title, style: const TextStyle(color: Colors.white24, fontStyle: FontStyle.italic))),
+    );
+  }
+
+  Widget _buildSystemActions(Staff staff) {
+    return Center(
+      child: Column(
+        children: [
+          TextButton.icon(icon: const Icon(Icons.archive, size: 16), label: const Text("Archive Staff"), 
+            style: TextButton.styleFrom(foregroundColor: Colors.white24),
+            onPressed: () => _confirmArchiveStaff(staff)),
+          TextButton.icon(icon: const Icon(Icons.delete_forever, size: 16), label: const Text("Permanently Delete"), 
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent.withOpacity(0.5)),
+            onPressed: () => _confirmPermanentDelete(staff)),
+        ],
       ),
     );
   }
@@ -420,7 +672,6 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         notes: warning.notes,
         warningCount: staff.warnings.length,
       );
-      // Mark as sent in backend? Ideally, but currently URL-based.
     } catch (e) {
       ToastUtils.show(context, 'WhatsApp error: $e', type: ToastType.error);
     }
@@ -433,13 +684,102 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         'isSuspended': newStatus,
         'status': newStatus ? 'Suspended' : 'Active'
       });
-      _fetchStaff();
-      if (_selectedStaff?.id == staff.id) {
-        // Optimistic UI update or just wait for fetch
-      }
+      if (mounted) _fetchStaff();
     } catch (e) {
-      if (mounted) ToastUtils.show(context, "Error updating status: $e", type: ToastType.error);
+      if (mounted) ToastUtils.show(context, "Status error: $e", type: ToastType.error);
     }
+  }
+
+  void _showIssueWarningDialog(Staff staff) {
+    final reasonController = TextEditingController();
+    final noteController = TextEditingController();
+    String severity = 'Low';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: Text("Issue Warning to ${staff.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDialogInput("Reason (e.g. Lateness)", reasonController),
+              DropdownButton<String>(
+                value: severity,
+                isExpanded: true,
+                dropdownColor: const Color(0xFF1A1A2E),
+                style: const TextStyle(color: Colors.white),
+                items: ['Low', 'Medium', 'Severe'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                onChanged: (val) => setDialogState(() => severity = val!),
+              ),
+              _buildDialogInput("Additional Notes", noteController, maxLines: 2),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              onPressed: () async {
+                if (reasonController.text.isEmpty) return;
+                Navigator.pop(ctx);
+                try {
+                  await _staffService.addWarning({
+                    'staffId': staff.id,
+                    'reason': reasonController.text,
+                    'severity': severity,
+                    'notes': noteController.text,
+                  });
+                  if (mounted) _fetchStaff();
+                } catch (e) {
+                  if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+                }
+              },
+              child: const Text("ISSUE"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmArchiveStaff(Staff staff) async {
+     final reasonController = TextEditingController();
+     final bool? confirm = await showDialog<bool>(
+       context: context,
+       builder: (ctx) => AlertDialog(
+         backgroundColor: const Color(0xFF1A1A2E),
+         title: const Text("Archive Staff Member?", style: TextStyle(color: Colors.white)),
+         content: Column(
+           mainAxisSize: MainAxisSize.min,
+           children: [
+             const Text("Are you sure? This will remove them from the active list.", style: TextStyle(color: Colors.white70)),
+             const SizedBox(height: 15),
+              _buildDialogInput("Reason for archiving", reasonController),
+           ],
+         ),
+         actions: [
+           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+           ElevatedButton(
+             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+             onPressed: () => Navigator.pop(ctx, true),
+             child: const Text("Archive"),
+           ),
+         ],
+       ),
+     );
+
+     if (confirm == true && mounted) {
+       try {
+         await _staffService.archiveStaff(staff.id, reasonController.text);
+         if (mounted) {
+           _fetchStaff();
+           setState(() => _selectedStaff = null);
+         }
+       } catch (e) {
+         if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+       }
+     }
   }
 
   Future<void> _confirmPermanentDelete(Staff staff) async {
@@ -460,11 +800,11 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       ),
     );
 
-    if (confirm == true) {
+    if (confirm == true && mounted) {
       try {
         await _staffService.deleteStaff(staff.id);
-        _fetchStaff();
         if (mounted) {
+          _fetchStaff();
           setState(() => _selectedStaff = null);
           ToastUtils.show(context, "Staff permanently deleted", type: ToastType.success);
         }
@@ -474,160 +814,14 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     }
   }
 
-  void _showAddStaffDialog() {
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-    final posController = TextEditingController();
-    final emailController = TextEditingController();
-    final noteController = TextEditingController();
-
-    showDialog(
+  void _showMobileStaffDetails(Staff staff) {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text("New Staff Member", style: TextStyle(color: Colors.white)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDialogInput("Full Name", nameController),
-              _buildDialogInput("Position / Role", posController),
-              _buildDialogInput("Phone Number", phoneController),
-              _buildDialogInput("Email (Optional)", emailController),
-              _buildDialogInput("Internal Notes", noteController, maxLines: 3),
-              const SizedBox(height: 10),
-              Text("Attached to: ${_currentBranch?.name ?? 'No Branch Selected'}", style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12)),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-            onPressed: () async {
-              if (nameController.text.isEmpty || phoneController.text.isEmpty || _currentBranch == null) {
-                ToastUtils.show(context, "Please fill required fields and select a branch", type: ToastType.info);
-                return;
-              }
-              Navigator.pop(ctx);
-              try {
-                await _staffService.createStaff({
-                  'name': nameController.text,
-                  'phone': phoneController.text,
-                  'position': posController.text,
-                  'email': emailController.text,
-                  'branchId': _currentBranch!.id,
-                  'salaryNotes': noteController.text,
-                });
-                _fetchStaff();
-              } catch (e) {
-                ToastUtils.show(context, "Error: $e", type: ToastType.error);
-              }
-            },
-            child: const Text("Create", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101020),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (ctx) => SizedBox(height: MediaQuery.of(context).size.height * 0.9, child: _buildStaffProfile(staff, false)),
     );
-  }
-
-  void _showIssueWarningDialog(Staff staff) {
-    final reasonController = TextEditingController();
-    final noteController = TextEditingController();
-    String severity = 'Low';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
-          title: Text("Issue Warning to ${staff.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildDialogInput("Reason (e.g. Lateness)", reasonController),
-                const SizedBox(height: 15),
-                const Align(alignment: Alignment.centerLeft, child: Text("Severity", style: TextStyle(color: Colors.white54, fontSize: 12))),
-                DropdownButton<String>(
-                  value: severity,
-                  isExpanded: true,
-                  dropdownColor: const Color(0xFF1A1A2E),
-                  style: const TextStyle(color: Colors.white),
-                  items: ['Low', 'Medium', 'Severe'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                  onChanged: (val) => setDialogState(() => severity = val!),
-                ),
-                const SizedBox(height: 10),
-                _buildDialogInput("Additional Notes", noteController, maxLines: 3),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              onPressed: () async {
-                if (reasonController.text.isEmpty) return;
-                Navigator.pop(ctx);
-                try {
-                  await _staffService.addWarning({
-                    'staffId': staff.id,
-                    'reason': reasonController.text,
-                    'severity': severity,
-                    'notes': noteController.text,
-                  });
-                  _fetchStaff();
-                  // Re-select to update UI
-                  if (_selectedStaff?.id == staff.id) {
-                     _selectedStaff = _staffList.firstWhere((s) => s.id == staff.id, orElse: () => staff);
-                  }
-                } catch (e) {
-                  ToastUtils.show(context, "Error: $e", type: ToastType.error);
-                }
-              },
-              child: const Text("ISSUE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _confirmArchiveStaff(Staff staff) async {
-    final reasonController = TextEditingController();
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text("Archive Staff Member?", style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Are you sure? This will remove them from the active list.", style: TextStyle(color: Colors.white70)),
-            const SizedBox(height: 15),
-             _buildDialogInput("Reason for archiving", reasonController),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("Archive"),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await _staffService.archiveStaff(staff.id, reasonController.text);
-        _fetchStaff();
-        if (mounted) setState(() => _selectedStaff = null);
-      } catch (e) {
-        if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
-      }
-    }
   }
 
   Widget _buildDialogInput(String label, TextEditingController controller, {int maxLines = 1}) {
@@ -635,12 +829,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       controller: controller,
       maxLines: maxLines,
       style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54),
-        enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
-        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.primaryColor)),
-      ),
+      decoration: InputDecoration(labelText: label, labelStyle: const TextStyle(color: Colors.white54)),
     );
   }
 }

@@ -1,9 +1,25 @@
+import 'package:dio/dio.dart';
 import 'api_service.dart';
 import '../models/staff_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class StaffService {
   final ApiService _apiService = ApiService();
+
+  Future<String?> uploadImage(String filePath) async {
+    try {
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _apiService.client.post('/upload', data: formData);
+      if (response.statusCode == 200) {
+        return response.data['filePath'];
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to upload image: $e');
+    }
+  }
 
   Future<List<Staff>> fetchStaff({String? branchId}) async {
     try {

@@ -4,15 +4,26 @@ const User = require('../models/User');
 // Create Staff
 exports.createStaff = async (req, res) => {
     try {
-        const { name, email, phone, position, branchId, salaryNotes } = req.body;
+        const {
+            name, email, phone, address, position, branchId,
+            passportPhoto, signature, bankDetails, guarantor,
+            salary, probation, employmentDate
+        } = req.body;
 
         const staff = new Staff({
             name,
             email,
             phone,
+            address,
             position,
             branchId,
-            salaryNotes
+            passportPhoto,
+            signature,
+            bankDetails,
+            guarantor,
+            salary,
+            probation,
+            employmentDate
         });
 
         await staff.save();

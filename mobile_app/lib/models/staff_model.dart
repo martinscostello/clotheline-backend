@@ -1,12 +1,21 @@
 class Staff {
   final String id;
+  final String staffId;
   final String name;
   final String? email;
   final String phone;
+  final String? address;
   final String position;
+  final String? passportPhoto;
+  final String? signature;
+  final DateTime employmentDate;
   final String branchId;
   final List<StaffWarning> warnings;
-  final String? salaryNotes;
+  final BankDetails? bankDetails;
+  final GuarantorDetails? guarantor;
+  final SalaryDetails? salary;
+  final PerformanceDetails? performance;
+  final ProbationDetails? probation;
   final String status;
   final bool isSuspended;
   final bool isArchived;
@@ -15,13 +24,22 @@ class Staff {
 
   Staff({
     required this.id,
+    required this.staffId,
     required this.name,
     this.email,
     required this.phone,
+    this.address,
     required this.position,
+    this.passportPhoto,
+    this.signature,
+    required this.employmentDate,
     required this.branchId,
     required this.warnings,
-    this.salaryNotes,
+    this.bankDetails,
+    this.guarantor,
+    this.salary,
+    this.performance,
+    this.probation,
     this.status = 'Active',
     this.isSuspended = false,
     this.isArchived = false,
@@ -31,16 +49,25 @@ class Staff {
 
   factory Staff.fromJson(Map<String, dynamic> json) {
     return Staff(
-      id: json['_id'] ?? json['id'],
-      name: json['name'],
+      id: json['_id'] ?? json['id'] ?? '',
+      staffId: json['staffId'] ?? '',
+      name: json['name'] ?? '',
       email: json['email'],
-      phone: json['phone'],
-      position: json['position'],
-      branchId: json['branchId'],
+      phone: json['phone'] ?? '',
+      address: json['address'],
+      position: json['position'] ?? '',
+      passportPhoto: json['passportPhoto'],
+      signature: json['signature'],
+      employmentDate: DateTime.parse(json['employmentDate'] ?? DateTime.now().toIso8601String()),
+      branchId: json['branchId'] ?? '',
       warnings: (json['warnings'] as List? ?? [])
           .map((w) => StaffWarning.fromJson(w))
           .toList(),
-      salaryNotes: json['salaryNotes'],
+      bankDetails: json['bankDetails'] != null ? BankDetails.fromJson(json['bankDetails']) : null,
+      guarantor: json['guarantor'] != null ? GuarantorDetails.fromJson(json['guarantor']) : null,
+      salary: json['salary'] != null ? SalaryDetails.fromJson(json['salary']) : null,
+      performance: json['performance'] != null ? PerformanceDetails.fromJson(json['performance']) : null,
+      probation: json['probation'] != null ? ProbationDetails.fromJson(json['probation']) : null,
       status: json['status'] ?? 'Active',
       isSuspended: json['isSuspended'] ?? false,
       isArchived: json['isArchived'] ?? false,
@@ -48,6 +75,145 @@ class Staff {
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'address': address,
+      'position': position,
+      'passportPhoto': passportPhoto,
+      'signature': signature,
+      'employmentDate': employmentDate.toIso8601String(),
+      'branchId': branchId,
+      'bankDetails': bankDetails?.toJson(),
+      'guarantor': guarantor?.toJson(),
+      'salary': salary?.toJson(),
+      'performance': performance?.toJson(),
+      'probation': probation?.toJson(),
+      'status': status,
+    };
+  }
+}
+
+class BankDetails {
+  final String? bankName;
+  final String? accountNumber;
+  final String? accountName;
+
+  BankDetails({this.bankName, this.accountNumber, this.accountName});
+
+  factory BankDetails.fromJson(Map<String, dynamic> json) => BankDetails(
+    bankName: json['bankName'],
+    accountNumber: json['accountNumber'],
+    accountName: json['accountName'],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'bankName': bankName,
+    'accountNumber': accountNumber,
+    'accountName': accountName,
+  };
+}
+
+class GuarantorDetails {
+  final String? name;
+  final String? phone;
+  final String? address;
+  final String? relationship;
+  final String? occupation;
+  final String? idImage;
+
+  GuarantorDetails({this.name, this.phone, this.address, this.relationship, this.occupation, this.idImage});
+
+  factory GuarantorDetails.fromJson(Map<String, dynamic> json) => GuarantorDetails(
+    name: json['name'],
+    phone: json['phone'],
+    address: json['address'],
+    relationship: json['relationship'],
+    occupation: json['occupation'],
+    idImage: json['idImage'],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'phone': phone,
+    'address': address,
+    'relationship': relationship,
+    'occupation': occupation,
+    'idImage': idImage,
+  };
+}
+
+class SalaryDetails {
+  final String grade;
+  final double baseSalary;
+  final String cycle;
+  final DateTime? lastPaidDate;
+  final DateTime? nextPaymentDueDate;
+  final String status;
+
+  SalaryDetails({
+    this.grade = 'Level 1',
+    this.baseSalary = 0,
+    this.cycle = 'Monthly',
+    this.lastPaidDate,
+    this.nextPaymentDueDate,
+    this.status = 'Pending',
+  });
+
+  factory SalaryDetails.fromJson(Map<String, dynamic> json) => SalaryDetails(
+    grade: json['grade'] ?? 'Level 1',
+    baseSalary: (json['baseSalary'] ?? 0).toDouble(),
+    cycle: json['cycle'] ?? 'Monthly',
+    lastPaidDate: json['lastPaidDate'] != null ? DateTime.parse(json['lastPaidDate']) : null,
+    nextPaymentDueDate: json['nextPaymentDueDate'] != null ? DateTime.parse(json['nextPaymentDueDate']) : null,
+    status: json['status'] ?? 'Pending',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'grade': grade,
+    'baseSalary': baseSalary,
+    'cycle': cycle,
+    'lastPaidDate': lastPaidDate?.toIso8601String(),
+    'nextPaymentDueDate': nextPaymentDueDate?.toIso8601String(),
+    'status': status,
+  };
+}
+
+class PerformanceDetails {
+  final double rating;
+  final String? notes;
+
+  PerformanceDetails({this.rating = 0, this.notes});
+
+  factory PerformanceDetails.fromJson(Map<String, dynamic> json) => PerformanceDetails(
+    rating: (json['rating'] ?? 0).toDouble(),
+    notes: json['notes'],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'rating': rating,
+    'notes': notes,
+  };
+}
+
+class ProbationDetails {
+  final int durationMonths;
+  final String status;
+
+  ProbationDetails({this.durationMonths = 3, this.status = 'On Probation'});
+
+  factory ProbationDetails.fromJson(Map<String, dynamic> json) => ProbationDetails(
+    durationMonths: json['durationMonths'] ?? 3,
+    status: json['status'] ?? 'On Probation',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'durationMonths': durationMonths,
+    'status': status,
+  };
 }
 
 class StaffWarning {
