@@ -13,7 +13,26 @@ class BranchProvider extends ChangeNotifier {
   bool _isLoading = true;
 
   Branch? get selectedBranch => _selectedBranch;
-  List<Branch> get branches => _branches;
+  List<Branch> get branches {
+    // If we have a user and they are restricted, filter the branches
+    if (_authService != null && _authService!.currentUser != null) {
+      final user = _authService!.currentUser!;
+      final bool isMaster = user['isMasterAdmin'] == true;
+      final bool isAdmin = user['role'] == 'admin';
+      final List<dynamic>? assigned = user['assignedBranches'];
+
+      if (isAdmin && !isMaster && assigned != null && assigned.isNotEmpty) {
+        return _branches.where((b) => assigned.contains(b.id)).toList();
+      }
+    }
+    return _branches;
+  }
+
+  AuthService? _authService;
+  void updateAuth(AuthService auth) {
+    _authService = auth;
+    notifyListeners();
+  }
   bool get isLoading => _isLoading;
 
   BranchProvider() {

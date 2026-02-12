@@ -23,7 +23,8 @@ exports.createAdmin = async (req, res) => {
             avatarId: avatarId || null,
             isVerified: true, // [FIX] Admins created by Master Admin are auto-verified
             isMasterAdmin: isMasterAdmin || false,
-            permissions: permissions || {}
+            permissions: permissions || {},
+            assignedBranches: req.body.assignedBranches || []
         });
 
         await user.save();
@@ -49,7 +50,7 @@ exports.getAllAdmins = async (req, res) => {
 // Update Admin (Permissions & Revocation)
 exports.updateAdmin = async (req, res) => {
     try {
-        const { name, email, phone, permissions, isRevoked, avatarId } = req.body;
+        const { name, email, phone, permissions, isRevoked, avatarId, assignedBranches } = req.body;
 
         // Find user by ID
         let user = await User.findById(req.params.id);
@@ -65,6 +66,7 @@ exports.updateAdmin = async (req, res) => {
         if (phone) user.phone = phone;
         if (avatarId !== undefined) user.avatarId = avatarId;
         if (isRevoked !== undefined) user.isRevoked = isRevoked;
+        if (assignedBranches !== undefined) user.assignedBranches = assignedBranches;
 
         if (permissions) {
             user.permissions = permissions;

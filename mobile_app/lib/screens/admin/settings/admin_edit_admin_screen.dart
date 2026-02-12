@@ -6,6 +6,8 @@ import '../../../widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/widgets/common/user_avatar.dart';
 import '../../../theme/app_theme.dart';
 import '../../../../utils/toast_utils.dart';
+import '../../../providers/branch_provider.dart';
+import '../../../models/branch_model.dart';
 
 class AdminEditAdminScreen extends StatefulWidget {
   final Map<String, dynamic>? admin; // If null, we are creating a new admin
@@ -24,6 +26,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
   final _phoneController = TextEditingController();
 
   bool _isRevoked = false;
+  List<String> _assignedBranches = [];
   Map<String, bool> _permissions = {
     'manageCMS': false,
     'manageOrders': false,
@@ -53,6 +56,9 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
       if (admin['permissions'] != null) {
         _permissions = Map<String, bool>.from(admin['permissions']);
       }
+      if (admin['assignedBranches'] != null) {
+        _assignedBranches = List<String>.from(admin['assignedBranches'].map((b) => b is Map ? b['_id'] : b));
+      }
       _selectedAvatarId = admin['avatarId'];
     }
   }
@@ -71,6 +77,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
         'permissions': _permissions,
         'avatarId': _selectedAvatarId,
         'isRevoked': _isRevoked,
+        'assignedBranches': _assignedBranches,
       };
 
       if (widget.admin == null) {
@@ -192,7 +199,50 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
                   ),
   
                   const SizedBox(height: 20),
-  
+                  
+                   GlassContainer(
+                    opacity: 0.1,
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Branch Assignment", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                        const Text("Admins can only see data from assigned branches.", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                        const SizedBox(height: 15),
+                        Consumer<BranchProvider>(
+                          builder: (context, bp, _) {
+                            final allBranches = bp.branches;
+                            if (allBranches.isEmpty) return const Text("No branches found", style: TextStyle(color: Colors.white24));
+                            
+                            return Column(
+                              children: allBranches.map((branch) {
+                                final isSelected = _assignedBranches.contains(branch.id);
+                                return CheckboxListTile(
+                                  title: Text(branch.name, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                                  subtitle: Text(branch.location ?? '', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                                  value: isSelected,
+                                  activeColor: AppTheme.primaryColor,
+                                  checkColor: Colors.black,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      if (val == true) {
+                                        _assignedBranches.add(branch.id);
+                                      } else {
+                                        _assignedBranches.remove(branch.id);
+                                      }
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
                   if (isEditing && widget.admin?['isMasterAdmin'] != true)
                     GlassContainer(
                       opacity: 0.1,

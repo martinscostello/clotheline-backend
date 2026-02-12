@@ -147,30 +147,33 @@ class LaundryApp extends StatelessWidget {
            return svc;
         }),
         ChangeNotifierProvider(create: (_) {
-           final bp = BranchProvider();
-           // Transform JSON
-           List<Branch> hydrated = [];
-           try {
-              hydrated = bootstrap.branchesJson.map((j) => Branch.fromJson(j)).toList();
-           } catch (_) {}
-           bp.hydrateFromBootstrap(hydrated, bootstrap.branchId);
-           return bp;
+           final auth = AuthService();
+           // We could hydrate simple user profile here if we modified AuthService,
+           // but AuthService mostly relies on SecureStorage for tokens.
+           // However, we can set the "Memory Cache" for user name/email if we want.
+           if (bootstrap.isLoggedIn || bootstrap.isGuest) {
+              // Hack: We can pre-set the currentUser map if we want synchronous "Hi Friend"
+              auth.hydrateSimpleProfile(bootstrap.userProfile, bootstrap.userRole, isGuest: bootstrap.isGuest);
+           }
+           // The rest (validation) happens in background
+           if (bootstrap.isLoggedIn) {
+              Future.microtask(() => auth.validateSession());
+           }
+           return auth;
         }),
-        ChangeNotifierProvider(create: (_) {
-          final auth = AuthService();
-          // We could hydrate simple user profile here if we modified AuthService,
-          // but AuthService mostly relies on SecureStorage for tokens.
-          // However, we can set the "Memory Cache" for user name/email if we want.
-          if (bootstrap.isLoggedIn || bootstrap.isGuest) {
-             // Hack: We can pre-set the currentUser map if we want synchronous "Hi Friend"
-             auth.hydrateSimpleProfile(bootstrap.userProfile, bootstrap.userRole, isGuest: bootstrap.isGuest);
-          }
-          // The rest (validation) happens in background
-          if (bootstrap.isLoggedIn) {
-             Future.microtask(() => auth.validateSession());
-          }
-          return auth;
-        }),
+        ChangeNotifierProxyProvider<AuthService, BranchProvider>(
+          create: (_) {
+            final bp = BranchProvider();
+            // Transform JSON
+            List<Branch> hydrated = [];
+            try {
+               hydrated = bootstrap.branchesJson.map((j) => Branch.fromJson(j)).toList();
+            } catch (_) {}
+            bp.hydrateFromBootstrap(hydrated, bootstrap.branchId);
+            return bp;
+          },
+          update: (_, auth, bp) => bp!..updateAuth(auth),
+        ),
         
         // Standard Providers
         ChangeNotifierProvider(create: (_) => CartService()), // Should also hydrate ideally

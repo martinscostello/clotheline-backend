@@ -108,7 +108,10 @@ class AuthService extends ChangeNotifier {
            'email': email ?? '',
            'avatarId': avatarId,
            'isMasterAdmin': isMasterStr == 'true',
-           'permissions': permissions
+           'permissions': permissions,
+           'assignedBranches': await _storage.read(key: 'assigned_branches') != null 
+              ? jsonDecode(await _storage.read(key: 'assigned_branches') ?? '[]') 
+              : null
          };
          
          _isInitialized = true;
@@ -375,6 +378,9 @@ class AuthService extends ChangeNotifier {
 
     // Persist RBAC data
     await _storage.write(key: 'is_master_admin', value: (user['isMasterAdmin'] ?? false).toString());
+    if (user['assignedBranches'] != null) {
+      await _storage.write(key: 'assigned_branches', value: jsonEncode(user['assignedBranches']));
+    }
     if (user['permissions'] != null) {
       await _storage.write(key: 'user_permissions', value: jsonEncode(user['permissions']));
     }

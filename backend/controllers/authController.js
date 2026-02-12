@@ -278,6 +278,7 @@ exports.login = async (req, res) => {
                     role: user.role,
                     isMasterAdmin: user.isMasterAdmin,
                     permissions: user.permissions,
+                    assignedBranches: user.assignedBranches, // NEW
                     preferredBranch: user.preferredBranch, // Return preference
                     avatarId: user.avatarId // [FIX] Return avatarId
                 }

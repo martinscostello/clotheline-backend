@@ -149,7 +149,20 @@ class _AdminManageAdminsScreenState extends State<AdminManageAdminsScreen> {
                                     style: const TextStyle(color: Colors.white54, fontSize: 12)
                                   ),
                                   if (isMaster)
-                                    const Text("Master Admin", style: TextStyle(color: Colors.amber, fontSize: 10, fontStyle: FontStyle.italic)),
+                                    const Text("Master Admin", style: TextStyle(color: Colors.amber, fontSize: 10, fontStyle: FontStyle.italic))
+                                  else if (admin['assignedBranches'] != null && 
+                                           admin['assignedBranches'].length >= Provider.of<BranchProvider>(context, listen: false).branches.length &&
+                                           Provider.of<BranchProvider>(context, listen: false).branches.isNotEmpty)
+                                    Container(
+                                      margin: const EdgeInsets.only(top: 4),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: Colors.green, width: 0.5)
+                                      ),
+                                      child: const Text("SUPERADMIN", style: TextStyle(color: Colors.green, fontSize: 8, fontWeight: FontWeight.bold)),
+                                    ),
                                   if (isRevoked)
                                     const Text("ACCESS REVOKED", style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
                                 ],

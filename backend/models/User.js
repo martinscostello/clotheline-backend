@@ -42,6 +42,10 @@ const UserSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Branch'
     },
+    assignedBranches: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch'
+    }],
     savedAddresses: {
         type: [{
             label: { type: String, required: true }, // "Home", "Office", "Girlfriend's House"
