@@ -12,6 +12,8 @@ import '../../../services/staff_service.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../utils/toast_utils.dart';
 import 'admin_edit_staff_screen.dart';
+import '../../../services/staff_pdf_service.dart';
+import '../../../services/whatsapp_service.dart';
 
 class AdminStaffScreen extends StatefulWidget {
   const AdminStaffScreen({super.key});
@@ -245,6 +247,8 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
           _buildActionHeader(staff),
           const SizedBox(height: 20),
           _buildVisualIDCard(staff),
+          const SizedBox(height: 10),
+          _buildIDActions(staff),
           const SizedBox(height: 30),
           _buildInfoSection("Account Details", [
             _buildDetailRow("Residential Address", staff.address ?? "Not Set"),
@@ -258,6 +262,8 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
           _buildSalaryPerformanceSection(staff),
           const SizedBox(height: 20),
           _buildWarningSection(staff),
+          const SizedBox(height: 20),
+          _buildAgreementSection(staff),
           const SizedBox(height: 20),
           _buildProbationSection(staff),
           const SizedBox(height: 20),
@@ -391,6 +397,45 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         );
       },
     );
+  }
+
+  Widget _buildIDActions(Staff staff) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.white10, foregroundColor: Colors.white),
+          icon: const Icon(Icons.download, size: 16),
+          label: const Text("DOWNLOAD ID", style: TextStyle(fontSize: 10)),
+          onPressed: () => _generateIDCardPDF(staff),
+        ),
+        const SizedBox(width: 10),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
+          icon: const Icon(Icons.chat, size: 16),
+          label: const Text("SEND TO STAFF", style: TextStyle(fontSize: 10)),
+          onPressed: () => _sendDocumentViaWhatsApp(staff, "ID Card"),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _sendDocumentViaWhatsApp(Staff staff, String type) async {
+    try {
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+      
+      await WhatsAppService.sendStaffDocument(
+        phone: staff.phone,
+        staffName: staff.name,
+        documentType: type,
+        branchName: branch.name,
+      );
+      
+      if (mounted) ToastUtils.show(context, "$type sent via WhatsApp!", type: ToastType.success);
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+    }
   }
 
   Widget _buildIDCardPhoto(Staff staff) {
@@ -568,6 +613,18 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
               onPressed: () => _showPaymentHistoryModal(staff),
               child: const Text("View History", style: TextStyle(color: AppTheme.primaryColor, fontSize: 12, decoration: TextDecoration.underline)),
             ),
+            if (staff.paymentHistory.isNotEmpty) ...[
+              const SizedBox(height: 5),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white10, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                  icon: const Icon(Icons.picture_as_pdf, size: 14),
+                  label: const Text("Latest Pay Slip", style: TextStyle(fontSize: 10)),
+                  onPressed: () => _generatePaySlip(staff, staff.paymentHistory.last),
+                ),
+              ),
+            ],
           ]),
         ),
         const SizedBox(width: 15),
@@ -724,9 +781,20 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       if (!isCompleted)
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            "${probationEndDate.difference(now).inDays} days remaining", 
-            style: const TextStyle(color: Colors.white24, fontSize: 10)
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "${probationEndDate.difference(now).inDays} days remaining", 
+                style: const TextStyle(color: Colors.white24, fontSize: 10)
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0)),
+                icon: const Icon(Icons.chat, size: 12, color: Colors.white),
+                label: const Text("NOTIFY WHATSAPP", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                onPressed: () => _notifyProbation(staff),
+              ),
+            ],
           ),
         ),
     ]);
@@ -1102,6 +1170,151 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _notifyProbation(Staff staff) async {
+    try {
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+      await WhatsAppService.sendProbationAnnouncement(
+        phone: staff.phone,
+        staffName: staff.name,
+        branchName: branch.name,
+      );
+      if (mounted) ToastUtils.show(context, "Probation notification sent!", type: ToastType.success);
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+    }
+  }
+
+  Future<void> _generatePaySlip(Staff staff, StaffPayment payment) async {
+    try {
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+      await StaffPdfService.generatePaySlip(staff: staff, branch: branch, payment: payment);
+    } catch (e) {
+       if (mounted) ToastUtils.show(context, "PDF Error: $e", type: ToastType.error);
+    }
+  }
+
+  Widget _buildAgreementSection(Staff staff) {
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final branchName = branchProvider.branches.any((b) => b.id == staff.branchId)
+        ? branchProvider.branches.firstWhere((b) => b.id == staff.branchId).name
+        : "N/A";
+    
+    final isAbuja = branchName.toLowerCase().contains('abuja');
+    final companyName = isAbuja ? 'Brimarck Cleaning Services' : 'Clotheline Services';
+    final ceoName = isAbuja ? 'Mrs Natalie Usigbe Izuwagbe' : 'Mr Martins Usigbe';
+
+    // Probation logic
+    final months = staff.probation?.durationMonths ?? 3;
+    final probationEndDate = DateTime(staff.employmentDate.year, staff.employmentDate.month + months, staff.employmentDate.day);
+    final isProbationOver = DateTime.now().isAfter(probationEndDate);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Contract Agreement", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
+        const SizedBox(height: 10),
+        GlassContainer(
+          opacity: 0.1,
+          child: ExpansionTile(
+            title: const Text("View Service Agreement", style: TextStyle(color: Colors.white, fontSize: 14)),
+            subtitle: Text(isProbationOver ? "Ready for signing" : "Locked during probation", 
+              style: TextStyle(color: isProbationOver ? Colors.green : Colors.white24, fontSize: 12)),
+            leading: Icon(Icons.description, color: isProbationOver ? Colors.green : Colors.white24),
+            childrenPadding: const EdgeInsets.all(15),
+            backgroundColor: Colors.transparent,
+            collapsedBackgroundColor: Colors.transparent,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(10)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("CONTRACT AGREEMENT", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    Text(
+                      "We are pleased to offer you a contract as a ${staff.position} at $companyName. "
+                      "Your commencement date takes effect from ${DateFormat('dd MMMM yyyy').format(staff.employmentDate)}.\n\n"
+                      "Key Terms:\n"
+                      "● Annual Salary: ₦720,000\n"
+                      "● Probation: 3 Months\n"
+                      "● Working Days: Mon-Sat (8am-6pm)\n"
+                      "● Resignation: 30 days written notice required.\n\n"
+                      "Confidentiality: You must maintain complete confidentiality about clients and the company.",
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    const Divider(color: Colors.white10, height: 30),
+                    if (isProbationOver) ...[
+                       if (staff.signature == null)
+                         SizedBox(
+                           width: double.infinity,
+                           child: ElevatedButton(
+                             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+                             onPressed: () => _showSigningInterface(staff),
+                             child: const Text("SIGN AGREEMENT", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                           ),
+                         )
+                       else
+                         Row(
+                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                           children: [
+                             const Text("SIGNED ✅", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                             IconButton(
+                               icon: const Icon(Icons.picture_as_pdf, color: AppTheme.primaryColor),
+                               onPressed: () => _generateAgreementPDF(staff),
+                               tooltip: "Download PDF",
+                             ),
+                             IconButton(
+                               icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
+                               onPressed: () => _sendDocumentViaWhatsApp(staff, "Contract Agreement"),
+                               tooltip: "Send via WhatsApp",
+                             ),
+                           ],
+                         )
+                    ] else
+                       const Center(child: Text("Agreement can only be signed after 3 months probation.", 
+                         style: TextStyle(color: Colors.amber, fontSize: 10, fontStyle: FontStyle.italic))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSigningInterface(Staff staff) {
+    // This would typically lead to a signing screen
+    ToastUtils.show(context, "Please use the 'Edit Staff' screen to capture a signature first.", type: ToastType.info);
+  }
+
+  Future<void> _generateAgreementPDF(Staff staff) async {
+    try {
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+      await StaffPdfService.generateAgreement(
+        staff: staff, 
+        branch: branch, 
+        signingDate: DateFormat('dd MMMM yyyy').format(DateTime.now())
+      );
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "PDF Error: $e", type: ToastType.error);
+    }
+  }
+
+  Future<void> _generateIDCardPDF(Staff staff) async {
+    try {
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+      await StaffPdfService.generateIDCard(staff: staff, branch: branch);
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "PDF Error: $e", type: ToastType.error);
+    }
   }
 
   Widget _buildDialogInput(String label, TextEditingController controller, {int maxLines = 1, TextInputType keyboard = TextInputType.text}) {

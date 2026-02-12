@@ -126,4 +126,36 @@ class WhatsAppService {
 
     await _launchWhatsApp(supportPhone, message);
   }
+
+  static Future<void> sendProbationAnnouncement({
+    required String phone,
+    required String staffName,
+    required String branchName,
+  }) async {
+    final String brand = _getBrandedName(branchName);
+    final String message = 
+      "Hello $staffName!\n\n"
+      "Welcome to the $brand team!\n\n"
+      "Your 3-month probation period has officially begun. We encourage you to be at your best performance during this time, as it will determine your permanent stay with the company.\n\n"
+      "Your performance will be closely monitored, and we look forward to a great working relationship.\n\n"
+      "Best of luck!";
+
+    await _launchWhatsApp(phone, message);
+  }
+
+  static Future<void> sendStaffDocument({
+    required String phone,
+    required String staffName,
+    required String documentType, // 'Pay Slip', 'ID Card', 'Agreement'
+    required String branchName,
+  }) async {
+    final String brand = _getBrandedName(branchName);
+    final String message = 
+      "Hello $staffName,\n\n"
+      "Attached is your $documentType from $brand.\n\n"
+      "Please let us know if you have any questions.\n\n"
+      "Thank you!";
+
+    await _launchWhatsApp(phone, message);
+  }
 }
