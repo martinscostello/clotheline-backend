@@ -43,7 +43,7 @@ exports.createStaff = async (req, res) => {
 exports.getStaffByBranch = async (req, res) => {
     try {
         const { branchId } = req.query;
-        let query = { isArchived: false };
+        let query = {};
 
         if (branchId && branchId !== 'null') {
             query.branchId = branchId;

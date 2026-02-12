@@ -48,6 +48,14 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       final staff = await _staffService.fetchStaff(branchId: _currentBranch?.id);
       if (mounted) {
         setState(() {
+          // Sort: Active (isArchived: false) first, then Inactive
+          staff.sort((a, b) {
+            if (a.isArchived == b.isArchived) {
+              return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            }
+            return a.isArchived ? 1 : -1;
+          });
+
           _staffList = staff;
           _isLoading = false;
           // Auto-select first staff on tablet if none selected
@@ -185,37 +193,55 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                 _showMobileStaffDetails(staff);
               }
             },
-            child: GlassContainer(
-              opacity: isSelected ? 0.25 : 0.1,
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  _buildProfileImage(staff, radius: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(staff.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        Text(staff.position, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                  if (warningCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: warningCount >= 3 ? Colors.red.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: warningCount >= 3 ? Colors.red : Colors.orange, width: 1),
+            child: Opacity(
+              opacity: staff.isArchived ? 0.5 : 1.0,
+              child: GlassContainer(
+                opacity: isSelected ? 0.25 : 0.1,
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    _buildProfileImage(staff, radius: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(staff.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              if (staff.isArchived) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text("INACTIVE", style: TextStyle(color: Colors.white70, fontSize: 8, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ],
+                          ),
+                          Text(staff.position, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                        ],
                       ),
-                      child: Text(
-                        "$warningCount Warning${warningCount > 1 ? 's' : ''}",
-                        style: TextStyle(color: warningCount >= 3 ? Colors.red : Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
                     ),
-                  const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
-                ],
+                    if (warningCount > 0 && !staff.isArchived)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: warningCount >= 3 ? Colors.red.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: warningCount >= 3 ? Colors.red : Colors.orange, width: 1),
+                        ),
+                        child: Text(
+                          "$warningCount Warning${warningCount > 1 ? 's' : ''}",
+                          style: TextStyle(color: warningCount >= 3 ? Colors.red : Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
+                  ],
+                ),
               ),
             ),
           ),
@@ -847,15 +873,53 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     return Center(
       child: Column(
         children: [
-          TextButton.icon(icon: const Icon(Icons.archive, size: 16), label: const Text("Archive Staff"), 
-            style: TextButton.styleFrom(foregroundColor: Colors.white24),
-            onPressed: () => _confirmArchiveStaff(staff)),
+          if (staff.isArchived)
+            TextButton.icon(icon: const Icon(Icons.unarchive, size: 16), label: const Text("Restore Staff (Unarchive)"), 
+              style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor.withOpacity(0.7)),
+              onPressed: () => _unarchiveStaff(staff))
+          else
+            TextButton.icon(icon: const Icon(Icons.archive, size: 16), label: const Text("Archive Staff"), 
+              style: TextButton.styleFrom(foregroundColor: Colors.white24),
+              onPressed: () => _confirmArchiveStaff(staff)),
           TextButton.icon(icon: const Icon(Icons.delete_forever, size: 16), label: const Text("Permanently Delete"), 
             style: TextButton.styleFrom(foregroundColor: Colors.redAccent.withOpacity(0.5)),
             onPressed: () => _confirmPermanentDelete(staff)),
         ],
       ),
     );
+  }
+
+  Future<void> _unarchiveStaff(Staff staff) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text("Restore Staff Member?", style: TextStyle(color: Colors.white)),
+        content: Text("Do you want to restore ${staff.name} to the active list?", style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("RESTORE"),
+          ),
+        ],
+      )
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _staffService.updateStaff(staff.id, {'isArchived': false});
+      await _fetchStaff();
+      if (mounted) ToastUtils.show(context, "Staff restored successfully", type: ToastType.success);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ToastUtils.show(context, "Error restoring staff: $e", type: ToastType.error);
+      }
+    }
   }
 
   Future<void> _sendWhatsAppWarning(Staff staff, StaffWarning warning) async {
@@ -980,7 +1044,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
          content: Column(
            mainAxisSize: MainAxisSize.min,
            children: [
-             const Text("Are you sure? This will remove them from the active list.", style: TextStyle(color: Colors.white70)),
+             const Text("Staff will be marked as inactive and moved to the bottom of the list.", style: TextStyle(color: Colors.white70)),
              const SizedBox(height: 15),
               _buildDialogInput("Reason for archiving", reasonController),
            ],
