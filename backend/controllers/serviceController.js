@@ -18,83 +18,37 @@ exports.getAllServices = async (req, res) => {
         let services = await Service.find(query).sort({ order: 1 });
 
         if (branchId) {
-            // STRICT BRANCH ISOLATION
-            // Logic:
-            // 1. Check if Branch Config exists.
-            // 2. [MIGRATION] If Branch Config has NO items, COPY Global Items to this Branch (One-time init).
-            // 3. Return Branch Config state (Name, Items, Prices, Types) as the "Truth".
-
             const processedServices = [];
 
             for (let s of services) {
-                // Determine Branch Config
                 let configIndex = s.branchConfig.findIndex(b => b.branchId.toString() === branchId);
 
-                // [AUTO-INIT / LAZY MIGRATION]
-                // If this branch has never "owned" this service, claim ownership now by cloning global state.
-                let needsSave = false;
                 if (configIndex === -1) {
+                    // Lazy init if missing
                     s.branchConfig.push({
                         branchId,
                         isActive: s.isActive,
                         isLocked: s.isLocked,
                         lockedLabel: s.lockedLabel || "Coming Soon",
-                        // Clone Global Items
                         items: s.items.map(i => ({ name: i.name, price: i.price, isActive: true })),
-                        // Clone Global Service Types
                         serviceTypes: s.serviceTypes.map(t => ({ name: t.name, priceMultiplier: t.priceMultiplier }))
                     });
                     configIndex = s.branchConfig.length - 1;
-                    needsSave = true; // We modified the DB document
-                } else {
-                    // Check if existing config lacks items (Migration from "Override Mode" to "Independent Mode")
-                    if (!s.branchConfig[configIndex].items || s.branchConfig[configIndex].items.length === 0) {
-                        s.branchConfig[configIndex].items = s.items.map(i => {
-                            // Try to find if we had a legacy price override?
-                            const legacyOverride = i.branchPricing?.find(bp => bp.branchId.toString() === branchId);
-                            return {
-                                name: i.name,
-                                price: legacyOverride ? legacyOverride.price : i.price,
-                                isActive: true
-                            };
-                        });
-                        needsSave = true;
-                    }
-                    // Same for Service Types if missing
-                    if (!s.branchConfig[configIndex].serviceTypes || s.branchConfig[configIndex].serviceTypes.length === 0) {
-                        s.branchConfig[configIndex].serviceTypes = s.serviceTypes.map(t => ({ name: t.name, priceMultiplier: t.priceMultiplier }));
-                        needsSave = true;
-                    }
-                }
-
-                if (needsSave) {
                     await s.save();
                 }
 
-                // NOW Read from Branch Config Source of Truth
                 const config = s.branchConfig[configIndex];
+                if (!config.isActive && includeHidden !== 'true') continue;
 
-                // Admin Visibility Rule (or App Rule)
-                if (!config.isActive && includeHidden !== 'true') {
-                    continue;
-                }
-
-                // Project Branch Data to Root for Client
                 const serviceObj = s.toObject();
                 serviceObj.name = config.customName || s.name;
-                serviceObj.image = config.customImage || s.image; // [FIX] Project Branch Image
+                serviceObj.image = config.customImage || s.image;
                 serviceObj.description = config.customDescription || s.description;
                 serviceObj.isLocked = config.isLocked;
                 serviceObj.lockedLabel = config.lockedLabel;
                 serviceObj.isActive = config.isActive;
-                serviceObj.discountPercentage = config.discountPercentage !== undefined ? config.discountPercentage : s.discountPercentage;
-                serviceObj.discountLabel = config.discountLabel || s.discountLabel;
-
-                // CRITICAL: Replace Items & Types with Branch Copy
                 serviceObj.items = config.items;
                 serviceObj.serviceTypes = config.serviceTypes;
-
-                // Scrub internal config to avoid confusion
                 serviceObj.branchConfig = undefined;
 
                 processedServices.push(serviceObj);
@@ -102,7 +56,7 @@ exports.getAllServices = async (req, res) => {
             return res.json(processedServices);
 
         } else {
-            // Global List (Legacy / Admin Global View)
+            // BACK TO GLOBAL VIEW (RESTORES BENIN/ABUJA LEGACY)
             if (includeHidden !== 'true') {
                 services = services.filter(s => s.isActive);
             }
