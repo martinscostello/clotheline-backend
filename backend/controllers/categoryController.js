@@ -4,7 +4,17 @@ exports.getAllCategories = async (req, res) => {
     try {
         const { branchId } = req.query;
         let query = { isActive: true };
-        if (branchId) query.branchId = branchId;
+
+        if (branchId) {
+            query.branchId = branchId;
+        } else {
+            // STRICT ISOLATION FOR LEGACY APPS
+            // If no branchId is passed, only return "Global" categories
+            query.$or = [
+                { branchId: { $exists: false } },
+                { branchId: null }
+            ];
+        }
 
         const categories = await Category.find(query).sort({ name: 1 });
         res.json(categories);

@@ -47,8 +47,9 @@ class StoreService extends ChangeNotifier {
         _products = kDefaultProducts.map((json) => StoreProduct.fromJson(json)).toList();
       }
       
-      // 2. Categories Cache (Global)
-      final cachedCats = prefs.getString('categories_cache');
+      // 2. Categories Cache (Branch Aware)
+      final catKey = branchId != null ? 'categories_cache_$branchId' : 'categories_cache';
+      final cachedCats = prefs.getString(catKey);
       if (cachedCats != null) {
          final List<dynamic> data = jsonDecode(cachedCats);
          _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
