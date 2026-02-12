@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../services/cart_service.dart';
 import '../services/laundry_service.dart';
 import 'package:dio/dio.dart';
+import '../services/auth_service.dart';
 
 class BranchProvider extends ChangeNotifier {
   Branch? _selectedBranch;

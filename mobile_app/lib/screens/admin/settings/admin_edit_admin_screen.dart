@@ -86,7 +86,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
         await authService.createAdmin(adminData);
       } else {
         // Update Mode
-        await authService.updateAdmin(widget.admin!['_id'] ?? widget.admin!['id'], adminData);
+        await authService.updateAdmin((widget.admin!['_id'] ?? widget.admin!['id']).toString(), adminData);
       }
       
       if (mounted) Navigator.pop(context);
@@ -219,7 +219,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
                                 final isSelected = _assignedBranches.contains(branch.id);
                                 return CheckboxListTile(
                                   title: Text(branch.name, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                                  subtitle: Text(branch.location ?? '', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                                  subtitle: Text(branch.address, style: const TextStyle(color: Colors.white38, fontSize: 11)),
                                   value: isSelected,
                                   activeColor: AppTheme.primaryColor,
                                   checkColor: Colors.black,
