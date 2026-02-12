@@ -7,14 +7,8 @@ exports.getAllCategories = async (req, res) => {
 
         if (branchId) {
             query.branchId = branchId;
-        } else {
-            // STRICT ISOLATION FOR LEGACY APPS
-            // If no branchId is passed, only return "Global" categories
-            query.$or = [
-                { branchId: { $exists: false } },
-                { branchId: null }
-            ];
         }
+        // Legacy: If no branchId, we return all categories to prevent 'Empty' states
 
         const categories = await Category.find(query).sort({ name: 1 });
         res.json(categories);
