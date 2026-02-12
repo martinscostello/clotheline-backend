@@ -101,7 +101,11 @@ const ServiceSchema = new mongoose.Schema({
             type: Number,
             default: 1.0
         }
-    }]
+    }],
+    branchId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch'
+    }
 });
 
 module.exports = mongoose.model('Service', ServiceSchema);

@@ -3,8 +3,11 @@ const mongoose = require('mongoose');
 const CategorySchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true,
-        unique: true
+        required: true
+    },
+    branchId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch'
     },
     image: {
         type: String,

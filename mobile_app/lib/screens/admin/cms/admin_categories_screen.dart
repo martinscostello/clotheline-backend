@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../services/store_service.dart';
+import '../../../../providers/branch_provider.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
 import '../../../../theme/app_theme.dart';
@@ -19,22 +21,53 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    await _storeService.fetchCategories();
-    setState(() => _isLoading = false);
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    
+    // Ensure branches are loaded
+    if (branchProvider.branches.isEmpty) {
+      await branchProvider.fetchBranches();
+    }
+    
+    // Default to first branch if none selected
+    if (branchProvider.selectedBranch == null && branchProvider.branches.isNotEmpty) {
+       branchProvider.selectBranch(branchProvider.branches.first);
+    }
+
+    final branchId = branchProvider.selectedBranch?.id;
+    await _storeService.fetchCategories(branchId: branchId);
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _onBranchChanged(String? newId) async {
+    if (newId == null) return;
+    
+    setState(() => _isLoading = true);
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    
+    final branch = branchProvider.branches.firstWhere((b) => b.id == newId);
+    branchProvider.selectBranch(branch);
+    
+    await _storeService.fetchCategories(branchId: newId);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   void _showAddDialog() {
     final TextEditingController nameCtrl = TextEditingController();
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final branchId = branchProvider.selectedBranch?.id;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF202020),
-        title: const Text("Add Category", style: TextStyle(color: Colors.white)),
+        title: Text("Add Category (${branchProvider.selectedBranch?.name ?? 'Global'})", style: const TextStyle(color: Colors.white)),
         content: TextField(
           controller: nameCtrl,
           style: const TextStyle(color: Colors.white),
@@ -51,7 +84,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
               if (nameCtrl.text.isNotEmpty) {
                  Navigator.pop(ctx);
                  setState(() => _isLoading = true);
-                 final error = await _storeService.addCategory(nameCtrl.text);
+                 final error = await _storeService.addCategory(nameCtrl.text, branchId: branchId);
                  setState(() => _isLoading = false);
                  
                  if (error != null && mounted) {
@@ -67,6 +100,9 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
   }
 
   void _showDeleteDialog(CategoryModel category) {
+     final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+     final branchId = branchProvider.selectedBranch?.id;
+
      showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -80,7 +116,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
             onPressed: () async {
                Navigator.pop(ctx);
                setState(() => _isLoading = true);
-               await _storeService.deleteCategory(category.id);
+               await _storeService.deleteCategory(category.id, branchId: branchId);
                setState(() => _isLoading = false);
             },
             child: const Text("Delete"),
@@ -100,6 +136,38 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
           title: const Text("Manage Categories", style: TextStyle(color: Colors.white)),
           backgroundColor: Colors.transparent,
           leading: const BackButton(color: Colors.white),
+          actions: [
+            // BRANCH SELECTOR
+            Consumer<BranchProvider>(
+              builder: (context, branchProvider, _) {
+                if (branchProvider.branches.isEmpty) return const SizedBox();
+                
+                return Container(
+                  margin: const EdgeInsets.only(right: 15),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(20)
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      dropdownColor: const Color(0xFF202020),
+                      value: branchProvider.selectedBranch?.id,
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      onChanged: _onBranchChanged,
+                      items: branchProvider.branches.map((b) {
+                        return DropdownMenuItem(
+                          value: b.id,
+                          child: Text(b.name, style: const TextStyle(color: Colors.white)),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                );
+              }
+            )
+          ],
         ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,

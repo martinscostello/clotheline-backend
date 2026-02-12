@@ -4,7 +4,18 @@ exports.getAllServices = async (req, res) => {
     try {
         const { branchId, includeHidden } = req.query;
 
-        let services = await Service.find().sort({ order: 1 });
+        let query = {};
+        if (branchId) {
+            query = {
+                $or: [
+                    { branchId },
+                    { branchId: { $exists: false } },
+                    { branchId: null }
+                ]
+            };
+        }
+
+        let services = await Service.find(query).sort({ order: 1 });
 
         if (branchId) {
             // STRICT BRANCH ISOLATION
@@ -106,13 +117,14 @@ exports.getAllServices = async (req, res) => {
 
 exports.createService = async (req, res) => {
     try {
-        const { name, icon, color, description, image, discountPercentage, discountLabel, order } = req.body;
+        const { name, icon, color, description, image, discountPercentage, discountLabel, order, branchId } = req.body;
         const newService = new Service({
             name, icon, color, description,
             image: image || 'assets/images/service_laundry.png',
             discountPercentage: discountPercentage || 0,
             discountLabel: discountLabel || '',
-            order: order || 0
+            order: order || 0,
+            branchId // [NEW]
         });
         const service = await newService.save();
         res.json(service);

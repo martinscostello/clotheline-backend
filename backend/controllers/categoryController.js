@@ -2,7 +2,11 @@ const Category = require('../models/Category');
 
 exports.getAllCategories = async (req, res) => {
     try {
-        const categories = await Category.find({ isActive: true }).sort({ name: 1 });
+        const { branchId } = req.query;
+        let query = { isActive: true };
+        if (branchId) query.branchId = branchId;
+
+        const categories = await Category.find(query).sort({ name: 1 });
         res.json(categories);
     } catch (err) {
         console.error(err.message);
@@ -12,13 +16,18 @@ exports.getAllCategories = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
     try {
-        const { name, image } = req.body;
-        let category = await Category.findOne({ name });
+        const { name, image, branchId } = req.body;
+
+        // Find if category already exists IN THIS BRANCH
+        let query = { name };
+        if (branchId) query.branchId = branchId;
+
+        let category = await Category.findOne(query);
         if (category) {
-            return res.status(400).json({ msg: 'Category already exists' });
+            return res.status(400).json({ msg: 'Category already exists in this branch' });
         }
 
-        category = new Category({ name, image });
+        category = new Category({ name, image, branchId });
         await category.save();
         res.json(category);
     } catch (err) {

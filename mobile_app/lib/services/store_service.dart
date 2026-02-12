@@ -62,7 +62,7 @@ class StoreService extends ChangeNotifier {
     }
   }
 
-  // 2. Silent Sync
+  // Silent Sync
   Future<void> fetchFromApi({String? branchId}) async {
     _isLoading = true;
     
@@ -86,7 +86,10 @@ class StoreService extends ChangeNotifier {
 
     // Fetch Categories
     try {
-       final response = await _apiService.client.get('/categories');
+       String endpoint = '/categories';
+       if (branchId != null) endpoint += '?branchId=$branchId';
+       
+       final response = await _apiService.client.get(endpoint);
        if (response.statusCode == 200) {
           final List<dynamic> data = response.data;
           _categoryObjects = data.map((json) => CategoryModel.fromJson(json)).toList();
@@ -94,7 +97,8 @@ class StoreService extends ChangeNotifier {
           
           // Persist Categories
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('categories_cache', jsonEncode(data));
+          final cacheKey = branchId != null ? 'categories_cache_$branchId' : 'categories_cache';
+          await prefs.setString(cacheKey, jsonEncode(data));
           
           notifyListeners();
        }
@@ -108,34 +112,35 @@ class StoreService extends ChangeNotifier {
   // COMPATIBILITY (Wraps silent sync)
   Future<void> fetchProducts({String? branchId, bool forceRefresh = false}) async {
     // Note: We might want separate cache keys for Separate branches.
-    if (!_isHydrated && branchId == null) await loadFromCache();
+    if (!_isHydrated && branchId == null) await loadFromCache(branchId: branchId);
     await fetchFromApi(branchId: branchId);
   }
   
   // Categories Helper
-  Future<void> fetchCategories() async {
-     // Explicitly fetch global data from API to ensure fresh list
-     await fetchFromApi();
+  Future<void> fetchCategories({String? branchId}) async {
+     // Explicitly fetch data from API to ensure fresh list
+     await fetchFromApi(branchId: branchId);
   }
 
-
-
-  Future<String?> addCategory(String name) async {
+  Future<String?> addCategory(String name, {String? branchId}) async {
     try {
-      final response = await _apiService.client.post('/categories', data: {'name': name});
+      final response = await _apiService.client.post('/categories', data: {
+        'name': name,
+        if (branchId != null) 'branchId': branchId,
+      });
       if (response.statusCode == 200) {
-        await fetchCategories();
+        await fetchCategories(branchId: branchId);
         return null; // Success
       }
       return response.data['msg'] ?? "Failed with status ${response.statusCode}";
     } catch (e) { return "Error: $e"; }
   }
 
-  Future<bool> deleteCategory(String id) async {
+  Future<bool> deleteCategory(String id, {String? branchId}) async {
     try {
       final response = await _apiService.client.delete('/categories/$id');
       if (response.statusCode == 200 || response.statusCode == 204) {
-        await fetchCategories();
+        await fetchCategories(branchId: branchId);
         return true;
       }
       return false;

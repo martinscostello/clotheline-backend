@@ -86,7 +86,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     // Fetch latest categories
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final store = Provider.of<StoreService>(context, listen: false);
-      store.fetchCategories();
+      store.fetchCategories(branchId: widget.branchId);
       
       if (widget.product == null) {
         _loadLatestPresets(store);
