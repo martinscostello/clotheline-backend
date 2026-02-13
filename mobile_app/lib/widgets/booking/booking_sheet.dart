@@ -451,7 +451,10 @@ class _BookingSheetState extends State<BookingSheet> {
             ],
           ),
         );
-      }
+      },
+    );
+  }
+
   Widget _buildBreakdownRow(String label, double amount, Color color, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),

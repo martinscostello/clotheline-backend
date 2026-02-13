@@ -618,6 +618,36 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
               const SizedBox(height: 20),
               _buildOptionCard("Home Delivery", Icons.delivery_dining_outlined, "We deliver to client's address.", pos.deliveryOption == 'Deliver', () => setState(() => pos.deliveryOption = 'Deliver')),
               
+              if (pos.deliveryOption == 'Deliver') ...[
+                const SizedBox(height: 30),
+                _buildTextField("Delivery Address", _addressController, Icons.location_on_outlined),
+                const SizedBox(height: 20),
+                const Text("Select Delivery Zone", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: pos.selectedBranch!.deliveryZones.map((zone) {
+                    bool selected = pos.deliveryFee == zone.baseFee;
+                    return GestureDetector(
+                      onTap: () => setState(() => pos.deliveryFee = zone.baseFee),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: selected ? AppTheme.secondaryColor : Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: selected ? AppTheme.secondaryColor : Colors.white10),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(zone.name, style: TextStyle(color: selected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text(CurrencyFormatter.format(zone.baseFee), style: TextStyle(color: selected ? Colors.black54 : Colors.white54, fontSize: 10)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
               
