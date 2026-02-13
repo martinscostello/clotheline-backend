@@ -135,7 +135,8 @@ router.post('/initialize', auth, async (req, res) => {
             deliveryLocation: req.body.deliveryLocation,
             pickupCoordinates: req.body.pickupCoordinates,
             deliveryCoordinates: req.body.deliveryCoordinates,
-            guestInfo: req.body.guestInfo
+            guestInfo: req.body.guestInfo,
+            laundryNotes: req.body.laundryNotes
         };
 
         console.log(`[Paystack] Initializing: Email=${email}, Amount=${amountKobo}, Ref=${reference}`);
