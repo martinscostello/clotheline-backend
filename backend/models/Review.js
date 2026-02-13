@@ -4,7 +4,7 @@ const ReviewSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false
     },
     product: {
         type: mongoose.Schema.Types.ObjectId,
@@ -14,7 +14,7 @@ const ReviewSchema = new mongoose.Schema({
     order: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order',
-        required: true
+        required: false
     },
     rating: {
         type: Number,
@@ -36,10 +36,17 @@ const ReviewSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    isAdminGenerated: {
+        type: Boolean,
+        default: false
+    },
+    userName: {
+        type: String // Fallback for illusion reviews
     }
 });
 
-// Prevent duplicate reviews for the same product in the same order
-ReviewSchema.index({ user: 1, product: 1, order: 1 }, { unique: true });
+// [DISABLED] Admin-generated reviews don't need unique user/product/order constraints
+// ReviewSchema.index({ user: 1, product: 1, order: 1 }, { unique: true });
 
 module.exports = mongoose.model('Review', ReviewSchema);

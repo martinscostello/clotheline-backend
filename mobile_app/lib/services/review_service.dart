@@ -65,6 +65,56 @@ class ReviewService extends ChangeNotifier {
     }
   }
 
+  // Submit admin "illusion" review
+  Future<Map<String, dynamic>> submitAdminReview({
+    required String productId,
+    required int rating,
+    required String userName,
+    String? comment,
+    List<File> images = const [],
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // 1. Upload images
+      List<String> imageUrls = [];
+      for (var imageFile in images) {
+        final imageUrl = await _uploadImage(imageFile);
+        if (imageUrl != null) {
+          imageUrls.add(imageUrl);
+        }
+      }
+
+      // 2. Submit admin review
+      final response = await _apiService.client.post('/reviews/admin/create-illusion', data: {
+        'productId': productId,
+        'rating': rating,
+        'userName': userName,
+        'comment': comment,
+        'images': imageUrls,
+      });
+
+      _isLoading = false;
+      notifyListeners();
+
+      if (response.statusCode == 201) {
+        return {'success': true, 'message': 'Admin review created successfully'};
+      } else {
+        return {'success': false, 'message': response.data['message'] ?? 'Failed to create admin review'};
+      }
+    } on DioException catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      final msg = e.response?.data['message'] ?? e.message ?? 'An unknown error occurred';
+      return {'success': false, 'message': msg};
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return {'success': false, 'message': 'Connection error: ${e.toString()}'};
+    }
+  }
+
   // Upload single image to existing upload endpoint
   Future<String?> _uploadImage(File imageFile) async {
     try {

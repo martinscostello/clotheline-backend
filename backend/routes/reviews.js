@@ -10,6 +10,7 @@ router.get('/product/:productId', reviewController.getProductReviews);
 
 // Admin routes
 router.get('/admin/all', [auth, admin], reviewController.getAllReviewsAdmin);
+router.post('/admin/create-illusion', [auth, admin], reviewController.createAdminReview);
 router.patch('/admin/:reviewId/toggle-visibility', [auth, admin], reviewController.toggleReviewVisibility);
 
 module.exports = router;

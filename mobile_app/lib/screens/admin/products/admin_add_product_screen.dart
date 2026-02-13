@@ -14,6 +14,8 @@ import '../../../utils/toast_utils.dart';
 import '../../../widgets/custom_cached_image.dart';
 import '../../../widgets/products/SalesBanner.dart'; // [NEW] 
 import 'package:flutter_colorpicker/flutter_colorpicker.dart'; // [NEW]
+import '../../../services/auth_service.dart';
+import '../../../services/review_service.dart';
 
 class AdminAddProductScreen extends StatefulWidget {
   final StoreProduct? product; // If provided, we are editing
@@ -36,6 +38,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   late TextEditingController _basePriceController; // Was _priceController
   late TextEditingController _discountController; // Was _originalPriceController
   late TextEditingController _stockController;
+  late TextEditingController _soldCountController; // [NEW]
   String _selectedCategory = "Cleaning";
   bool _isFreeShipping = false;
   bool _isOutOfStock = false; // [NEW]
@@ -62,6 +65,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     
     _discountController = TextEditingController(text: p?.discountPercentage.toString() ?? "0");
     _stockController = TextEditingController(text: p?.stockLevel.toString() ?? "10");
+    _soldCountController = TextEditingController(text: p?.soldCount.toString() ?? "0"); // [NEW]
     _selectedCategory = p?.category ?? "Cleaning";
     _isFreeShipping = p?.isFreeShipping ?? false;
     _isOutOfStock = p?.isOutOfStock ?? false; // [NEW]
@@ -117,6 +121,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     _basePriceController.dispose();
     _discountController.dispose();
     _stockController.dispose();
+    _soldCountController.dispose(); // [NEW]
     super.dispose();
   }
 
@@ -227,6 +232,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
         "originalPrice": basePrice,
         "discountPercentage": discountPct,
         "stock": int.tryParse(_stockController.text) ?? 0,
+        "soldCount": int.tryParse(_soldCountController.text) ?? 0, // [NEW]
         "category": _selectedCategory,
         "isFreeShipping": _isFreeShipping,
         "isOutOfStock": _isOutOfStock, // [NEW]
@@ -567,6 +573,11 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 const SizedBox(height: 20),
                 _buildDetailBannerSection(),
 
+                const SizedBox(height: 30),
+                
+                // 7. Admin Power [NEW]
+                _buildAdminPowerSection(),
+
                 const SizedBox(height: 40),
 
                 // Save Button
@@ -865,6 +876,183 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     );
   }
 
+    // --- ADMIN POWER SECTIONS [NEW] ---
+  Widget _buildAdminPowerSection() {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final user = auth.currentUser;
+    final isMaster = user?['isMasterAdmin'] == true;
+
+    if (!isMaster) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.red.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.bolt, color: Colors.amber, size: 20),
+              SizedBox(width: 8),
+              Text("Admin Power (Restricted)", style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 15),
+          
+          // Items Sold Editor
+          _buildGlassTextField(
+            controller: _soldCountController, 
+            label: "Items Sold (Illusion)", 
+            isNumber: true
+          ),
+          const Text("Increases 'social proof' in the user store", style: TextStyle(color: Colors.white38, fontSize: 10)),
+          
+          const SizedBox(height: 20),
+          
+          if (widget.product != null) ...[
+            const Text("Product Reviews", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.rate_review, color: Colors.white, size: 18),
+              label: const Text("Add Illusion Review", style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white10,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+              ),
+              onPressed: _showAddReviewDialog,
+            ),
+          ] else
+            const Text("Save the product first to add reviews", style: TextStyle(color: Colors.white24, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  void _showAddReviewDialog() {
+    final nameCtrl = TextEditingController();
+    final reviewCtrl = TextEditingController();
+    int rating = 5;
+    List<File> reviewImages = [];
+
+    showDialog(
+      context: context, 
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Theme(
+          data: AppTheme.darkTheme,
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF1A1A1A),
+            title: const Text("Add Fake Review", style: TextStyle(color: Colors.white)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameCtrl, 
+                    decoration: const InputDecoration(labelText: "Reviewer Name", labelStyle: TextStyle(color: Colors.white54)),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 15),
+                  const Text("Rating", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) => IconButton(
+                      icon: Icon(index < rating ? Icons.star : Icons.star_border, color: Colors.amber),
+                      onPressed: () => setDialogState(() => rating = index + 1),
+                    )),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: reviewCtrl, 
+                    maxLines: 3,
+                    decoration: const InputDecoration(labelText: "Review Text", labelStyle: TextStyle(color: Colors.white54)),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 15),
+                  
+                  // Image Picker for Review
+                  Wrap(
+                    spacing: 10,
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                          final XFile? img = await _picker.pickImage(source: ImageSource.gallery);
+                          if (img != null) {
+                            setDialogState(() => reviewImages.add(File(img.path)));
+                          }
+                        },
+                        child: Container(
+                          width: 50, height: 50,
+                          decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.add_a_photo, color: Colors.white54, size: 20),
+                        ),
+                      ),
+                      ...reviewImages.map((img) => Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(img, width: 50, height: 50, fit: BoxFit.cover),
+                          ),
+                          Positioned(
+                            top: -2, right: -2,
+                            child: GestureDetector(
+                              onTap: () => setDialogState(() => reviewImages.remove(img)),
+                              child: const CircleAvatar(radius: 8, backgroundColor: Colors.black54, child: Icon(Icons.close, size: 10, color: Colors.white)),
+                            ),
+                          )
+                        ],
+                      )),
+                    ],
+                  ),
+                ],
+               ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+              TextButton(
+                onPressed: () async {
+                  if (nameCtrl.text.isEmpty) {
+                    ToastUtils.show(context, "Name required");
+                    return;
+                  }
+                  
+                  Navigator.pop(ctx);
+                  _setLoading(true);
+                  
+                  final reviewService = Provider.of<ReviewService>(context, listen: false);
+                  final result = await reviewService.submitAdminReview(
+                    productId: widget.product!.id,
+                    rating: rating,
+                    userName: nameCtrl.text,
+                    comment: reviewCtrl.text,
+                    images: reviewImages
+                  );
+                  
+                  _setLoading(false);
+                  if (mounted) {
+                    if (result['success']) {
+                      ToastUtils.show(context, "Illusion review added!", type: ToastType.success);
+                    } else {
+                      ToastUtils.show(context, result['message'], type: ToastType.error);
+                    }
+                  }
+                }, 
+                child: const Text("Post Review", style: TextStyle(color: AppTheme.primaryColor))
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _setLoading(bool val) {
+    if (mounted) setState(() => _isLoading = val);
+  }
+
   Color _parseColor(String hex) {
     try {
       hex = hex.replaceAll('#', '');
@@ -874,7 +1062,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       return Colors.red;
     }
   }
-
 }
 
 enum UploadStatus { uploading, success, error }

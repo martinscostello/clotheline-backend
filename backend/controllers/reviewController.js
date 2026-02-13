@@ -88,6 +88,10 @@ exports.getProductReviews = async (req, res) => {
         // Anonymize user names (first name only)
         const anonymizedReviews = reviews.map(r => {
             const reviewObj = r.toObject();
+            if (reviewObj.isAdminGenerated && reviewObj.userName) {
+                // Admin-generated review - use stored name
+                return reviewObj;
+            }
             if (reviewObj.user && reviewObj.user.name) {
                 reviewObj.user.name = reviewObj.user.name.split(' ')[0];
             }
@@ -138,6 +142,49 @@ exports.toggleReviewVisibility = async (req, res) => {
 
         res.json({ message: `Review ${review.isHidden ? 'hidden' : 'shown'} successfully`, review });
     } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Admin: Create an "illusion" review
+exports.createAdminReview = async (req, res) => {
+    try {
+        const { productId, rating, comment, images, userName } = req.body;
+
+        // Security: Check if user is Master Admin
+        const User = require('../models/User');
+        const adminUser = await User.findById(req.user.id);
+        if (!adminUser || !adminUser.isMasterAdmin) {
+            return res.status(403).json({ message: 'Only Master Admins can create illusion reviews.' });
+        }
+
+        const review = new Review({
+            product: productId,
+            rating,
+            comment,
+            images,
+            userName: userName || 'Customer',
+            isAdminGenerated: true,
+            isHidden: false
+        });
+
+        await review.save();
+
+        // Update Product Aggregates
+        const reviews = await Review.find({ product: productId, isHidden: false });
+        const totalReviews = reviews.length;
+        const averageRating = totalReviews > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+            : 0;
+
+        await Product.findByIdAndUpdate(productId, {
+            totalReviews,
+            averageRating
+        });
+
+        res.status(201).json({ message: 'Admin review created successfully', review });
+    } catch (error) {
+        console.error('Error creating admin review:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
