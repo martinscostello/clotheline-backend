@@ -7,7 +7,6 @@ import '../../../../widgets/glass/LaundryGlassCard.dart';
 import '../../../../services/payment_service.dart';
 import '../../../../services/receipt_service.dart';
 import '../../../../utils/toast_utils.dart';
-import '../chat/chat_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../../services/notification_service.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
@@ -15,8 +14,8 @@ import '../products/submit_review_screen.dart';
 import '../../../../services/order_service.dart';
 import '../../../widgets/dialogs/guest_login_dialog.dart';
 import '../../../services/auth_service.dart';
-import '../../../../services/whatsapp_service.dart'; // [NEW]
-import '../../../../providers/branch_provider.dart'; // [NEW]
+import '../../../../providers/branch_provider.dart';
+import '../settings/support_hub_screen.dart';
 import '../../../../models/branch_model.dart'; // [NEW]
 
 class OrderDetailScreen extends StatefulWidget {
@@ -198,6 +197,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
               ),
               
+              if (order.laundryNotes != null && order.laundryNotes!.isNotEmpty) ...[
+                const SizedBox(height: 25),
+                Text("Special Care Instructions", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 15),
+                LaundryGlassCard(
+                  opacity: isDark ? 0.12 : 0.05,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          order.laundryNotes!,
+                          style: TextStyle(color: textColor, fontSize: 14, fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 30),
 
               if (order.status != OrderStatus.Cancelled && order.paymentStatus == PaymentStatus.Pending)
@@ -274,7 +295,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                            .branches
                            .firstWhere((b) => b.id == order.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', phone: '', location: BranchLocation(lat: 0, lng: 0), deliveryZones: []))
                            .name;
-                       await ReceiptService.printReceiptFromOrder(order, branchName);
+                       await ReceiptService.downloadReceiptImageFromOrder(order, branchName);
                     },
                     icon: Icon(Icons.download, color: textColor),
                     label: Text("DOWNLOAD RECEIPT", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),
@@ -293,18 +314,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       icon: const Icon(Icons.help_outline),
                       label: const Text("Need Help with this Order?"),
                       onPressed: () {
-                         Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(orderId: order.id)));
-                      },
-                    ),
-                    TextButton.icon(
-                      icon: const Icon(Icons.send_rounded, color: Colors.green),
-                      label: const Text("Contact Support via WhatsApp", style: TextStyle(color: Colors.green)),
-                      onPressed: () {
-                         final branchName = Provider.of<BranchProvider>(context, listen: false)
-                             .branches
-                             .firstWhere((b) => b.id == order.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', phone: '', location: BranchLocation(lat: 0, lng: 0), deliveryZones: []))
-                             .name;
-                         WhatsAppService.contactSupport(orderNumber: order.id, branchName: branchName);
+                         Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportHubScreen()));
                       },
                     ),
                   ],

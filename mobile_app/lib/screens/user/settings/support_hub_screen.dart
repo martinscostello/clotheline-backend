@@ -28,6 +28,7 @@ class _SupportHubScreenState extends State<SupportHubScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<OrderService>().fetchOrders(role: 'user');
+      context.read<ChatService>().fetchMyThreads();
     });
   }
 
@@ -128,9 +129,44 @@ class _SupportHubScreenState extends State<SupportHubScreen> {
                 title: Text("Support", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
                 onBack: () => Navigator.pop(context),
                 actions: [
-                  IconButton(
-                    icon: Icon(Icons.forum_outlined, color: textColor),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportTicketsScreen())),
+                  Consumer<ChatService>(
+                    builder: (context, chat, _) {
+                      final openTickets = chat.myThreads.where((t) => t['status'] == 'Open').length;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.forum_outlined, color: textColor),
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportTicketsScreen())),
+                          ),
+                          if (openTickets > 0)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                child: Text(
+                                  openTickets.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
