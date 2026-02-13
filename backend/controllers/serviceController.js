@@ -49,6 +49,8 @@ exports.getAllServices = async (req, res) => {
                 serviceObj.isActive = config.isActive;
                 serviceObj.items = config.items;
                 serviceObj.serviceTypes = config.serviceTypes;
+                serviceObj.discountPercentage = config.discountPercentage || 0;
+                serviceObj.discountLabel = config.discountLabel || "";
                 serviceObj.branchConfig = undefined;
 
                 processedServices.push(serviceObj);
