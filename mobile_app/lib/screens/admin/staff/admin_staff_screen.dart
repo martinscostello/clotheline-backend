@@ -214,7 +214,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.withOpacity(0.3),
+                                    color: Colors.grey.withValues(alpha: 0.3),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Text("INACTIVE", style: TextStyle(color: Colors.white70, fontSize: 8, fontWeight: FontWeight.bold)),
@@ -230,7 +230,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: warningCount >= 3 ? Colors.red.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                          color: warningCount >= 3 ? Colors.red.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: warningCount >= 3 ? Colors.red : Colors.orange, width: 1),
                         ),
@@ -259,7 +259,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     }
     return CircleAvatar(
       radius: radius,
-      backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
+      backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.2),
       child: Text(staff.name[0].toUpperCase(), style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: radius * 0.8)),
     );
   }
@@ -582,7 +582,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(15),
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                           border: Border.all(color: Colors.white10),
                         ),
                         child: ClipRRect(
@@ -731,7 +731,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: severityColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: severityColor.withOpacity(0.5))),
+                  decoration: BoxDecoration(color: severityColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: severityColor.withValues(alpha: 0.5))),
                   child: Text(warning.severity.toUpperCase(), style: TextStyle(color: severityColor, fontSize: 8, fontWeight: FontWeight.bold)),
                 ),
                 Text(DateFormat('MMM dd, yyyy').format(warning.timestamp), style: const TextStyle(color: Colors.white38, fontSize: 10)),
@@ -875,14 +875,14 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         children: [
           if (staff.isArchived)
             TextButton.icon(icon: const Icon(Icons.unarchive, size: 16), label: const Text("Restore Staff (Unarchive)"), 
-              style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor.withOpacity(0.7)),
+              style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor.withValues(alpha: 0.7)),
               onPressed: () => _unarchiveStaff(staff))
           else
             TextButton.icon(icon: const Icon(Icons.archive, size: 16), label: const Text("Archive Staff"), 
               style: TextButton.styleFrom(foregroundColor: Colors.white24),
               onPressed: () => _confirmArchiveStaff(staff)),
           TextButton.icon(icon: const Icon(Icons.delete_forever, size: 16), label: const Text("Permanently Delete"), 
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent.withOpacity(0.5)),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent.withValues(alpha: 0.5)),
             onPressed: () => _confirmPermanentDelete(staff)),
         ],
       ),
@@ -1203,7 +1203,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(15),
                         border: Border.all(color: Colors.white10),
                       ),
@@ -1294,7 +1294,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(10)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

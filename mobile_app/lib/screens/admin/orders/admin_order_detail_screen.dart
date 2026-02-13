@@ -280,8 +280,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                   margin: const EdgeInsets.only(bottom: 20),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.15),
-                    border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                    color: Colors.amber.withValues(alpha: 0.15),
+                    border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Row(
@@ -304,8 +304,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                   margin: const EdgeInsets.only(bottom: 20),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.15),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                    color: Colors.red.withValues(alpha: 0.15),
+                    border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -372,6 +372,57 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                   ),
                 ),
               ),
+
+              // [NEW] Special Care Instructions
+              if (_order!.laundryNotes != null && _order!.laundryNotes!.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: GlassContainer(
+                    opacity: 0.1,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.warning_rounded, color: Colors.orange, size: 18),
+                              SizedBox(width: 8),
+                              Text("Special Care Instructions", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _order!.laundryNotes!,
+                            maxLines: 5,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                          ),
+                          if (_order!.laundryNotes!.length > 150)
+                            TextButton(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    backgroundColor: const Color(0xFF1A1A1A),
+                                    title: const Text("Special Care Instructions", style: TextStyle(color: Colors.orange)),
+                                    content: SingleChildScrollView(
+                                      child: Text(_order!.laundryNotes!, style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5)),
+                                    ),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CLOSE")),
+                                    ],
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30)),
+                              child: const Text("SEE FULL NOTES", style: TextStyle(color: AppTheme.primaryColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
               // 2. Customer Info
               Container(
@@ -538,7 +589,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                         height: 50,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.secondaryColor.withOpacity(0.2),
+                            backgroundColor: AppTheme.secondaryColor.withValues(alpha: 0.2),
                             foregroundColor: AppTheme.secondaryColor,
                             side: const BorderSide(color: AppTheme.secondaryColor),
                           ),
@@ -561,7 +612,7 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                           height: 50,
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.withOpacity(0.2),
+                              backgroundColor: Colors.red.withValues(alpha: 0.2),
                               foregroundColor: Colors.redAccent,
                               side: const BorderSide(color: Colors.redAccent),
                             ),
@@ -669,8 +720,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
       margin: const EdgeInsets.only(bottom: 15, left: 10, right: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        color: Colors.green.withValues(alpha: 0.1),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8)
       ),
       child: Row(

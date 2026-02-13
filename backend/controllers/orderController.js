@@ -84,8 +84,18 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             deliveryCoordinates,
 
             // Guest
-            guestInfo
+            guestInfo,
+
+            // [NEW] Special Care
+            laundryNotes
         } = orderData;
+
+        // [NEW] Sanitize & Validate Notes (Remove HTML/Excessive Spaces)
+        let sanitizedNotes = laundryNotes;
+        if (sanitizedNotes) {
+            sanitizedNotes = sanitizedNotes.replace(/<[^>]*>?/gm, ''); // Remove HTML
+            sanitizedNotes = sanitizedNotes.trim().substring(0, 300);
+        }
 
         // Recalculate to be safe
         const calc = await exports.calculateOrderTotal(items);
@@ -156,6 +166,9 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
             // Guest
             guestInfo: guestInfo,
+
+            // [NEW] Special Care
+            laundryNotes: sanitizedNotes,
 
             createdAt: Date.now()
         });

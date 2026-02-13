@@ -86,7 +86,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
 
     return PopScope(
       canPop: _currentStage == 1,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (_currentStage > 1) {
           setState(() => _currentStage--);

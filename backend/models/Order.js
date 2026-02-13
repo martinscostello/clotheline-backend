@@ -107,6 +107,8 @@ const OrderSchema = new mongoose.Schema({
         notified: { type: Boolean, default: false }
     },
 
+    laundryNotes: { type: String, maxlength: 300 }, // [NEW] Special Care Instructions
+
     date: { type: Date, default: Date.now }
 }, { timestamps: true });
 

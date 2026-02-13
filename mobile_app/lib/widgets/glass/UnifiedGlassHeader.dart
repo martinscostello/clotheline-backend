@@ -33,8 +33,8 @@ class UnifiedGlassHeader extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.white.withOpacity(0.95),
-              Colors.white.withOpacity(0.0),
+              Colors.white.withValues(alpha: 0.95),
+              Colors.white.withValues(alpha: 0.0),
             ],
             stops: const [0.0, 1.0],
           ),
@@ -60,7 +60,7 @@ class UnifiedGlassHeader extends StatelessWidget {
                                 width: 50,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: Colors.black.withValues(alpha: 0.05),
                                 ),
                                 child: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.black),
                               ),
@@ -110,8 +110,8 @@ class UnifiedGlassHeader extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF0F2027).withOpacity(0.8), // Start with some opacity
-            const Color(0xFF0F2027).withOpacity(0.0), // Fade to transparent
+            const Color(0xFF0F2027).withValues(alpha: 0.8), // Start with some opacity
+            const Color(0xFF0F2027).withValues(alpha: 0.0), // Fade to transparent
           ],
           stops: const [0.0, 1.0],
         ),
@@ -139,7 +139,7 @@ class UnifiedGlassHeader extends StatelessWidget {
                               width: 50,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                                color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
                               ),
                               child: Icon(Icons.arrow_back_ios_new, size: 20, color: isDark ? Colors.white : Colors.black),
                             ),

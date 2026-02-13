@@ -3,11 +3,12 @@ import '../../theme/app_theme.dart';
 
 import '../../models/booking_models.dart';
 
-import '../../screens/user/booking/my_bucket_screen.dart';
+
 import '../../services/cart_service.dart';
 import '../../models/service_model.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/toast_utils.dart';
+import '../../screens/user/main_layout.dart';
 
 class BookingSheet extends StatefulWidget {
   final ServiceModel serviceModel;
@@ -84,7 +85,11 @@ class _BookingSheetState extends State<BookingSheet> {
 
   void _proceedToCheckout() {
     Navigator.pop(context); // Close sheet
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) => MyBucketScreen(cart: _cartService.items)));
+    // Navigate to Orders Tab (index 2) which contains the Unified Bucket
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)),
+      (route) => route.isFirst,
+    );
   }
 
   void _showClothSelector() {
@@ -267,7 +272,7 @@ class _BookingSheetState extends State<BookingSheet> {
             color: bgColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
             boxShadow: [
-               if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5))
+               if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, -5))
             ]
           ),
           padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 40),
@@ -301,7 +306,7 @@ class _BookingSheetState extends State<BookingSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
                     ),
@@ -336,7 +341,7 @@ class _BookingSheetState extends State<BookingSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
                     ),
@@ -403,14 +408,25 @@ class _BookingSheetState extends State<BookingSheet> {
               // Bucket Preview (Mini Cart)
               if (cartItems.isNotEmpty) ...[
                  const SizedBox(height: 30),
-                 Divider(color: secondaryTextColor.withOpacity(0.2)),
+                 Divider(color: secondaryTextColor.withValues(alpha: 0.2)),
                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
                     children: [
-                      Text("Laundry Total (est.)", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                      // Use service-specific totals to avoid confusion with Store items
-                      Text(CurrencyFormatter.format(_cartService.serviceTotalAmount + _cartService.serviceTaxAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                      _buildBreakdownRow("Total Items", _cartService.serviceGrossTotalAmount, textColor, isDark),
+                      if (_cartService.laundryTotalDiscount > 0)
+                        _buildBreakdownRow("Discount", -_cartService.laundryTotalDiscount, Colors.greenAccent, isDark),
+                      _buildBreakdownRow("VAT (${_cartService.taxRate}%)", _cartService.serviceTaxAmount, textColor, isDark),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Grand Total (est.)", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(
+                            CurrencyFormatter.format(_cartService.serviceTotalAmount + _cartService.serviceTaxAmount),
+                            style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                  const SizedBox(height: 15),
@@ -424,7 +440,7 @@ class _BookingSheetState extends State<BookingSheet> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        shadowColor: AppTheme.primaryColor.withOpacity(0.5),
+                        shadowColor: AppTheme.primaryColor.withValues(alpha: 0.5),
                         elevation: 10,
                       ),
                      onPressed: _proceedToCheckout,
@@ -436,6 +452,19 @@ class _BookingSheetState extends State<BookingSheet> {
           ),
         );
       }
+  Widget _buildBreakdownRow(String label, double amount, Color color, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13)),
+          Text(
+            CurrencyFormatter.format(amount),
+            style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w500)
+          ),
+        ],
+      ),
     );
   }
 }

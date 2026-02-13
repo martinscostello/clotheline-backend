@@ -110,7 +110,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
     return PopScope(
       canPop: _currentStage == 1,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (_currentStage > 1) {
           setState(() => _currentStage--);
@@ -247,9 +247,106 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             _buildSectionHeader("Logistics", textColor),
             const SizedBox(height: 10),
             _buildLogisticsSummary(isDark, textColor),
+
+            const SizedBox(height: 30),
+            
+            // [NEW] Special Care Instructions
+            if (_cartService.items.isNotEmpty) ...[
+               _buildSectionHeader("🧺 Special Care Instructions", textColor),
+               const SizedBox(height: 15),
+               _buildSpecialCareInstructions(isDark, textColor),
+               const SizedBox(height: 30),
+            ],
         ],
       );
     }
+  }
+
+  final _notesController = TextEditingController();
+  final int _notesMaxLength = 250;
+
+  Widget _buildSpecialCareInstructions(bool isDark, Color textColor) {
+    final List<String> chips = [
+      "Gentle Wash", "No Bleach", "Cold Wash Only", 
+      "Separate Whites", "Hand Wash", "Use Softener"
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: chips.map((chip) => ActionChip(
+            label: Text(chip, style: const TextStyle(fontSize: 12)),
+            backgroundColor: isDark ? Colors.white10 : Colors.grey.shade100,
+            labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              String currentText = _notesController.text;
+              if (currentText.length + chip.length + 2 > _notesMaxLength) {
+                ToastUtils.show(context, "Note too long", type: ToastType.warning);
+                return;
+              }
+              setState(() {
+                if (currentText.isEmpty) {
+                  _notesController.text = chip;
+                } else if (currentText.endsWith(". ") || currentText.endsWith(" ")) {
+                  _notesController.text += chip;
+                } else {
+                  _notesController.text += ". $chip";
+                }
+                // Move cursor to end
+                _notesController.selection = TextSelection.fromPosition(TextPosition(offset: _notesController.text.length));
+              });
+            },
+          )).toList(),
+        ),
+        const SizedBox(height: 15),
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white10 : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
+          ),
+          child: Column(
+            children: [
+              TextField(
+                controller: _notesController,
+                maxLines: 4,
+                maxLength: _notesMaxLength,
+                style: TextStyle(color: textColor, fontSize: 14),
+                onChanged: (val) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: "e.g. Do not use strong bleach. Hand wash only. Separate whites.",
+                  hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(15),
+                  counterStyle: const TextStyle(height: double.minPositive),
+                  counterText: "",
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 15, bottom: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      "${_notesController.text.length}/$_notesMaxLength",
+                      style: TextStyle(
+                        color: _notesController.text.length >= _notesMaxLength ? Colors.redAccent : (isDark ? Colors.white38 : Colors.black38),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildSectionHeader(String title, Color textColor) {
@@ -272,7 +369,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : (isDark ? Colors.white10 : Colors.grey.shade50),
+          color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.1) : (isDark ? Colors.white10 : Colors.grey.shade50),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.transparent),
         ),
@@ -676,6 +773,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       'deliveryFee': _deliveryFee,
       'discountBreakdown': _cartService.laundryDiscounts, // [New]
       'storeDiscount': _cartService.storeDiscountAmount, // [New]
+      'laundryNotes': _notesController.text.isNotEmpty ? _notesController.text : null, // [NEW]
       'guestInfo': {
         'name': auth.currentUser != null ? (auth.currentUser!['name'] ?? 'Guest User') : 'Guest User', 
         'email': email, // Pass email for Paystack

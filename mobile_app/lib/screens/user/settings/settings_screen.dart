@@ -97,14 +97,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // Profile Header
                   Consumer<AuthService>(
                     builder: (context, auth, _) {
-                      final user = auth.currentUser;
-                      final name = user?['name'] ?? '';
-                      final email = user?['email'] ?? '';
+                       final user = auth.currentUser;
+                      String name = user?['name']?.toString() ?? '';
+                      String email = user?['email']?.toString() ?? '';
                       
-                      if (user != null && (name.isEmpty || email.isEmpty)) {
+                      // If name/email is empty but logged in, it might be a newly created user 
+                      // where the profile hasn't hydrated yet (Ghost).
+                      if (!auth.isGuest && (name.isEmpty || email.isEmpty)) {
+                         name = "Valued Customer";
+                         email = "Updating profile...";
                          WidgetsBinding.instance.addPostFrameCallback((_) {
                            auth.validateSession(); 
                          });
+                      }
+                      if (auth.isGuest) {
+                         name = "Guest User";
+                         email = "Sign in to save progress";
                       }
                       
                       return Column(

@@ -41,7 +41,7 @@ class LiquidBackground extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF00C6FF).withOpacity(0.1),
+                  const Color(0xFF00C6FF).withValues(alpha: 0.1),
                   Colors.transparent
                 ],
               ),

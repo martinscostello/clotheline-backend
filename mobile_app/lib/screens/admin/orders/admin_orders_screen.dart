@@ -139,7 +139,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                  ],
                ),
                const SizedBox(height: 15),
-               Divider(color: Colors.white.withOpacity(0.1)),
+               Divider(color: Colors.white.withValues(alpha: 0.1)),
                const SizedBox(height: 15),
                ListTile(
                  leading: const Icon(Icons.print, color: Colors.blueAccent),
@@ -161,7 +161,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   Widget _batchActionButton(String status, Color color) {
     return ActionChip(
       label: Text(status),
-      backgroundColor: color.withOpacity(0.2),
+      backgroundColor: color.withValues(alpha: 0.2),
       labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
       side: BorderSide(color: color),
       onPressed: () {
@@ -181,7 +181,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
         title: _isSelectionMode 
              ? Text("${_selectedIds.length} Selected", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
              : _buildBranchFilterTitle(),
-        backgroundColor: _isSelectionMode ? AppTheme.primaryColor.withOpacity(0.8) : Colors.transparent,
+        backgroundColor: _isSelectionMode ? AppTheme.primaryColor.withValues(alpha: 0.8) : Colors.transparent,
         elevation: 0,
         leading: _isSelectionMode 
             ? IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _clearSelection)
@@ -355,6 +355,26 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                             _buildStatusBadge(order.status.name),
                           ],
                         ),
+                        if (order.laundryNotes != null && order.laundryNotes!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 14),
+                                  SizedBox(width: 4),
+                                  Text("SPECIAL CARE", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                                ],
+                              ),
+                            ),
+                          ),
                         const Divider(color: Colors.white10, height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -390,9 +410,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.5))
+        border: Border.all(color: color.withValues(alpha: 0.5))
       ),
       child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );

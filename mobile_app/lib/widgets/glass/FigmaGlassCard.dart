@@ -21,12 +21,12 @@ class FigmaGlassCard extends StatelessWidget {
 
     // Tune: Lower opacity for "Crystal" look (was 0.2/0.24)
     final fillColor = isDark 
-        ? const Color(0xFF0A2846).withOpacity(0.15) 
-        : Colors.white.withOpacity(0.08); // Much much clearer
+        ? const Color(0xFF0A2846).withValues(alpha: 0.15) 
+        : Colors.white.withValues(alpha: 0.08); // Much much clearer
     
     // Spec: Inner Shadow Simulation (Container Overlay)
     // 0 0 12 rgba(255,255,255,0.25)
-    final innerShadowColor = Colors.white.withOpacity(0.25);
+    final innerShadowColor = Colors.white.withValues(alpha: 0.25);
 
     return Container(
       decoration: BoxDecoration(
@@ -34,7 +34,7 @@ class FigmaGlassCard extends StatelessWidget {
         boxShadow: [
           // Outer Shadow: 0 16 40 rgba(0,0,0,0.15)
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             offset: const Offset(0, 16),
             blurRadius: 40,
             spreadRadius: 0,
@@ -59,9 +59,9 @@ class FigmaGlassCard extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withOpacity(0.6),
-                      Colors.cyanAccent.withOpacity(0.1),
-                      Colors.white.withOpacity(0.05),
+                      Colors.white.withValues(alpha: 0.6),
+                      Colors.cyanAccent.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.05),
                     ],
                     stops: const [0.0, 0.5, 1.0],
                   ),
@@ -81,7 +81,7 @@ class FigmaGlassCard extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.white.withOpacity(0.1),
+                      Colors.white.withValues(alpha: 0.1),
                       Colors.transparent,
                     ],
                   ),

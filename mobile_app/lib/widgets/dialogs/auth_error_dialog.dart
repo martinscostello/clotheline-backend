@@ -31,12 +31,12 @@ class AuthErrorDialog extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B).withOpacity(0.9) : Colors.white.withOpacity(0.95),
+            color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+            border: Border.all(color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               )
@@ -50,7 +50,7 @@ class AuthErrorDialog extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFFDE047).withOpacity(0.2), // Yellow/Amber tint
+                  color: const Color(0xFFFDE047).withValues(alpha: 0.2), // Yellow/Amber tint
                 ),
                 child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFEAB308), size: 36),
               ),

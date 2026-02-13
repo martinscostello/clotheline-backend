@@ -606,7 +606,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
           decoration: BoxDecoration(
             color: Colors.white10,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: AppTheme.primaryColor.withOpacity(0.5)),
+            border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.5)),
             image: _passportPhoto != null ? DecorationImage(image: NetworkImage(_passportPhoto!), fit: BoxFit.cover) : null
           ),
           child: _isUploadingPassport 
@@ -626,7 +626,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
           decoration: BoxDecoration(
             color: Colors.white10,
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: AppTheme.primaryColor.withOpacity(0.5)),
+            border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.5)),
             image: _idCardImage != null ? DecorationImage(image: NetworkImage(_idCardImage!), fit: BoxFit.cover) : null
           ),
           child: _isUploadingIdCard 

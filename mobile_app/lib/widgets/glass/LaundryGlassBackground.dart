@@ -22,8 +22,8 @@ class LaundryGlassBackground extends StatelessWidget {
     final bgColors = [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)]; // Deep Ocean
 
     // Bubbles/Icons Color
-    final bubbleColor = Colors.white.withOpacity(0.05);
-    final iconColor = Colors.white.withOpacity(0.05);
+    final bubbleColor = Colors.white.withValues(alpha: 0.05);
+    final iconColor = Colors.white.withValues(alpha: 0.05);
 
     return Stack(
       children: [
@@ -72,12 +72,12 @@ class LaundryGlassBackground extends StatelessWidget {
           // Bubble Gradient
           gradient: RadialGradient(
             colors: [
-              Colors.white.withOpacity(0.1),
-              Colors.white.withOpacity(0.0),
+              Colors.white.withValues(alpha: 0.1),
+              Colors.white.withValues(alpha: 0.0),
             ],
             stops: const [0.0, 1.0],
           ),
-          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
         ),
       ),
     );

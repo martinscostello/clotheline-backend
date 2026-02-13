@@ -22,6 +22,7 @@ class AdminPOSProvider extends ChangeNotifier {
   
   double deliveryFee = 0;
   String? deliveryAddress;
+  String? laundryNotes;
   
   bool isSaving = false;
 
@@ -81,6 +82,7 @@ class AdminPOSProvider extends ChangeNotifier {
     paymentMethod = 'cash';
     deliveryFee = 0;
     deliveryAddress = null;
+    laundryNotes = null;
     isSaving = false;
     notifyListeners();
   }
@@ -132,6 +134,7 @@ class AdminPOSProvider extends ChangeNotifier {
         'deliveryOption': deliveryOption,
         'deliveryAddress': deliveryAddress,
         'deliveryPhone': guestPhone,
+        'laundryNotes': laundryNotes,
       };
 
       final response = await api.client.post('/orders', data: orderData);

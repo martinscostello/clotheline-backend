@@ -51,6 +51,7 @@ class OrderModel {
   final double storeDiscount;
   final Map<String, double> discountBreakdown;
   final FeeAdjustment? feeAdjustment; // [New]
+  final String? laundryNotes; // [NEW]
   // Note: discountBreakdown keys: "Discount (Regular)", "Discount (Footwear)" etc.
 
   OrderModel({
@@ -86,9 +87,10 @@ class OrderModel {
     this.pickupLocation,
     this.deliveryFeeOverride,
     this.isFeeOverridden = false,
-    this.deliveryFee = 0,
+    this.deliveryFee = 0.0,
     this.pickupFee = 0,
     this.feeAdjustment,
+    this.laundryNotes,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -130,6 +132,7 @@ class OrderModel {
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
       pickupFee: (json['pickupFee'] as num?)?.toDouble() ?? 0.0,
       feeAdjustment: json['feeAdjustment'] != null ? FeeAdjustment.fromJson(json['feeAdjustment']) : null,
+      laundryNotes: json['laundryNotes'],
     );
   }
 
@@ -145,6 +148,7 @@ class OrderModel {
       'pickupPhone': pickupPhone,
       'deliveryAddress': deliveryAddress,
       'deliveryPhone': deliveryPhone,
+      'laundryNotes': laundryNotes,
       'guestInfo': {
         'name': guestName,
         'phone': guestPhone,

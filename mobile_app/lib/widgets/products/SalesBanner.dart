@@ -49,7 +49,7 @@ class SalesBanner extends StatelessWidget {
 
   // --- FLAT DESIGN (Detail Page Base) ---
   Widget _buildFlatDesign(Color primary, Color secondary, Color accent) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: 32, // More compact fixed height
       child: Row(
@@ -99,89 +99,85 @@ class SalesBanner extends StatelessWidget {
 
   // Style 1: Folded Folded Tab (Screenshot 1 top left)
   Widget _buildStyle1(Color primary, Color secondary, Color accent) {
-    return Container(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(45, 6, 12, 6),
-            decoration: BoxDecoration(
-              color: primary,
-              borderRadius: const BorderRadius.only(topRight: Radius.circular(4), bottomRight: Radius.circular(4)),
-            ),
-            child: Text(
-              config.primaryText,
-              style: TextStyle(color: secondary, fontWeight: FontWeight.bold, fontSize: 10),
-            ),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(45, 6, 12, 6),
+          decoration: BoxDecoration(
+            color: primary,
+            borderRadius: const BorderRadius.only(topRight: Radius.circular(4), bottomRight: Radius.circular(4)),
           ),
-          Positioned(
-            left: -5, top: -5,
-            child: ClipPath(
-              clipper: FoldedTabClipper(),
-              child: Container(
-                width: 45, height: 45,
-                color: accent,
-                padding: const EdgeInsets.all(4),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(config.secondaryText, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-                    Text(config.discountText.replaceAll(' OFF', ''), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
-                    const Text("OFF", style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
-                  ],
-                ),
+          child: Text(
+            config.primaryText,
+            style: TextStyle(color: secondary, fontWeight: FontWeight.bold, fontSize: 10),
+          ),
+        ),
+        Positioned(
+          left: -5, top: -5,
+          child: ClipPath(
+            clipper: FoldedTabClipper(),
+            child: Container(
+              width: 45, height: 45,
+              color: accent,
+              padding: const EdgeInsets.all(4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(config.secondaryText, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                  Text(config.discountText.replaceAll(' OFF', ''), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
+                  const Text("OFF", style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
+                ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   // Style 2: Modern Circle (Screenshot 1 top right variant)
   Widget _buildStyle2(Color primary, Color secondary, Color accent) {
-    return Container(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(10, 6, 30, 6),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(10, 6, 30, 6),
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            config.primaryText,
+            style: TextStyle(color: secondary, fontWeight: FontWeight.bold, fontSize: 11),
+          ),
+        ),
+        Positioned(
+          right: -15, top: -5,
+          child: Container(
+            width: 45, height: 45,
             decoration: BoxDecoration(
-              color: primary.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(4),
+              color: accent,
+              shape: BoxShape.circle,
+              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
             ),
-            child: Text(
-              config.primaryText,
-              style: TextStyle(color: secondary, fontWeight: FontWeight.bold, fontSize: 11),
-            ),
-          ),
-          Positioned(
-            right: -15, top: -5,
-            child: Container(
-              width: 45, height: 45,
-              decoration: BoxDecoration(
-                color: accent,
-                shape: BoxShape.circle,
-                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                   Text(config.secondaryText, style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
-                   Text(config.discountText.split(' ').first, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
-                   const Text("OFF", style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
-                ],
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                 Text(config.secondaryText, style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
+                 Text(config.discountText.split(' ').first, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
+                 const Text("OFF", style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   // Style 3: Starburst Seal (Screenshot 1 bottom left)
   Widget _buildStyle3(Color primary, Color secondary, Color accent) {
-    return Container(
+    return SizedBox(
        width: 60, height: 60,
        child: CustomPaint(
          painter: StarburstPainter(color: primary),
@@ -202,7 +198,7 @@ class SalesBanner extends StatelessWidget {
 
   // Style 4: Angled Gradient (Screenshot 1 bottom right variant)
   Widget _buildStyle4(Color primary, Color secondary, Color accent) {
-    return Container(
+    return SizedBox(
       height: 34,
       child: Stack(
         clipBehavior: Clip.none,
@@ -220,7 +216,7 @@ class SalesBanner extends StatelessWidget {
              child: Container(
                width: 38, height: 38,
                decoration: BoxDecoration(
-                 gradient: LinearGradient(colors: [accent, accent.withOpacity(0.8)]),
+                 gradient: LinearGradient(colors: [accent, accent.withValues(alpha: 0.8)]),
                  shape: BoxShape.circle,
                  border: Border.all(color: Colors.white, width: 1),
                ),
@@ -239,11 +235,11 @@ class SalesBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: primary, width: 1.5),
         boxShadow: [
-          BoxShadow(color: primary.withOpacity(0.5), blurRadius: 8, spreadRadius: 1)
+          BoxShadow(color: primary.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 1)
         ],
       ),
       child: Row(
@@ -261,7 +257,7 @@ class SalesBanner extends StatelessWidget {
 
   // Style 6: Double Ribbon
   Widget _buildStyle6(Color primary, Color secondary, Color accent) {
-    return Container(
+    return SizedBox(
       height: 50, width: 80,
       child: Stack(
         children: [
@@ -349,7 +345,7 @@ class StarburstPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Paint paint = Paint()..color = color;
-    final int spikes = 16;
+    const int spikes = 16;
     final double outerRadius = size.width / 2;
     final double innerRadius = outerRadius * 0.85;
     final double centerX = size.width / 2;
@@ -361,7 +357,11 @@ class StarburstPainter extends CustomPainter {
         double angle = (i * math.pi) / spikes;
         double x = centerX + radius * math.cos(angle);
         double y = centerY + radius * math.sin(angle);
-        if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+        if (i == 0) {
+          path.moveTo(x, y);
+        } else {
+          path.lineTo(x, y);
+        }
     }
     path.close();
     canvas.drawPath(path, paint);

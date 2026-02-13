@@ -385,13 +385,13 @@ class AuthService extends ChangeNotifier {
       await _storage.write(key: 'user_permissions', value: jsonEncode(user['permissions']));
     }
 
-    _currentUser = user;
+     _currentUser = Map<String, dynamic>.from(user);
     
     // [NEW] Sync FCM Token in Background
     syncFcmToken();
     
     notifyListeners();
-    return user;
+    return _currentUser!;
   }
 
   void _handleDioError(DioException e) {

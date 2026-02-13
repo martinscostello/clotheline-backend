@@ -35,7 +35,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 20,
               offset: const Offset(0, 10),
             )
@@ -47,7 +47,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -95,7 +95,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   filled: true,
-                  fillColor: isDark ? Colors.black26 : Colors.grey.withOpacity(0.1),
+                  fillColor: isDark ? Colors.black26 : Colors.grey.withValues(alpha: 0.1),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,

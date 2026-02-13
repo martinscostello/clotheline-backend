@@ -116,26 +116,25 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     SliverPadding(padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 90)), // Reduced from 130
 
                     // 1. Sales Banner (Bigger)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 0),
-                        child: AspectRatio(
-                          aspectRatio: 16/9,
-                          child: Builder(
-                            builder: (context) {
-                              final ads = _appContent?.productAds.where((a) => a.active).toList() ?? [];
-                              if (ads.isNotEmpty) {
-                                return CustomCachedImage(
-                                  imageUrl: ads.first.imageUrl,
-                                  fit: BoxFit.cover,
-                                  borderRadius: 0,
-                                );
-                              }
-                              return Image.asset('assets/images/banner_sales.png', fit: BoxFit.cover);
-                            }
+                    Builder(
+                      builder: (context) {
+                        final ads = _appContent?.productAds.where((a) => a.active).toList() ?? [];
+                        if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                        
+                        return SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 0),
+                            child: AspectRatio(
+                              aspectRatio: 16/9,
+                              child: CustomCachedImage(
+                                imageUrl: ads.first.imageUrl,
+                                fit: BoxFit.cover,
+                                borderRadius: 0,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      }
                     ),
 
                     // 2. Categories Scrollable (MOVED HERE)
@@ -144,24 +143,23 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
 
                     // 3. Trust/Guarantee Banner
-                    SliverToBoxAdapter(
-                      child: Container(
-                        height: 60,
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: Builder(
-                            builder: (context) {
-                              final ads = _appContent?.productAds.where((a) => a.active).toList() ?? [];
-                              if (ads.length > 1) {
-                                return CustomCachedImage(
-                                  imageUrl: ads[1].imageUrl,
-                                  fit: BoxFit.cover,
-                                  borderRadius: 0,
-                                );
-                              }
-                              return Image.asset('assets/images/banner_trust.png', fit: BoxFit.cover);
-                            }
-                        ),
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final ads = _appContent?.productAds.where((a) => a.active).toList() ?? [];
+                        if (ads.length < 2) return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+                        return SliverToBoxAdapter(
+                          child: Container(
+                            height: 60,
+                            margin: const EdgeInsets.only(bottom: 10),
+                            child: CustomCachedImage(
+                              imageUrl: ads[1].imageUrl,
+                              fit: BoxFit.cover,
+                              borderRadius: 0,
+                            ),
+                          ),
+                        );
+                      }
                     ),
 
                     // 4. Product Grid

@@ -116,8 +116,8 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
     
     // Background Colors (High contrast for dark mode)
     final Color backgroundColor = isDark 
-        ? const Color(0xFF1C1C1E).withOpacity(0.9) // Solid charcoal feel
-        : Colors.white.withOpacity(0.85); // Airy but visible
+        ? const Color(0xFF1C1C1E).withValues(alpha: 0.9) // Solid charcoal feel
+        : Colors.white.withValues(alpha: 0.85); // Airy but visible
     
     const Color activeColor = Color(0xFF007AFF); // Telegram Blue
     
@@ -168,12 +168,12 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
         color: backgroundColor,
         borderRadius: effectiveBorderRadius,
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
           width: 0.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.5 : 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.08),
             blurRadius: 16,
             spreadRadius: -4,
             offset: const Offset(0, 8),
@@ -202,8 +202,8 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
                       height: 62,
                       decoration: BoxDecoration(
                         color: isDark 
-                            ? Colors.white.withOpacity(0.1) 
-                            : Colors.black.withOpacity(0.05),
+                            ? Colors.white.withValues(alpha: 0.1) 
+                            : Colors.black.withValues(alpha: 0.05),
                         borderRadius: index == 0
                             ? BorderRadius.only(
                                 topLeft: effectiveBorderRadius.topLeft,
