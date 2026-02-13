@@ -535,8 +535,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     const SizedBox(height: 2),
                                     Row(
                                       children: [
-                                        const Icon(Icons.star, size: 10, color: Colors.amber),
-                                        Text(" ${product.rating}", style: TextStyle(fontSize: 10, color: isDark ? Colors.white70 : Colors.black54)),
+                                        ...List.generate(5, (i) {
+                                          double fill = product.rating - i;
+                                          IconData icon;
+                                          if (fill >= 1) {
+                                            icon = Icons.star;
+                                          } else if (fill > 0) {
+                                            icon = Icons.star_half;
+                                          } else {
+                                            icon = Icons.star_border;
+                                          }
+                                          return Icon(icon, size: 10, color: Colors.amber);
+                                        }),
+                                        const SizedBox(width: 4),
+                                        Text("${product.rating.toStringAsFixed(1)}", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
                                         const SizedBox(width: 4),
                                         Text("(${product.soldCount})", style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
                                       ],
