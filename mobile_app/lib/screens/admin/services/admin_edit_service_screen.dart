@@ -180,12 +180,35 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                   ...nestedServices.asMap().entries.map((entry) {
                     final i = entry.key;
                     final s = entry.value;
+                    
+                    // Controllers for editing existing items
+                    final sNameCtrl = TextEditingController(text: s.name);
+                    final sPriceCtrl = TextEditingController(text: s.price.toStringAsFixed(0));
+                    
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Row(
                         children: [
-                          Expanded(child: Text(s.name, style: const TextStyle(color: Colors.white, fontSize: 13))),
-                          Text("₦${s.price.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 13)),
+                          Expanded(
+                            flex: 2,
+                            child: TextField(
+                              controller: sNameCtrl,
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 8)),
+                              onChanged: (val) => s.name = val,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 1,
+                            child: TextField(
+                              controller: sPriceCtrl,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 13),
+                              decoration: const InputDecoration(prefixText: "₦", isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 8)),
+                              onChanged: (val) => s.price = double.tryParse(val) ?? 0,
+                            ),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.remove_circle_outline, color: Colors.white30, size: 20),
                             onPressed: () => setDialogState(() => nestedServices.removeAt(i)),

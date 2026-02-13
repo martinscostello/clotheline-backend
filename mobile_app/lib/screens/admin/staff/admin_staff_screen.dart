@@ -96,76 +96,79 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("Staff Profiles", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          Consumer<BranchProvider>(
-            builder: (context, branchProvider, _) {
-              if (branchProvider.branches.isEmpty) return const SizedBox();
-              return Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white10,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white24)
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    dropdownColor: const Color(0xFF1E1E2C),
-                    value: branchProvider.selectedBranch?.id,
-                    icon: const Icon(Icons.keyboard_arrow_down, color: AppTheme.primaryColor, size: 20),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                    onChanged: _onBranchChanged,
-                    items: branchProvider.branches.map((b) {
-                      return DropdownMenuItem(value: b.id, child: Text(b.name));
-                    }).toList(),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("Staff Profiles", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            Consumer<BranchProvider>(
+              builder: (context, branchProvider, _) {
+                if (branchProvider.branches.isEmpty) return const SizedBox();
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white24)
                   ),
-                ),
-              );
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      dropdownColor: const Color(0xFF1E1E2C),
+                      value: branchProvider.selectedBranch?.id,
+                      icon: const Icon(Icons.keyboard_arrow_down, color: AppTheme.primaryColor, size: 20),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      onChanged: _onBranchChanged,
+                      items: branchProvider.branches.map((b) {
+                        return DropdownMenuItem(value: b.id, child: Text(b.name));
+                      }).toList(),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 10),
+            IconButton(
+              icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor, size: 28),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AdminEditStaffScreen(branch: _currentBranch))
+                );
+                if (result == true) _fetchStaff();
+              },
+              tooltip: "Add Staff Member",
+            ),
+            const SizedBox(width: 15),
+          ],
+        ),
+        body: LiquidBackground(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isTablet = constraints.maxWidth >= 840;
+              
+              if (isTablet) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 100),
+                  child: Row(
+                    children: [
+                      Expanded(flex: 3, child: _buildStaffList(true)),
+                      const VerticalDivider(color: Colors.white10, width: 1),
+                      Expanded(flex: 7, child: _selectedStaff == null 
+                        ? const Center(child: Text("Select a staff member", style: TextStyle(color: Colors.white24)))
+                        : _buildStaffProfile(_selectedStaff!, true)),
+                    ],
+                  ),
+                );
+              } else {
+                return _buildStaffList(false);
+              }
             },
           ),
-          const SizedBox(width: 10),
-          IconButton(
-            icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor, size: 28),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AdminEditStaffScreen(branch: _currentBranch))
-              );
-              if (result == true) _fetchStaff();
-            },
-            tooltip: "Add Staff Member",
-          ),
-          const SizedBox(width: 15),
-        ],
-      ),
-      body: LiquidBackground(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isTablet = constraints.maxWidth >= 840;
-            
-            if (isTablet) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 100),
-                child: Row(
-                  children: [
-                    Expanded(flex: 3, child: _buildStaffList(true)),
-                    const VerticalDivider(color: Colors.white10, width: 1),
-                    Expanded(flex: 7, child: _selectedStaff == null 
-                      ? const Center(child: Text("Select a staff member", style: TextStyle(color: Colors.white24)))
-                      : _buildStaffProfile(_selectedStaff!, true)),
-                  ],
-                ),
-              );
-            } else {
-              return _buildStaffList(false);
-            }
-          },
         ),
       ),
     );
@@ -542,15 +545,17 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF1E1E2C),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        padding: EdgeInsets.only(
-          left: 25, right: 25, top: 25,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 40,
-        ),
+      builder: (ctx) => Theme(
+        data: AppTheme.darkTheme,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E1E2C),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          padding: EdgeInsets.only(
+            left: 25, right: 25, top: 25,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 40,
+          ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -619,8 +624,9 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSalaryPerformanceSection(Staff staff) {
     return Row(
@@ -988,47 +994,50 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
-          title: Text("Issue Warning to ${staff.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDialogInput("Reason (e.g. Lateness)", reasonController),
-              DropdownButton<String>(
-                value: severity,
-                isExpanded: true,
-                dropdownColor: const Color(0xFF1A1A2E),
-                style: const TextStyle(color: Colors.white),
-                items: ['Low', 'Medium', 'Severe'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (val) => setDialogState(() => severity = val!),
+      builder: (ctx) => Theme(
+        data: AppTheme.darkTheme,
+        child: StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1A2E),
+            title: Text("Issue Warning to ${staff.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildDialogInput("Reason (e.g. Lateness)", reasonController),
+                DropdownButton<String>(
+                  value: severity,
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF1A1A2E),
+                  style: const TextStyle(color: Colors.white),
+                  items: ['Low', 'Medium', 'Severe'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  onChanged: (val) => setDialogState(() => severity = val!),
+                ),
+                _buildDialogInput("Additional Notes", noteController, maxLines: 2),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                onPressed: () async {
+                  if (reasonController.text.isEmpty) return;
+                  Navigator.pop(ctx);
+                  try {
+                    await _staffService.addWarning({
+                      'staffId': staff.id,
+                      'reason': reasonController.text,
+                      'severity': severity,
+                      'notes': noteController.text,
+                    });
+                    if (mounted) _fetchStaff();
+                  } catch (e) {
+                    if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+                  }
+                },
+                child: const Text("ISSUE"),
               ),
-              _buildDialogInput("Additional Notes", noteController, maxLines: 2),
             ],
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              onPressed: () async {
-                if (reasonController.text.isEmpty) return;
-                Navigator.pop(ctx);
-                try {
-                  await _staffService.addWarning({
-                    'staffId': staff.id,
-                    'reason': reasonController.text,
-                    'severity': severity,
-                    'notes': noteController.text,
-                  });
-                  if (mounted) _fetchStaff();
-                } catch (e) {
-                  if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
-                }
-              },
-              child: const Text("ISSUE"),
-            ),
-          ],
         ),
       ),
     );
@@ -1111,7 +1120,10 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       isScrollControlled: true,
       backgroundColor: const Color(0xFF101020),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
-      builder: (ctx) => SizedBox(height: MediaQuery.of(context).size.height * 0.9, child: _buildStaffProfile(staff, false)),
+      builder: (ctx) => Theme(
+        data: AppTheme.darkTheme,
+        child: SizedBox(height: MediaQuery.of(context).size.height * 0.9, child: _buildStaffProfile(staff, false)),
+      ),
     );
   }
 
@@ -1122,38 +1134,41 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
-          title: const Text("Record Salary Payment", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildDialogInput("Amount (₦)", amountController, keyboard: TextInputType.number),
-                const SizedBox(height: 15),
-                const Text("Payment Method", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                DropdownButton<String>(
-                  value: method,
-                  isExpanded: true,
-                  dropdownColor: const Color(0xFF1A1A2E),
-                  style: const TextStyle(color: Colors.white),
-                  items: ['Cash', 'Transfer'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                  onChanged: (val) => setDialogState(() => method = val!),
-                ),
-                const SizedBox(height: 15),
-                _buildDialogInput("Reference / Month", refController),
-              ],
+      builder: (ctx) => Theme(
+        data: AppTheme.darkTheme,
+        child: StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1A2E),
+            title: const Text("Record Salary Payment", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildDialogInput("Amount (₦)", amountController, keyboard: TextInputType.number),
+                  const SizedBox(height: 15),
+                  const Text("Payment Method", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  DropdownButton<String>(
+                    value: method,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF1A1A2E),
+                    style: const TextStyle(color: Colors.white),
+                    items: ['Cash', 'Transfer'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (val) => setDialogState(() => method = val!),
+                  ),
+                  const SizedBox(height: 15),
+                  _buildDialogInput("Reference / Month", refController),
+                ],
+              ),
             ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL", style: TextStyle(color: Colors.white54))),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                onPressed: () => _recordPayment(staff.id, double.tryParse(amountController.text) ?? 0, method, refController.text),
+                child: const Text("RECORD PAID", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL", style: TextStyle(color: Colors.white54))),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              onPressed: () => _recordPayment(staff.id, double.tryParse(amountController.text) ?? 0, method, refController.text),
-              child: const Text("RECORD PAID", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
         ),
       ),
     );
@@ -1179,58 +1194,61 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Color(0xFF1A1A2E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        padding: const EdgeInsets.all(25),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Payment History", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            if (staff.paymentHistory.isEmpty)
-              const Expanded(child: Center(child: Text("No payment records found", style: TextStyle(color: Colors.white24))))
-            else
-              Expanded(
-                child: ListView.builder(
-                  itemCount: staff.paymentHistory.length,
-                  itemBuilder: (ctx, index) {
-                    final p = staff.paymentHistory[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(p.reference ?? "Salary Payment", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              Text(DateFormat('MMM dd, yyyy').format(p.date), style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(NumberFormat.currency(symbol: '₦', decimalDigits: 0).format(p.amount), style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                              Text(p.status, style: const TextStyle(color: Colors.white54, fontSize: 10)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+      builder: (ctx) => Theme(
+        data: AppTheme.darkTheme,
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A1A2E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Payment History", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              if (staff.paymentHistory.isEmpty)
+                const Expanded(child: Center(child: Text("No payment records found", style: TextStyle(color: Colors.white24))))
+              else
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: staff.paymentHistory.length,
+                    itemBuilder: (ctx, index) {
+                      final p = staff.paymentHistory[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(p.reference ?? "Salary Payment", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                Text(DateFormat('MMM dd, yyyy').format(p.date), style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(NumberFormat.currency(symbol: '₦', decimalDigits: 0).format(p.amount), style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                                Text(p.status, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

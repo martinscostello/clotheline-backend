@@ -522,19 +522,22 @@ class AdminMobileChatDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: AppTheme.darkTheme.scaffoldBackgroundColor, // Ensure dark
-      appBar: AppBar(
-        title: const Text("Chat", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: BackButton(color: Colors.white, onPressed: () => Navigator.pop(context)),
-      ),
-      body: LiquidBackground(
-        child: Padding(
-          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 60),
-          child: AdminChatDetailView(threadId: threadId),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        backgroundColor: AppTheme.darkTheme.scaffoldBackgroundColor, // Ensure dark
+        appBar: AppBar(
+          title: const Text("Chat", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: BackButton(color: Colors.white, onPressed: () => Navigator.pop(context)),
+        ),
+        body: LiquidBackground(
+          child: Padding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 60),
+            child: AdminChatDetailView(threadId: threadId),
+          ),
         ),
       ),
     );

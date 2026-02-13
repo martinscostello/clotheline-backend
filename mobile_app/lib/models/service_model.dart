@@ -134,8 +134,8 @@ class ServiceItem {
 }
 
 class ServiceOption {
-  final String name;
-  final double price;
+  String name;
+  double price;
 
   ServiceOption({required this.name, required this.price});
 

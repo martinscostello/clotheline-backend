@@ -330,24 +330,26 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(widget.staff == null ? "New Staff Profile" : "Edit Profile", 
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          if (_isSaving)
-            const Center(child: Padding(padding: EdgeInsets.only(right: 20), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))))
-          else
-            TextButton(
-              onPressed: _submit,
-              child: const Text("SAVE", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
-            ),
-          const SizedBox(width: 10),
-        ],
-      ),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(widget.staff == null ? "New Staff Profile" : "Edit Profile", 
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            if (_isSaving)
+              const Center(child: Padding(padding: EdgeInsets.only(right: 20), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))))
+            else
+              TextButton(
+                onPressed: _submit,
+                child: const Text("SAVE", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+              ),
+            const SizedBox(width: 10),
+          ],
+        ),
       body: LiquidBackground(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(top: 100, bottom: 50, left: 20, right: 20),
@@ -415,8 +417,9 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSectionHeader(String title) {
     return Text(title, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 18, fontWeight: FontWeight.bold));

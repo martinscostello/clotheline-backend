@@ -141,19 +141,7 @@ class _BookingSheetState extends State<BookingSheet> {
                           color: isDark ? Colors.white : Colors.black87,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
                         )),
-                         trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(CurrencyFormatter.format(item.price), style: TextStyle(
-                              color: isDark ? Colors.white70 : Colors.black54,
-                              fontWeight: FontWeight.bold
-                            )),
-                            if (isSelected) ...[
-                              const SizedBox(width: 10),
-                              const Icon(Icons.check_circle, color: AppTheme.primaryColor)
-                            ]
-                          ],
-                        ),
+                        trailing: isSelected ? const Icon(Icons.check_circle, color: AppTheme.primaryColor) : null,
                         contentPadding: EdgeInsets.zero,
                       );
                     },

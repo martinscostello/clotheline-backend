@@ -81,14 +81,16 @@ class _AdminUserProfileScreenState extends State<AdminUserProfileScreen> {
     final user = widget.user;
     final totalSpent = _orders.fold(0.0, (sum, o) => sum + o.totalAmount);
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("User Profile", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        leading: const BackButton(color: Colors.white),
-      ),
-      body: LiquidBackground(
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("User Profile", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          leading: const BackButton(color: Colors.white),
+        ),
+        body: LiquidBackground(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
           child: Column(
@@ -213,12 +215,13 @@ class _AdminUserProfileScreenState extends State<AdminUserProfileScreen> {
                      ),
                    ),
                  )),
-             ],
+           ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildStatCard(String title, String value) {
     return GlassContainer(
