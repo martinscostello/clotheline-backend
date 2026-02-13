@@ -19,9 +19,18 @@ router.put('/', async (req, res) => {
     try {
         let content = await AppContent.getSingleton();
 
-        if (req.body.heroCarousel) content.heroCarousel = req.body.heroCarousel;
-        if (req.body.homeGridServices) content.homeGridServices = req.body.homeGridServices;
-        if (req.body.productAds) content.productAds = req.body.productAds;
+        if (req.body.heroCarousel) {
+            content.heroCarousel = req.body.heroCarousel;
+            content.markModified('heroCarousel');
+        }
+        if (req.body.homeGridServices) {
+            content.homeGridServices = req.body.homeGridServices;
+            content.markModified('homeGridServices');
+        }
+        if (req.body.productAds) {
+            content.productAds = req.body.productAds;
+            content.markModified('productAds');
+        }
         if (req.body.brandText) content.brandText = req.body.brandText;
         if (req.body.productCategories) content.productCategories = req.body.productCategories;
 
@@ -29,7 +38,10 @@ router.put('/', async (req, res) => {
         if (req.body.contactAddress) content.contactAddress = req.body.contactAddress;
         if (req.body.contactPhone) content.contactPhone = req.body.contactPhone;
         if (req.body.freeShippingThreshold !== undefined) content.freeShippingThreshold = req.body.freeShippingThreshold;
-        if (req.body.deliveryAssurance) content.deliveryAssurance = req.body.deliveryAssurance;
+        if (req.body.deliveryAssurance) {
+            content.deliveryAssurance = req.body.deliveryAssurance;
+            content.markModified('deliveryAssurance');
+        }
 
         const updatedContent = await content.save();
         res.json(updatedContent);
