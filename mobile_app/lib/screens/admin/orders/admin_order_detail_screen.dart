@@ -373,56 +373,6 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
                 ),
               ),
 
-              // [NEW] Special Care Instructions
-              if (_order!.laundryNotes != null && _order!.laundryNotes!.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  child: GlassContainer(
-                    opacity: 0.1,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.warning_rounded, color: Colors.orange, size: 18),
-                              SizedBox(width: 8),
-                              Text("Special Care Instructions", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _order!.laundryNotes!,
-                            maxLines: 5,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
-                          ),
-                          if (_order!.laundryNotes!.length > 150)
-                            TextButton(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    backgroundColor: const Color(0xFF1A1A1A),
-                                    title: const Text("Special Care Instructions", style: TextStyle(color: Colors.orange)),
-                                    content: SingleChildScrollView(
-                                      child: Text(_order!.laundryNotes!, style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5)),
-                                    ),
-                                    actions: [
-                                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CLOSE")),
-                                    ],
-                                  ),
-                                );
-                              },
-                              style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30)),
-                              child: const Text("SEE FULL NOTES", style: TextStyle(color: AppTheme.primaryColor, fontSize: 11, fontWeight: FontWeight.bold)),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
 
               // 2. Customer Info
               Container(
@@ -510,11 +460,15 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               const Text("Items Breakdown", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               
+
               _buildGroupedItemsList(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
 
-              const SizedBox(height: 20),
+              // [NEW] Special Care / Notes
+              _buildSpecialCareNotes(),
+
+              const SizedBox(height: 30),
 
               // 4. Totals
               GlassContainer(
@@ -790,6 +744,94 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
           }
         );
       },
+    );
+  }
+
+  Widget _buildSpecialCareNotes() {
+    final notes = _order!.laundryNotes;
+    final hasNotes = notes != null && notes.trim().isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              hasNotes ? Icons.report_problem_rounded : Icons.info_outline,
+              color: hasNotes ? Colors.orange : Colors.white38,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "SPECIAL CARE / NOTES",
+              style: TextStyle(
+                color: hasNotes ? Colors.orange : Colors.white38,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        GlassContainer(
+          opacity: 0.1,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasNotes ? notes : "No special care notes from customer",
+                  style: TextStyle(
+                    color: hasNotes ? Colors.white : Colors.white38,
+                    fontSize: 14,
+                    height: 1.5,
+                    fontStyle: hasNotes ? FontStyle.normal : FontStyle.italic,
+                  ),
+                ),
+                if (hasNotes && notes.length > 200) ...[
+                   const SizedBox(height: 10),
+                   TextButton(
+                    onPressed: () => _showFullNotes(notes),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 30),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      "READ FULL INSTRUCTIONS",
+                      style: TextStyle(color: AppTheme.primaryColor, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showFullNotes(String notes) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text("Special Care Instructions", style: TextStyle(color: Colors.orange)),
+        content: SingleChildScrollView(
+          child: Text(
+            notes,
+            style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("CLOSE", style: TextStyle(color: AppTheme.primaryColor)),
+          ),
+        ],
+      ),
     );
   }
 }
