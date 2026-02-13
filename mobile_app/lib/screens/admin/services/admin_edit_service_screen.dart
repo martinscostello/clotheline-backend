@@ -145,111 +145,134 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
     _showItemDialog();
   }
   
-  void _showVariantDialog([int? index]) {
-    final nameCtrl = TextEditingController(text: index != null ? _variants[index].name : "");
-    final multCtrl = TextEditingController(text: index != null ? _variants[index].priceMultiplier.toString() : "1.0");
+  void _showItemDialog([int? index]) {
+    final nameCtrl = TextEditingController(text: index != null ? _items[index].name : "");
+    List<ServiceOption> nestedServices = index != null ? List.from(_items[index].services) : [];
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF202020),
-        title: Text(index == null ? "Add Service Type" : "Edit Service Type", style: const TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-             TextField(
-               controller: nameCtrl, 
-               style: const TextStyle(color: Colors.white),
-               decoration: const InputDecoration(labelText: "Type Name (e.g. Wash & Fold)", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)))
-             ),
-             const SizedBox(height: 10),
-             TextField(
-               controller: multCtrl, 
-               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-               style: const TextStyle(color: Colors.white),
-               decoration: const InputDecoration(labelText: "Price Multiplier (e.g. 1.5)", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)))
-             ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF202020),
+          title: Text(
+            index == null ? "Add Cloth Type" : "Edit Item", 
+            style: const TextStyle(color: Colors.white)
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: nameCtrl, 
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: "Cloth Name (e.g. Shirt)", 
+                      labelStyle: TextStyle(color: Colors.white54), 
+                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                    )
+                  ),
+                  const SizedBox(height: 20),
+                  const Text("Service Types & Prices", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 10),
+                  ...nestedServices.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final s = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(s.name, style: const TextStyle(color: Colors.white, fontSize: 13))),
+                          Text("₦${s.price.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 13)),
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, color: Colors.white30, size: 20),
+                            onPressed: () => setDialogState(() => nestedServices.removeAt(i)),
+                          )
+                        ],
+                      ),
+                    );
+                  }),
+                  const Divider(color: Colors.white12),
+                  _buildAddServiceRow((name, price) {
+                    setDialogState(() {
+                      nestedServices.add(ServiceOption(name: name, price: price));
+                    });
+                  }),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+            ElevatedButton(
+              child: const Text("Save"),
+              onPressed: () {
+                if (nameCtrl.text.isNotEmpty) {
+                  setState(() {
+                    final newItem = ServiceItem(
+                      id: index != null ? _items[index].id : null,
+                      name: nameCtrl.text, 
+                      price: nestedServices.isNotEmpty ? nestedServices.first.price : 0, // Fallback base price
+                      services: nestedServices,
+                    );
+                    if (index != null) {
+                      _items[index] = newItem;
+                    } else {
+                      _items.add(newItem);
+                    }
+                  });
+                  Navigator.pop(ctx);
+                } else {
+                  ToastUtils.show(context, "Please enter a name", type: ToastType.error);
+                }
+              },
+            )
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          ElevatedButton(onPressed: (){
-             if(nameCtrl.text.isNotEmpty && multCtrl.text.isNotEmpty) {
-               final newVariant = ServiceVariant(
-                 name: nameCtrl.text, 
-                 priceMultiplier: double.tryParse(multCtrl.text) ?? 1.0
-               );
-               
-               setState(() {
-                 if (index != null) {
-                   _variants[index] = newVariant;
-                 } else {
-                   _variants.add(newVariant);
-                 }
-               });
-               Navigator.pop(ctx);
-             }
-          }, child: const Text("Save"))
-        ],
       )
     );
   }
 
-  void _showItemDialog([int? index]) {
-    final nameCtrl = TextEditingController(text: index != null ? _items[index].name : "");
-    final priceCtrl = TextEditingController(text: index != null ? _items[index].price.toString() : "");
+  Widget _buildAddServiceRow(Function(String, double) onAdd) {
+    final sNameCtrl = TextEditingController();
+    final sPriceCtrl = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF202020),
-        title: Text(
-          widget.scopeBranch != null 
-             ? "Edit Price for ${widget.scopeBranch!.name}" 
-             : (index == null ? "Add Cloth Type" : "Edit Item"), 
-          style: const TextStyle(color: Colors.white)
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl, 
-              // [Stict Branch Independence] Name editing is allowed everywhere
-              enabled: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: "Name", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)))
-            ),
-            TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Price (₦)", labelStyle: TextStyle(color: Colors.white54), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24))), style: const TextStyle(color: Colors.white)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            child: const Text("Cancel"),
-            onPressed: () => Navigator.pop(ctx),
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: TextField(
+            controller: sNameCtrl,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+            decoration: const InputDecoration(hintText: "Service (e.g. Wash Only)", hintStyle: TextStyle(color: Colors.white24)),
           ),
-          ElevatedButton(
-            child: const Text("Save"),
-            onPressed: () {
-              if (nameCtrl.text.isNotEmpty && priceCtrl.text.isNotEmpty) {
-                setState(() {
-                  // [FIX] Preserve ID if editing existing item
-                  final newItem = ServiceItem(
-                    id: index != null ? _items[index].id : null,
-                    name: nameCtrl.text, 
-                    price: double.tryParse(priceCtrl.text) ?? 0
-                  );
-                  if (index != null) {
-                    _items[index] = newItem;
-                  } else {
-                    _items.add(newItem);
-                  }
-                });
-                Navigator.pop(ctx);
-              }
-            },
-          )
-        ],
-      )
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 1,
+          child: TextField(
+            controller: sPriceCtrl,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+            decoration: const InputDecoration(hintText: "Price", hintStyle: TextStyle(color: Colors.white24)),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor),
+          onPressed: () {
+            if (sNameCtrl.text.isNotEmpty && sPriceCtrl.text.isNotEmpty) {
+              onAdd(sNameCtrl.text, double.tryParse(sPriceCtrl.text) ?? 0);
+              sNameCtrl.clear();
+              sPriceCtrl.clear();
+            }
+          },
+        )
+      ],
     );
   }
 
@@ -377,58 +400,31 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // 2. Service Types (Variants) - NEW
-                 GlassContainer(
-                  opacity: 0.1,
-                  child: Padding(
-                    padding: const EdgeInsets.all(15),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(widget.scopeBranch != null ? "Service Types (${widget.scopeBranch!.name})" : "Service Types", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            IconButton(icon: const Icon(Icons.add, color: AppTheme.primaryColor), onPressed: () => _showVariantDialog())
-                          ],
-                        ),
-                        if (_variants.isEmpty)
-                         const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: Text("No service types defined", style: TextStyle(color: Colors.white38, fontSize: 12))),
-                         
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _variants.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final v = entry.value;
-                            return GestureDetector(
-                              onTap: () => _showVariantDialog(index),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white10,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.white24),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text("${v.name} (${v.priceMultiplier}x)", style: const TextStyle(color: Colors.white, fontSize: 13)),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () => setState(() => _variants.removeAt(index)),
-                                      child: const Icon(Icons.close, size: 16, color: Colors.white54),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        )
-                      ],
+                // Section 2. Service Types (Variants) - DEPRECATED for item-specific pricing
+                // Keeping the glass container structure but hiding content if no variants exist
+                if (_variants.isNotEmpty) 
+                  GlassContainer(
+                    opacity: 0.1,
+                    child: Padding(
+                      padding: const EdgeInsets.all(15),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Global Service Multipliers (Legacy)", style: TextStyle(color: Colors.white30, fontSize: 12, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _variants.map((v) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(15)),
+                              child: Text("${v.name} (${v.priceMultiplier}x)", style: const TextStyle(color: Colors.white30, fontSize: 11)),
+                            )).toList(),
+                          )
+                        ],
+                      ),
                     ),
                   ),
-                 ),
 
                 const SizedBox(height: 20),
 
@@ -494,7 +490,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                          trailing: Row(
                            mainAxisSize: MainAxisSize.min,
                            children: [
-                             Text("₦${item.price.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor)),
+                             Text("${item.services.length} services", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 12)),
                              const SizedBox(width: 10),
                              IconButton(
                                icon: const Icon(Icons.delete, color: Colors.white30, size: 20),

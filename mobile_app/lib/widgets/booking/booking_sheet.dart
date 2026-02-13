@@ -25,7 +25,7 @@ class _BookingSheetState extends State<BookingSheet> {
   
   // Selections
   ServiceItem? _selectedCloth;
-  ServiceVariant? _selectedVariant;
+  ServiceOption? _selectedService; // [CHANGED] From ServiceVariant
   int _quantity = 1;
 
   @override
@@ -34,39 +34,27 @@ class _BookingSheetState extends State<BookingSheet> {
     // Default selections
     if (widget.serviceModel.items.isNotEmpty) {
       _selectedCloth = widget.serviceModel.items.first;
+      if (_selectedCloth!.services.isNotEmpty) {
+        _selectedService = _selectedCloth!.services.first;
+      }
     }
-    // Default variant if any, else we might not use variants if empty
-    // But backend should provide default variants? Or we create a dummy "Standard"
-    if (widget.serviceModel.serviceTypes.isNotEmpty) {
-      _selectedVariant = widget.serviceModel.serviceTypes.first;
-    } 
     
     // Refresh tax settings from backend (includes 50% safety cap)
     _cartService.fetchTaxSettings();
   }
 
   void _addToBucket() {
-    if (_selectedCloth != null) {
-      // If variants exist, use selected one. Else default.
-      String variantName = _selectedVariant?.name ?? "Standard";
-      // We map ServiceVariant to ServiceType or similar?
-      // CartItem needs ServiceType. ServiceType has id, name, priceMultiplier.
-      // Our ServiceVariant only has name. We assume multiplier 1.0 for now unless added.
-      // Wait, CartModel logic might need Review.
-      // Let's create a temporary ServiceType object.
-      
+    if (_selectedCloth != null && _selectedService != null) {
       final serviceTypeObj = ServiceType(
-        id: variantName, 
-        name: variantName,
-        priceMultiplier: _selectedVariant?.priceMultiplier ?? 1.0 
+        id: _selectedService!.name, 
+        name: _selectedService!.name,
+        priceMultiplier: 1.0 // Fixed pricing, so multiplier is effectively 1.0 relative to its own price
       );
       
-      // CartItem expects ClothingItem (id, name, basePrice)
-      // ServiceItem has (name, price). ID is missing? We can use name as ID.
       final clothItem = ClothingItem(
         id: _selectedCloth!.name, 
         name: _selectedCloth!.name, 
-        basePrice: _selectedCloth!.price
+        basePrice: _selectedService!.price // [CHANGED] Use the service specific price
       );
 
       _cartService.addItem(CartItem(
@@ -138,7 +126,15 @@ class _BookingSheetState extends State<BookingSheet> {
                       
                       return ListTile(
                         onTap: () {
-                          setState(() => _selectedCloth = item);
+                          setState(() {
+                            _selectedCloth = item;
+                            // Auto-select first service for new cloth
+                            if (item.services.isNotEmpty) {
+                              _selectedService = item.services.first;
+                            } else {
+                              _selectedService = null;
+                            }
+                          });
                           Navigator.pop(context);
                         },
                         title: Text(item.name, style: TextStyle(
@@ -208,24 +204,20 @@ class _BookingSheetState extends State<BookingSheet> {
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    itemCount: widget.serviceModel.serviceTypes.length,
+                    itemCount: _selectedCloth?.services.length ?? 0,
                     separatorBuilder: (_, __) => Divider(color: isDark ? Colors.white10 : Colors.grey.shade200),
                     itemBuilder: (context, index) {
-                      final variant = widget.serviceModel.serviceTypes[index];
-                      final isSelected = variant.name == _selectedVariant?.name;
+                      final service = _selectedCloth!.services[index];
+                      final isSelected = service.name == _selectedService?.name;
                       
-                      String priceText = "${variant.priceMultiplier}x";
-                      if (_selectedCloth != null) {
-                         double price = _selectedCloth!.price * variant.priceMultiplier;
-                         priceText = CurrencyFormatter.format(price);
-                      }
+                      String priceText = CurrencyFormatter.format(service.price);
 
                       return ListTile(
                         onTap: () {
-                          setState(() => _selectedVariant = variant);
+                          setState(() => _selectedService = service);
                           Navigator.pop(context);
                         },
-                        title: Text(variant.name, style: TextStyle(
+                        title: Text(service.name, style: TextStyle(
                           color: isDark ? Colors.white : Colors.black87,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
                         )),
@@ -319,13 +311,18 @@ class _BookingSheetState extends State<BookingSheet> {
                         ),
                         if (_selectedCloth != null)
                           Text(
-                            CurrencyFormatter.format(_selectedCloth!.price),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            "Select",
+                            style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 13),
                           ),
                       ],
                     ),
                   ),
                 ),
+                if (_selectedCloth != null && _selectedCloth!.services.isEmpty)
+                   const Padding(
+                     padding: EdgeInsets.only(top: 8, left: 4),
+                     child: Text("No services available for this cloth", style: TextStyle(color: Colors.redAccent, fontSize: 10)),
+                   ),
                 const SizedBox(height: 20),
               ] else ...[
                  Center(child: Text("No items available for this service", style: TextStyle(color: secondaryTextColor))),
@@ -333,7 +330,7 @@ class _BookingSheetState extends State<BookingSheet> {
               ],
 
               // 2. Service Type
-              if (widget.serviceModel.serviceTypes.isNotEmpty && _selectedVariant != null) ...[
+              if (_selectedCloth != null && _selectedCloth!.services.isNotEmpty) ...[
                 Text("Service Type", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 GestureDetector(
@@ -349,13 +346,13 @@ class _BookingSheetState extends State<BookingSheet> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          _selectedVariant?.name ?? "Select Service",
+                          _selectedService?.name ?? "Select Service",
                           style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
                         ),
                         Text(
-                           _selectedCloth != null 
-                             ? CurrencyFormatter.format(_selectedCloth!.price * (_selectedVariant?.priceMultiplier ?? 1.0))
-                             : "${_selectedVariant?.priceMultiplier ?? 1.0}x",
+                           _selectedService != null 
+                             ? CurrencyFormatter.format(_selectedService!.price)
+                             : "Select",
                            style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],

@@ -456,7 +456,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     );
   }
 
-  void _addLaundryItemDialog(ServiceItem item, ServiceVariant variant) {
+  void _addLaundryItemDialog(ServiceItem item, ServiceOption option) {
     int qty = 1;
     showDialog(
       context: context,
@@ -468,7 +468,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(variant.name, style: const TextStyle(color: Colors.white54)),
+              Text(option.name, style: const TextStyle(color: Colors.white54)),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -482,7 +482,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              Text("Total: ${CurrencyFormatter.format(item.price * variant.priceMultiplier * qty)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
+              Text("Total: ${CurrencyFormatter.format(option.price * qty)}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
             ],
           ),
           actions: [
@@ -492,8 +492,8 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
               onPressed: () {
                 final pos = Provider.of<AdminPOSProvider>(context, listen: false);
                 pos.addLaundryItem(CartItem(
-                  item: ClothingItem(id: item.id ?? '', name: item.name, basePrice: item.price),
-                  serviceType: ServiceType(id: variant.name, name: variant.name, priceMultiplier: variant.priceMultiplier),
+                  item: ClothingItem(id: item.id ?? '', name: item.name, basePrice: option.price),
+                  serviceType: ServiceType(id: option.name, name: option.name, priceMultiplier: 1.0),
                   quantity: qty,
                 ));
                 Navigator.pop(ctx);
@@ -526,13 +526,18 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
               children: [
                 Text("Select Type for ${item.name}", style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
-                ...service.serviceTypes.map((type) => ListTile(
-                  title: Text(type.name, style: const TextStyle(color: Colors.white)),
-                  subtitle: Text("Multiplier: x${type.priceMultiplier}", style: const TextStyle(color: Colors.white54)),
+                if (item.services.isEmpty)
+                   const Padding(
+                     padding: EdgeInsets.symmetric(vertical: 20),
+                     child: Center(child: Text("No specific services defined for this cloth", style: TextStyle(color: Colors.white38))),
+                   ),
+                ...item.services.map((option) => ListTile(
+                  title: Text(option.name, style: const TextStyle(color: Colors.white)),
+                  subtitle: Text(CurrencyFormatter.format(option.price), style: const TextStyle(color: Colors.white54)),
                   trailing: const Icon(Icons.chevron_right, color: AppTheme.secondaryColor),
                   onTap: () {
                     Navigator.pop(context);
-                    _addLaundryItemDialog(item, type);
+                    _addLaundryItemDialog(item, option);
                   },
                 )),
                 const SizedBox(height: 20),

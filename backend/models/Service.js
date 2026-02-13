@@ -55,6 +55,7 @@ const ServiceSchema = new mongoose.Schema({
 
         // [OVERRIDES] Service Types for this Branch
         // If this array is populated, it REPLACES the global serviceTypes for this branch.
+        // DEPRECATED: Moving to item-specific services
         serviceTypes: [{
             name: String,
             priceMultiplier: { type: Number, default: 1.0 }
@@ -64,8 +65,12 @@ const ServiceSchema = new mongoose.Schema({
         // Items here REPLACE the global items list for this branch.
         items: [{
             name: String,
-            price: Number,
-            isActive: { type: Boolean, default: true }
+            price: Number, // Legacy Base Price
+            isActive: { type: Boolean, default: true },
+            services: [{ // [NEW] Nested services for this item
+                name: String,
+                price: Number
+            }]
         }],
 
         lastUpdated: { type: Date, default: Date.now }
@@ -87,7 +92,11 @@ const ServiceSchema = new mongoose.Schema({
     // Sub-items (Cloth Types / Product Types)
     items: [{
         name: String, // e.g. "Shirt", "Trousers"
-        price: Number, // Default/Base Price
+        price: Number, // Legacy Base Price
+        services: [{ // [NEW] Nested services for this item
+            name: String,
+            price: Number
+        }],
         branchPricing: [{
             branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
             price: Number,
@@ -95,6 +104,7 @@ const ServiceSchema = new mongoose.Schema({
         }]
     }],
     // Service Variants (e.g. "Wash & Iron", "Steam Only")
+    // DEPRECATED: Moving to item-specific services
     serviceTypes: [{
         name: String,
         priceMultiplier: {

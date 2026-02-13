@@ -17,6 +17,39 @@ exports.getAllServices = async (req, res) => {
 
         let services = await Service.find(query).sort({ order: 1 });
 
+        // [MIGRATION HELPER] Ensure all services have nested services if they have types
+        const migrateService = (s) => {
+            const serviceObj = s.toObject ? s.toObject() : s;
+
+            const processItems = (items, types) => {
+                if (!items || !Array.isArray(items)) return [];
+                return items.map(item => {
+                    const migrated = { ...item };
+                    // If item has no services but global types exist, migrate
+                    if ((!migrated.services || migrated.services.length === 0) && types && types.length > 0) {
+                        migrated.services = types.map(t => ({
+                            name: t.name,
+                            price: Math.round((item.price || 0) * (t.priceMultiplier || 1.0))
+                        }));
+                    }
+                    return migrated;
+                });
+            };
+
+            // Migrate Global Items
+            serviceObj.items = processItems(serviceObj.items, serviceObj.serviceTypes);
+
+            // Migrate Branch Configurations
+            if (serviceObj.branchConfig) {
+                serviceObj.branchConfig = serviceObj.branchConfig.map(config => ({
+                    ...config,
+                    items: processItems(config.items, config.serviceTypes || serviceObj.serviceTypes)
+                }));
+            }
+
+            return serviceObj;
+        };
+
         if (branchId) {
             const processedServices = [];
 
@@ -40,15 +73,18 @@ exports.getAllServices = async (req, res) => {
                 const config = s.branchConfig[configIndex];
                 if (!config.isActive && includeHidden !== 'true') continue;
 
-                const serviceObj = s.toObject();
-                serviceObj.name = config.customName || s.name;
-                serviceObj.image = config.customImage || s.image;
-                serviceObj.description = config.customDescription || s.description;
-                serviceObj.isLocked = config.isLocked;
-                serviceObj.lockedLabel = config.lockedLabel;
-                serviceObj.isActive = config.isActive;
-                serviceObj.items = config.items;
-                serviceObj.serviceTypes = config.serviceTypes;
+                const serviceObj = migrateService(s);
+                const branchConfig = serviceObj.branchConfig[configIndex];
+                if (!branchConfig.isActive && includeHidden !== 'true') continue;
+
+                serviceObj.name = branchConfig.customName || s.name;
+                serviceObj.image = branchConfig.customImage || s.image;
+                serviceObj.description = branchConfig.customDescription || s.description;
+                serviceObj.isLocked = branchConfig.isLocked;
+                serviceObj.lockedLabel = branchConfig.lockedLabel;
+                serviceObj.isActive = branchConfig.isActive;
+                serviceObj.items = branchConfig.items;
+                // serviceObj.serviceTypes = config.serviceTypes; // Deprecated
                 serviceObj.discountPercentage = config.discountPercentage || 0;
                 serviceObj.discountLabel = config.discountLabel || "";
                 serviceObj.branchConfig = undefined;
@@ -62,7 +98,7 @@ exports.getAllServices = async (req, res) => {
             if (includeHidden !== 'true') {
                 services = services.filter(s => s.isActive);
             }
-            res.json(services);
+            res.json(services.map(s => migrateService(s)));
         }
 
     } catch (err) {
@@ -148,10 +184,13 @@ exports.updateService = async (req, res) => {
                 // Map frontend items to Schema structure
                 // We trust the frontend list as the "New Truth" for this branch.
                 service.branchConfig[configIndex].items = items.map(i => ({
-                    // Generate new ID if missing (Mongoose might do this auto, but let's be safe if needed, though usually subdoc array handles it)
                     name: i.name,
                     price: i.price,
-                    isActive: i.isActive !== undefined ? i.isActive : true
+                    isActive: i.isActive !== undefined ? i.isActive : true,
+                    services: (i.services || []).map(sv => ({
+                        name: sv.name,
+                        price: sv.price
+                    }))
                 }));
             }
 
@@ -170,18 +209,16 @@ exports.updateService = async (req, res) => {
             if (order !== undefined) service.order = order;
 
             // Handle Items (Global Base Price Update)
-            if (items) {
-                const mergedItems = items.map(newItem => {
-                    const existing = service.items.find(i => i.name === newItem.name);
-                    if (existing) {
-                        return {
-                            ...newItem,
-                            branchPricing: existing.branchPricing // Preserve Branch Overrides
-                        };
-                    }
-                    return newItem;
-                });
-                service.items = mergedItems;
+            if (items && Array.isArray(items)) {
+                service.items = items.map(i => ({
+                    name: i.name,
+                    price: i.price,
+                    services: (i.services || []).map(sv => ({
+                        name: sv.name,
+                        price: sv.price
+                    })),
+                    branchPricing: i.branchPricing || []
+                }));
             }
 
             if (serviceTypes) service.serviceTypes = serviceTypes;

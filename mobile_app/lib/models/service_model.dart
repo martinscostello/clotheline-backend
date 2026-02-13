@@ -106,22 +106,49 @@ class ServiceModel {
 class ServiceItem {
   final String? id; // Nullable for new items
   final String name;
-  final double price;
+  final double price; // Legacy Base Price
+  final List<ServiceOption> services; // [NEW] Nested services
 
-  ServiceItem({this.id, required this.name, required this.price});
+  ServiceItem({
+    this.id, 
+    required this.name, 
+    required this.price,
+    this.services = const []
+  });
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
     return ServiceItem(
       id: json['_id'],
       name: json['name'],
       price: (json['price'] as num).toDouble(),
+      services: (json['services'] as List?)?.map((s) => ServiceOption.fromJson(s)).toList() ?? [],
     );
   }
   
   Map<String, dynamic> toJson() => {
     if (id != null) '_id': id,
     'name': name, 
-    'price': price
+    'price': price,
+    'services': services.map((s) => s.toJson()).toList(),
+  };
+}
+
+class ServiceOption {
+  final String name;
+  final double price;
+
+  ServiceOption({required this.name, required this.price});
+
+  factory ServiceOption.fromJson(Map<String, dynamic> json) {
+    return ServiceOption(
+      name: json['name'] ?? "",
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'price': price,
   };
 }
 
