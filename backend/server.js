@@ -84,6 +84,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/promotions', require('./routes/promotions'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/data-management', require('./routes/data_management'));
 
 // Make uploads folder static
 app.use('/uploads', express.static('uploads'));

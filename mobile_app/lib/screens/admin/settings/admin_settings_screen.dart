@@ -12,6 +12,7 @@ import 'admin_delivery_settings_screen.dart';
 import 'admin_tax_settings_screen.dart';
 import 'admin_notification_settings_screen.dart';
 import '../staff/admin_staff_screen.dart'; // [NEW]
+import 'admin_manage_data_screen.dart'; // [NEW]
 import '../../../utils/toast_utils.dart';
 
 class AdminSettingsScreen extends StatelessWidget {
@@ -123,6 +124,10 @@ class AdminSettingsScreen extends StatelessWidget {
                                auth.logPermissionViolation("Tax Settings");
                              }
                           }),
+                          if (isMaster)
+                            _buildSettingTile(Icons.storage, "Manage Data", () {
+                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManageDataScreen()));
+                            }),
                         ],
                       );
                     }

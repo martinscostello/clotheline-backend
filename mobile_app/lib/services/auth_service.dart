@@ -617,4 +617,66 @@ class AuthService extends ChangeNotifier {
       return null;
     }
   }
+
+  // --- MasterAdmin Data Management ---
+
+  Future<bool> deleteAllOrders() async {
+    try {
+      final response = await _apiService.client.delete('/data-management/orders/all');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error deleting all orders: $e");
+      return false;
+    }
+  }
+
+  Future<bool> deleteSpecificOrder(String id) async {
+    try {
+      final response = await _apiService.client.delete('/data-management/orders/$id');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error deleting specific order: $e");
+      return false;
+    }
+  }
+
+  Future<bool> deleteAllPayments() async {
+    try {
+      final response = await _apiService.client.delete('/data-management/payments/all');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error deleting all payments: $e");
+      return false;
+    }
+  }
+
+  Future<bool> deleteSpecificPayment(String id) async {
+    try {
+      final response = await _apiService.client.delete('/data-management/payments/$id');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error deleting specific payment: $e");
+      return false;
+    }
+  }
+
+  Future<bool> clearRevenueData() async {
+    try {
+      final response = await _apiService.client.delete('/data-management/revenue/clear');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error clearing revenue data: $e");
+      return false;
+    }
+  }
+
+  Future<bool> clearChatHistory() async {
+    try {
+      final response = await _apiService.client.delete('/data-management/chat/clear');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error clearing chat history: $e");
+      return false;
+    }
+  }
 }
