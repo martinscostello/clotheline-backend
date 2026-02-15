@@ -273,13 +273,13 @@ class _AdminManageDataScreenState extends State<AdminManageDataScreen> {
                           final order = orders[index];
                           return ListTile(
                             leading: const CircleAvatar(backgroundColor: Colors.white10, child: Icon(Icons.shopping_bag_outlined, color: Colors.white70, size: 18)),
-                            title: Text("Order #${order.orderId}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            subtitle: Text("${DateFormat('MMM dd, hh:mm a').format(order.date)} • ${order.status.toUpperCase()}", style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                            title: Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            subtitle: Text("${DateFormat('MMM dd, hh:mm a').format(order.date)} • ${order.status.name.toUpperCase()}", style: const TextStyle(color: Colors.white54, fontSize: 11)),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                               onPressed: () {
                                 Navigator.pop(context);
-                                _confirmAction("Delete Order #${order.orderId}", "Delete this specific order record?", () async {
+                                _confirmAction("Delete Order #${order.id.substring(order.id.length - 6).toUpperCase()}", "Delete this specific order record?", () async {
                                   setState(() => _isLoading = true);
                                   final success = await Provider.of<AuthService>(context, listen: false).deleteSpecificOrder(order.id);
                                   if (success) {
