@@ -149,12 +149,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
               child: RefreshIndicator(
                 onRefresh: () => _fetchOrders(),
                 color: AppTheme.primaryColor,
-                child: ListView(
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 10, 
-                    bottom: 20, left: 20, right: 20
-                  ), 
-                  children: [
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  child: ListView(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 5, 
+                      bottom: 20, left: 20, right: 20
+                    ), 
+                    children: [
                     // Laundry Items
                     ..._cartService.items.map((item) => _buildBucketItem(
                       title: item.item.name,
@@ -315,14 +318,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
         onRefresh: () => _fetchOrders(),
         color: AppTheme.primaryColor,
         backgroundColor: Colors.transparent, // [FIX] No dark background
-        child: ListView.builder(
-          physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
-          padding: EdgeInsets.only(
-            top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 10, 
-            bottom: 100, left: 20, right: 20
-          ),
-          itemCount: filtered.length,
-          itemBuilder: (context, index) {
+        child: MediaQuery.removePadding(
+          context: context,
+          removeTop: true,
+          child: ListView.builder(
+            physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
+            padding: EdgeInsets.only(
+              top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 5, 
+              bottom: 100, left: 20, right: 20
+            ),
+            itemCount: filtered.length,
+            itemBuilder: (context, index) {
             final order = filtered[index];
             final dateStr = DateFormat('MMM d, h:mm a').format(order.date.toLocal());
             
@@ -387,8 +393,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
             );
           },
         ),
-       );
-      }
+       ),
+      );
+     }
     );
   }
 

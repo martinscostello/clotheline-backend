@@ -427,7 +427,7 @@ class _AdminOrderTabContentState extends State<_AdminOrderTabContent> with Autom
   Widget build(BuildContext context) {
     super.build(context);
     final topPadding = MediaQuery.paddingOf(context).top;
-    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight + 10; // Tightened buffer from 20 to 10
+    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight + 5; // Tighter 5px buffer
 
     return Consumer<OrderService>(
       builder: (context, orderService, _) {
@@ -448,11 +448,15 @@ class _AdminOrderTabContentState extends State<_AdminOrderTabContent> with Autom
         return RefreshIndicator(
           onRefresh: widget.onFetch,
           color: AppTheme.primaryColor,
-          child: ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()), // [FIX] Robust scroll behavior
-            padding: EdgeInsets.fromLTRB(20, headerHeight, 20, 100),
-            itemCount: orders.length,
-            itemBuilder: (context, index) => widget.buildCard(orders[index]),
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true, // [FIX] Eliminate automatic top padding from ListView
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+              padding: EdgeInsets.fromLTRB(20, headerHeight, 20, 100),
+              itemCount: orders.length,
+              itemBuilder: (context, index) => widget.buildCard(orders[index]),
+            ),
           ),
         );
       },
