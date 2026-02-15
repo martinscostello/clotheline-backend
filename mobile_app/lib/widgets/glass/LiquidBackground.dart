@@ -32,18 +32,20 @@ class LiquidBackground extends StatelessWidget {
         Positioned(
           top: -150,
           right: -50,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient( // Linear is safer than Radial on some SKIA versions
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF00C6FF).withValues(alpha: 0.1),
-                  Colors.transparent
-                ],
+          child: IgnorePointer( // [FIX] Prevent glow from capturing gestures
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient( // Linear is safer than Radial on some SKIA versions
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF00C6FF).withValues(alpha: 0.1),
+                    Colors.transparent
+                  ],
+                ),
               ),
             ),
           ),

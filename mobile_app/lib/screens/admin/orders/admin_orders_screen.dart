@@ -218,44 +218,20 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
             if (orderService.orders.isEmpty) {
               return const Center(child: Text("No orders found", style: TextStyle(color: Colors.white54)));
             }
-            
-            // [Multi-Branch] Filter Logic
-            List<OrderModel> filteredList = orderService.orders;
-            if (_selectedBranchFilter != null) {
-              filteredList = filteredList.where((o) => o.branchId == _selectedBranchFilter!.id).toList();
-            }
-
-            return TabBarView(
-              controller: _tabController,
-              children: _tabs.map((status) {
-                // Filter Status
-                // If in selection mode, maybe allow viewing all? No, tab filtering persists.
-                // We select items within the current view or across views? 
-                // Set stores IDs so it works across views, which is fancy.
-                
-                final orders = filteredList.where((o) => o.status.name == status).toList();
-                
-                if (orders.isEmpty) {
-                   String msg = "No $status orders";
-                   if (_selectedBranchFilter != null) msg += " in ${_selectedBranchFilter!.name}";
-                   return Center(child: Text(msg, style: const TextStyle(color: Colors.white30)));
-                }
-
-                return RefreshIndicator(
-                  onRefresh: () => _fetchOrders(),
-                  color: AppTheme.primaryColor,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 140, 20, 100),
-                    itemCount: orders.length,
-                    itemBuilder: (context, index) {
-                      final order = orders[index];
-                      return _buildOrderCard(order);
-                    },
-                  ),
-                );
-              }).toList(),
-            );
+            return child!;
           },
+          child: TabBarView(
+            controller: _tabController,
+            physics: const AlwaysScrollableScrollPhysics(), // [FIX] Ensure horizontal swiping is active
+            children: _tabs.map((status) {
+              return _AdminOrderTabContent(
+                status: status, 
+                selectedBranch: _selectedBranchFilter,
+                onFetch: _fetchOrders,
+                buildCard: _buildOrderCard,
+              );
+            }).toList(),
+          ),
         ),
       ),
     ),
@@ -420,5 +396,61 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
 
   String _formatCurrency(double amount) {
     return NumberFormat("#,##0", "en_US").format(amount);
+  }
+}
+
+// Separate internal widget for tab content to allow stable rebuilds and keep-alive
+class _AdminOrderTabContent extends StatefulWidget {
+  final String status;
+  final Branch? selectedBranch;
+  final Future<void> Function() onFetch;
+  final Widget Function(OrderModel) buildCard;
+
+  const _AdminOrderTabContent({
+    required this.status,
+    required this.selectedBranch,
+    required this.onFetch,
+    required this.buildCard,
+  });
+
+  @override
+  State<_AdminOrderTabContent> createState() => _AdminOrderTabContentState();
+}
+
+class _AdminOrderTabContentState extends State<_AdminOrderTabContent> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true; // [FIX] Maintain tab state during horizontal swipe
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Consumer<OrderService>(
+      builder: (context, orderService, _) {
+        List<OrderModel> orders = orderService.orders
+            .where((o) => o.status.name == widget.status)
+            .toList();
+
+        if (widget.selectedBranch != null) {
+          orders = orders.where((o) => o.branchId == widget.selectedBranch!.id).toList();
+        }
+
+        if (orders.isEmpty) {
+          String msg = "No ${widget.status} orders";
+          if (widget.selectedBranch != null) msg += " in ${widget.selectedBranch!.name}";
+          return Center(child: Text(msg, style: const TextStyle(color: Colors.white30)));
+        }
+
+        return RefreshIndicator(
+          onRefresh: widget.onFetch,
+          color: AppTheme.primaryColor,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()), // [FIX] Robust scroll behavior
+            padding: const EdgeInsets.fromLTRB(20, 140, 20, 100),
+            itemCount: orders.length,
+            itemBuilder: (context, index) => widget.buildCard(orders[index]),
+          ),
+        );
+      },
+    );
   }
 }
