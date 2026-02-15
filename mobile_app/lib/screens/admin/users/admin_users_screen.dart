@@ -168,7 +168,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           : _filteredUsers.isEmpty 
             ? const Center(child: Text("No users found", style: TextStyle(color: Colors.white54)))
             : ListView.builder(
-                padding: const EdgeInsets.only(top: 100, bottom: 100, left: 15, right: 15),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.paddingOf(context).top + kToolbarHeight + 20, 
+                  bottom: 100, left: 15, right: 15
+                ),
                 itemCount: _filteredUsers.length,
                 itemBuilder: (context, index) {
                   final user = _filteredUsers[index];

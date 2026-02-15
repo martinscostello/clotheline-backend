@@ -37,7 +37,10 @@ class AdminCMSScreen extends StatelessWidget {
             ),
             body: LiquidBackground(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 100, bottom: 100, left: 20, right: 20),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.paddingOf(context).top + kToolbarHeight + 20, 
+                  bottom: 100, left: 20, right: 20
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

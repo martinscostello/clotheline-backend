@@ -131,7 +131,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
       body: LiquidBackground(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 100, bottom: 100, left: 20, right: 20),
+          padding: EdgeInsets.only(
+            top: MediaQuery.paddingOf(context).top + kToolbarHeight + 20, 
+            bottom: 100, left: 20, right: 20
+          ),
           child: Consumer<AnalyticsService>(
             builder: (context, analytics, _) {
                if (analytics.isLoading && analytics.revenueStats == null) {

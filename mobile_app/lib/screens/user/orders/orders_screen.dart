@@ -77,7 +77,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               top: 0, left: 0, right: 0,
               child: UnifiedGlassHeader(
                 isDark: isDark,
-                height: 70, // [REDUCED] Move tabs up further
+                height: 60, // [FIX] Base height reduced, padding handled by header internally
                 title: Text("My Orders", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
                 actions: [
                   IconButton(
@@ -150,7 +150,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 onRefresh: () => _fetchOrders(),
                 color: AppTheme.primaryColor,
                 child: ListView(
-                  padding: const EdgeInsets.only(top: 190, bottom: 20, left: 20, right: 20), // [ADJUSTED] Padding for higher header
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 20, 
+                    bottom: 20, left: 20, right: 20
+                  ), 
                   children: [
                     // Laundry Items
                     ..._cartService.items.map((item) => _buildBucketItem(
@@ -314,7 +317,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
         backgroundColor: Colors.transparent, // [FIX] No dark background
         child: ListView.builder(
           physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
-          padding: const EdgeInsets.only(top: 190, bottom: 100, left: 20, right: 20),
+          padding: EdgeInsets.only(
+            top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 20, 
+            bottom: 100, left: 20, right: 20
+          ),
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final order = filtered[index];

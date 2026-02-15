@@ -426,6 +426,9 @@ class _AdminOrderTabContentState extends State<_AdminOrderTabContent> with Autom
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight + 20; // 20 for extra breathe room
+
     return Consumer<OrderService>(
       builder: (context, orderService, _) {
         List<OrderModel> orders = orderService.orders
@@ -447,7 +450,7 @@ class _AdminOrderTabContentState extends State<_AdminOrderTabContent> with Autom
           color: AppTheme.primaryColor,
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()), // [FIX] Robust scroll behavior
-            padding: const EdgeInsets.fromLTRB(20, 140, 20, 100),
+            padding: EdgeInsets.fromLTRB(20, headerHeight, 20, 100),
             itemCount: orders.length,
             itemBuilder: (context, index) => widget.buildCard(orders[index]),
           ),

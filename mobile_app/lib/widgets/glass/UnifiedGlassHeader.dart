@@ -42,8 +42,8 @@ class UnifiedGlassHeader extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              height: height - 10,
+            ConstrainedBox(
+              constraints: BoxConstraints(minHeight: height - 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -119,8 +119,8 @@ class UnifiedGlassHeader extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            height: height - 10, // Base height
+          ConstrainedBox(
+            constraints: BoxConstraints(minHeight: height - 10), // [FIX] Use minHeight instead of fixed height
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
