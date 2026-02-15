@@ -151,7 +151,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 color: AppTheme.primaryColor,
                 child: ListView(
                   padding: EdgeInsets.only(
-                    top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 20, 
+                    top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 10, 
                     bottom: 20, left: 20, right: 20
                   ), 
                   children: [
@@ -318,7 +318,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         child: ListView.builder(
           physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
           padding: EdgeInsets.only(
-            top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 20, 
+            top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 10, 
             bottom: 100, left: 20, right: 20
           ),
           itemCount: filtered.length,

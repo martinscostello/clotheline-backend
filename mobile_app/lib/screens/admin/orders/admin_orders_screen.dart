@@ -427,7 +427,7 @@ class _AdminOrderTabContentState extends State<_AdminOrderTabContent> with Autom
   Widget build(BuildContext context) {
     super.build(context);
     final topPadding = MediaQuery.paddingOf(context).top;
-    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight + 20; // 20 for extra breathe room
+    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight + 10; // Tightened buffer from 20 to 10
 
     return Consumer<OrderService>(
       builder: (context, orderService, _) {
