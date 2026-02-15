@@ -220,17 +220,19 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
             }
             return child!;
           },
-          child: TabBarView(
-            controller: _tabController,
-            physics: const AlwaysScrollableScrollPhysics(), // [FIX] Ensure horizontal swiping is active
-            children: _tabs.map((status) {
-              return _AdminOrderTabContent(
-                status: status, 
-                selectedBranch: _selectedBranchFilter,
-                onFetch: _fetchOrders,
-                buildCard: _buildOrderCard,
-              );
-            }).toList(),
+          child: SizedBox.expand( // [FIX] Ensure TabBarView takes full area for hit testing
+            child: TabBarView(
+              controller: _tabController,
+              // physics: const AlwaysScrollableScrollPhysics(), // [FIX] Removed. Let it use default PageScrollPhysics
+              children: _tabs.map((status) {
+                return _AdminOrderTabContent(
+                  status: status, 
+                  selectedBranch: _selectedBranchFilter,
+                  onFetch: _fetchOrders,
+                  buildCard: _buildOrderCard,
+                );
+              }).toList(),
+            ),
           ),
         ),
       ),

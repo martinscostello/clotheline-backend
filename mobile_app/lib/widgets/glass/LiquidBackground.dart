@@ -9,6 +9,7 @@ class LiquidBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      fit: StackFit.expand,
       children: [
         // Robust Linear Background (Safe for Tablets/Old GPUs)
         Container(

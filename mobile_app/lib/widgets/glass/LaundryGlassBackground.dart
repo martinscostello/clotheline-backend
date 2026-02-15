@@ -26,6 +26,7 @@ class LaundryGlassBackground extends StatelessWidget {
     final iconColor = Colors.white.withValues(alpha: 0.05);
 
     return Stack(
+      fit: StackFit.expand, // [FIX] Ensure stack fills available space
       children: [
         // 1. Background
         Container(
@@ -40,19 +41,24 @@ class LaundryGlassBackground extends StatelessWidget {
           ),
         ),
 
-        // 2. Rising Glass Bubbles
-        _buildBubble(size: 60, left: 50, speedMs: 4000, color: bubbleColor),
-        _buildBubble(size: 120, left: 200, speedMs: 7000, color: bubbleColor),
-        _buildBubble(size: 40, left: 300, speedMs: 5000, color: bubbleColor),
-        _buildBubble(size: 80, left: 150, speedMs: 6000, color: bubbleColor),
-        _buildBubble(size: 100, left: 350, speedMs: 8000, color: bubbleColor),
+        // 2. Rising Glass Bubbles & Icons
+        IgnorePointer( // [FIX] Global ignore for background decorations
+          child: Stack(
+            children: [
+              _buildBubble(size: 60, left: 50, speedMs: 4000, color: bubbleColor),
+              _buildBubble(size: 120, left: 200, speedMs: 7000, color: bubbleColor),
+              _buildBubble(size: 40, left: 300, speedMs: 5000, color: bubbleColor),
+              _buildBubble(size: 80, left: 150, speedMs: 6000, color: bubbleColor),
+              _buildBubble(size: 100, left: 350, speedMs: 8000, color: bubbleColor),
 
-        // 3. Floating Laundry Elements 
-        _buildFloatingIcon(Icons.checkroom, 150, 50, 100, iconColor),
-        _buildFloatingIcon(Icons.dry_cleaning, 280, 300, 200, iconColor),
-        _buildFloatingIcon(Icons.local_laundry_service, 400, 80, 150, iconColor),
-        _buildFloatingIcon(Icons.iron, 100, 300, 250, iconColor),
-        _buildFloatingIcon(Icons.wash, 500, 200, 300, iconColor),
+              _buildFloatingIcon(Icons.checkroom, 150, 50, 100, iconColor),
+              _buildFloatingIcon(Icons.dry_cleaning, 280, 300, 200, iconColor),
+              _buildFloatingIcon(Icons.local_laundry_service, 400, 80, 150, iconColor),
+              _buildFloatingIcon(Icons.iron, 100, 300, 250, iconColor),
+              _buildFloatingIcon(Icons.wash, 500, 200, 300, iconColor),
+            ],
+          ),
+        ),
 
         // 4. Content
         child,
