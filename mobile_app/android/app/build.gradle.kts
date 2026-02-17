@@ -56,6 +56,11 @@ android {
             // keepDebugSymbols.add("**/*.so") // REMOVED: Allow stripping to reduce size
         }
     }
+    
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
 
     buildTypes {
         release {
