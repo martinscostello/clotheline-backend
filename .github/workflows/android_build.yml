@@ -47,7 +47,7 @@ jobs:
         working-directory: ./mobile_app
         run: flutter doctor -v
 
-      - name: Clean Project
+      - name: Clean caches
         working-directory: ./mobile_app
         run: |
           flutter clean
