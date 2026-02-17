@@ -154,24 +154,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   removeTop: true,
                   child: ListView(
                     padding: EdgeInsets.only(
-                      top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 5, 
+                      top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 0, 
                       bottom: 20, left: 20, right: 20
                     ), 
                     children: [
-                    // Laundry Items
-                    ..._cartService.items.map((item) => _buildBucketItem(
-                      title: item.item.name,
-                      subtitle: item.serviceType.name,
-                      quantity: item.quantity,
-                      price: item.totalPrice,
-                      onDelete: () => _cartService.removeItem(item),
-                      isDark: isDark, textColor: textColor, secondaryTextColor: secondaryTextColor
-                    )),
-                    
-                    // Store Items Removed
-
-                    const SizedBox(height: 20),
-                  ],
+                      // Laundry Items
+                      ..._cartService.items.map((item) => _buildBucketItem(
+                        title: item.item.name,
+                        subtitle: item.serviceType.name,
+                        quantity: item.quantity,
+                        price: item.totalPrice,
+                        onDelete: () => _cartService.removeItem(item),
+                        isDark: isDark, textColor: textColor, secondaryTextColor: secondaryTextColor
+                      )),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -182,7 +180,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 105), // Precise 105px to clear navbar closely
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF101010).withOpacity(0.7) : Colors.white.withOpacity(0.7),
+                    color: isDark ? const Color(0xFF101010).withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.7),
                     border: Border(
                       top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
                     ),
@@ -190,52 +188,50 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   child: SafeArea(
                     top: false,
                     child: Column(
-                   mainAxisSize: MainAxisSize.min,
-                   children: [
-                     Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                       children: [
-                         Text("Total Estimate", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 14)),
-                         Text(CurrencyFormatter.format(_cartService.serviceTotalAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)),
-                       ],
-                     ),
-                     const SizedBox(height: 10),
-                     SizedBox(
-                       width: double.infinity,
-                       child: ElevatedButton(
-                         style: ElevatedButton.styleFrom(
-                           backgroundColor: AppTheme.primaryColor,
-                           foregroundColor: Colors.white,
-                           padding: const EdgeInsets.symmetric(vertical: 12),
-                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), 
-                         ),
-                         onPressed: () {
-                            final auth = context.read<AuthService>();
-                            if (auth.isGuest) {
-                              showDialog(
-                                context: context,
-                                builder: (ctx) => const GuestLoginDialog(
-                                  message: "Please sign in or create an account to resume your checkout.",
-                                ),
-                              );
-                              return;
-                            }
-
-                            Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => const CheckoutScreen()
-                            ));
-                          }, 
-                          child: const Text("RESUME CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Total Estimate", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text(CurrencyFormatter.format(_cartService.serviceTotalAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                          ],
                         ),
-                      )
-                    ],
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), 
+                            ),
+                            onPressed: () {
+                               final auth = context.read<AuthService>();
+                               if (auth.isGuest) {
+                                 showDialog(
+                                   context: context,
+                                   builder: (ctx) => const GuestLoginDialog(
+                                     message: "Please sign in or create an account to resume your checkout.",
+                                   ),
+                                 );
+                                 return;
+                               }
+
+                               Navigator.of(context).push(MaterialPageRoute(
+                                 builder: (context) => const CheckoutScreen()
+                               ));
+                             }, 
+                             child: const Text("RESUME CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                           ),
+                         )
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-            // Floating padding restored to clear Navbar
-            // Floating padding removed to allow bottom bar to touch edge
           ],
         );
       },
@@ -253,7 +249,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Text("${quantity}x", style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
@@ -315,87 +311,87 @@ class _OrdersScreenState extends State<OrdersScreen> {
         }
 
         return RefreshIndicator(
-        onRefresh: () => _fetchOrders(),
-        color: AppTheme.primaryColor,
-        backgroundColor: Colors.transparent, // [FIX] No dark background
-        child: MediaQuery.removePadding(
-          context: context,
-          removeTop: true,
-          child: ListView.builder(
-            physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
-            padding: EdgeInsets.only(
-              top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 5, 
-              bottom: 100, left: 20, right: 20
-            ),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-            final order = filtered[index];
-            final dateStr = DateFormat('MMM d, h:mm a').format(order.date.toLocal());
-            
-            final content = Padding(
-              padding: const EdgeInsets.all(12), // [TIGHTER] Padding inside card
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          onRefresh: () => _fetchOrders(),
+          color: AppTheme.primaryColor,
+          backgroundColor: Colors.transparent, // [FIX] No dark background
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: ListView.builder(
+              physics: const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()), // [FIX] Prevent overscroll void
+              padding: EdgeInsets.only(
+                top: MediaQuery.paddingOf(context).top + 60 + kTextTabBarHeight + 0, 
+                bottom: 100, left: 20, right: 20
+              ),
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final order = filtered[index];
+                final dateStr = DateFormat('MMM d, h:mm a').format(order.date.toLocal());
+                
+                final content = Padding(
+                  padding: const EdgeInsets.all(12), // [TIGHTER] Padding inside card
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                      // Badge moved to bottom to prevent overflow
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                   Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 5),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(dateStr, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11)),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (order.laundryNotes != null && order.laundryNotes!.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                          Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                          // Badge moved to bottom to prevent overflow
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                       Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 5),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(dateStr, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11)),
+                          Row(
+                            children: [
+                              if (order.laundryNotes != null && order.laundryNotes!.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                                    ),
+                                    child: const Text("⚠ SPECIAL CARE", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
                                 ),
-                                child: const Text("⚠ SPECIAL CARE", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
-                              ),
-                            ),
-                          _buildStatusBadge(order.status),
+                              _buildStatusBadge(order.status),
+                            ],
+                          ),
                         ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            );
+                );
 
-            return GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => OrderDetailScreen(order: order)
-                ));
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => OrderDetailScreen(order: order)
+                    ));
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: LaundryGlassCard(
+                      opacity: isDark ? 0.12 : 0.05,
+                      padding: const EdgeInsets.all(12),
+                      child: content,
+                    ),
+                  ),
+                );
               },
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: LaundryGlassCard(
-                  opacity: isDark ? 0.12 : 0.05,
-                  padding: const EdgeInsets.all(12),
-                  child: content,
-                ),
-              ),
-            );
-          },
-        ),
-       ),
-      );
-     }
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -417,9 +413,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );

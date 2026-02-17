@@ -1,0 +1,23 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
+import 'package:laundry_app/widgets/glass/GlassContainer.dart';
+import 'package:laundry_app/theme/app_theme.dart';
+import '../../../services/auth_service.dart';
+import 'admin_cms_content_screen.dart';
+import '../products/admin_products_screen.dart';
+import 'review_moderation_screen.dart';
+
+class AdminCMSScreen extends StatefulWidget {
+  const AdminCMSScreen({super.key});
+
+  @override
+  State<AdminCMSScreen> createState() => _AdminCMSScreenState();
+}
+
+class _AdminUsersScreenState extends State<AdminCMSScreen> {
+  // [FIX] Error: This should be _AdminCMSScreenState
+}
+
+// Wait, looking at Step 4913, I see the class name was _AdminCMSScreenState.
+// Let me re-read the top of the file to be 100% sure.

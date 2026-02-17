@@ -15,7 +15,7 @@ import '../../../../models/branch_model.dart'; // [NEW]
 import '../../../../utils/toast_utils.dart';
 
 class AdminEditServiceScreen extends StatefulWidget {
-  final ServiceModel? service; // [CHANGED] Nullable for Creation Mode
+  final ServiceModel? service; 
   final Branch? scopeBranch;
   const AdminEditServiceScreen({super.key, this.service, this.scopeBranch});
 
@@ -24,6 +24,63 @@ class AdminEditServiceScreen extends StatefulWidget {
 }
 
 class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
+  final ValueNotifier<VoidCallback?> _saveTrigger = ValueNotifier(null);
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(widget.service == null ? "Create Service" : "Edit ${widget.service!.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
+          backgroundColor: Colors.transparent,
+          leading: const BackButton(color: Colors.white),
+          actions: [
+            ValueListenableBuilder<VoidCallback?>(
+              valueListenable: _saveTrigger,
+              builder: (context, onSave, _) {
+                if (onSave == null) return const SizedBox.shrink();
+                return IconButton(
+                  icon: const Icon(Icons.check, color: AppTheme.primaryColor),
+                  onPressed: onSave,
+                );
+              },
+            ),
+            const SizedBox(width: 10),
+          ],
+        ),
+        body: LiquidBackground(
+          child: AdminEditServiceBody(
+            service: widget.service,
+            scopeBranch: widget.scopeBranch,
+            saveTrigger: _saveTrigger,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AdminEditServiceBody extends StatefulWidget {
+  final bool isEmbedded;
+  final ServiceModel? service;
+  final Branch? scopeBranch;
+  final ValueNotifier<VoidCallback?>? saveTrigger;
+
+  const AdminEditServiceBody({
+    super.key, 
+    this.isEmbedded = false, 
+    this.service, 
+    this.scopeBranch,
+    this.saveTrigger,
+  });
+
+  @override
+  State<AdminEditServiceBody> createState() => _AdminEditServiceBodyState();
+}
+
+class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
   final _formKey = GlobalKey<FormState>();
   final ContentService _contentService = ContentService();
 
@@ -35,9 +92,9 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
   bool _isLocked = false;
   List<ServiceItem> _items = [];
   List<ServiceVariant> _variants = [];
-  String _imageUrl = "assets/images/service_laundry.png"; // Default
-  String _color = "0xFF2196F3"; // Default Blue
-  String _icon = "local_laundry_service"; // Default
+  String _imageUrl = "assets/images/service_laundry.png"; 
+  String _color = "0xFF2196F3"; 
+  String _icon = "local_laundry_service"; 
   bool _isSaving = false;
 
   @override
@@ -57,6 +114,24 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
         _color = s.color;
         _icon = s.icon;
     }
+
+    if (widget.saveTrigger != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.saveTrigger!.value = _saveService;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.isEmbedded && widget.saveTrigger != null && widget.saveTrigger!.value == _saveService) {
+      widget.saveTrigger!.value = null;
+    }
+    _nameController.dispose();
+    _bannerController.dispose();
+    _discountController.dispose();
+    _discountLabelController.dispose();
+    super.dispose();
   }
 
   Future<void> _pickImage() async {
@@ -98,7 +173,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
     final Map<String, dynamic> body = {
       "name": _nameController.text,
       "image": _imageUrl,
-      "icon": _icon, // Ensure these are sent
+      "icon": _icon, 
       "color": _color,
       "isLocked": _isLocked,
       "lockedLabel": _bannerController.text,
@@ -115,7 +190,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
     try {
       final isNew = widget.service == null;
       final url = isNew 
-         ? Uri.parse('${ApiService.baseUrl}/services/') // [FIXED] Correct Route
+         ? Uri.parse('${ApiService.baseUrl}/services/') 
          : Uri.parse('${ApiService.baseUrl}/services/${widget.service!.id}');
          
       final response = isNew 
@@ -123,14 +198,16 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
          : await http.put(url, headers: {"Content-Type": "application/json"}, body: json.encode(body));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Refresh 
         if (widget.scopeBranch != null) {
            LaundryService().fetchServices(branchId: widget.scopeBranch!.id);
         } else {
            LaundryService().fetchServices();
         }
         
-        if(mounted) Navigator.pop(context);
+        if(mounted) {
+           if (!widget.isEmbedded) Navigator.pop(context);
+           ToastUtils.show(context, "Service saved successfully!", type: ToastType.success);
+        }
       } else {
         if(mounted) ToastUtils.show(context, "Failed to save: ${response.statusCode}", type: ToastType.error);
       }
@@ -181,7 +258,6 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                     final i = entry.key;
                     final s = entry.value;
                     
-                    // Controllers for editing existing items
                     final sNameCtrl = TextEditingController(text: s.name);
                     final sPriceCtrl = TextEditingController(text: s.price.toStringAsFixed(0));
                     
@@ -240,7 +316,7 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                     final newItem = ServiceItem(
                       id: index != null ? _items[index].id : null,
                       name: nameCtrl.text, 
-                      price: nestedServices.isNotEmpty ? nestedServices.first.price : 0, // Fallback base price
+                      price: nestedServices.isNotEmpty ? nestedServices.first.price : 0, 
                       services: nestedServices,
                     );
                     if (index != null) {
@@ -301,30 +377,15 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(widget.service == null ? "Create Service" : "Edit ${widget.service!.name}", style: const TextStyle(color: Colors.white, fontSize: 16)),
-        backgroundColor: Colors.transparent,
-        leading: const BackButton(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: _isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.check, color: AppTheme.primaryColor),
-            onPressed: _isSaving ? null : _saveService,
-          )
-        ],
-      ),
-      body: LiquidBackground(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 100, 20, 40),
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? 20 : 100, 20, 40),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 0. Image Section
                 Center(
                   child: GestureDetector(
                     onTap: _pickImage,
@@ -349,7 +410,6 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                           bottom: 10,
                           child: Icon(Icons.edit, color: Colors.white70),
                         ),
-                        // Dimension Helper Badge
                         Positioned(
                           top: 10,
                           left: 10,
@@ -365,7 +425,6 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // 1. General Settings
                 GlassContainer(
                   opacity: 0.1,
                   child: Padding(
@@ -423,8 +482,6 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // Section 2. Service Types (Variants) - DEPRECATED for item-specific pricing
-                // Keeping the glass container structure but hiding content if no variants exist
                 if (_variants.isNotEmpty) 
                   GlassContainer(
                     opacity: 0.1,
@@ -451,7 +508,6 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
 
                 const SizedBox(height: 20),
 
-                // 3. Access Control (Locking)
                 GlassContainer(
                    opacity: 0.1,
                    child: Padding(
@@ -468,15 +524,15 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                          ),
                          if (_isLocked)
                            TextFormField(
-                               controller: _bannerController,
-                               style: const TextStyle(color: Colors.white),
-                               decoration: const InputDecoration(
-                                 labelText: "Banner Text (e.g. Coming Soon)",
-                                 labelStyle: TextStyle(color: Colors.white54),
-                                 border: OutlineInputBorder(),
-                                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
-                               ),
-                             ),
+                                controller: _bannerController,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  labelText: "Banner Text (e.g. Coming Soon)",
+                                  labelStyle: TextStyle(color: Colors.white54),
+                                  border: OutlineInputBorder(),
+                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                                ),
+                              ),
                        ],
                      ),
                    ),
@@ -484,15 +540,10 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
 
                 const SizedBox(height: 20),
 
-                const SizedBox(height: 20),
-
-                // 4. Manage Items (Cloth Types)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(widget.scopeBranch != null ? "Edit Prices (${widget.scopeBranch!.name})" : "Cloth Types & Prices", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    
-                    // [Branch Independence] ALWAYS Allow Adding Items.
                     IconButton(
                       icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor), 
                       onPressed: _addItem
@@ -527,13 +578,24 @@ class _AdminEditServiceScreenState extends State<AdminEditServiceScreen> {
                   },
                 ),
                 
-                const SizedBox(height: 100), // Bottom padding
+                const SizedBox(height: 100), 
               ],
             ),
           ),
         ),
-      ),
-    ),
-  );
-}
+        
+        if (!widget.isEmbedded)
+           Positioned(
+             top: 10,
+             right: 20,
+             child: IconButton(
+               icon: _isSaving 
+                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                 : const Icon(Icons.check, color: AppTheme.primaryColor),
+               onPressed: _isSaving ? null : _saveService,
+             ),
+           ),
+      ],
+    );
+  }
 }

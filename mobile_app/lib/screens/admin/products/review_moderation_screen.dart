@@ -7,14 +7,40 @@ import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LaundryGlassBackground.dart';
 import 'product_reviews_detail_screen.dart';
 
-class ReviewModerationScreen extends StatefulWidget {
+class ReviewModerationScreen extends StatelessWidget {
   const ReviewModerationScreen({super.key});
 
   @override
-  State<ReviewModerationScreen> createState() => _ReviewModerationScreenState();
+  Widget build(BuildContext context) {
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text("Review Moderation", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: const BackButton(color: Colors.white),
+        ),
+        body: const LaundryGlassBackground(
+          child: ReviewModerationBody(),
+        ),
+      ),
+    );
+  }
 }
 
-class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
+class ReviewModerationBody extends StatefulWidget {
+  final bool isEmbedded;
+  final Function(String, Map<String, dynamic>)? onNavigate;
+  const ReviewModerationBody({super.key, this.isEmbedded = false, this.onNavigate});
+
+  @override
+  State<ReviewModerationBody> createState() => _ReviewModerationBodyState();
+}
+
+class _ReviewModerationBodyState extends State<ReviewModerationBody> {
   List<ReviewModel> _allReviews = [];
   Map<String, List<ReviewModel>> _groupedReviews = {};
   List<String> _filteredProductIds = [];
@@ -71,72 +97,70 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: _isSearching 
-            ? TextField(
-                controller: _searchCtrl,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  hintText: "Search product name...",
-                  hintStyle: TextStyle(color: Colors.white54),
-                  border: InputBorder.none,
-                ),
-                onChanged: (val) => setState(() => _applySearch(val)),
-              )
-            : const Text("Review Moderation", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.white),
-              onPressed: () {
-                setState(() {
-                  if (_isSearching) {
-                    _isSearching = false;
-                    _searchCtrl.clear();
-                    _applySearch("");
-                  } else {
-                    _isSearching = true;
-                  }
-                });
-              },
-            ),
-          ],
-          centerTitle: true,
-        ),
-        body: LaundryGlassBackground(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
-              : _filteredProductIds.isEmpty
-                  ? const Center(child: Text("No products found", style: TextStyle(color: Colors.white70)))
-                  : RefreshIndicator(
-                      onRefresh: _fetchReviews,
-                      color: Colors.white,
-                      child: ListView.builder(
-                        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 80, bottom: 40, left: 20, right: 20),
-                        itemCount: _filteredProductIds.length,
-                        itemBuilder: (context, index) {
-                          final productId = _filteredProductIds[index];
-                          final productReviews = _groupedReviews[productId]!;
-                          final productName = productReviews.first.productName;
-                          final avgRating = _calculateAverageRating(productReviews);
-
-                          return _buildProductCard(productId, productName, productReviews, avgRating);
-                        },
+    return Stack(
+      children: [
+        Column(
+          children: [
+            // Search Bar / Header
+            Container(
+              padding: EdgeInsets.only(top: widget.isEmbedded ? 10 : MediaQuery.of(context).padding.top + 10, left: 10, right: 10),
+              child: Row(
+                children: [
+                  if (!widget.isEmbedded)
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(25)),
+                      child: TextField(
+                        controller: _searchCtrl,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        decoration: const InputDecoration(
+                          hintText: "Search products...",
+                          hintStyle: TextStyle(color: Colors.white30),
+                          border: InputBorder.none,
+                          icon: Icon(Icons.search, color: Colors.white30, size: 20),
+                        ),
+                        onChanged: (val) => setState(() => _applySearch(val)),
                       ),
                     ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white70),
+                    onPressed: _fetchReviews,
+                  ),
+                ],
+              ),
+            ),
+            
+            Expanded(
+              child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                : _filteredProductIds.isEmpty
+                    ? const Center(child: Text("No products found", style: TextStyle(color: Colors.white70)))
+                    : RefreshIndicator(
+                        onRefresh: _fetchReviews,
+                        color: Colors.white,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                          itemCount: _filteredProductIds.length,
+                          itemBuilder: (context, index) {
+                            final productId = _filteredProductIds[index];
+                            final productReviews = _groupedReviews[productId]!;
+                            final productName = productReviews.first.productName;
+                            final avgRating = _calculateAverageRating(productReviews);
+
+                            return _buildProductCard(productId, productName, productReviews, avgRating);
+                          },
+                        ),
+                      ),
+            ),
+          ],
         ),
-      ),
+      ],
     );
   }
 
@@ -144,7 +168,14 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       child: GestureDetector(
-        onTap: () async {
+      onTap: () async {
+        if (widget.isEmbedded && widget.onNavigate != null) {
+          widget.onNavigate!('review_detail', {
+            'productId': productId,
+            'productName': productName,
+            'reviews': reviews,
+          });
+        } else {
           final shouldRefresh = await Navigator.push(
             context,
             MaterialPageRoute(
@@ -158,7 +189,8 @@ class _ReviewModerationScreenState extends State<ReviewModerationScreen> {
           if (shouldRefresh == true) {
             _fetchReviews();
           }
-        },
+        }
+      },
         child: GlassContainer(
           opacity: 0.1,
           padding: const EdgeInsets.all(20),

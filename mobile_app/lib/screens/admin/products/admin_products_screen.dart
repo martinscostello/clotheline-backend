@@ -10,14 +10,38 @@ import '../../../widgets/custom_cached_image.dart';
 import '../../../providers/branch_provider.dart'; // [FIXED] Added Import
 import 'admin_add_product_screen.dart';
 
-class AdminProductsScreen extends StatefulWidget {
+class AdminProductsScreen extends StatelessWidget {
   const AdminProductsScreen({super.key});
 
   @override
-  State<AdminProductsScreen> createState() => _AdminProductsScreenState();
+  Widget build(BuildContext context) {
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("Manage Products", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          leading: const BackButton(color: Colors.white),
+        ),
+        body: const LiquidBackground(
+          child: AdminProductsBody(),
+        ),
+      ),
+    );
+  }
 }
 
-class _AdminProductsScreenState extends State<AdminProductsScreen> {
+class AdminProductsBody extends StatefulWidget {
+  final bool isEmbedded;
+  final Function(String, Map<String, dynamic>)? onNavigate;
+  const AdminProductsBody({super.key, this.isEmbedded = false, this.onNavigate});
+
+  @override
+  State<AdminProductsBody> createState() => _AdminProductsBodyState();
+}
+
+class _AdminProductsBodyState extends State<AdminProductsBody> {
   @override
   void initState() {
     super.initState();
@@ -53,73 +77,9 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text("Manage Products", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        leading: const BackButton(color: Colors.white),
-        actions: [
-            // BRANCH SELECTOR
-           Consumer<BranchProvider>(
-             builder: (context, branchProvider, _) {
-               if (branchProvider.branches.isEmpty) return const SizedBox();
-              
-               return Container(
-                 margin: const EdgeInsets.only(right: 15),
-                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                 decoration: BoxDecoration(
-                   color: Colors.white24,
-                   borderRadius: BorderRadius.circular(20)
-                 ),
-                 child: DropdownButtonHideUnderline(
-                   child: DropdownButton<String>(
-                     dropdownColor: const Color(0xFF202020),
-                     value: branchProvider.selectedBranch?.id,
-                     icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                     onChanged: _onBranchChanged,
-                     items: branchProvider.branches.map((b) {
-                       return DropdownMenuItem(
-                         value: b.id,
-                         child: Text(b.name, style: const TextStyle(color: Colors.white)),
-                       );
-                     }).toList(),
-                   ),
-                 ),
-               );
-             }
-           )
-        ],
-      ),
-      floatingActionButton: Consumer<BranchProvider>(
-        builder: (context, branchProvider, _) {
-          // Hide Add button if no branch selected
-          if (branchProvider.selectedBranch == null) return const SizedBox();
-
-          return FloatingActionButton.extended(
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AdminAddProductScreen(
-                  branchId: branchProvider.selectedBranch!.id, // [STRICT SCOPE]
-                  product: null
-                )),
-              );
-              if (context.mounted && branchProvider.selectedBranch != null) {
-                Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchProvider.selectedBranch!.id, forceRefresh: true);
-              }
-            },
-            backgroundColor: AppTheme.primaryColor,
-            icon: const Icon(Icons.add, color: Colors.white),
-            label: Text("Add to ${branchProvider.selectedBranch!.name}", style: const TextStyle(color: Colors.white)),
-          );
-        }
-      ),
-      body: LiquidBackground(
-        child: Consumer2<StoreService, BranchProvider>(
+    return Stack(
+      children: [
+        Consumer2<StoreService, BranchProvider>(
           builder: (context, storeService, branchProvider, child) {
             
             if (branchProvider.selectedBranch == null) {
@@ -147,7 +107,7 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
               onRefresh: () => storeService.fetchProducts(branchId: branchProvider.selectedBranch!.id),
               color: AppTheme.primaryColor,
               child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 100, 20, 80),
+                padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? 20 : 100, 20, 100),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 15,
@@ -163,23 +123,91 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
             );
           },
         ),
-      ),
-    ),
-  );
-}
+        
+        // FAB equivalent for embedded
+        Consumer<BranchProvider>(
+          builder: (context, branchProvider, _) {
+            if (branchProvider.selectedBranch == null) return const SizedBox();
+            return Positioned(
+              bottom: 20,
+              right: 20,
+              child: FloatingActionButton.extended(
+                onPressed: () async {
+                  if (widget.isEmbedded && widget.onNavigate != null) {
+                    widget.onNavigate!('add_product', {
+                      'branchId': branchProvider.selectedBranch!.id,
+                      'product': null,
+                    });
+                  } else {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AdminAddProductScreen(
+                        branchId: branchProvider.selectedBranch!.id,
+                        product: null
+                      )),
+                    );
+                    if (context.mounted && branchProvider.selectedBranch != null) {
+                      Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchProvider.selectedBranch!.id, forceRefresh: true);
+                    }
+                  }
+                },
+                backgroundColor: AppTheme.primaryColor,
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: Text("Add to ${branchProvider.selectedBranch!.name}", style: const TextStyle(color: Colors.white)),
+              ),
+            );
+          },
+        ),
+
+        if (!widget.isEmbedded)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 60,
+            right: 20,
+            child: Consumer<BranchProvider>(
+              builder: (context, branchProvider, _) {
+                if (branchProvider.branches.isEmpty) return const SizedBox();
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(20)
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      dropdownColor: const Color(0xFF202020),
+                      value: branchProvider.selectedBranch?.id,
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                      onChanged: _onBranchChanged,
+                      items: branchProvider.branches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, style: const TextStyle(color: Colors.white)))).toList(),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
 
   Widget _buildProductCard(StoreProduct product, String branchId) {
     return GestureDetector(
       onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => AdminAddProductScreen(
-            product: product,
-            branchId: branchId // [STRICT SCOPE]
-          )), 
-        );
-        if (context.mounted) {
-            Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchId, forceRefresh: true);
+        if (widget.isEmbedded && widget.onNavigate != null) {
+          widget.onNavigate!('add_product', {
+            'product': product,
+            'branchId': branchId,
+          });
+        } else {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AdminAddProductScreen(
+              product: product,
+              branchId: branchId
+            )), 
+          );
+          if (context.mounted) {
+              Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchId, forceRefresh: true);
+          }
         }
       },
       child: Container(

@@ -12,15 +12,40 @@ import 'package:laundry_app/utils/toast_utils.dart';
 import '../chat/admin_chat_screen.dart'; // [New]
 import '../../../../services/auth_service.dart';
 
-class AdminUserProfileScreen extends StatefulWidget {
+class AdminUserProfileScreen extends StatelessWidget {
   final Map<String, dynamic> user;
   const AdminUserProfileScreen({super.key, required this.user});
 
   @override
-  State<AdminUserProfileScreen> createState() => _AdminUserProfileScreenState();
+  Widget build(BuildContext context) {
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("User Profile", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          leading: const BackButton(color: Colors.white),
+        ),
+        body: LiquidBackground(
+          child: AdminUserProfileBody(user: user),
+        ),
+      ),
+    );
+  }
 }
 
-class _AdminUserProfileScreenState extends State<AdminUserProfileScreen> {
+class AdminUserProfileBody extends StatefulWidget {
+  final Map<String, dynamic> user;
+  final bool isEmbedded;
+
+  const AdminUserProfileBody({super.key, required this.user, this.isEmbedded = false});
+
+  @override
+  State<AdminUserProfileBody> createState() => _AdminUserProfileBodyState();
+}
+
+class _AdminUserProfileBodyState extends State<AdminUserProfileBody> {
   List<OrderModel> _orders = [];
   bool _isLoading = true;
 
@@ -81,20 +106,10 @@ class _AdminUserProfileScreenState extends State<AdminUserProfileScreen> {
     final user = widget.user;
     final totalSpent = _orders.fold(0.0, (sum, o) => sum + o.totalAmount);
 
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          title: const Text("User Profile", style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.transparent,
-          leading: const BackButton(color: Colors.white),
-        ),
-        body: LiquidBackground(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
-          child: Column(
-             children: [
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? 20 : 100, 20, 20),
+      child: Column(
+         children: [
                // 1. Profile Header
                GlassContainer(
                  child: Padding(
@@ -217,11 +232,8 @@ class _AdminUserProfileScreenState extends State<AdminUserProfileScreen> {
                  )),
            ],
           ),
-        ),
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildStatCard(String title, String value) {
     return GlassContainer(

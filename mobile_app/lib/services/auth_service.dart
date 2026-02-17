@@ -62,6 +62,9 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> continueAsGuest() async {
+    // [SECURITY] Clear any previous session data before switching to guest
+    await _clearLocalAuthData();
+    
     _isGuest = true;
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
@@ -177,12 +180,14 @@ class AuthService extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      print("Session Validation Failed: $e");
+      debugPrint("SessVal: Network error (Optimistic Stay). $e");
       // If network error, KEEP user logged in (Optimistic).
       // Only logout if 401/403
-      if (e is DioException && (e.response?.statusCode == 401 || e.response?.statusCode == 403)) {
-         await logout();
-         return false;
+      if (e is DioException) {
+         if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+            await logout();
+            return false;
+         }
       }
       return true; // Assume valid if just offline
     }
@@ -408,8 +413,37 @@ class AuthService extends ChangeNotifier {
     throw Exception(message);
   }
 
+  // [SECURITY] Unified Auth Data Wipe
+  Future<void> _clearLocalAuthData() async {
+    try {
+      await _storage.deleteAll();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('is_logged_in');
+      await prefs.remove('saved_user_role');
+      await prefs.remove('user_name');
+      await prefs.remove('user_email');
+      await prefs.remove('user_avatar_id');
+      await prefs.remove('selected_branch_id');
+    } catch (e) {
+      debugPrint("Error clearing local auth data: $e");
+    }
+  }
+
   Future<void> logout() async {
-    await _storage.deleteAll();
+    try {
+      // 1. Tell backend to pull the token
+      final token = await PushNotificationService.getToken();
+      if (token != null) {
+        await _apiService.client.post('/auth/logout', data: {
+          'token': token
+        });
+      }
+    } catch (e) {
+       debugPrint("Backend logout warning: $e");
+    }
+
+    // 2. Wipe everything local
+    await _clearLocalAuthData();
     
     // Clear Optimistic Flags
     final prefs = await SharedPreferences.getInstance();

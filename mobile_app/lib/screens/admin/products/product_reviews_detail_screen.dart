@@ -9,7 +9,7 @@ import '../../../../utils/toast_utils.dart';
 import '../../../../widgets/custom_cached_image.dart';
 import '../../../../widgets/fullscreen_gallery.dart';
 
-class ProductReviewsDetailScreen extends StatefulWidget {
+class ProductReviewsDetailScreen extends StatelessWidget {
   final String productId;
   final String productName;
   final List<ReviewModel> reviews;
@@ -22,10 +22,53 @@ class ProductReviewsDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<ProductReviewsDetailScreen> createState() => _ProductReviewsDetailScreenState();
+  Widget build(BuildContext context) {
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(productName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+          centerTitle: true,
+        ),
+        body: LaundryGlassBackground(
+          child: ProductReviewsDetailBody(
+            productId: productId,
+            productName: productName,
+            reviews: reviews,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _ProductReviewsDetailScreenState extends State<ProductReviewsDetailScreen> {
+class ProductReviewsDetailBody extends StatefulWidget {
+  final String productId;
+  final String productName;
+  final List<ReviewModel> reviews;
+  final bool isEmbedded;
+
+  const ProductReviewsDetailBody({
+    super.key,
+    required this.productId,
+    required this.productName,
+    required this.reviews,
+    this.isEmbedded = false,
+  });
+
+  @override
+  State<ProductReviewsDetailBody> createState() => _ProductReviewsDetailBodyState();
+}
+
+class _ProductReviewsDetailBodyState extends State<ProductReviewsDetailBody> {
   late List<ReviewModel> _reviews;
 
   @override
@@ -39,7 +82,6 @@ class _ProductReviewsDetailScreenState extends State<ProductReviewsDetailScreen>
     final success = await reviewService.toggleVisibility(review.id);
     if (success && mounted) {
       ToastUtils.show(context, "Review visibility updated", type: ToastType.success);
-      // Update local state for immediate feedback
       setState(() {
         final index = _reviews.indexWhere((r) => r.id == review.id);
         if (index != -1) {
@@ -65,35 +107,19 @@ class _ProductReviewsDetailScreenState extends State<ProductReviewsDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text(widget.productName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-            onPressed: () => Navigator.pop(context, true), // Return true to trigger refresh if needed
-          ),
-          centerTitle: true,
-        ),
-        body: LaundryGlassBackground(
-          child: _reviews.isEmpty
-              ? const Center(child: Text("No reviews for this product", style: TextStyle(color: Colors.white70)))
-              : ListView.builder(
-                  padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 80, bottom: 40, left: 20, right: 20),
-                  itemCount: _reviews.length,
-                  itemBuilder: (context, index) {
-                    final review = _reviews[index];
-                    return _buildReviewCard(review);
-                  },
-                ),
-        ),
-      ),
-    );
+    return _reviews.isEmpty
+        ? const Center(child: Text("No reviews for this product", style: TextStyle(color: Colors.white70)))
+        : ListView.builder(
+            padding: EdgeInsets.only(
+              top: widget.isEmbedded ? 20 : MediaQuery.of(context).padding.top + 80, 
+              bottom: 40, left: 20, right: 20
+            ),
+            itemCount: _reviews.length,
+            itemBuilder: (context, index) {
+              final review = _reviews[index];
+              return _buildReviewCard(review);
+            },
+          );
   }
 
   Widget _buildReviewCard(ReviewModel review) {

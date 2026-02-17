@@ -8,14 +8,38 @@ import '../../../../widgets/glass/LiquidBackground.dart';
 import 'admin_edit_service_screen.dart';
 import '../../../../models/service_model.dart';
 
-class AdminServicesScreen extends StatefulWidget {
+class AdminServicesScreen extends StatelessWidget {
   const AdminServicesScreen({super.key});
 
   @override
-  State<AdminServicesScreen> createState() => _AdminServicesScreenState();
+  Widget build(BuildContext context) {
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("Manage Services", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          leading: const BackButton(color: Colors.white),
+        ),
+        body: const LiquidBackground(
+          child: AdminServicesBody(),
+        ),
+      ),
+    );
+  }
 }
 
-class _AdminServicesScreenState extends State<AdminServicesScreen> {
+class AdminServicesBody extends StatefulWidget {
+  final bool isEmbedded;
+  final Function(String, Map<String, dynamic>)? onNavigate;
+  const AdminServicesBody({super.key, this.isEmbedded = false, this.onNavigate});
+
+  @override
+  State<AdminServicesBody> createState() => _AdminServicesBodyState();
+}
+
+class _AdminServicesBodyState extends State<AdminServicesBody> {
   // We listen to LaundryService for data
   // We use BranchProvider for context
   bool _isLoading = false;
@@ -103,115 +127,115 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          title: const Text("Manage Services", style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.transparent,
-          leading: const BackButton(color: Colors.white),
-          actions: [
-            // EDIT MODE TOGGLE
-            IconButton(
-              icon: Icon(_isEditMode ? Icons.check : Icons.edit, color: Colors.white),
-              onPressed: _toggleEditMode,
-            ),
-            // BRANCH SELECTOR
-            Consumer<BranchProvider>(
-              builder: (context, branchProvider, _) {
-                if (branchProvider.branches.isEmpty) return const SizedBox();
-                
-                return Container(
-                  margin: const EdgeInsets.only(right: 15),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(20)
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      dropdownColor: const Color(0xFF202020),
-                      value: branchProvider.selectedBranch?.id,
-                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      onChanged: _onBranchChanged,
-                      items: branchProvider.branches.map((b) {
-                        return DropdownMenuItem(
-                          value: b.id,
-                          child: Text(b.name, style: const TextStyle(color: Colors.white)),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                );
-              }
-            )
-          ],
-        ),
-        body: LiquidBackground(
-          child: Consumer<LaundryService>(
-            builder: (context, laundryService, _) {
-              if (_isLoading) {
-                return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
-              }
-              
-              final services = laundryService.services;
+    return Stack(
+      children: [
+        Consumer<LaundryService>(
+          builder: (context, laundryService, _) {
+            if (_isLoading) {
+              return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+            }
+            
+            final services = laundryService.services;
 
-              if (_isEditMode) {
-                return ReorderableListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
-                  itemCount: services.length,
-                  itemBuilder: (context, index) {
-                    final service = services[index];
-                    return _buildServiceEditTile(service, index);
-                  },
-                  onReorder: (oldIndex, newIndex) {
-                    if (newIndex > oldIndex) newIndex -= 1;
-                    if (oldIndex == newIndex) return;
-                    
-                    final items = List<ServiceModel>.from(services);
-                    final item = items.removeAt(oldIndex);
-                    items.insert(newIndex, item);
-                    laundryService.updateServiceOrder(items);
-                  },
-                );
-              }
-              
-              return GridView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 100, 20, 120),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: 0.8, 
-                ),
+            if (_isEditMode) {
+              return ReorderableListView.builder(
+                padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? 20 : 100, 20, 20),
                 itemCount: services.length,
                 itemBuilder: (context, index) {
                   final service = services[index];
-                  return _buildServiceCard(service);
+                  return _buildServiceEditTile(service, index);
+                },
+                onReorder: (oldIndex, newIndex) {
+                  if (newIndex > oldIndex) newIndex -= 1;
+                  if (oldIndex == newIndex) return;
+                  
+                  final items = List<ServiceModel>.from(services);
+                  final item = items.removeAt(oldIndex);
+                  items.insert(newIndex, item);
+                  laundryService.updateServiceOrder(items);
                 },
               );
             }
+            
+            return GridView.builder(
+              padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? 20 : 100, 20, 120),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 15,
+                mainAxisSpacing: 15,
+                childAspectRatio: 0.8, 
+              ),
+              itemCount: services.length,
+              itemBuilder: (context, index) {
+                final service = services[index];
+                return _buildServiceCard(service);
+              },
+            );
+          }
+        ),
+        // Positioned controls if embedded (Optional: maybe keep them in AppBar?)
+        // For now, I'll provide an embedded version that might not have the branch selector in body
+        // but maybe we need it.
+        if (!widget.isEmbedded)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 60,
+            right: 20,
+            child: _buildBodyControls(),
+          ),
+        
+        // FAB equivalent
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: FloatingActionButton(
+            backgroundColor: AppTheme.primaryColor,
+            child: const Icon(Icons.add, color: Colors.white),
+            onPressed: () async {
+              final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+              await Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
+                  service: null, // Create Mode
+                  scopeBranch: branchProvider.selectedBranch
+                ))
+              );
+              _loadData();
+            },
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          backgroundColor: AppTheme.primaryColor,
-          child: const Icon(Icons.add, color: Colors.white),
-          onPressed: () async {
-            final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-            await Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
-                service: null, // Create Mode
-                scopeBranch: branchProvider.selectedBranch
-              ))
+      ],
+    );
+  }
+
+  Widget _buildBodyControls() {
+    return Row(
+      children: [
+        IconButton(
+          icon: Icon(_isEditMode ? Icons.check : Icons.edit, color: Colors.white),
+          onPressed: _toggleEditMode,
+        ),
+        Consumer<BranchProvider>(
+          builder: (context, branchProvider, _) {
+            if (branchProvider.branches.isEmpty) return const SizedBox();
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(20)
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  dropdownColor: const Color(0xFF202020),
+                  value: branchProvider.selectedBranch?.id,
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                  onChanged: _onBranchChanged,
+                  items: branchProvider.branches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, style: const TextStyle(color: Colors.white)))).toList(),
+                ),
+              ),
             );
-            // Refresh
-            _loadData(); // Reloads all
           },
         ),
-      ),
+      ],
     );
   }
 
@@ -219,14 +243,21 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
     return GestureDetector(
       onTap: () async {
         final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-        await Navigator.push(
-          context, 
-          MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
-            service: service, 
-            scopeBranch: branchProvider.selectedBranch
-          ))
-        );
-        _loadData();
+        if (widget.isEmbedded && widget.onNavigate != null) {
+          widget.onNavigate!('edit_service', {
+            'service': service,
+            'scopeBranch': branchProvider.selectedBranch,
+          });
+        } else {
+          await Navigator.push(
+            context, 
+            MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
+              service: service, 
+              scopeBranch: branchProvider.selectedBranch
+            ))
+          );
+          _loadData();
+        }
       },
       child: Container(
         decoration: BoxDecoration(

@@ -11,15 +11,51 @@ import '../../../../widgets/custom_cached_image.dart';
 import 'package:laundry_app/utils/toast_utils.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
-class AdminCMSContentScreen extends StatefulWidget {
-  final String section; // 'home', 'ads', 'branding'
+class AdminCMSContentScreen extends StatelessWidget {
+  final String section;
   const AdminCMSContentScreen({super.key, required this.section});
 
   @override
-  State<AdminCMSContentScreen> createState() => _AdminCMSContentScreenState();
+  Widget build(BuildContext context) {
+    String title = "Edit Content";
+    if (section == 'home') title = "Home Config";
+    if (section == 'ads') title = "Ads & Banners";
+    if (section == 'branding') title = "Branding";
+
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: LiquidBackground(
+          child: AdminCMSContentBody(section: section),
+        ),
+      ),
+    );
+  }
 }
 
-class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
+class AdminCMSContentBody extends StatefulWidget {
+  final String section;
+  final bool isEmbedded;
+  final ValueNotifier<VoidCallback?>? saveTrigger;
+
+  const AdminCMSContentBody({
+    super.key, 
+    required this.section, 
+    this.isEmbedded = false,
+    this.saveTrigger,
+  });
+
+  @override
+  State<AdminCMSContentBody> createState() => _AdminCMSContentBodyState();
+}
+
+class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
   final ContentService _contentService = ContentService();
   AppContentModel? _content;
   bool _isLoading = true;
@@ -44,10 +80,18 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
   void initState() {
     super.initState();
     _fetchContent();
+    if (widget.isEmbedded && widget.saveTrigger != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.saveTrigger!.value = _saveContent;
+      });
+    }
   }
 
   @override
   void dispose() {
+    if (widget.isEmbedded && widget.saveTrigger != null && widget.saveTrigger!.value == _saveContent) {
+      widget.saveTrigger!.value = null;
+    }
     _brandTextController.dispose();
     _contactAddressCtrl.dispose();
     _contactPhoneCtrl.dispose();
@@ -273,58 +317,42 @@ class _AdminCMSContentScreenState extends State<AdminCMSContentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String title = "Edit Content";
-    if (widget.section == 'home') title = "Home Config";
-    if (widget.section == 'ads') title = "Ads & Banners";
-    if (widget.section == 'branding') title = "Branding";
+    return Stack(
+      children: [
+        if (_isLoading)
+          const Center(child: CircularProgressIndicator())
+        else
+          SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? 20 : 100, 20, 100),
+            child: _buildSectionContent(),
+          ),
+        
+        // Progress Indicator
+        if (_isUploading)
+          Positioned(
+            top: widget.isEmbedded ? 0 : MediaQuery.of(context).padding.top + 56,
+            left: 0, right: 0,
+            child: LinearProgressIndicator(
+              value: _uploadProgress, 
+              backgroundColor: Colors.white12,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.secondaryColor),
+            ),
+          ),
 
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        bottom: _isUploading 
-          ? PreferredSize(
-              preferredSize: const Size.fromHeight(4),
-              child: LinearProgressIndicator(
-                value: _uploadProgress, 
-                backgroundColor: Colors.white12,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.secondaryColor),
-              ),
-            )
-          : null,
-        actions: [
-          if (_isUploading)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Center(
-                child: Text(
-                  "${(_uploadProgress * 100).toInt()}%", 
-                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)
-                )
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.save, color: AppTheme.secondaryColor), 
-              onPressed: _saveContent,
-            )
-        ],
-      ),
-      body: LiquidBackground(
-        child: _isLoading 
-            ? const Center(child: CircularProgressIndicator()) 
-            : SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 100, bottom: 100, left: 20, right: 20),
-                child: _buildSectionContent(),
-              ),
-      ),
-    ),
-  );
-}
+        if (!widget.isEmbedded)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            right: 20,
+            child: _isUploading
+              ? Center(child: Text("${(_uploadProgress * 100).toInt()}%", style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)))
+              : IconButton(
+                  icon: const Icon(Icons.save, color: AppTheme.secondaryColor), 
+                  onPressed: _saveContent,
+                ),
+          ),
+      ],
+    );
+  }
 
   Widget _buildSectionContent() {
     if (_content == null) return const Center(child: Text("Failed to load content", style: TextStyle(color: Colors.white)));

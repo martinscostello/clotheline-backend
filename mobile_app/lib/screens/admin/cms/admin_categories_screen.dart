@@ -7,14 +7,37 @@ import '../../../../widgets/glass/LiquidBackground.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../../models/category_model.dart';
 import '../../../../utils/toast_utils.dart';
-class AdminCategoriesScreen extends StatefulWidget {
+class AdminCategoriesScreen extends StatelessWidget {
   const AdminCategoriesScreen({super.key});
 
   @override
-  State<AdminCategoriesScreen> createState() => _AdminCategoriesScreenState();
+  Widget build(BuildContext context) {
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: const Text("Manage Categories", style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          leading: const BackButton(color: Colors.white),
+        ),
+        body: const LiquidBackground(
+          child: AdminCategoriesBody(),
+        ),
+      ),
+    );
+  }
 }
 
-class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
+class AdminCategoriesBody extends StatefulWidget {
+  final bool isEmbedded;
+  const AdminCategoriesBody({super.key, this.isEmbedded = false});
+
+  @override
+  State<AdminCategoriesBody> createState() => _AdminCategoriesBodyState();
+}
+
+class _AdminCategoriesBodyState extends State<AdminCategoriesBody> {
   final StoreService _storeService = StoreService();
   bool _isLoading = false;
 
@@ -128,22 +151,58 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          title: const Text("Manage Categories", style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.transparent,
-          leading: const BackButton(color: Colors.white),
-          actions: [
-            // BRANCH SELECTOR
-            Consumer<BranchProvider>(
+    return Stack(
+      children: [
+        if (_isLoading)
+          const Center(child: CircularProgressIndicator(color: Colors.white))
+        else
+          ListenableBuilder(
+            listenable: _storeService,
+            builder: (context, _) {
+              final categories = _storeService.categoryObjects;
+              if (categories.isEmpty) {
+                return const Center(child: Text("No categories found", style: TextStyle(color: Colors.white54)));
+              }
+
+              return ListView.separated(
+                padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? 20 : 100, 20, 100),
+                itemCount: categories.length,
+                separatorBuilder: (_,__) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final cat = categories[index];
+                  return GlassContainer(
+                    opacity: 0.1,
+                    child: ListTile(
+                      title: Text(cat.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.white30),
+                        onPressed: () => _showDeleteDialog(cat),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+          ),
+        
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: FloatingActionButton(
+            onPressed: _showAddDialog,
+            backgroundColor: AppTheme.primaryColor,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ),
+
+        if (!widget.isEmbedded)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 60,
+            right: 20,
+            child: Consumer<BranchProvider>(
               builder: (context, branchProvider, _) {
                 if (branchProvider.branches.isEmpty) return const SizedBox();
-                
                 return Container(
-                  margin: const EdgeInsets.only(right: 15),
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
                     color: Colors.white24,
@@ -154,59 +213,15 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                       dropdownColor: const Color(0xFF202020),
                       value: branchProvider.selectedBranch?.id,
                       icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       onChanged: _onBranchChanged,
-                      items: branchProvider.branches.map((b) {
-                        return DropdownMenuItem(
-                          value: b.id,
-                          child: Text(b.name, style: const TextStyle(color: Colors.white)),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                );
-              }
-            )
-          ],
-        ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
-        backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: LiquidBackground(
-        child: _isLoading 
-        ? const Center(child: CircularProgressIndicator(color: Colors.white))
-        : ListenableBuilder(
-          listenable: _storeService,
-          builder: (context, _) {
-            final categories = _storeService.categoryObjects;
-            if (categories.isEmpty) {
-              return const Center(child: Text("No categories found", style: TextStyle(color: Colors.white54)));
-            }
-
-            return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 100, 20, 100),
-              itemCount: categories.length,
-              separatorBuilder: (_,__) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final cat = categories[index];
-                return GlassContainer(
-                  opacity: 0.1,
-                  child: ListTile(
-                    title: Text(cat.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.white30),
-                      onPressed: () => _showDeleteDialog(cat),
+                      items: branchProvider.branches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, style: const TextStyle(color: Colors.white)))).toList(),
                     ),
                   ),
                 );
               },
-            );
-          }
-        ),
-      ),
-    ),
-  );
-}
+            ),
+          ),
+      ],
+    );
+  }
 }

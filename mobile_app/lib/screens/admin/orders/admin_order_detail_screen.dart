@@ -16,16 +16,42 @@ import '../../../../services/receipt_service.dart'; // [NEW]
 import '../../../../providers/branch_provider.dart'; // [NEW]
 import '../../../../models/branch_model.dart'; // [NEW]
 
-class AdminOrderDetailScreen extends StatefulWidget {
+class AdminOrderDetailScreen extends StatelessWidget {
   final OrderModel? order;
   final String? orderId;
   const AdminOrderDetailScreen({super.key, this.order, this.orderId});
 
   @override
-  State<AdminOrderDetailScreen> createState() => _AdminOrderDetailScreenState();
+  Widget build(BuildContext context) {
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(order != null ? "Order #${order!.id.substring(order!.id.length - 6).toUpperCase()}" : "Order Details", style: const TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+          leading: const BackButton(color: Colors.white),
+        ),
+        body: LiquidBackground(
+          child: AdminOrderDetailBody(order: order, orderId: orderId),
+        ),
+      ),
+    );
+  }
 }
 
-class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
+class AdminOrderDetailBody extends StatefulWidget {
+  final OrderModel? order;
+  final String? orderId;
+  final bool isEmbedded;
+
+  const AdminOrderDetailBody({super.key, this.order, this.orderId, this.isEmbedded = false});
+
+  @override
+  State<AdminOrderDetailBody> createState() => _AdminOrderDetailBodyState();
+}
+
+class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
   OrderModel? _order;
   bool _isLoading = true;
   late String _currentStatus;
@@ -252,28 +278,14 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
       );
     }
 
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text("Order #${_order!.id.substring(_order!.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent,
-        leading: const BackButton(color: Colors.white),
-        actions: [
-          IconButton(
-             icon: const Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
-             tooltip: "Report Issue",
-             onPressed: _reportIssue,
-          )
-        ],
-      ),
-      body: LiquidBackground(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight + 10;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? headerHeight : 100, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
               // [NEW] Payment Pending Banner for POD/Manual
               if (_order!.paymentStatus == PaymentStatus.Pending && _order!.paymentMethod != 'paystack')
                 Container(
@@ -583,11 +595,8 @@ class _AdminOrderDetailScreenState extends State<AdminOrderDetailScreen> {
               const SizedBox(height: 50),
             ],
           ),
-        ),
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildGroupedItemsList() {
     // 1. Group Items

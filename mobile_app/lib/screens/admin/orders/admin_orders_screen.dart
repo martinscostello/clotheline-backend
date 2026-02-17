@@ -32,6 +32,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   late TabController _tabController;
   Timer? _refreshTimer;
   final List<String> _tabs = ['New', 'PendingUserConfirmation', 'InProgress', 'Ready', 'Completed', 'Cancelled', 'Refunded'];
+  OrderModel? _selectedOrder;
 
   @override
   void initState() {
@@ -213,27 +214,52 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
            )
          : null,
       body: LiquidBackground(
-        child: Consumer<OrderService>(
-          builder: (context, orderService, child) {
-            if (orderService.orders.isEmpty) {
-              return const Center(child: Text("No orders found", style: TextStyle(color: Colors.white54)));
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bool isTablet = constraints.maxWidth >= 600;
+            
+            Widget listContent = Consumer<OrderService>(
+              builder: (context, orderService, child) {
+                if (orderService.orders.isEmpty) {
+                  return const Center(child: Text("No orders found", style: TextStyle(color: Colors.white54)));
+                }
+                return child!;
+              },
+              child: SizedBox.expand(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: _tabs.map((status) {
+                    return _AdminOrderTabContent(
+                      status: status, 
+                      selectedBranch: _selectedBranchFilter,
+                      onFetch: _fetchOrders,
+                      buildCard: _buildOrderCard,
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+
+            if (isTablet) {
+              return Row(
+                children: [
+                  Expanded(flex: 4, child: listContent),
+                  const VerticalDivider(color: Colors.white10, width: 1),
+                  Expanded(
+                    flex: 6,
+                    child: _selectedOrder == null
+                        ? const Center(child: Text("Select an order to view details", style: TextStyle(color: Colors.white24)))
+                        : KeyedSubtree(
+                            key: ValueKey(_selectedOrder!.id),
+                            child: AdminOrderDetailBody(order: _selectedOrder, isEmbedded: true),
+                          ),
+                  ),
+                ],
+              );
             }
-            return child!;
+
+            return listContent;
           },
-          child: SizedBox.expand( // [FIX] Ensure TabBarView takes full area for hit testing
-            child: TabBarView(
-              controller: _tabController,
-              // physics: const AlwaysScrollableScrollPhysics(), // [FIX] Removed. Let it use default PageScrollPhysics
-              children: _tabs.map((status) {
-                return _AdminOrderTabContent(
-                  status: status, 
-                  selectedBranch: _selectedBranchFilter,
-                  onFetch: _fetchOrders,
-                  buildCard: _buildOrderCard,
-                );
-              }).toList(),
-            ),
-          ),
         ),
       ),
     ),
@@ -278,6 +304,8 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
       onTap: () async {
         if (_isSelectionMode) {
           _toggleSelection(order.id);
+        } else if (MediaQuery.of(context).size.width >= 600) {
+          setState(() => _selectedOrder = order);
         } else {
           final result = await Navigator.push(
             context,
@@ -289,17 +317,22 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
         }
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
+        margin: const EdgeInsets.only(bottom: 10),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            border: isSelected ? Border.all(color: AppTheme.primaryColor, width: 2) : null,
+            border: isSelected 
+                ? Border.all(color: AppTheme.primaryColor, width: 2) 
+                : (_selectedOrder?.id == order.id && MediaQuery.of(context).size.width >= 600)
+                    ? Border.all(color: AppTheme.secondaryColor.withValues(alpha: 0.5), width: 2)
+                    : null,
             borderRadius: BorderRadius.circular(15)
           ),
           child: GlassContainer(
             opacity: 0.1,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Padding(
-              padding: const EdgeInsets.all(15),
+              padding: const EdgeInsets.all(0),
               child: Row(
                 children: [
                   // Checkbox Area (Animated)
@@ -323,10 +356,10 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text("#${order.id.substring(order.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 4),
-                                  Text(order.userName ?? order.guestName ?? "Guest", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                                  Text(DateFormat('MMM dd, hh:mm a').format(order.date.toLocal()), style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                                  Text("#${order.id.substring(order.id.length - 6).toUpperCase()}", style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 2),
+                                  Text(order.userName ?? order.guestName ?? "Guest", style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                                  Text(DateFormat('MMM dd, hh:mm a').format(order.date.toLocal()), style: const TextStyle(color: Colors.white38, fontSize: 11)),
                                 ],
                               ),
                             ),
@@ -353,7 +386,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                               ),
                             ),
                           ),
-                        const Divider(color: Colors.white10, height: 20),
+                        const Divider(color: Colors.white10, height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -427,7 +460,7 @@ class _AdminOrderTabContentState extends State<_AdminOrderTabContent> with Autom
   Widget build(BuildContext context) {
     super.build(context);
     final topPadding = MediaQuery.paddingOf(context).top;
-    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight + 5; // Tighter 5px buffer
+    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight - 55; // Further reduction to push up
 
     return Consumer<OrderService>(
       builder: (context, orderService, _) {

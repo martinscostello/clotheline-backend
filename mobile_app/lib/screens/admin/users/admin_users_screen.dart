@@ -25,6 +25,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   bool _isSelectionMode = false;
   final TextEditingController _searchController = TextEditingController();
   String? _selectedBranchId; // [New]
+  Map<String, dynamic>? _selectedUser; // [New]
 
   @override
   void initState() {
@@ -167,92 +168,125 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
           : _filteredUsers.isEmpty 
             ? const Center(child: Text("No users found", style: TextStyle(color: Colors.white54)))
-            : MediaQuery.removePadding(
-                context: context,
-                removeTop: true,
-                child: ListView.builder(
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.paddingOf(context).top + kToolbarHeight + 5, 
-                    bottom: 100, left: 15, right: 15
-                  ),
-                  itemCount: _filteredUsers.length,
-                itemBuilder: (context, index) {
-                  final user = _filteredUsers[index];
-                  final userId = user['_id'].toString();
-                  final isSelected = _selectedUserIds.contains(userId);
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool isTablet = constraints.maxWidth >= 600;
+                  
+                  Widget listContent = MediaQuery.removePadding(
+                    context: context,
+                    removeTop: true,
+                    child: ListView.builder(
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.paddingOf(context).top + kToolbarHeight + 2, 
+                        bottom: 100, left: 15, right: 15
+                      ),
+                      itemCount: _filteredUsers.length,
+                      itemBuilder: (context, index) {
+                        final user = _filteredUsers[index];
+                        final userId = user['_id'].toString();
+                        final isSelected = _selectedUserIds.contains(userId);
+                        final isDetailSelected = _selectedUser?['_id'] == userId;
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 15),
-                    child: GestureDetector(
-                      onLongPress: () {
-                        setState(() {
-                          _isSelectionMode = true;
-                          _selectedUserIds.add(userId);
-                        });
-                      },
-                      onTap: () {
-                        if (_isSelectionMode) {
-                          setState(() {
-                            if (isSelected) {
-                              _selectedUserIds.remove(userId);
-                              if (_selectedUserIds.isEmpty) _isSelectionMode = false;
-                            } else {
-                              _selectedUserIds.add(userId);
-                            }
-                          });
-                        } else {
-                          _openProfile(user);
-                        }
-                      },
-                      child: GlassContainer(
-                        opacity: isSelected ? 0.2 : 0.1,
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                        child: Row(
-                          children: [
-                            if (_isSelectionMode)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 15),
-                                child: Icon(
-                                  isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                                  color: isSelected ? AppTheme.primaryColor : Colors.white30,
-                                ),
-                              ),
-                            CircleAvatar(
-                              backgroundColor: Colors.white10,
-                              child: Text(user['name'].toString().substring(0, 1).toUpperCase(), style: const TextStyle(color: Colors.white)),
-                            ),
-                            const SizedBox(width: 15),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 15),
+                          child: GestureDetector(
+                            onLongPress: () {
+                              setState(() {
+                                _isSelectionMode = true;
+                                _selectedUserIds.add(userId);
+                              });
+                            },
+                            onTap: () {
+                              if (_isSelectionMode) {
+                                setState(() {
+                                  if (isSelected) {
+                                    _selectedUserIds.remove(userId);
+                                    if (_selectedUserIds.isEmpty) _isSelectionMode = false;
+                                  } else {
+                                    _selectedUserIds.add(userId);
+                                  }
+                                });
+                              } else if (isTablet) {
+                                setState(() => _selectedUser = user);
+                              } else {
+                                _openProfile(user);
+                              }
+                            },
+                            child: GlassContainer(
+                              opacity: (isSelected || (isTablet && isDetailSelected)) ? 0.2 : 0.1,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              border: (isTablet && isDetailSelected && !_isSelectionMode)
+                                ? Border.all(color: AppTheme.secondaryColor.withOpacity(0.5), width: 1.5)
+                                : null,
+                              child: Row(
                                 children: [
-                                  Text(user['name'] ?? "Unknown", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                  Text(user['email'] ?? "", style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                                  if (user['role'] == 'admin')
+                                  if (_isSelectionMode)
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 4.0),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                                        child: const Text("Admin", style: TextStyle(color: Colors.redAccent, fontSize: 10)),
+                                      padding: const EdgeInsets.only(right: 15),
+                                      child: Icon(
+                                        isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                                        color: isSelected ? AppTheme.primaryColor : Colors.white30,
                                       ),
-                                    )
+                                    ),
+                                  CircleAvatar(
+                                    backgroundColor: Colors.white10,
+                                    child: Text(user['name'].toString().substring(0, 1).toUpperCase(), style: const TextStyle(color: Colors.white)),
+                                  ),
+                                  const SizedBox(width: 15),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(user['name'] ?? "Unknown", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                        Text(user['email'] ?? "", style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                                        if (user['role'] == 'admin')
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 4.0),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                                              child: const Text("Admin", style: TextStyle(color: Colors.redAccent, fontSize: 10)),
+                                            ),
+                                          )
+                                      ],
+                                    ),
+                                  ),
+                                  if (!_isSelectionMode) ...[
+                                    if (isMaster && user['isMasterAdmin'] != true)
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                        onPressed: () => _confirmDeleteUser(context, user),
+                                      ),
+                                    const Icon(Icons.chevron_right, color: Colors.white24),
+                                  ],
                                 ],
                               ),
                             ),
-                            if (!_isSelectionMode) ...[
-                              if (isMaster && user['isMasterAdmin'] != true)
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                                  onPressed: () => _confirmDeleteUser(context, user),
-                                ),
-                              const Icon(Icons.chevron_right, color: Colors.white24),
-                            ],
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   );
+
+                  if (isTablet) {
+                    return Row(
+                      children: [
+                        Expanded(flex: 4, child: listContent),
+                        const VerticalDivider(color: Colors.white10, width: 1),
+                        Expanded(
+                          flex: 6,
+                          child: _selectedUser == null
+                              ? const Center(child: Text("Select a user to view profile", style: TextStyle(color: Colors.white24)))
+                              : KeyedSubtree(
+                                  key: ValueKey(_selectedUser!['_id']),
+                                  child: AdminUserProfileBody(user: _selectedUser!, isEmbedded: true),
+                                ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return listContent;
                 },
               ),
       ),

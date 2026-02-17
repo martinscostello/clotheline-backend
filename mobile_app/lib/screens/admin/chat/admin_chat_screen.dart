@@ -61,7 +61,7 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isLargeScreen = constraints.maxWidth > 800;
+        final isLargeScreen = constraints.maxWidth >= 600;
 
         return Scaffold(
           backgroundColor: Colors.transparent, 
@@ -94,15 +94,16 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                     // Split View
                     return Row(
                       children: [
-                        SizedBox(
-                          width: 350,
+                        Expanded(
+                          flex: 3,
                           child: _buildChatList(threads, isDark, chatService, (id) {
                             setState(() => _selectedChatId = id);
                             chatService.selectThread(id);
                           }),
                         ),
-                        VerticalDivider(width: 1, color: Colors.white10),
+                        const VerticalDivider(width: 1, color: Colors.white10),
                         Expanded(
+                          flex: 7,
                           child: _selectedChatId == null
                               ? _buildEmptyState(isDark)
                               : AdminChatDetailView(key: ValueKey(_selectedChatId), threadId: _selectedChatId!),
@@ -212,8 +213,9 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                     selectedTileColor: AppTheme.primaryColor.withOpacity(0.1),
                     onTap: () => onSelect(thread['_id']),
                     leading: CircleAvatar(
+                      radius: 18,
                       backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
-                      child: Text(userName.length > 0 ? userName[0] : '?', style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                      child: Text(userName.isNotEmpty ? userName[0] : '?', style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
                     title: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

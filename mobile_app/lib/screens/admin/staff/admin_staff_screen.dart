@@ -59,7 +59,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
           _staffList = staff;
           _isLoading = false;
           // Auto-select first staff on tablet if none selected
-          if (staff.isNotEmpty && MediaQuery.of(context).size.width >= 840) {
+          if (staff.isNotEmpty && MediaQuery.of(context).size.width >= 600) {
             if (_selectedStaff == null) {
               _selectedStaff = staff.first;
             } else {
@@ -149,7 +149,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         body: LiquidBackground(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final isTablet = constraints.maxWidth >= 840;
+              final isTablet = constraints.maxWidth >= 600;
               
               if (isTablet) {
                 return Padding(
@@ -203,7 +203,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    _buildProfileImage(staff, radius: 24),
+                    _buildProfileImage(staff, radius: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -211,7 +211,14 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                         children: [
                           Row(
                             children: [
-                              Text(staff.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              Flexible(
+                                child: Text(
+                                  staff.name, 
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                               if (staff.isArchived) ...[
                                 const SizedBox(width: 8),
                                 Container(

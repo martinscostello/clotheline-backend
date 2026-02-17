@@ -147,6 +147,26 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
                   setState(() => _currentIndex = index);
                 }
               },
+              onLogout: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: const Color(0xFF1E1E2C),
+                    title: const Text("Logout", style: TextStyle(color: Colors.white)),
+                    content: const Text("Are you sure you want to logout?", style: TextStyle(color: Colors.white70)),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL")),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true), 
+                        child: const Text("LOGOUT", style: TextStyle(color: Colors.redAccent)),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  authService.logout();
+                }
+              },
               navMargin: EdgeInsets.zero,
               navBorderRadius: const BorderRadius.vertical(top: Radius.circular(35)),
               navItems: _currentNavItems.map((item) => PremiumNavItem(
