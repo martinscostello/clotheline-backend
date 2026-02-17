@@ -18,8 +18,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.laundry_app"
-    compileSdk = 36 // Required by current dependencies
-    ndkVersion = "27.0.12077973" // Restored to version required by plugins
+    compileSdk = 34 // Stable Android 14
+    // ndkVersion = "27.0.12077973" // Let Flutter manage NDK version or default to LTS
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
