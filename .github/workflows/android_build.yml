@@ -47,7 +47,10 @@ jobs:
 
       - name: Clean Build
         working-directory: ./mobile_app
-        run: flutter clean
+        run: |
+          flutter clean
+          rm -rf ~/.gradle/caches
+          flutter pub get
 
       - name: Get Dependencies
         working-directory: ./mobile_app
