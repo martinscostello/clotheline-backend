@@ -441,7 +441,7 @@ exports.updateFcmToken = async (req, res) => {
 
         res.json({ msg: 'Token updated and deduplicated' });
     } catch (err) {
-        console.error("[Auth) Token Update Error:", err.message);
+        console.error("[Auth] Token Update Error:", err.message);
         res.status(500).send('Server Error');
     }
 };
