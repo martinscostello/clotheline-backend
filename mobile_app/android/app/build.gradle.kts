@@ -60,8 +60,8 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = true    // ENABLED: Shrink code
-            isShrinkResources = true  // ENABLED: Remove unused resources
+            isMinifyEnabled = false    // DISABLED: To fix CI R8/Memory issues
+            isShrinkResources = false  // DISABLED: To fix CI R8/Memory issues
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             ndk {
                 debugSymbolLevel = "FULL" // Restored: Best for Play Console, even if local strip fails
