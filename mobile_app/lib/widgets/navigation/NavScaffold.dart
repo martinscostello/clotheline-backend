@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'PremiumNavBar.dart';
+import 'GlassSidebar.dart';
 
 class NavScaffold extends StatelessWidget {
   final Widget body;
@@ -9,6 +10,7 @@ class NavScaffold extends StatelessWidget {
   final bool extendBody;
   final EdgeInsetsGeometry? navMargin;
   final BorderRadius? navBorderRadius;
+  final VoidCallback? onLogout;
 
   const NavScaffold({
     super.key,
@@ -19,10 +21,31 @@ class NavScaffold extends StatelessWidget {
     this.extendBody = true,
     this.navMargin,
     this.navBorderRadius,
+    this.onLogout,
   });
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final bool isTablet = width >= 600; // Galaxy Z Fold 6 Threshold (600px+)
+
+    if (isTablet) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Row(
+          children: [
+            GlassSidebar(
+              currentIndex: currentIndex,
+              items: navItems,
+              onTap: onTabTap,
+              onLogout: onLogout,
+            ),
+            Expanded(child: body),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       extendBody: extendBody,
       resizeToAvoidBottomInset: true,

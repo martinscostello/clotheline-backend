@@ -205,33 +205,15 @@ class LaundryApp extends StatelessWidget {
             home: _determineInitialScreen(bootstrap),
             
             builder: (context, child) {
-              // Wrap with Error Boundary
               return GlobalErrorBoundary(
-                child: Overlay( // Required for Banner? No, Material App provides Overlay.
-                  initialEntries: [
-                    OverlayEntry(
-                      builder: (ctx) => Stack(
-                        children: [
-                          if (child != null) child,
-                          // Network Banner Overlay
-                          const _NetworkBanner(),
-                        ],
-                      ),
-                    ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (child != null) child,
+                    const _NetworkBanner(),
                   ],
                 ),
               );
-              // Wait, simpler approach for builder:
-              // return GlobalErrorBoundary(
-              //   child: Stack(
-              //     children: [
-              //       if (child != null) child,
-              //       const _NetworkBanner(),
-              //     ],
-              //   ),
-              // );
-              // BUT ErrorBoundary relies on ErrorWidget.builder which is global.
-              // The widget wrapper captures build errors.
             },
 
             navigatorObservers: [
@@ -288,13 +270,18 @@ class _NetworkBannerState extends State<_NetworkBanner> {
   Widget build(BuildContext context) {
     if (!isOffline) return const SizedBox.shrink();
 
-    return Positioned(
-      bottom: 0, left: 0, right: 0,
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: Material(
         color: Colors.redAccent,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(vertical: 4),
-          child: Row(
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: 4, 
+            bottom: MediaQuery.of(context).padding.bottom + 4,
+            left: 20,
+            right: 20
+          ),
+          child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.wifi_off, color: Colors.white, size: 14),
