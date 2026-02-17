@@ -13,6 +13,7 @@ router.post('/reset-password', require('../controllers/authController').resetPas
 router.put('/change-password', auth, require('../controllers/authController').changePassword);
 router.get('/users', auth, admin, getAllUsers);
 router.get('/verify', auth, verifyToken); // [FIX] Match mobile app route '/verify'
+router.post('/logout', auth, logout);
 router.put('/fcm-token', auth, require('../controllers/authController').updateFcmToken);
 
 router.delete('/delete-account', auth, require('../controllers/authController').deleteAccount);

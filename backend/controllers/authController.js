@@ -441,7 +441,27 @@ exports.updateFcmToken = async (req, res) => {
 
         res.json({ msg: 'Token updated and deduplicated' });
     } catch (err) {
-        console.error("[Auth] Token Update Error:", err.message);
+        console.error("[Auth) Token Update Error:", err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.logout = async (req, res) => {
+    try {
+        const { token } = req.body;
+
+        // Pull token from the authenticated user
+        if (token) {
+            await User.findByIdAndUpdate(
+                req.user.id,
+                { $pull: { fcmTokens: token } }
+            );
+            console.log(`[Auth] FCM Token pulled for user logout: ${req.user.id}`);
+        }
+
+        res.json({ msg: 'Logged out and token removed' });
+    } catch (err) {
+        console.error("[Auth] Logout Error:", err.message);
         res.status(500).send('Server Error');
     }
 };
