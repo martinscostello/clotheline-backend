@@ -47,12 +47,13 @@ jobs:
         working-directory: ./mobile_app
         run: flutter doctor -v
 
-      - name: Clean caches
+      - name: Clean Gradle Cache
         working-directory: ./mobile_app
         run: |
           flutter clean
           rm -rf ~/.gradle
           rm -rf ~/.android
+          rm -rf android/.gradle
           flutter pub get
 
       - name: Get Dependencies
