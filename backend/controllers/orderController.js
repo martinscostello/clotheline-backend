@@ -236,15 +236,16 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
                 if (adminTokens.length > 0) {
                     try {
+                        console.log(`[OrderNotif] Sending to ${admins.length} admins (${adminTokens.length} tokens). Order: ${newOrder._id}`);
                         const response = await NotificationService.sendPushNotification(
                             adminTokens,
                             title,
                             message,
                             { orderId: newOrder._id.toString(), type: 'order', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
                         );
-                        console.log(`[OrderNotif] FCM Sent to ${response?.successCount || adminTokens.length} tokens.`);
+                        console.log(`[OrderNotif] FCM Success: ${response?.successCount || 0}/${adminTokens.length}`);
                     } catch (pushErr) {
-                        console.error(`[OrderNotif] FCM Failed:`, pushErr);
+                        console.error(`[OrderNotif] FCM Failed for Admin Push:`, pushErr);
                     }
                 }
             }

@@ -424,14 +424,22 @@ exports.updateFcmToken = async (req, res) => {
         const { token } = req.body;
         if (!token) return res.status(400).json({ msg: 'Token is required' });
 
-        // Use $addToSet to atomically add the token only if it doesn't already exist
+        // [SECURITY] Enforce Single-User Token Association
+        // Remove this token from ANY other user record to prevent leakage
+        // (Scenario: Admin logs out, User/Guest logs in on same device)
+        await User.updateMany(
+            { fcmTokens: token, _id: { $ne: req.user.id } },
+            { $pull: { fcmTokens: token } }
+        );
+
+        // Add to current user
         await User.findByIdAndUpdate(
             req.user.id,
             { $addToSet: { fcmTokens: token } },
             { new: true }
         );
 
-        res.json({ msg: 'Token updated' });
+        res.json({ msg: 'Token updated and deduplicated' });
     } catch (err) {
         console.error("[Auth] Token Update Error:", err.message);
         res.status(500).send('Server Error');

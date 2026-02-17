@@ -38,8 +38,14 @@ router.post('/', auth, async (req, res) => {
             query._id = { $not: { $in: allOrderUsers } };
         } else if (targetAudience === 'benin' || targetAudience === 'abuja') {
             query['savedAddresses.city'] = { $regex: new RegExp(targetAudience, 'i') };
+        } else if (targetAudience === 'guests') {
+            // [NEW] Target Guests (Unverified users)
+            query = { isVerified: false, role: { $ne: 'admin' } };
+        } else if (targetAudience === 'all_including_guests') {
+            // [NEW] Target Everyone (except admins)
+            query = { role: { $ne: 'admin' } };
         }
-        // else 'all' implies default query
+        // else 'all' implies default query { role: 'user' }
 
         const users = await User.find(query).select('_id notificationPreferences');
 
