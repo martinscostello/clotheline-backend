@@ -17,9 +17,47 @@ class AdminCategoriesScreen extends StatelessWidget {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: const Text("Manage Categories", style: TextStyle(color: Colors.white)),
+          title: const Text("Manage Categories", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           backgroundColor: Colors.transparent,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3), // Faded soft
+              border: const Border(bottom: BorderSide(color: Colors.white10)),
+            ),
+          ),
           leading: const BackButton(color: Colors.white),
+          actions: [
+            Consumer<BranchProvider>(
+              builder: (context, branchProvider, _) {
+                if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(20)
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      dropdownColor: const Color(0xFF202020),
+                      value: branchProvider.selectedBranch?.id,
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                      onChanged: (val) {
+                         if (val != null) {
+                            final branch = branchProvider.branches.firstWhere((b) => b.id == val);
+                            branchProvider.selectBranch(branch);
+                            // Trigger Fetch
+                            Provider.of<StoreService>(context, listen: false).fetchCategories(branchId: val);
+                         }
+                      },
+                      items: branchProvider.branches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, style: const TextStyle(color: Colors.white, fontSize: 13)))).toList(),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 10),
+          ],
         ),
         body: const LiquidBackground(
           child: AdminCategoriesBody(),
@@ -68,18 +106,7 @@ class _AdminCategoriesBodyState extends State<AdminCategoriesBody> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _onBranchChanged(String? newId) async {
-    if (newId == null) return;
-    
-    setState(() => _isLoading = true);
-    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-    
-    final branch = branchProvider.branches.firstWhere((b) => b.id == newId);
-    branchProvider.selectBranch(branch);
-    
-    await _storeService.fetchCategories(branchId: newId);
-    if (mounted) setState(() => _isLoading = false);
-  }
+  // _onBranchChanged removed
 
   void _showAddDialog() {
     final TextEditingController nameCtrl = TextEditingController();
@@ -195,32 +222,6 @@ class _AdminCategoriesBodyState extends State<AdminCategoriesBody> {
           ),
         ),
 
-        if (!widget.isEmbedded)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 60,
-            right: 20,
-            child: Consumer<BranchProvider>(
-              builder: (context, branchProvider, _) {
-                if (branchProvider.branches.isEmpty) return const SizedBox();
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(20)
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      dropdownColor: const Color(0xFF202020),
-                      value: branchProvider.selectedBranch?.id,
-                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                      onChanged: _onBranchChanged,
-                      items: branchProvider.branches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, style: const TextStyle(color: Colors.white)))).toList(),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
       ],
     );
   }

@@ -16,15 +16,15 @@ class NetworkService {
   bool get isOnline => _isOnline;
 
   void initialize() {
-    _connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
+    _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> result) {
       _updateStatus(result);
     });
     // Check initial
     _connectivity.checkConnectivity().then((result) => _updateStatus(result));
   }
 
-  void _updateStatus(ConnectivityResult result) {
-    bool hasConnection = result != ConnectivityResult.none;
+  void _updateStatus(List<ConnectivityResult> result) {
+    bool hasConnection = !result.contains(ConnectivityResult.none);
     
     if (_isOnline != hasConnection) {
       _isOnline = hasConnection;

@@ -13,6 +13,7 @@ import 'admin_tax_settings_screen.dart';
 import 'admin_notification_settings_screen.dart';
 import '../staff/admin_staff_screen.dart'; // [NEW]
 import 'admin_manage_data_screen.dart'; // [NEW]
+import '../reports/admin_financial_reports_screen.dart'; // [NEW]
 import '../../../utils/toast_utils.dart';
 
 class AdminSettingsScreen extends StatelessWidget {
@@ -124,10 +125,19 @@ class AdminSettingsScreen extends StatelessWidget {
                                auth.logPermissionViolation("Tax Settings");
                              }
                           }),
-                          if (isMaster)
+                           if (isMaster)
                             _buildSettingTile(Icons.storage, "Manage Data", () {
                                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManageDataScreen()));
                             }),
+                           _buildSettingTile(Icons.auto_graph, "Financial Intelligence", () {
+                              final permissions = auth.currentUser?['permissions'] ?? {};
+                              if (isMaster || permissions['manageSettings'] == true) { // Or specific permission
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialReportsScreen()));
+                              } else {
+                                _showDeniedDialog(context, "Financial Reports");
+                                auth.logPermissionViolation("Financial Reports");
+                              }
+                           }),
                         ],
                       );
                     }

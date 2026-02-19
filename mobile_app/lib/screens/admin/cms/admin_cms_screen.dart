@@ -15,6 +15,9 @@ import '../promotions/admin_promotions_screen.dart';
 import '../services/admin_edit_service_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
+import '../../../providers/branch_provider.dart';
+import '../../../services/laundry_service.dart'; // [NEW]
+import '../../../services/store_service.dart'; // [NEW]
 
 class AdminCMSScreen extends StatefulWidget {
   const AdminCMSScreen({super.key});
@@ -112,11 +115,57 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
             appBar: AppBar(
               title: const Text("Content Management", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               backgroundColor: Colors.transparent,
+              flexibleSpace: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3), // Faded soft
+                  border: const Border(bottom: BorderSide(color: Colors.white10)),
+                ),
+              ),
               elevation: 0,
               leading: (isTablet && _navStack.length > 1)
                   ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: _popModule)
                   : null,
               actions: [
+                // [Tablet] Branch Selector for specific modules
+                if (isTablet && ['services', 'product_categories', 'products'].contains(_navStack.isNotEmpty ? _navStack.last : ''))
+                  Consumer<BranchProvider>(
+                    builder: (context, branchProvider, _) {
+                      if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white10,
+                          borderRadius: BorderRadius.circular(20)
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            dropdownColor: const Color(0xFF202020),
+                            value: branchProvider.selectedBranch?.id,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                            onChanged: (val) {
+                                if (val != null) {
+                                   final branch = branchProvider.branches.firstWhere((b) => b.id == val);
+                                   branchProvider.selectBranch(branch);
+                                   
+                                   final currentModule = _navStack.isNotEmpty ? _navStack.last : '';
+                                   if (currentModule == 'services') {
+                                       Provider.of<LaundryService>(context, listen: false).fetchServices(branchId: val, includeHidden: true);
+                                   } else if (currentModule == 'product_categories') {
+                                       Provider.of<StoreService>(context, listen: false).fetchCategories(branchId: val);
+                                   } else if (currentModule == 'products') {
+                                       Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: val, forceRefresh: true);
+                                   }
+                                }
+                            },
+                            items: branchProvider.branches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, style: const TextStyle(color: Colors.white, fontSize: 13)))).toList(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                const SizedBox(width: 10),
+
                 ValueListenableBuilder<VoidCallback?>(
                   valueListenable: _saveTrigger,
                   builder: (context, onSave, _) {

@@ -156,7 +156,7 @@ class NotificationService extends ChangeNotifier {
     const InitializationSettings settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     
     await _localNotifications.initialize(
-      settings,
+      settings: settings,
       onDidReceiveNotificationResponse: (details) {
          // Lead to Orders page on tap
          PushNotificationService.navigatorKey.currentState?.pushAndRemoveUntil(
@@ -180,7 +180,7 @@ class NotificationService extends ChangeNotifier {
       importance: Importance.max, priority: Priority.high,
     );
     const NotificationDetails details = NotificationDetails(android: androidDetails, iOS: DarwinNotificationDetails());
-    await _localNotifications.show(0, title, body, details);
+    await _localNotifications.show(id: 0, title: title, body: body, notificationDetails: details);
   }
   
   // ... Rest of methods (fetchPreferences, updatePreference, markAllAsRead) ...

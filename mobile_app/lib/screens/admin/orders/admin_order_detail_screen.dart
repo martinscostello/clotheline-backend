@@ -279,7 +279,8 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
     }
 
     final topPadding = MediaQuery.paddingOf(context).top;
-    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight + 10;
+    // [FIX] Reduce top padding for tablet mode to remove wasted space
+    final headerHeight = topPadding + kToolbarHeight + kTextTabBarHeight - 40;
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? headerHeight : 100, 20, 20),

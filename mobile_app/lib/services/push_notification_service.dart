@@ -89,7 +89,7 @@ class PushNotificationService {
     );
 
     await _localNotificationsPlugin.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) async {
         final payload = response.payload;
         if (payload != null) {
@@ -134,10 +134,10 @@ class PushNotificationService {
 
     if (notification != null && android != null) {
       await _localNotificationsPlugin.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        const NotificationDetails(
+        id: notification.hashCode,
+        title: notification.title,
+        body: notification.body,
+        notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'high_importance_channel', // id
             'High Importance Notifications', // title

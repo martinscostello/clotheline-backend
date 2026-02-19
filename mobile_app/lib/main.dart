@@ -23,6 +23,7 @@ import 'services/promotion_service.dart'; // Added // Added
 import 'services/review_service.dart';
 import 'providers/branch_provider.dart';
 import 'providers/admin_pos_provider.dart';
+import 'providers/report_provider.dart'; // Added
 import 'screens/user/main_layout.dart';
 import 'screens/admin/admin_main_layout.dart';
 import 'models/service_model.dart'; // Assuming this import exists for ServiceModel
@@ -188,6 +189,7 @@ class LaundryApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PromotionService()), // Added
         ChangeNotifierProvider(create: (_) => ReviewService()), // Added
         ChangeNotifierProvider(create: (_) => AdminPOSProvider()),
+        ChangeNotifierProvider(create: (_) => ReportProvider()), // Added
         Provider(create: (_) => ContentService()),
       ],
       child: ValueListenableBuilder<ThemeMode>(
