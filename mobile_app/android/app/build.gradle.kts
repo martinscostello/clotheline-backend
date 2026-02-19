@@ -1,4 +1,3 @@
-
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -18,8 +17,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.laundry_app"
-    compileSdk = 34 // Stable Android 14
-    // ndkVersion = "27.0.12077973" // Let Flutter manage NDK version or default to LTS
+    compileSdk = 36 // Required by current dependencies
+    ndkVersion = "27.0.12077973" // Restored to version required by plugins
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -28,7 +27,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -36,8 +35,8 @@ android {
         applicationId = "com.brimarcglobal.clotheline.secure"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion // Required for flutter_map, flutter_paystack, etc.
-        targetSdk = 34
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -53,23 +52,18 @@ android {
 
     packaging {
         jniLibs {
-            // keepDebugSymbols.add("**/*.so") // REMOVED: Allow stripping to reduce size
+            // keepDebugSymbols.add("**/*.so") 
         }
-    }
-    
-    lint {
-        checkReleaseBuilds = false
-        abortOnError = false
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false    // DISABLED: To fix CI R8/Memory issues
-            isShrinkResources = false  // DISABLED: To fix CI R8/Memory issues
+            isMinifyEnabled = true    // ENABLED: Shrink code
+            isShrinkResources = true  // ENABLED: Remove unused resources
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             ndk {
-                debugSymbolLevel = "FULL" // Restored: Best for Play Console, even if local strip fails
+                debugSymbolLevel = "FULL" // Restored: Best for Play Console
             }
         }
     }
@@ -82,12 +76,4 @@ flutter {
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
-
-
-// [FIX] Forcefully disable lintVitalRelease to prevent 6-minute CI failures
-tasks.configureEach {
-    if (name.contains("lint") || name.contains("test")) {
-        enabled = false
-    }
 }

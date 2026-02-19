@@ -27,9 +27,13 @@ class ReportProvider extends ChangeNotifier {
   DateTime? _startDate;
   DateTime? _endDate;
   String? _selectedBranchId; // Null = All Branches
+  String _businessType = "All"; // All, Laundry, Store
+  bool _isInvestorMode = false;
 
   String get rangeLabel => _rangeLabel;
   String? get selectedBranchId => _selectedBranchId;
+  String get businessType => _businessType;
+  bool get isInvestorMode => _isInvestorMode;
 
   // Constructor
   ReportProvider() {
@@ -41,6 +45,17 @@ class ReportProvider extends ChangeNotifier {
     _selectedBranchId = branchId;
     notifyListeners();
     refreshAll();
+  }
+
+  void setBusinessType(String type) {
+    _businessType = type;
+    notifyListeners();
+    refreshAll();
+  }
+
+  void toggleInvestorMode() {
+    _isInvestorMode = !_isInvestorMode;
+    notifyListeners();
   }
 
   void setDateRange(String rangeLabel) {
@@ -140,6 +155,7 @@ class ReportProvider extends ChangeNotifier {
     if (_startDate != null) params['startDate'] = _startDate!.toIso8601String();
     if (_endDate != null) params['endDate'] = _endDate!.toIso8601String();
     if (_selectedBranchId != null) params['branchId'] = _selectedBranchId;
+    if (_businessType != "All") params['type'] = _businessType;
     return params;
   }
   

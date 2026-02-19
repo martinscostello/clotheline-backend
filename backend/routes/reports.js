@@ -10,11 +10,17 @@ const mongoose = require('mongoose');
 
 // Helper to build date/branch query
 const buildQuery = (req) => {
-    const { startDate, endDate, branchId } = req.query;
+    const { startDate, endDate, branchId, type } = req.query; // type: 'Laundry' | 'Store'
     let query = {};
 
     if (startDate && endDate) {
         query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+
+    // Business Type Filter: Laundry (Service) vs Store (Product)
+    if (type && type !== 'All') {
+        const itemType = type === 'Laundry' ? 'Service' : 'Product';
+        query['items.itemType'] = itemType;
     }
 
     // Branch filtering is often collection-specific, so we return the base date query
@@ -28,8 +34,7 @@ router.get('/financials', auth, async (req, res) => {
     try {
         const { dateQuery, branchId, startDate, endDate } = buildQuery(req);
 
-        // --- 1. REVENUE (From Orders) ---
-        // Source of truth: Orders that are "Paid" and not "Cancelled"
+        // --- 1. REVENUE (Paid Orders) ---
         const revenuePipeline = [
             {
                 $match: {
@@ -39,17 +44,44 @@ router.get('/financials', auth, async (req, res) => {
                 }
             }
         ];
+        if (branchId) revenuePipeline.push({ $match: { branchId: new mongoose.Types.ObjectId(branchId) } });
 
-        if (branchId) {
-            revenuePipeline.push({ $match: { branchId: new mongoose.Types.ObjectId(branchId) } });
-        }
+        revenuePipeline.push({
+            $group: {
+                _id: null,
+                total: { $sum: '$totalAmount' },
+                count: { $sum: 1 },
+                taxes: { $sum: '$taxAmount' }, // [NEW] Taxes Collected
+                deliveryFees: { $sum: '$deliveryFee' }, // [NEW]
+                discounts: { $sum: { $add: ['$discountAmount', '$storeDiscount'] } } // [NEW]
+            }
+        });
 
-        revenuePipeline.push({ $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } });
         const revenueAgg = await Order.aggregate(revenuePipeline);
         const totalRevenue = revenueAgg[0]?.total || 0;
         const txCount = revenueAgg[0]?.count || 0;
+        const totalTaxes = revenueAgg[0]?.taxes || 0;
+        const totalDelivery = revenueAgg[0]?.deliveryFees || 0;
+        const totalDiscounts = revenueAgg[0]?.discounts || 0;
 
-        // --- 2. REFUNDS ---
+        // --- 2. OUTSTANDING PAYMENTS (Pending Payment, Not Cancelled) ---
+        const outstandingPipeline = [
+            {
+                $match: {
+                    ...dateQuery,
+                    paymentStatus: 'Pending',
+                    status: { $ne: 'Cancelled' }
+                }
+            }
+        ];
+        if (branchId) outstandingPipeline.push({ $match: { branchId: new mongoose.Types.ObjectId(branchId) } });
+        outstandingPipeline.push({ $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } });
+
+        const outstandingAgg = await Order.aggregate(outstandingPipeline);
+        const outstandingPayments = outstandingAgg[0]?.total || 0;
+        const pendingCount = outstandingAgg[0]?.count || 0; // "Pending Orders" count
+
+        // --- 3. REFUNDS ---
         // Refunds might be tracked in Payments or Orders. 
         // Order schema has 'status': 'Refunded', 'paymentStatus': 'Refunded'.
         const refundPipeline = [
@@ -85,7 +117,7 @@ router.get('/financials', auth, async (req, res) => {
             console.log("Refund agg error", e);
         }
 
-        // --- 3. EXPENSES ---
+        // --- 4. EXPENSES ---
         let expenseQuery = {};
         if (dateQuery.createdAt) { // map createdAt to date
             expenseQuery.date = dateQuery.createdAt;
@@ -100,11 +132,12 @@ router.get('/financials', auth, async (req, res) => {
         ]);
         const totalExpenses = expenseAgg[0]?.total || 0;
 
-        // --- 4. NET CALC ---
-        const grossProfit = totalRevenue - totalRefunds;
+        // --- 5. CALCULATIONS ---
+        const grossProfit = totalRevenue - totalRefunds; // Pure Sales Margin
         const netProfit = grossProfit - totalExpenses;
+        const averageOrderValue = txCount > 0 ? (totalRevenue / txCount) : 0;
 
-        // --- 5. GOALS ---
+        // --- 6. GOALS ---
         let goalQuery = { isActive: true, period: 'Monthly' };
         if (branchId) goalQuery.branchId = branchId;
 
@@ -131,6 +164,15 @@ router.get('/financials', auth, async (req, res) => {
             grossProfit,
             netProfit,
             txCount,
+            averageOrderValue, // [NEW]
+            outstandingPayments, // [NEW]
+            taxesCollected: totalTaxes, // [NEW]
+            pendingOrdersCount: pendingCount, // [NEW]
+            breakdown: { // [NEW] Detailed Revenue Breakdown
+                deliveryFees: totalDelivery,
+                discounts: totalDiscounts,
+                netMargin: netProfit
+            },
             goal: currentGoal ? {
                 target: currentGoal.targetAmount,
                 progress: (totalRevenue / currentGoal.targetAmount) * 100
@@ -151,15 +193,13 @@ router.get('/analytics', auth, async (req, res) => {
     try {
         const { dateQuery, branchId } = buildQuery(req);
 
-        // Base Match for Orders
+        // Base Match for Paid Orders
         const matchStage = {
             ...dateQuery,
             paymentStatus: 'Paid',
             status: { $ne: 'Cancelled' }
         };
-        if (branchId) {
-            matchStage.branchId = new mongoose.Types.ObjectId(branchId);
-        }
+        if (branchId) matchStage.branchId = new mongoose.Types.ObjectId(branchId);
 
         // 1. Revenue Chart
         const chartPipeline = [
@@ -167,55 +207,84 @@ router.get('/analytics', auth, async (req, res) => {
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                    amount: { $sum: "$totalAmount" } // Use totalAmount
+                    amount: { $sum: "$totalAmount" }
                 }
             },
             { $sort: { _id: 1 } }
         ];
+        const revenueChart = await Order.aggregate(chartPipeline);
 
-        let revenueChart = [];
-        try {
-            revenueChart = await Order.aggregate(chartPipeline);
-        } catch (e) { console.error("Chart Agg Error", e); }
-
-        // 2. Breakdown (Items)
+        // 2. Breakdown (Items - Laundry vs Store)
         const categoryPipeline = [
             { $match: matchStage },
             { $unwind: "$items" },
             {
                 $group: {
-                    _id: "$items.itemType",
+                    _id: "$items.itemType", // 'Service' vs 'Product'
                     total: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
                 }
             }
         ];
-
-        let categorySplit = [];
-        try {
-            categorySplit = await Order.aggregate(categoryPipeline);
-        } catch (e) { console.error("Category Agg Error", e); }
+        const categorySplit = await Order.aggregate(categoryPipeline);
 
         // 3. Payment Methods
         const methodPipeline = [
             { $match: matchStage },
             {
                 $group: {
-                    _id: "$paymentMethod", // Order has paymentMethod
+                    _id: "$paymentMethod",
                     total: { $sum: "$totalAmount" },
                     count: { $sum: 1 }
                 }
             }
         ];
+        const paymentMethods = await Order.aggregate(methodPipeline);
 
-        let paymentMethods = [];
-        try {
-            paymentMethods = await Order.aggregate(methodPipeline);
-        } catch (e) { console.error("Method Agg Error", e); }
+        // 4. Staff Performance [NEW]
+        const staffPipeline = [
+            { $match: matchStage },
+            { $match: { createdByAdmin: { $ne: null } } }, // Only staff-created orders
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'createdByAdmin',
+                    foreignField: '_id',
+                    as: 'staff'
+                }
+            },
+            { $unwind: '$staff' },
+            {
+                $group: {
+                    _id: '$staff.name',
+                    count: { $sum: 1 },
+                    revenue: { $sum: '$totalAmount' }
+                }
+            },
+            { $sort: { revenue: -1 } },
+            { $limit: 10 }
+        ];
+        const staffPerformance = await Order.aggregate(staffPipeline);
+
+        // 5. Tax Breakdown (Monthly) [NEW]
+        const taxPipeline = [
+            { $match: { ...matchStage, taxAmount: { $gt: 0 } } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                    taxCollected: { $sum: "$taxAmount" },
+                    salesSubjectToTax: { $sum: "$subtotal" } // Estimate
+                }
+            },
+            { $sort: { _id: 1 } }
+        ];
+        const taxBreakdown = await Order.aggregate(taxPipeline);
 
         res.json({
             chart: revenueChart,
             categories: categorySplit,
-            paymentMethods: paymentMethods
+            paymentMethods: paymentMethods,
+            staffPerformance, // [NEW]
+            taxBreakdown // [NEW]
         });
 
     } catch (err) {

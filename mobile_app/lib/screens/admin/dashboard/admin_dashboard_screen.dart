@@ -11,7 +11,7 @@ import '../../../services/analytics_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../utils/currency_formatter.dart';
 import '../notifications/admin_notification_dashboard.dart';
-import '../reports/admin_financial_dashboard.dart';
+import '../reports/admin_financial_reports_screen.dart';
 import '../orders/admin_orders_screen.dart'; 
 import '../pos/admin_pos_screen.dart';
 import '../chat/admin_chat_screen.dart';
@@ -359,8 +359,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         allowed = permissions['manageCMS'] == true;
         break;
       case 'Reports':
-        // Financials strictly master only
-        allowed = user['isMasterAdmin'] == true;
+        allowed = permissions['manageFinancials'] == true;
         break;
       default:
         allowed = true;
@@ -510,7 +509,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             if (_hasPermission("Reports")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminChatScreen()));
             break;
           case 'reports':
-            if (_hasPermission("Reports")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialDashboard()));
+            if (_hasPermission("Reports")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialReportsScreen()));
             break;
         }
       },

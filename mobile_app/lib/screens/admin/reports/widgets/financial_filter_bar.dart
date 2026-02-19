@@ -36,11 +36,11 @@ class FinancialFilterBar extends StatelessWidget {
                                items: [
                                   const DropdownMenuItem<String?>(
                                     value: null, 
-                                    child: Text("All Branches", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                                    child: Text("All Branches", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)
                                   ),
                                   ...branchProvider.branches.map((b) => DropdownMenuItem(
                                     value: b.id,
-                                    child: Text(b.name, style: const TextStyle(color: Colors.white70))
+                                    child: Text(b.name, style: const TextStyle(color: Colors.white70), overflow: TextOverflow.ellipsis)
                                   ))
                                ],
                              ),
@@ -58,15 +58,15 @@ class FinancialFilterBar extends StatelessWidget {
                 child: Consumer<ReportProvider>(
                   builder: (context, reportProvider, _) {
                     return GlassContainer(
-                      height: 50,
-                      opacity: 0.1,
-                       padding: const EdgeInsets.symmetric(horizontal: 15),
+                       height: 50,
+                       opacity: 0.1,
+                       padding: const EdgeInsets.symmetric(horizontal: 10),
                        child: DropdownButtonHideUnderline(
                          child: DropdownButton<String>(
                            dropdownColor: const Color(0xFF1E1E2C),
                            value: reportProvider.rangeLabel == "Custom" ? null : reportProvider.rangeLabel,
-                           hint: Text(reportProvider.rangeLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                           icon: const Icon(Icons.calendar_today, color: AppTheme.secondaryColor),
+                           hint: Text(reportProvider.rangeLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12), overflow: TextOverflow.ellipsis),
+                           icon: const Icon(Icons.calendar_today, color: AppTheme.secondaryColor, size: 16),
                            onChanged: (val) {
                              if (val == "Custom") {
                                _showCustomDateRangePicker(context);
@@ -77,7 +77,37 @@ class FinancialFilterBar extends StatelessWidget {
                            items: ["Today", "This Week", "This Month", "This Year", "All Time", "Custom"]
                              .map((e) => DropdownMenuItem(
                                value: e,
-                               child: Text(e, style: const TextStyle(color: Colors.white70))
+                               child: Text(e, style: const TextStyle(color: Colors.white70, fontSize: 13), overflow: TextOverflow.ellipsis)
+                             )).toList(),
+                         ),
+                       ),
+                    );
+                  }
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // Business Type Selector
+              SizedBox(
+                width: 110, // Fixed width for compactness
+                child: Consumer<ReportProvider>(
+                  builder: (context, reportProvider, _) {
+                    return GlassContainer(
+                       height: 50,
+                       opacity: 0.1,
+                       padding: const EdgeInsets.symmetric(horizontal: 10),
+                       child: DropdownButtonHideUnderline(
+                         child: DropdownButton<String>(
+                           dropdownColor: const Color(0xFF1E1E2C),
+                           value: reportProvider.businessType,
+                           icon: const Icon(Icons.category, color: AppTheme.secondaryColor, size: 16),
+                           onChanged: (val) {
+                             if (val != null) reportProvider.setBusinessType(val);
+                           },
+                           items: ["All", "Laundry", "Store"]
+                             .map((e) => DropdownMenuItem(
+                               value: e,
+                               child: Text(e, style: const TextStyle(color: Colors.white70, fontSize: 13), overflow: TextOverflow.ellipsis)
                              )).toList(),
                          ),
                        ),
