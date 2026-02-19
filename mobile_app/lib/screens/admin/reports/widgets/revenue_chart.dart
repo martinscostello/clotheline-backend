@@ -30,7 +30,7 @@ class RevenueChart extends StatelessWidget {
              // _id is "YYYY-MM-DD". We map day of month or index as X
              List<FlSpot> spots = [];
              for (int i = 0; i < chartData.length; i++) {
-                final val = chartData[i]['amount'] / 100.0; // Naira
+                final val = chartData[i]['amount'].toDouble(); // Naira
                 spots.add(FlSpot(i.toDouble(), val));
              }
 

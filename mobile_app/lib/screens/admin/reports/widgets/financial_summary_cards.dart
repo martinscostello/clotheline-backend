@@ -73,7 +73,7 @@ class FinancialSummaryCards extends StatelessWidget {
              Text(title, style: const TextStyle(color: Colors.white54, fontSize: 10), overflow: TextOverflow.ellipsis),
              const Spacer(),
              Text(
-               isCurrency ? CurrencyFormatter.format((value is num ? value : 0) / 100) : "$value",
+               isCurrency ? CurrencyFormatter.format((value is num ? value : 0)) : "$value",
                style: TextStyle(
                  color: color,
                  fontSize: 14,
@@ -96,7 +96,7 @@ class FinancialSummaryCards extends StatelessWidget {
              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 12)),
              const Spacer(),
              Text(
-               CurrencyFormatter.format((value is num ? value : 0) / 100), // Kobo to Naira
+               CurrencyFormatter.format((value is num ? value : 0)), // Kobo to Naira
                style: TextStyle(
                  color: color,
                  fontSize: 20,

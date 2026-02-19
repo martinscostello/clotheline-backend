@@ -63,7 +63,7 @@ class FinancialBreakdown extends StatelessWidget {
                      Column(
                        crossAxisAlignment: CrossAxisAlignment.end,
                        children: [
-                          Text(CurrencyFormatter.format(total / 100), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          Text(CurrencyFormatter.format(total), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           if (count != null)
                              Text("$count txns", style: const TextStyle(color: Colors.white24, fontSize: 10)),
                        ],

@@ -41,7 +41,7 @@ class TaxSummaryCard extends StatelessWidget {
                             ],
                           ),
                           Text(
-                            CurrencyFormatter.format(totalTax / 100),
+                            CurrencyFormatter.format(totalTax),
                             style: const TextStyle(color: Colors.redAccent, fontSize: 24, fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -62,7 +62,7 @@ class TaxSummaryCard extends StatelessWidget {
                                children: [
                                  Text(item['_id'] ?? 'Unknown', style: const TextStyle(color: Colors.white)),
                                  Text(
-                                   CurrencyFormatter.format((item['taxCollected'] ?? 0) / 100),
+                                   CurrencyFormatter.format((item['taxCollected'] ?? 0)),
                                    style: const TextStyle(color: Colors.white70),
                                  )
                                ],

@@ -62,7 +62,7 @@ class StaffPerformanceTable extends StatelessWidget {
                                Expanded(
                                  flex: 3, 
                                  child: Text(
-                                   CurrencyFormatter.format((staff['revenue'] ?? 0) / 100), 
+                                   CurrencyFormatter.format((staff['revenue'] ?? 0)), 
                                    textAlign: TextAlign.right,
                                    style: const TextStyle(color: AppTheme.primaryColor)
                                  )
