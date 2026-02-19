@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../theme/app_theme.dart';
 
 import '../../models/booking_models.dart';
@@ -170,7 +171,7 @@ class _BookingSheetState extends State<BookingSheet> {
                           Icon(Icons.flash_on, color: AppTheme.primaryColor)
                             .animate(onPlay: (controller) => controller.repeat(reverse: true))
                             .scaleXY(begin: 1.0, end: 1.2, duration: 600.ms)
-                            .tint(color: Colors.amber, effect: 0.5) // Flashy color
+                            .tint(color: Colors.amber) // Flashy color
                         ],
                       ),
                     ),
