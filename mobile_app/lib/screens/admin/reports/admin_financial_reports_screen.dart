@@ -71,6 +71,24 @@ class _AdminFinancialReportsScreenState extends State<AdminFinancialReportsScree
                        return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
                      }
                      
+                     if (provider.error != null) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+                              const SizedBox(height: 10),
+                              Text("Error loading data", style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text(provider.error!, style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+                              TextButton(
+                                onPressed: () => provider.refreshAll(),
+                                child: const Text("Retry", style: TextStyle(color: AppTheme.primaryColor)),
+                              )
+                            ],
+                          ),
+                        );
+                     }
+                     
                      return SingleChildScrollView(
                        padding: const EdgeInsets.all(20),
                        child: Column(

@@ -13,12 +13,14 @@ class ReportProvider extends ChangeNotifier {
   Map<String, dynamic>? _analytics;
   List<dynamic> _expenses = [];
   List<dynamic> _goals = [];
+  String? _error; // [NEW]
 
   // Getters
   Map<String, dynamic>? get financials => _financials;
   Map<String, dynamic>? get analytics => _analytics;
   List<dynamic> get expenses => _expenses;
   List<dynamic> get goals => _goals;
+  String? get error => _error; // [NEW]
 
   // Filters
   String _rangeLabel = "This Month";
@@ -81,6 +83,7 @@ class ReportProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      _error = null; // Reset
       await Future.wait([
         fetchFinancials(),
         fetchAnalytics(),
@@ -89,11 +92,13 @@ class ReportProvider extends ChangeNotifier {
       ]);
     } catch (e) {
       print("Error refreshing reports: $e");
+      _error = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+
 
   Future<void> fetchFinancials() async {
     try {

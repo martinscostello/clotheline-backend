@@ -18,8 +18,10 @@ class RevenueChart extends StatelessWidget {
         padding: const EdgeInsets.only(right: 18, left: 12, top: 24, bottom: 12),
         child: Consumer<ReportProvider>(
            builder: (context, provider, _) {
+             if (provider.isLoading) return const Center(child: CircularProgressIndicator());
+             
              final analytics = provider.analytics;
-             if (analytics == null) return const Center(child: CircularProgressIndicator()); 
+             if (analytics == null) return const Center(child: Text("Unable to load chart data", style: TextStyle(color: Colors.white54))); 
              
              final List<dynamic> chartData = analytics['chart'] ?? [];
              if (chartData.isEmpty) return const Center(child: Text("No Data for Chart", style: TextStyle(color: Colors.white54)));
