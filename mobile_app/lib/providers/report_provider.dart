@@ -92,7 +92,13 @@ class ReportProvider extends ChangeNotifier {
       ]);
     } catch (e) {
       print("Error refreshing reports: $e");
-      _error = e.toString();
+      // Basic extraction of dio error message if available, else string
+      // Assuming DioException is type of e if using Dio
+      if (e.toString().contains("response")) {
+         // Try to find status code or message?? 
+         // For now just show string, or cast if we import Dio
+      }
+      _error = e.toString().replaceAll("DioException", "Error");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -101,48 +107,32 @@ class ReportProvider extends ChangeNotifier {
 
 
   Future<void> fetchFinancials() async {
-    try {
       final params = _buildParams();
-      final res = await _api.client.get('/financials', queryParameters: params);
+      final res = await _api.client.get('/reports/financials', queryParameters: params);
       _financials = res.data;
-    } catch (e) {
-      print("Fetch Financials Error: $e");
-    }
   }
 
   Future<void> fetchAnalytics() async {
-    try {
       final params = _buildParams();
-      final res = await _api.client.get('/analytics', queryParameters: params);
+      final res = await _api.client.get('/reports/analytics', queryParameters: params);
       _analytics = res.data;
-    } catch (e) {
-      print("Fetch Analytics Error: $e");
-    }
   }
   
   Future<void> fetchExpenses() async {
-     try {
        // separate params if needed, but expenses usually obey same filters
        final params = _buildParams();
-       final res = await _api.client.get('/expenses', queryParameters: params);
+       final res = await _api.client.get('/reports/expenses', queryParameters: params);
        _expenses = res.data;
-     } catch (e) {
-       print("Fetch Expenses Error: $e");
-     }
   }
   
   Future<void> fetchGoals() async {
-      try {
           // Goals usually filtered by branch only, less so by date range (as they have their own period)
           // But we pass branchId
           final Map<String, dynamic> params = {};
           if (_selectedBranchId != null) params['branchId'] = _selectedBranchId;
           
-          final res = await _api.client.get('/goals', queryParameters: params);
+          final res = await _api.client.get('/reports/goals', queryParameters: params);
           _goals = res.data;
-      } catch (e) {
-           print("Fetch Goals Error: $e");
-      }
   }
 
   Map<String, dynamic> _buildParams() {
@@ -157,7 +147,7 @@ class ReportProvider extends ChangeNotifier {
   
   Future<bool> addExpense(Map<String, dynamic> data) async {
       try {
-          await _api.client.post('/expenses', data: data);
+          await _api.client.post('/reports/expenses', data: data);
           fetchExpenses(); // Refresh list
           fetchFinancials(); // Refresh totals
           return true;
@@ -168,7 +158,7 @@ class ReportProvider extends ChangeNotifier {
   
   Future<bool> addGoal(Map<String, dynamic> data) async {
        try {
-           await _api.client.post('/goals', data: data);
+           await _api.client.post('/reports/goals', data: data);
            fetchGoals();
            fetchFinancials(); // Update progress
            return true;
