@@ -108,3 +108,44 @@ exports.sendPushNotification = async (tokens, title, body, data = {}) => {
         if (error.message) console.error('[NotificationService] Error Message:', error.message);
     }
 };
+
+exports.sendPushToTopic = async (topic, title, body, data = {}) => {
+    if (!isInitialized || !topic) return;
+
+    const message = {
+        notification: {
+            title: title,
+            body: body
+        },
+        data: data,
+        topic: topic,
+        android: {
+            priority: 'high',
+            notification: {
+                channelId: 'high_importance_channel',
+                priority: 'high',
+                defaultSound: true,
+                defaultVibrateTimings: true,
+                visibility: 'public'
+            }
+        },
+        apns: {
+            payload: {
+                aps: {
+                    'content-available': 1,
+                    sound: 'default'
+                }
+            },
+            headers: {
+                'apns-priority': '10'
+            }
+        }
+    };
+
+    try {
+        const response = await admin.messaging().send(message);
+        console.log(`[NotificationService] Sent to topic ${topic} successfully. Message ID: ${response}`);
+    } catch (error) {
+        console.error('[NotificationService] Error sending message to topic:', error);
+    }
+};

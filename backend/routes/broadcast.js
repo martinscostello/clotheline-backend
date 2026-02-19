@@ -47,7 +47,7 @@ router.post('/', auth, async (req, res) => {
         }
         // else 'all' implies default query { role: 'user' }
 
-        const users = await User.find(query).select('_id notificationPreferences');
+        const users = await User.find(query).select('_id notificationPreferences fcmTokens');
 
         if (users.length === 0) {
             return res.json({ msg: 'No users found for this audience.' });
@@ -64,7 +64,7 @@ router.post('/', auth, async (req, res) => {
             return res.json({ msg: 'All target users have opted out of broadcasts.' });
         }
 
-        // Create Notifications
+        // Create Notifications in DB for logged in users
         const notifications = recipients.map(user => ({
             userId: user._id,
             title: title,
@@ -75,6 +75,26 @@ router.post('/', auth, async (req, res) => {
         }));
 
         await Notification.insertMany(notifications);
+
+        // [NEW] Dispatch Push Notifications
+        const notificationService = require('../utils/notificationService');
+
+        if (targetAudience === 'all' || targetAudience === 'all_including_guests') {
+            // Push to everyone who installed the app, including unverified GUESTS
+            await notificationService.sendPushToTopic('all_users', title, message, { type: 'broadcast' });
+        } else {
+            // Push only to the specific targeted subset of registered users
+            const tokens = recipients.reduce((acc, user) => {
+                if (user.fcmTokens && user.fcmTokens.length > 0) {
+                    acc.push(...user.fcmTokens);
+                }
+                return acc;
+            }, []);
+
+            if (tokens.length > 0) {
+                await notificationService.sendPushNotification(tokens, title, message, { type: 'broadcast' });
+            }
+        }
 
         res.json({
             msg: 'Broadcast sent successfully',
