@@ -3,12 +3,14 @@ import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class HeroVideoPlayer extends StatefulWidget {
-  final String videoUrl;
+  final VideoPlayerController? controller;
+  final String videoUrl; // Used to derive fallback thumbnail
   final String? thumbnailUrl;
   final bool isActive; // Controls Play/Pause
   
   const HeroVideoPlayer({
     super.key, 
+    required this.controller,
     required this.videoUrl,
     this.thumbnailUrl,
     required this.isActive,
@@ -19,60 +21,55 @@ class HeroVideoPlayer extends StatefulWidget {
 }
 
 class _HeroVideoPlayerState extends State<HeroVideoPlayer> {
-  late VideoPlayerController _controller;
-  bool _initialized = false;
+  VoidCallback? _listener;
 
   @override
   void initState() {
     super.initState();
-    _initializeController();
+    _setupController();
   }
 
-  void _initializeController() {
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(widget.videoUrl),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-    )..initialize().then((_) {
-        if (mounted) {
-          _controller.setLooping(true);
-          _controller.setVolume(0.0);
-          
-          setState(() {
-            _initialized = true;
-          });
-          
-          if (widget.isActive) {
-            _controller.play();
-          }
+  void _setupController() {
+    if (widget.controller != null) {
+      _listener = () {
+        if (mounted) setState(() {});
+      };
+      widget.controller!.addListener(_listener!);
+      _syncPlayState();
+    }
+  }
+
+  void _syncPlayState() {
+     if (widget.controller != null && widget.controller!.value.isInitialized) {
+        if (widget.isActive) {
+           widget.controller!.play();
+        } else {
+           widget.controller!.pause();
         }
-      });
+     }
   }
 
   @override
   void didUpdateWidget(HeroVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // Handle URL Change
-    if (widget.videoUrl != oldWidget.videoUrl) {
-      _initialized = false;
-      _controller.dispose();
-      _initializeController();
-      return; 
-    }
-
-    // Handle Active State Change
-    if (_initialized) {
-      if (widget.isActive && !oldWidget.isActive) {
-        _controller.play();
-      } else if (!widget.isActive && oldWidget.isActive) {
-        _controller.pause();
+    // Handle Controller Change
+    if (widget.controller != oldWidget.controller) {
+      if (oldWidget.controller != null && _listener != null) {
+        oldWidget.controller!.removeListener(_listener!);
       }
+      _setupController();
+    } else {
+      // Handle Active State Change
+      _syncPlayState();
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (widget.controller != null && _listener != null) {
+       widget.controller!.removeListener(_listener!);
+    }
     super.dispose();
   }
 
@@ -82,13 +79,14 @@ class _HeroVideoPlayerState extends State<HeroVideoPlayer> {
       // Replace file extension with .jpg
       return videoUrl.replaceAll(RegExp(r'\.(mp4|mov|avi)$', caseSensitive: false), '.jpg');
     }
-    // Fallback: Return original (Image widget might fail or try to load it, handling error is key)
+    // Fallback: Return original
     return videoUrl; 
   }
 
   @override
   Widget build(BuildContext context) {
     final String? thumbnailUrl = widget.thumbnailUrl ?? _getThumbnailUrl(widget.videoUrl);
+    final bool isReady = widget.controller != null && widget.controller!.value.isInitialized;
 
     return Stack(
       fit: StackFit.expand,
@@ -103,23 +101,21 @@ class _HeroVideoPlayerState extends State<HeroVideoPlayer> {
 
         // 2. Video Player (Fades in when ready)
         AnimatedOpacity(
-          opacity: _initialized ? 1.0 : 0.0, 
+          opacity: isReady ? 1.0 : 0.0, 
           duration: const Duration(milliseconds: 500), // Slightly longer for smoothness
-          child: _initialized 
+          child: isReady
               ? SizedBox.expand(
                   child: FittedBox(
                     fit: BoxFit.cover,
                     child: SizedBox(
-                       width: _controller.value.size.width,
-                       height: _controller.value.size.height,
-                       child: VideoPlayer(_controller),
+                       width: widget.controller!.value.size.width,
+                       height: widget.controller!.value.size.height,
+                       child: VideoPlayer(widget.controller!),
                     ),
                   ),
                 )
               : const SizedBox.shrink(),
         ),
-          
-        // 3. Loading (Optional, if thumbnail fails or takes time, but usually unnecessary with thumbnail)
       ],
     );
   }

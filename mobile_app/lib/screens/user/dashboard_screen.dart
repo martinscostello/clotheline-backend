@@ -22,7 +22,7 @@ import '../common/branch_selection_screen.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
 import 'hero_video_player.dart';
-
+import 'package:video_player/video_player.dart';
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onSwitchToStore;
   final ValueNotifier<int>? tabNotifier;
@@ -38,6 +38,25 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   final PageController _pageController = PageController();
   int _currentHeroIndex = 0;
   Timer? _carouselTimer;
+  final Map<String, VideoPlayerController> _videoControllers = {};
+
+  void _initializeVideoControllers(AppContentModel content) {
+    for (var item in content.heroCarousel) {
+      if (item.mediaType == 'video' && !_videoControllers.containsKey(item.imageUrl)) {
+        final ctrl = VideoPlayerController.networkUrl(
+          Uri.parse(item.imageUrl), 
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)
+        );
+        _videoControllers[item.imageUrl] = ctrl;
+        
+        ctrl.initialize().then((_) {
+          ctrl.setLooping(true);
+          ctrl.setVolume(0.0);
+          if (mounted) setState(() {});
+        });
+      }
+    }
+  }
 
   // Services
   late LaundryService _laundryService;
@@ -72,6 +91,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     _contentService.loadFromCache().then((content) {
        if (content != null && mounted) {
           setState(() { _appContent = content; });
+          _initializeVideoControllers(content);
        }
     });
 
@@ -98,6 +118,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     _rotationTimer?.cancel();
     _carouselTimer?.cancel();
     _pageController.dispose();
+    for (var ctrl in _videoControllers.values) {
+      ctrl.dispose();
+    }
     widget.tabNotifier?.removeListener(_handleTabChange);
     super.dispose();
   }
@@ -141,6 +164,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
            setState(() {
             _appContent = updatedContent;
           });
+          _initializeVideoControllers(updatedContent);
           // [FIX] Kickstart carousel if it was waiting for data
           _scheduleNextSlide();
         }
@@ -550,6 +574,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 Positioned.fill(
                   child: item.mediaType == 'video' 
                       ? HeroVideoPlayer(
+                          controller: _videoControllers[item.imageUrl],
                           videoUrl: item.imageUrl,
                           thumbnailUrl: item.videoThumbnail,
                           isActive: shouldPlay, 
