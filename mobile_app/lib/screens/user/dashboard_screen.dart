@@ -460,6 +460,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             clipBehavior: Clip.none, // Allow shadows to overflow
             onPageChanged: _onPageChanged,
             itemCount: items.length,
+            allowImplicitScrolling: true, // [FIX] Pre-build and buffer adjacent videos
             itemBuilder: (context, index) {
               final item = items[index];
               final bool isActive = _currentHeroIndex == index;
