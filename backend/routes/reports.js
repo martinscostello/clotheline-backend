@@ -137,7 +137,8 @@ router.get('/financials', auth, async (req, res) => {
             { $match: expenseQuery },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
-        const totalExpenses = expenseAgg[0]?.total || 0;
+        // Convert Expense (Kobo) back to Naira to match Revenue unit
+        const totalExpenses = (expenseAgg[0]?.total || 0) / 100;
 
         // --- 5. CALCULATIONS ---
         const grossProfit = totalRevenue - totalRefunds; // Pure Sales Margin
