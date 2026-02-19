@@ -10,6 +10,7 @@ const AppContentSchema = new mongoose.Schema({
         actionUrl: String,
         mediaType: { type: String, default: 'image', enum: ['image', 'video'] },
         videoThumbnail: String,
+        duration: { type: Number, default: 5000 }, // [NEW] Duration in MS
         active: { type: Boolean, default: true }
     }],
     homeGridServices: [{

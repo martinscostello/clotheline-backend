@@ -188,8 +188,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
 
     final currentItem = items[_currentHeroIndex];
     final isVideo = currentItem.mediaType == 'video';
-    // [FIX] Timers: 10s Video, 5s Image
-    final duration = isVideo ? const Duration(seconds: 10) : const Duration(seconds: 5);
+    // [FIX] Dynamic Duration from CMS
+    final duration = Duration(milliseconds: currentItem.duration > 0 ? currentItem.duration : (isVideo ? 10000 : 5000));
 
     _carouselTimer = Timer(duration, () {
       if (!mounted) return;
@@ -453,16 +453,40 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     return SizedBox(
       height: 220,
       width: double.infinity,
-      child: PageView.builder(
-        controller: _pageController,
-        clipBehavior: Clip.none, // Allow shadows to overflow
-        onPageChanged: _onPageChanged,
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          final item = items[index];
-          final bool isActive = _currentHeroIndex == index;
-          return _buildHeroCard(item, items.length, isActive: isActive);
-        },
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            clipBehavior: Clip.none, // Allow shadows to overflow
+            onPageChanged: _onPageChanged,
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final bool isActive = _currentHeroIndex == index;
+              return _buildHeroCard(item, items.length, isActive: isActive);
+            },
+          ),
+          
+          // Stationary Indicators
+          Positioned(
+            bottom: 24,
+            left: 44, // 20 padding + 24 card padding
+            child: Row(
+              children: List.generate(items.length, (index) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: _currentHeroIndex == index ? 24 : 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: _currentHeroIndex == index ? Colors.white : Colors.white30,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -569,21 +593,6 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                               ),
                             ),
                           ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: List.generate(totalItems, (index) {
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: _currentHeroIndex == index ? 24 : 8,
-                              height: 8,
-                              margin: const EdgeInsets.only(right: 6),
-                              decoration: BoxDecoration(
-                                color: _currentHeroIndex == index ? Colors.white : Colors.white30,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            );
-                          }),
-                        ),
                       ],
                     ),
                   ),
@@ -621,27 +630,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       );
     }
 
-    // LOCK ORDER
+    // SORT BY BACKEND ORDER
     var services = List.from(_laundryService.services);
-    final order = {
-      'Regular laundry': 1,
-      'Footwears': 2,
-      'Footwear': 2, // Alias
-      'Rug cleaning': 3,
-      'Home/Office cleaning': 4
-    };
-    
-    services.sort((a, b) {
-      int posA = 99;
-      int posB = 99;
-      
-      order.forEach((key, val) {
-        if (a.name.toLowerCase().contains(key.toLowerCase())) posA = val;
-        if (b.name.toLowerCase().contains(key.toLowerCase())) posB = val;
-      });
-      
-      return posA.compareTo(posB);
-    });
+    services.sort((a, b) => a.order.compareTo(b.order));
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),

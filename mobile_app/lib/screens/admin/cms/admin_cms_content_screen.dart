@@ -72,6 +72,7 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
   // Dynamic Controllers
   final List<TextEditingController> _heroTitleControllers = [];
   final List<TextEditingController> _heroTagControllers = [];
+  final List<TextEditingController> _heroDurationControllers = []; // [NEW]
   
   String _deliveryIcon = "van"; // [NEW]
   bool _deliveryActive = true; // [NEW]
@@ -100,6 +101,9 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
       c.dispose();
     }
     for (var c in _heroTagControllers) {
+      c.dispose();
+    }
+    for (var c in _heroDurationControllers) {
       c.dispose();
     }
     super.dispose();
@@ -131,9 +135,11 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
         // Init Controllers
         _heroTitleControllers.clear();
         _heroTagControllers.clear();
+        _heroDurationControllers.clear();
         for (var item in content.heroCarousel) {
           _heroTitleControllers.add(TextEditingController(text: item.title));
           _heroTagControllers.add(TextEditingController(text: item.tagLine));
+          _heroDurationControllers.add(TextEditingController(text: (item.duration / 1000).toStringAsFixed(1)));
         }
               setState(() {
           _content = content;
@@ -162,6 +168,8 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
        if (i < _heroTitleControllers.length) {
          _content!.heroCarousel[i].title = _heroTitleControllers[i].text;
          _content!.heroCarousel[i].tagLine = _heroTagControllers[i].text;
+         double maxDuration = double.tryParse(_heroDurationControllers[i].text) ?? 5.0;
+         _content!.heroCarousel[i].duration = (maxDuration * 1000).toInt();
        }
     }
     
@@ -567,6 +575,16 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
                     _heroTagControllers.length > idx ? _heroTagControllers[idx] : TextEditingController(),
                     color: item.tagLineColor ?? "0xFFFFFFFF",
                     onColorChanged: (val) => setState(() => item.tagLineColor = val)
+                  ),
+                  const SizedBox(height: 15),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTextField("Duration (secs)", _heroDurationControllers.length > idx ? _heroDurationControllers[idx] : TextEditingController()),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(child: SizedBox()), // Spacer for alignment
+                    ]
                   ),
                 ],
               ),

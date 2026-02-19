@@ -99,6 +99,7 @@ class HeroCarouselItem {
   String? actionUrl;
   String mediaType;
   String? videoThumbnail;
+  int duration; // [NEW] Display duration in ms
 
   HeroCarouselItem({
     required this.imageUrl, 
@@ -109,6 +110,7 @@ class HeroCarouselItem {
     this.actionUrl,
     this.mediaType = 'image',
     this.videoThumbnail,
+    this.duration = 5000, 
   });
 
   factory HeroCarouselItem.fromJson(Map<String, dynamic> json) {
@@ -121,6 +123,7 @@ class HeroCarouselItem {
       actionUrl: json['actionUrl'],
       mediaType: json['mediaType'] ?? 'image',
       videoThumbnail: json['videoThumbnail'],
+      duration: json['duration'] ?? 5000,
     );
   }
 
@@ -133,6 +136,7 @@ class HeroCarouselItem {
     'actionUrl': actionUrl,
     'mediaType': mediaType,
     'videoThumbnail': videoThumbnail,
+    'duration': duration,
   };
 }
 

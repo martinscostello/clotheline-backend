@@ -83,72 +83,136 @@ class _BookingSheetState extends State<BookingSheet> {
   void _showClothSelector() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1E1E2C) : Colors.white;
-    
+    String searchQuery = "";
+    final searchController = TextEditingController();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          child: Column(
-            children: [
-               const SizedBox(height: 10),
-               Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.grey.shade300, 
-                      borderRadius: BorderRadius.circular(2)
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            // Filter items based on search query
+            final filteredItems = widget.serviceModel.items.where((item) {
+              return item.name.toLowerCase().contains(searchQuery.toLowerCase());
+            }).toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75, // Better height for search
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   const SizedBox(height: 10),
+                   Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.grey.shade300, 
+                          borderRadius: BorderRadius.circular(2)
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Text("Select Cloth Type", style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black
-                  )),
-                ),
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    itemCount: widget.serviceModel.items.length,
-                    separatorBuilder: (_, __) => Divider(color: isDark ? Colors.white10 : Colors.grey.shade200),
-                    itemBuilder: (context, index) {
-                      final item = widget.serviceModel.items[index];
-                      final isSelected = item.name == _selectedCloth?.name;
-                      
-                      return ListTile(
-                        onTap: () {
-                          setState(() {
-                            _selectedCloth = item;
-                            // Auto-select first service for new cloth
-                            if (item.services.isNotEmpty) {
-                              _selectedService = item.services.first;
-                            } else {
-                              _selectedService = null;
-                            }
-                          });
-                          Navigator.pop(context);
-                        },
-                        title: Text(item.name, style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-                        )),
-                        trailing: isSelected ? const Icon(Icons.check_circle, color: AppTheme.primaryColor) : null,
-                        contentPadding: EdgeInsets.zero,
-                      );
-                    },
-                  ),
-                ),
-            ],
-          ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
+                      child: Text("Select Type", style: TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black
+                      )),
+                    ),
+                    
+                    // Search Bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 5.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF0F0F1E) : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
+                              ),
+                              child: TextField(
+                                controller: searchController,
+                                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                                onChanged: (val) {
+                                  setModalState(() => searchQuery = val);
+                                },
+                                decoration: InputDecoration(
+                                  hintText: "Search type...",
+                                  hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                                  prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black45),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.only(top: 12),
+                                  suffixIcon: searchQuery.isNotEmpty 
+                                    ? IconButton(
+                                        icon: const Icon(Icons.close, size: 18),
+                                        onPressed: () {
+                                          searchController.clear();
+                                          setModalState(() => searchQuery = "");
+                                        }
+                                      )
+                                    : null,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          // Attention Animation
+                          Icon(Icons.flash_on, color: AppTheme.primaryColor)
+                            .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                            .scaleXY(begin: 1.0, end: 1.2, duration: 600.ms)
+                            .tint(color: Colors.amber, effect: 0.5) // Flashy color
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Expanded(
+                      child: filteredItems.isEmpty
+                        ? Center(child: Text("No items found", style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)))
+                        : ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            itemCount: filteredItems.length,
+                            separatorBuilder: (_, __) => Divider(color: isDark ? Colors.white10 : Colors.grey.shade200),
+                            itemBuilder: (context, index) {
+                              final item = filteredItems[index];
+                              final isSelected = item.name == _selectedCloth?.name;
+                              
+                              return ListTile(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedCloth = item;
+                                    if (item.services.isNotEmpty) {
+                                      _selectedService = item.services.first;
+                                    } else {
+                                      _selectedService = null;
+                                    }
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                title: Text(item.name, style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black87,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+                                )),
+                                trailing: isSelected ? const Icon(Icons.check_circle, color: AppTheme.primaryColor) : null,
+                                contentPadding: EdgeInsets.zero,
+                              );
+                            },
+                          ),
+                    ),
+                ],
+              ),
+            );
+          }
         );
       }
     );
@@ -277,9 +341,9 @@ class _BookingSheetState extends State<BookingSheet> {
               Text("Book ${widget.serviceModel.name}", style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 25),
 
-              // 1. Select Cloth Type
+              // 1. Select Type
               if (widget.serviceModel.items.isNotEmpty && _selectedCloth != null) ...[
-                Text("Select Cloth Type", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
+                Text("Select Type", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: _showClothSelector,

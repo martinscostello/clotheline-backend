@@ -15,7 +15,8 @@ const ServiceCategorySchema = new mongoose.Schema({
     imageUrl: String, // URL for the glass card
     items: [ServiceItemSchema], // List of specific items under this category
     serviceTypes: [{ type: String }], // DEPRECATED
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    order: { type: Number, default: 0 } // [NEW] Order for sorting
 });
 
 module.exports = mongoose.model('ServiceCategory', ServiceCategorySchema);
