@@ -171,18 +171,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       SliverPadding(
                         // key: _listKey, // [KEY] Product Grid (Removed)
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        sliver: SliverMasonryGrid.count(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          itemBuilder: (context, index) {
-                            final product = products[index];
-                            return _buildTemuCard(context, product, isDark)
-                                .animate()
-                                .fadeIn(duration: 400.ms)
-                                .slideY(begin: 0.1);
-                          },
-                          childCount: products.length,
+                        sliver: SliverGrid(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            childAspectRatio: 0.62, // [FIX] Enforce fixed ratio to prevent layout jumping
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final product = products[index];
+                              // [FIX] Removed .animate() to prevent scrolling stutter
+                              return _buildTemuCard(context, product, isDark);
+                            },
+                            childCount: products.length,
+                          ),
                         ),
                       ),
                     
@@ -386,14 +389,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 1. Image Area
-                    Stack(
-                      children: [
-                        CustomCachedImage(
-                          imageUrl: product.imagePath,
-                          fit: BoxFit.contain,
-                          borderRadius: 0,
-                        ),
+                      Stack(
+                        children: [
+                          AspectRatio(
+                            aspectRatio: 1.0, // [FIX] Force square image area to prevent height jumping during network load
+                            child: CustomCachedImage(
+                              imageUrl: product.imagePath,
+                              fit: BoxFit.cover,
+                              borderRadius: 0,
+                            ),
+                          ),
                         if (product.badgeText != null)
                           Positioned(
                             bottom: 0, left: 0,
