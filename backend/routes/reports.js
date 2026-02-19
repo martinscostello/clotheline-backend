@@ -34,13 +34,13 @@ router.get('/financials', auth, async (req, res) => {
     try {
         const { dateQuery, branchId, startDate, endDate } = buildQuery(req);
 
-        // --- 1. REVENUE (Paid Orders) ---
+        // --- 1. REVENUE (Total Sales Value) ---
+        // Aligned with Dashboard: Includes Pending + Paid, Excludes Cancelled/Refunded
         const revenuePipeline = [
             {
                 $match: {
                     ...dateQuery,
-                    paymentStatus: 'Paid',
-                    status: { $ne: 'Cancelled' }
+                    status: { $nin: ['Cancelled', 'Refunded'] } // Matches Analytics Controller
                 }
             }
         ];
@@ -51,14 +51,21 @@ router.get('/financials', auth, async (req, res) => {
                 _id: null,
                 total: { $sum: '$totalAmount' },
                 count: { $sum: 1 },
-                taxes: { $sum: '$taxAmount' }, // [NEW] Taxes Collected
-                deliveryFees: { $sum: '$deliveryFee' }, // [NEW]
-                discounts: { $sum: { $add: ['$discountAmount', '$storeDiscount'] } } // [NEW]
+                taxes: { $sum: '$taxAmount' },
+                deliveryFees: { $sum: '$deliveryFee' },
+                discounts: { $sum: { $add: ['$discountAmount', '$storeDiscount'] } },
+                // Calculate Collected Cash separately if needed, but for "Revenue" we show Total Sales
+                cashCollected: {
+                    $sum: {
+                        $cond: [{ $eq: ["$paymentStatus", "Paid"] }, "$totalAmount", 0]
+                    }
+                }
             }
         });
 
         const revenueAgg = await Order.aggregate(revenuePipeline);
-        const totalRevenue = revenueAgg[0]?.total || 0;
+        const totalRevenue = revenueAgg[0]?.total || 0; // Total Sales Value
+        const cashCollected = revenueAgg[0]?.cashCollected || 0; // Actual Cash
         const txCount = revenueAgg[0]?.count || 0;
         const totalTaxes = revenueAgg[0]?.taxes || 0;
         const totalDelivery = revenueAgg[0]?.deliveryFees || 0;

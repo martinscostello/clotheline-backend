@@ -29,8 +29,9 @@ class FinancialFilterBar extends StatelessWidget {
                            child: DropdownButtonHideUnderline(
                              child: DropdownButton<String?>(
                                dropdownColor: const Color(0xFF1E1E2C),
+                               isExpanded: true, // Fix overflow
                                value: reportProvider.selectedBranchId,
-                               hint: const Text("All Branches", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                               hint: const Text("All Branches", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
                                icon: const Icon(Icons.store, color: AppTheme.secondaryColor),
                                onChanged: (val) => reportProvider.setBranch(val),
                                items: [
@@ -64,6 +65,7 @@ class FinancialFilterBar extends StatelessWidget {
                        child: DropdownButtonHideUnderline(
                          child: DropdownButton<String>(
                            dropdownColor: const Color(0xFF1E1E2C),
+                           isExpanded: true,
                            value: reportProvider.rangeLabel == "Custom" ? null : reportProvider.rangeLabel,
                            hint: Text(reportProvider.rangeLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12), overflow: TextOverflow.ellipsis),
                            icon: const Icon(Icons.calendar_today, color: AppTheme.secondaryColor, size: 16),
@@ -99,6 +101,7 @@ class FinancialFilterBar extends StatelessWidget {
                        child: DropdownButtonHideUnderline(
                          child: DropdownButton<String>(
                            dropdownColor: const Color(0xFF1E1E2C),
+                           isExpanded: true,
                            value: reportProvider.businessType,
                            icon: const Icon(Icons.category, color: AppTheme.secondaryColor, size: 16),
                            onChanged: (val) {
