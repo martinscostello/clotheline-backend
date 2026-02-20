@@ -324,7 +324,8 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
   Widget build(BuildContext context) {
     return Consumer<ChatService>(
       builder: (context, chatService, _) {
-       if (chatService.currentThread == null) return const Center(child: CircularProgressIndicator());
+       if (chatService.isThreadLoading && chatService.currentThread == null) return const Center(child: CircularProgressIndicator());
+       if (chatService.currentThread == null) return const Center(child: Text("Select a chat."));
        final thread = chatService.currentThread!;
        final userName = thread['userId'] != null ? thread['userId']['name'] : "User";
        const isDark = true; 

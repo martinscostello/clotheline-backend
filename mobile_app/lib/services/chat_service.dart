@@ -14,6 +14,9 @@ class ChatService extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  bool _isThreadLoading = false;
+  bool get isThreadLoading => _isThreadLoading;
+
   Timer? _pollTimer;
   int _pollIntervalSeconds = 5;
   bool _isAppActive = true;
@@ -49,7 +52,7 @@ class ChatService extends ChangeNotifier {
   }
 
   Future<void> initThread(String branchId) async {
-    _isLoading = true;
+    _isThreadLoading = true;
     notifyListeners();
     try {
       final response = await _apiService.client.get('/chat', queryParameters: {'branchId': branchId});
@@ -60,7 +63,7 @@ class ChatService extends ChangeNotifier {
     } catch (e) {
       print("Thread init error: $e");
     } finally {
-      _isLoading = false;
+      _isThreadLoading = false;
       notifyListeners();
     }
   }
@@ -210,7 +213,7 @@ class ChatService extends ChangeNotifier {
   }
 
   Future<void> selectThread(String threadId) async {
-    _isLoading = true;
+    _isThreadLoading = true;
     notifyListeners();
     try {
       _currentThread = _threads.firstWhere((t) => t['_id'] == threadId);
@@ -218,7 +221,7 @@ class ChatService extends ChangeNotifier {
     } catch (e) {
        print("Select thread error: $e");
     } finally {
-      _isLoading = false;
+      _isThreadLoading = false;
       notifyListeners();
     }
   }

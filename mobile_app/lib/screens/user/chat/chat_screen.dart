@@ -85,7 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: Consumer<ChatService>(
                     builder: (context, chat, _) {
-                      if (chat.isLoading) {
+                      if (chat.isThreadLoading && chat.currentThread == null) {
                         return const Center(child: CircularProgressIndicator());
                       }
                       if (chat.currentThread == null) {
