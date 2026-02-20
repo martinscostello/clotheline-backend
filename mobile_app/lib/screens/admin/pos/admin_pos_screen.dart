@@ -71,12 +71,25 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
           leading: IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
             onPressed: () {
-              Provider.of<AdminPOSProvider>(context, listen: false).reset();
-              Navigator.pop(context);
+              Navigator.pop(context); // State preserved, do not reset here
             },
           ),
           actions: [
-            if (_currentStep >= 2)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              tooltip: "Clear Order",
+              onPressed: () {
+                 Provider.of<AdminPOSProvider>(context, listen: false).reset();
+                 setState(() => _currentStep = 0);
+                 _nameController.clear();
+                 _phoneController.clear();
+                 _emailController.clear();
+                 _addressController.clear();
+                 _searchController.clear();
+                 _searchQuery = "";
+              },
+            ),
+            if (_currentStep >= 2) ...[
               Padding(
                 padding: const EdgeInsets.only(right: 15.0),
                 child: Consumer<AdminPOSProvider>(
@@ -85,11 +98,15 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                     return Badge(
                       label: Text("$total", style: const TextStyle(fontSize: 10)),
                       isLabelVisible: total > 0,
-                      child: const Icon(Icons.shopping_basket_outlined, color: AppTheme.secondaryColor),
+                      child: IconButton(
+                        icon: const Icon(Icons.shopping_basket_outlined, color: AppTheme.secondaryColor),
+                        onPressed: () => _showCartBottomSheet(pos),
+                      ),
                     );
                   }
                 ),
               ),
+            ],
           ],
         ),
         body: LiquidBackground(
@@ -632,27 +649,49 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
-                  children: pos.selectedBranch!.deliveryZones.map((zone) {
-                    bool selected = pos.deliveryFee == zone.baseFee;
-                    return GestureDetector(
-                      onTap: () => setState(() => pos.deliveryFee = zone.baseFee),
+                  children: [
+                    ...pos.selectedBranch!.deliveryZones.map((zone) {
+                      bool selected = pos.deliveryFee == zone.baseFee;
+                      return GestureDetector(
+                        onTap: () => setState(() => pos.deliveryFee = zone.baseFee),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: selected ? AppTheme.secondaryColor : Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: selected ? AppTheme.secondaryColor : Colors.white10),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(zone.name, style: TextStyle(color: selected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                              Text(CurrencyFormatter.format(zone.baseFee), style: TextStyle(color: selected ? Colors.black54 : Colors.white54, fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+
+                    // Custom Delivery Fee Setup
+                    GestureDetector(
+                      onTap: () => _showCustomDeliveryFeeDialog(pos),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                         decoration: BoxDecoration(
-                          color: selected ? AppTheme.secondaryColor : Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: selected ? AppTheme.secondaryColor : Colors.white10),
+                          border: Border.all(color: Colors.white10),
                         ),
-                        child: Column(
+                        child: const Column(
                           children: [
-                            Text(zone.name, style: TextStyle(color: selected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                            Text(CurrencyFormatter.format(zone.baseFee), style: TextStyle(color: selected ? Colors.black54 : Colors.white54, fontSize: 10)),
+                            Text("Custom", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text("Custom Fee", style: TextStyle(color: Colors.white54, fontSize: 10)),
                           ],
                         ),
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
               ],
               
@@ -967,6 +1006,130 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
         onPressed: onTap,
         icon: Icon(icon, color: color ?? AppTheme.secondaryColor),
         label: Text(label, style: const TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+
+  void _showCartBottomSheet(AdminPOSProvider pos) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return GlassContainer(
+          opacity: 0.9,
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                     const Text("Current Bucket", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                     IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                  ],
+                ),
+                const Divider(color: Colors.white24),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      if (pos.laundryItems.isNotEmpty)
+                         const Padding(
+                           padding: EdgeInsets.symmetric(vertical: 8.0),
+                           child: Text("Laundry", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
+                         ),
+                      ...pos.laundryItems.asMap().entries.map((entry) {
+                         final idx = entry.key;
+                         final item = entry.value;
+                         return ListTile(
+                           dense: true,
+                           contentPadding: EdgeInsets.zero,
+                           title: Text("${item.quantity}x ${item.item.name} (${item.serviceType.name})", style: const TextStyle(color: Colors.white)),
+                           subtitle: Text(CurrencyFormatter.format(item.totalPrice), style: const TextStyle(color: Colors.white54)),
+                           trailing: IconButton(
+                             icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                             onPressed: () {
+                               setState(() => pos.removeLaundryItem(item));
+                               Navigator.pop(context);
+                               if (pos.laundryItems.isNotEmpty || pos.storeItems.isNotEmpty) _showCartBottomSheet(pos);
+                             },
+                           ),
+                         );
+                      }),
+                      
+                      if (pos.storeItems.isNotEmpty)
+                         const Padding(
+                           padding: EdgeInsets.symmetric(vertical: 8.0),
+                           child: Text("Store", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
+                         ),
+                      ...pos.storeItems.asMap().entries.map((entry) {
+                         final idx = entry.key;
+                         final item = entry.value;
+                         return ListTile(
+                           dense: true,
+                           contentPadding: EdgeInsets.zero,
+                           title: Text("${item.quantity}x ${item.product.name}", style: const TextStyle(color: Colors.white)),
+                           subtitle: Text(CurrencyFormatter.format(item.totalPrice), style: const TextStyle(color: Colors.white54)),
+                           trailing: IconButton(
+                             icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                             onPressed: () {
+                               setState(() => pos.removeStoreItem(item));
+                               Navigator.pop(context);
+                               if (pos.laundryItems.isNotEmpty || pos.storeItems.isNotEmpty) _showCartBottomSheet(pos);
+                             },
+                           ),
+                         );
+                      }),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCustomDeliveryFeeDialog(AdminPOSProvider pos) {
+    final customFeeController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        title: const Text("Custom Delivery Fee", style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: customFeeController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Enter amount",
+            hintStyle: const TextStyle(color: Colors.white38),
+            prefixIcon: const Icon(Icons.attach_money, color: AppTheme.secondaryColor),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.05),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL", style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.secondaryColor),
+            onPressed: () {
+              final fee = double.tryParse(customFeeController.text);
+              if (fee != null) {
+                setState(() => pos.deliveryFee = fee);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text("APPLY", style: TextStyle(color: Colors.black)),
+          ),
+        ],
       ),
     );
   }

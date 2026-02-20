@@ -110,9 +110,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     _fetchData();
   }
 
+  final GlobalKey<NavigatorState> _dashboardNavigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final double width = MediaQuery.of(context).size.width;
+    final bool isTablet = width >= 600;
+
+    Widget dashboardContent = Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text("Admin Dashboard", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -150,7 +155,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           IconButton(
             icon: const Icon(Icons.campaign, color: Colors.blueAccent), 
             tooltip: "Broadcast",
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminBroadcastScreen())),
+            onPressed: () => Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminBroadcastScreen())),
           ),
           // Refresh Icon
           IconButton(
@@ -164,7 +169,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.notifications_none, color: Colors.white),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminNotificationDashboard())),
+                    onPressed: () => Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminNotificationDashboard())),
                   ),
                   if (notifService.unreadCount > 0)
                     Positioned(
@@ -187,144 +192,177 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ],
       ),
       body: LiquidBackground(
-        child: MediaQuery.removePadding(
-          context: context,
-          removeTop: true,
-          child: SingleChildScrollView(
-            padding: EdgeInsets.only(
-              top: MediaQuery.paddingOf(context).top + kToolbarHeight + 2, 
-              bottom: 100, left: 20, right: 20
-            ),
-            child: Consumer<AnalyticsService>(
-              builder: (context, analytics, _) {
-                 if (analytics.isLoading && analytics.revenueStats == null) {
-                   return const SizedBox(height: 300, child: Center(child: CircularProgressIndicator()));
-                 }
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(top: 110, left: 15, right: 15, bottom: 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Dashboard Welcome
+              Consumer<AuthService>(
+                builder: (context, auth, _) {
+                  final name = auth.currentUser?['name']?.split(' ')[0] ?? 'Admin';
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Hello, $name 👋", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                      const Text("Here's what's happening today", style: TextStyle(color: Colors.white54, fontSize: 13)),
+                    ],
+                  );
+                }
+              ),
+              const SizedBox(height: 15),
 
-                 final summary = analytics.revenueStats?['summary'] ?? {'total': 0, 'count': 0};
-                 final dataPoints = analytics.revenueStats?['data'] as List<dynamic>? ?? [];
-                 final topItems = analytics.topItems ?? [];
+              // Filter Tabs (Today, Week, Month)
+              _buildFilterTabs(),
+              const SizedBox(height: 20),
 
-                 return Column(
-                   crossAxisAlignment: CrossAxisAlignment.start,
-                   children: [
-                     // 1. Time Range Toggle
-                     Row(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: [
-                         _buildRangeToggle('week', '7 Days'),
-                         const SizedBox(width: 10),
-                         _buildRangeToggle('month', '30 Days'),
-                         const SizedBox(width: 10),
-                         _buildRangeToggle('year', 'Year'),
-                       ],
-                     ),
-                     const SizedBox(height: 20),
+              // Quick Actions & Metrics Check
+              Consumer<AnalyticsService>(
+                builder: (context, analytics, _) {
+                  if (analytics.isLoading && analytics.revenueStats == null) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                     // 2. Revenue Chart
-                     GlassContainer(
-                       height: 300,
-                       opacity: 0.15,
-                       padding: const EdgeInsets.all(20),
-                       child: Column(
-                         children: [
-                           Row(
-                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                             children: [
-                               Column(
-                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                 children: [
-                                   const Text("Total Revenue", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                                   Text(
-                                     CurrencyFormatter.format(summary['total']?.toDouble() ?? 0),
-                                     style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                                   ),
-                                 ],
-                               ),
-                               Container(
-                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                 decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
-                                 child: Row(
-                                   children: [
-                                     const Icon(Icons.arrow_upward, size: 14, color: Colors.greenAccent),
-                                     Text(" ${summary['count']} Orders", style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold)),
-                                   ],
-                                 ),
-                               )
-                             ],
-                           ),
-                           const SizedBox(height: 20),
-                           Expanded(child: _RevenueChart(data: dataPoints, range: _timeRange)),
-                         ],
-                       ),
-                     ),
+                  final summary = analytics.revenueStats?['summary'] ?? {'total': 0, 'count': 0, 'deliveryFees': 0};
+                  final dataPoints = analytics.revenueStats?['data'] as List<dynamic>? ?? [];
+                  
+                  // Top Row Metrics (Total vs Delivery)
+                  return Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                        Row(
+                          children: [
+                            Expanded(child: _buildMetricCard("Total Net", CurrencyFormatter.format(summary['total']?.toDouble() ?? 0), Icons.account_balance_wallet, Colors.greenAccent)),
+                            const SizedBox(width: 15),
+                            Expanded(child: _buildMetricCard("Delivery Fees", CurrencyFormatter.format(summary['deliveryFees']?.toDouble() ?? 0), Icons.local_shipping, Colors.blueAccent)),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Edit Quick Actions Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Quick Actions", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            TextButton.icon(
+                              icon: Icon(_isEditMode ? Icons.check : Icons.edit, size: 14, color: AppTheme.secondaryColor),
+                              label: Text(_isEditMode ? "Done" : "Edit", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 12)),
+                              onPressed: () {
+                                setState(() {
+                                  _isEditMode = !_isEditMode;
+                                  if (!_isEditMode) _savePreferences(); // Save on Done
+                                });
+                              },
+                            )
+                          ],
+                        ),
+                        const SizedBox(height: 10),
 
-                     const SizedBox(height: 20),
+                        // Quick Actions Horizontal List
+                        SizedBox(
+                          height: 90,
+                          child: ReorderableListView(
+                            scrollDirection: Axis.horizontal,
+                            onReorder: (oldIndex, newIndex) {
+                              setState(() {
+                                if (newIndex > oldIndex) newIndex -= 1;
+                                final item = _quickActions.removeAt(oldIndex);
+                                _quickActions.insert(newIndex, item);
+                                _savePreferences(); // Auto-save on drag drop
+                              });
+                            },
+                            children: [
+                              for (int i = 0; i < _quickActions.length; i++)
+                                Container(
+                                  key: ValueKey(_quickActions[i]['id']),
+                                  width: 80,
+                                  margin: const EdgeInsets.only(right: 15),
+                                  child: Stack(
+                                    children: [
+                                      _buildQuickActionCard(context, _quickActions[i], isTablet),
+                                      if (_isEditMode)
+                                        Positioned(
+                                          top: 0, right: 0,
+                                          child: GestureDetector(
+                                            onTap: () => _showEditLabelDialog(i),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(color: Colors.blueAccent, shape: BoxShape.circle),
+                                              child: const Icon(Icons.edit, size: 12, color: Colors.white),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                )
+                            ],
+                          ),
+                        ),
 
-                     // 3. Quick Actions (Same as before but condensed)
-                     // 3. Quick Actions Redesign
-                     Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                       children: [
-                         const Text("Quick Actions", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                         if (context.read<AuthService>().currentUser?['isMasterAdmin'] == true)
-                           IconButton(
-                             icon: Icon(_isEditMode ? Icons.check_circle : Icons.edit, color: AppTheme.secondaryColor, size: 20),
-                             onPressed: () {
-                               setState(() => _isEditMode = !_isEditMode);
-                               if (!_isEditMode) _savePreferences();
-                             },
-                           ),
-                       ],
-                     ),
-                     const SizedBox(height: 15),
-                     _buildQuickActionsGrid(context),
+                        const SizedBox(height: 30),
 
-                     const SizedBox(height: 30),
+                        // Analytics Chart
+                        const Text("Revenue Overview", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 15),
+                        GlassContainer(
+                          opacity: 0.1,
+                          padding: const EdgeInsets.all(15),
+                          child: SizedBox(
+                            height: 220,
+                            child: _RevenueChart(data: dataPoints, range: _timeRange),
+                          ),
+                        ),
 
-                     // 4. Top Products
-                     const Text("Top Performers", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                     const SizedBox(height: 10),
-                     if (topItems.isEmpty)
-                       const Center(child: Text("No data usually means no sales yet.", style: TextStyle(color: Colors.white38)))
-                     else
-                       ...topItems.map((item) {
-                         final name = item['_id'] ?? "Unknown";
-                         final revenue = item['totalRevenue'] ?? 0;
-                         final sold = item['totalSold'] ?? 0;
-                         return Padding(
-                           padding: const EdgeInsets.only(bottom: 10),
-                           child: GlassContainer(
-                             opacity: 0.1,
-                             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-                             child: Row(
-                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                               children: [
-                                 Expanded(
-                                   child: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
-                                 ),
-                                 Column(
-                                   crossAxisAlignment: CrossAxisAlignment.end,
-                                   children: [
-                                     Text(CurrencyFormatter.format(revenue.toDouble()), style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
-                                     Text("$sold Sold", style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                                   ],
-                                 )
-                               ],
-                             ),
-                           ),
-                         );
-                       }),
+                        const SizedBox(height: 30),
 
-                     const SizedBox(height: 50),
-                   ],
-                 );
-              },
-            ),
+                        // Top Items
+                        if (analytics.topItems != null && analytics.topItems!.isNotEmpty) ...[
+                          const Text("Top Selling Items", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: analytics.topItems!.length,
+                            itemBuilder: (context, index) {
+                              final item = analytics.topItems![index];
+                              return ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                leading: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle),
+                                  child: Text("#${index + 1}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                                ),
+                                title: Text(item['_id'] ?? "Unknown", style: const TextStyle(color: Colors.white, fontSize: 14)),
+                                trailing: Text("${item['totalSold'] ?? 0} sold", style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                                subtitle: Text(CurrencyFormatter.format((item['totalRevenue'] ?? 0).toDouble()), style: const TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                              );
+                            },
+                          )
+                        ],
+                     ],
+                  );
+                }
+              ),
+            ],
           ),
         ),
       ),
     );
+
+    if (isTablet) {
+      return Navigator(
+        key: _dashboardNavigatorKey,
+        onGenerateRoute: (settings) {
+          return MaterialPageRoute(
+            builder: (context) => dashboardContent,
+            settings: settings,
+          );
+        },
+      );
+    }
+    
+    return dashboardContent;
   }
 
   Widget _buildRangeToggle(String value, String label) {
@@ -461,7 +499,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       itemCount: _quickActions.length,
       itemBuilder: (context, index) {
         final action = _quickActions[index];
-        return _buildQuickActionCard(context, action);
+        return _buildQuickActionCard(context, action, isTablet);
       },
     );
   }
@@ -499,7 +537,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildQuickActionCard(BuildContext context, Map<String, dynamic> action) {
+  Widget _buildQuickActionCard(BuildContext context, Map<String, dynamic> action, bool isTablet) {
     return _QuickActionCard(
       label: action['label'],
       icon: action['icon'],
@@ -507,19 +545,105 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       onTap: () {
         switch (action['id']) {
           case 'orders':
-            if (_hasPermission("Orders")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()));
+            if (_hasPermission("Orders")) Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminOrdersScreen()));
             break;
           case 'pos':
-            if (_hasPermission("Orders")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPOSScreen()));
+            if (_hasPermission("Orders")) Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminPOSScreen()));
             break;
           case 'chat':
-            if (_hasPermission("Reports")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminChatScreen()));
+            if (_hasPermission("Reports")) Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminChatScreen()));
             break;
           case 'reports':
-            if (_hasPermission("Reports")) Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialReportsScreen()));
+            if (_hasPermission("Reports")) Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminFinancialReportsScreen()));
             break;
         }
       },
+    );
+  }
+
+  Widget _buildFilterTabs() {
+    return Row(
+      children: [
+        _buildTab("Today", "day"),
+        const SizedBox(width: 10),
+        _buildTab("This Week", "week"),
+        const SizedBox(width: 10),
+        _buildTab("This Month", "month"),
+      ],
+    );
+  }
+
+  Widget _buildTab(String label, String value) {
+    bool selected = _timeRange == value;
+    return GestureDetector(
+      onTap: () => _onRangeChanged(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.secondaryColor : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? AppTheme.secondaryColor : Colors.white10)
+        ),
+        child: Text(label, style: TextStyle(color: selected ? Colors.black : Colors.white70, fontWeight: FontWeight.bold, fontSize: 12)),
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String title, String amount, IconData icon, Color color) {
+    return GlassContainer(
+      opacity: 0.1,
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(title, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(amount, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditLabelDialog(int index) {
+    final controller = TextEditingController(text: _quickActions[index]['label']);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        title: const Text("Edit Label", style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            labelText: "New Name",
+            labelStyle: TextStyle(color: Colors.white54),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _quickActions[index]['label'] = controller.text;
+                _savePreferences();
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text("SAVE", style: TextStyle(color: AppTheme.secondaryColor)),
+          ),
+        ],
+      ),
     );
   }
 }
