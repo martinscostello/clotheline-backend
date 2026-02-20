@@ -1,5 +1,11 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+// ignore: prefer_typing_uninitialized_variables
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:laundry_app/services/api_service.dart';
+import 'dart:ui' as ui;
+import 'package:universal_html/html.dart' as html;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:laundry_app/services/api_service.dart';
@@ -48,12 +54,29 @@ class CustomCachedImage extends StatelessWidget {
 
     if (finalUrl.startsWith('http') || finalUrl.startsWith('https')) {
       if (kIsWeb) {
-        imageWidget = Image.network(
-          finalUrl,
-          width: width,
-          height: height,
-          fit: fit,
-          errorBuilder: (context, error, stackTrace) => errorWidget ?? _buildErrorState(context),
+        // [WEB CORS BYPASS] Force the browser to handle the image download 
+        // using an HTML <img> tag to completely bypass WebGL strict canvas-tainting policies.
+        // We use a unique view ID based on the URL hash.
+        final String viewId = 'img-${finalUrl.hashCode}';
+        
+        // This is safe to call multiple times as it just overwrites the registry
+        // ignore: undefined_prefixed_name
+        ui.platformViewRegistry.registerViewFactory(
+          viewId,
+          (int viewId) {
+            final html.ImageElement img = html.ImageElement()
+              ..src = finalUrl
+              ..style.width = '100%'
+              ..style.height = '100%'
+              ..style.objectFit = fit == BoxFit.cover ? 'cover' : 'contain';
+            return img;
+          },
+        );
+
+        imageWidget = SizedBox(
+           width: width,
+           height: height,
+           child: HtmlElementView(viewType: viewId),
         );
       } else {
         imageWidget = CachedNetworkImage(

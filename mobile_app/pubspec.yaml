@@ -61,6 +61,7 @@ dependencies:
   firebase_messaging: ^15.0.0
   video_thumbnail: ^0.5.3
   path_provider: ^2.1.2
+  universal_html: ^2.3.0
 
 
 dev_dependencies:
