@@ -19,7 +19,7 @@ echo "==== Building Web App ===="
 cd mobile_app
 flutter clean
 flutter pub get
-flutter build web --release --base-href "/"
+flutter build web --release --web-renderer html --base-href "/"
 
 echo "==== Preparing Output ===="
 cd ..
