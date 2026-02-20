@@ -12,7 +12,20 @@ import '../screens/user/products/submit_review_screen.dart';
 // Top-level function for background handling
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: "AIzaSyB_mF4xxgOSzrSoMXpIpr48ZIFZKN7xpSc",
+        authDomain: "clotheline.firebaseapp.com",
+        projectId: "clotheline",
+        storageBucket: "clotheline.firebasestorage.app",
+        messagingSenderId: "641268154673",
+        appId: "1:641268154673:web:28a5bd63af3cd58528f010",
+      ),
+    );
+  } else {
+    await Firebase.initializeApp();
+  }
   if (kDebugMode) {
     print('Handling a background message: ${message.messageId}');
   }
@@ -26,7 +39,20 @@ class PushNotificationService {
 
   static Future<void> initialize() async {
     // [CRITICAL] Initialize Firebase App first!
-    await Firebase.initializeApp();
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyB_mF4xxgOSzrSoMXpIpr48ZIFZKN7xpSc",
+          authDomain: "clotheline.firebaseapp.com",
+          projectId: "clotheline",
+          storageBucket: "clotheline.firebasestorage.app",
+          messagingSenderId: "641268154673",
+          appId: "1:641268154673:web:28a5bd63af3cd58528f010",
+        ),
+      );
+    } else {
+      await Firebase.initializeApp();
+    }
 
     // 1. Request Permission
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
@@ -50,10 +76,25 @@ class PushNotificationService {
     // 2. Setup Background Handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // 3. Get FCM Token
-    String? token = await _firebaseMessaging.getToken();
+    // 3. Get FCM Token & Subscribe to Broadcasts
+    String? token;
+    if (kIsWeb) {
+      token = await _firebaseMessaging.getToken(
+        vapidKey: "BAfn05dkd4-avpPSrXZy1u04Q5JmA9Ft15vib_FOph9kD40IHGg6oNuVGIRIY2nK3vPzKxhmXMBWzeg_N5hysTk",
+      );
+    } else {
+      token = await _firebaseMessaging.getToken();
+    }
     if (kDebugMode) {
       print('FCM Token: $token');
+    }
+    
+    // [NEW] Subscribe to global broadcast topic so Guests receive promotions
+    try {
+      await _firebaseMessaging.subscribeToTopic('all_users');
+      if (kDebugMode) print('Subscribed to all_users topic');
+    } catch (e) {
+      if (kDebugMode) print('Failed to subscribe to topic: $e');
     }
     // TODO: Send this token to backend API
 

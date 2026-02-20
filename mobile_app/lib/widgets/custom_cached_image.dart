@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:laundry_app/services/api_service.dart';
@@ -46,18 +47,28 @@ class CustomCachedImage extends StatelessWidget {
     Widget imageWidget;
 
     if (finalUrl.startsWith('http') || finalUrl.startsWith('https')) {
-      imageWidget = CachedNetworkImage(
-        memCacheWidth: 1000, 
-        imageUrl: finalUrl,
-        width: width,
-        height: height,
-        fit: fit,
-        placeholder: (context, url) => _buildSkeleton(context),
-        errorWidget: (context, url, error) {
-           return errorWidget ?? _buildErrorState(context);
-        },
-        fadeInDuration: const Duration(milliseconds: 300),
-      );
+      if (kIsWeb) {
+        imageWidget = Image.network(
+          finalUrl,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => errorWidget ?? _buildErrorState(context),
+        );
+      } else {
+        imageWidget = CachedNetworkImage(
+          memCacheWidth: 500, // [PERF FIX] Reduced from 1000 to drastically reduce image decoding overhead during list scrolling 
+          imageUrl: finalUrl,
+          width: width,
+          height: height,
+          fit: fit,
+          placeholder: (context, url) => _buildSkeleton(context),
+          errorWidget: (context, url, error) {
+             return errorWidget ?? _buildErrorState(context);
+          },
+          fadeInDuration: const Duration(milliseconds: 300),
+        );
+      }
     } else if (finalUrl.startsWith('assets/')) {
        imageWidget = Image.asset(
           finalUrl,
