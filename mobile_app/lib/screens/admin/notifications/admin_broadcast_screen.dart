@@ -4,7 +4,10 @@ import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/services/api_service.dart';
+import 'package:laundry_app/services/content_service.dart';
+import 'package:laundry_app/models/app_content_model.dart';
 import 'package:laundry_app/utils/toast_utils.dart';
+import 'package:laundry_app/screens/admin/notifications/admin_promotional_templates_screen.dart';
 
 class AdminBroadcastScreen extends StatefulWidget {
   const AdminBroadcastScreen({super.key});
@@ -18,6 +21,20 @@ class _AdminBroadcastScreenState extends State<AdminBroadcastScreen> {
   final _messageController = TextEditingController();
   String _targetAudience = 'all'; // all, active_orders, etc
   bool _isLoading = false;
+  AppContentModel? _content;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTemplates();
+  }
+
+  Future<void> _loadTemplates() async {
+    final content = await ContentService().getAppContent();
+    if (mounted) {
+      setState(() => _content = content);
+    }
+  }
 
   @override
   void dispose() {
@@ -76,74 +93,76 @@ class _AdminBroadcastScreenState extends State<AdminBroadcastScreen> {
   }
 
   Widget _buildPromotionalTemplates() {
-    final templates = [
-      {
-        "title": "Weekend Laundry Discount! \ud83c\udf89",
-        "message": "Enjoy 20% off all laundry services this weekend! Tap here to book your pickup now and let us handle your dirty work.",
-      },
-      {
-        "title": "Restock Your Cleaning Supplies \ud83e\uddfc",
-        "message": "Running low on your favorite detergents or fragrances? Order now from the Clotheline Store and get fast delivery right to your door.",
-      },
-      {
-        "title": "Free Delivery Today Only! \ud83d\ude9a",
-        "message": "Don't miss out! We are offering FREE delivery on all laundry pickups and store orders placed today. Order now!",
-      },
-      {
-        "title": "Refresh Your Wardrobe \u2728",
-        "message": "Got a special occasion coming up? Trust us to make your favorite outfits look brand new. Book a premium wash today.",
-      }
-    ];
+    final templates = _content?.promotionalTemplates ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          children: const [
-            Icon(Icons.auto_awesome, color: Colors.amber, size: 18),
-            SizedBox(width: 8),
-            Text("Promotional Templates", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.auto_awesome, color: Colors.amber, size: 18),
+                SizedBox(width: 8),
+                Text("Promotional Templates", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.edit, color: Colors.blueAccent, size: 14),
+              label: const Text("Edit Templates", style: TextStyle(color: Colors.blueAccent, fontSize: 12)),
+              onPressed: () async {
+                await Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPromotionalTemplatesScreen()));
+                _loadTemplates();
+              },
+            )
           ],
         ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 110,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: templates.length,
-            itemBuilder: (context, index) {
-              final t = templates[index];
-              return GestureDetector(
-                onTap: () {
-                  _titleController.text = t["title"]!;
-                  _messageController.text = t["message"]!;
-                  setState(() => _targetAudience = 'all');
-                  ToastUtils.show(context, "Template applied!", type: ToastType.success);
-                },
-                child: Container(
-                  width: 240,
-                  margin: const EdgeInsets.only(right: 15),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.5)),
+        const SizedBox(height: 5),
+        if (templates.isEmpty)
+          const Padding(
+             padding: EdgeInsets.symmetric(vertical: 20),
+             child: Text("No templates available. Tap Edit to add.", style: TextStyle(color: Colors.white54, fontSize: 12)),
+          )
+        else
+          SizedBox(
+            height: 110,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: templates.length,
+              itemBuilder: (context, index) {
+                final t = templates[index];
+                return GestureDetector(
+                  onTap: () {
+                    _titleController.text = t.title;
+                    _messageController.text = t.message;
+                    setState(() => _targetAudience = 'all');
+                    ToastUtils.show(context, "Template applied!", type: ToastType.success);
+                  },
+                  child: Container(
+                    width: 240,
+                    margin: const EdgeInsets.only(right: 15),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.5)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 6),
+                        Expanded(
+                          child: Text(t.message, style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.3), maxLines: 3, overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(t["title"]!, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 6),
-                      Expanded(
-                        child: Text(t["message"]!, style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.3), maxLines: 3, overflow: TextOverflow.ellipsis),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
         const SizedBox(height: 20),
       ],
     );

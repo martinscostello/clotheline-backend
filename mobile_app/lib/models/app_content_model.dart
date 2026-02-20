@@ -11,6 +11,7 @@ class AppContentModel {
   String contactPhone;
   double freeShippingThreshold; 
   DeliveryAssurance? deliveryAssurance; // [NEW]
+  List<PromotionalTemplate> promotionalTemplates; // [NEW]
 
   AppContentModel({
     required this.id,
@@ -23,6 +24,7 @@ class AppContentModel {
     required this.contactPhone,
     this.freeShippingThreshold = 25000.0,
     this.deliveryAssurance,
+    this.promotionalTemplates = const [],
   });
 
   factory AppContentModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,9 @@ class AppContentModel {
       contactPhone: json['contactPhone'] ?? "+234 800 000 0000",
       freeShippingThreshold: (json['freeShippingThreshold'] as num?)?.toDouble() ?? 25000.0,
       deliveryAssurance: json['deliveryAssurance'] != null ? DeliveryAssurance.fromJson(json['deliveryAssurance']) : null,
+      promotionalTemplates: (json['promotionalTemplates'] as List?)
+          ?.map((e) => PromotionalTemplate.fromJson(e))
+          .toList() ?? [],
     );
   }
 
@@ -60,8 +65,31 @@ class AppContentModel {
       'contactPhone': contactPhone,
       'freeShippingThreshold': freeShippingThreshold,
       'deliveryAssurance': deliveryAssurance?.toJson(),
+      'promotionalTemplates': promotionalTemplates.map((e) => e.toJson()).toList(),
     };
   }
+}
+
+class PromotionalTemplate {
+  String title;
+  String message;
+
+  PromotionalTemplate({
+    required this.title,
+    required this.message,
+  });
+
+  factory PromotionalTemplate.fromJson(Map<String, dynamic> json) {
+    return PromotionalTemplate(
+      title: json['title'] ?? "",
+      message: json['message'] ?? "",
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'message': message,
+  };
 }
 
 class DeliveryAssurance {

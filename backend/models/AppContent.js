@@ -22,6 +22,10 @@ const AppContentSchema = new mongoose.Schema({
         targetScreen: String,
         active: { type: Boolean, default: true }
     }],
+    promotionalTemplates: [{
+        title: { type: String, required: true },
+        message: { type: String, required: true }
+    }],
     brandText: {
         type: String,
         default: "Premium Laundry Services"
@@ -48,6 +52,12 @@ AppContentSchema.statics.getSingleton = async function () {
             heroCarousel: [],
             homeGridServices: [],
             productAds: [],
+            promotionalTemplates: [
+                { title: "Weekend Laundry Discount! 🎉", message: "Enjoy 20% off all laundry services this weekend! Tap here to book your pickup now and let us handle your dirty work." },
+                { title: "Restock Your Cleaning Supplies 🧴", message: "Running low on your favorite detergents or fragrances? Order now from the Clotheline Store and get fast delivery right to your door." },
+                { title: "Free Delivery Today Only! 🚚", message: "Don't miss out! We are offering FREE delivery on all laundry pickups and store orders placed today. Order now!" },
+                { title: "Refresh Your Wardrobe ✨", message: "Got a special occasion coming up? Trust us to make your favorite outfits look brand new. Book a premium wash today." }
+            ],
             brandText: "Premium Laundry Services",
             productCategories: ["Fragrances", "Softeners", "Household", "Cleaning", "Accesories", "Beddings", "Clothes", "Special"],
             deliveryAssurance: {

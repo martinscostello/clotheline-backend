@@ -42,6 +42,10 @@ router.put('/', async (req, res) => {
             content.deliveryAssurance = req.body.deliveryAssurance;
             content.markModified('deliveryAssurance');
         }
+        if (req.body.promotionalTemplates) {
+            content.promotionalTemplates = req.body.promotionalTemplates;
+            content.markModified('promotionalTemplates');
+        }
 
         const updatedContent = await content.save();
         res.json(updatedContent);
