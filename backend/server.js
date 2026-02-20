@@ -86,8 +86,14 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/data-management', require('./routes/data_management'));
 
-// Make uploads folder static
-app.use('/uploads', express.static('uploads'));
+// Make uploads folder static with explicit CORS for CanvasKit
+app.use('/uploads', express.static('uploads', {
+    setHeaders: (res, path) => {
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+}));
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
