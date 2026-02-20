@@ -226,11 +226,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   final summary = analytics.revenueStats?['summary'] ?? {'total': 0, 'count': 0, 'deliveryFees': 0};
                   final dataPoints = analytics.revenueStats?['data'] as List<dynamic>? ?? [];
                   
-                  // Top Row Metrics (Total vs Delivery)
-                  return Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                        if (authService.currentUser?['isMasterAdmin'] == true) ...[
+                   // Top Row Metrics (Total vs Delivery)
+                   final authService = Provider.of<AuthService>(context, listen: false);
+                   return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                         if (authService.currentUser?['isMasterAdmin'] == true) ...[
                           Row(
                             children: [
                               Expanded(child: _buildMetricCard("Total Net", CurrencyFormatter.format(summary['total']?.toDouble() ?? 0), Icons.account_balance_wallet, Colors.greenAccent)),
@@ -290,11 +291,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             itemCount: analytics.topItems!.length,
                             itemBuilder: (context, index) {
                               final item = analytics.topItems![index];
-                              return GlassContainer(
-                                opacity: 0.05,
-                                margin: const EdgeInsets.only(bottom: 10),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                child: ListTile(
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: GlassContainer(
+                                  opacity: 0.05,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  child: ListTile(
                                   dense: true,
                                   contentPadding: EdgeInsets.zero,
                                   leading: Container(
@@ -305,6 +307,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   title: Text(item['_id'] ?? "Unknown", style: const TextStyle(color: Colors.white, fontSize: 14)),
                                   trailing: Text("${item['totalSold'] ?? 0} sold", style: const TextStyle(color: Colors.white54, fontSize: 13)),
                                   subtitle: Text(CurrencyFormatter.format((item['totalRevenue'] ?? 0).toDouble()), style: const TextStyle(color: Colors.greenAccent, fontSize: 12)),
+                                ),
                                 ),
                               );
                             },
