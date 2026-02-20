@@ -101,7 +101,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final currentUser = authService.currentUser;
     final permissions = currentUser != null ? (currentUser['permissions'] ?? {}) : {};
     final isMaster = currentUser != null && currentUser['isMasterAdmin'] == true;
-    final isMaster = currentUser != null && currentUser['isMasterAdmin'] == true;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
