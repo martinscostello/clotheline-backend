@@ -1,18 +1,8 @@
 {
-    "version": 2,
-    "builds": [
+    "rewrites": [
         {
-            "src": "build_vercel.sh",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "mobile_app/build/web"
-            }
-        }
-    ],
-    "routes": [
-        {
-            "src": "/.*",
-            "dest": "/index.html"
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ]
 }

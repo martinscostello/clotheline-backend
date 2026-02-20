@@ -21,4 +21,10 @@ flutter clean
 flutter pub get
 flutter build web --release --base-href "/"
 
+echo "==== Preparing Output ===="
+cd ..
+rm -rf public
+mkdir -p public
+cp -r mobile_app/build/web/* public/
+
 echo "==== Build Complete ===="
