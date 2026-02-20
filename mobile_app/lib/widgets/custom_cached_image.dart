@@ -4,8 +4,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:laundry_app/services/api_service.dart';
-import 'dart:ui' as ui;
-import 'package:universal_html/html.dart' as html;
+import 'web_image_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:laundry_app/services/api_service.dart';
@@ -59,19 +58,8 @@ class CustomCachedImage extends StatelessWidget {
         // We use a unique view ID based on the URL hash.
         final String viewId = 'img-${finalUrl.hashCode}';
         
-        // This is safe to call multiple times as it just overwrites the registry
-        // ignore: undefined_prefixed_name
-        ui.platformViewRegistry.registerViewFactory(
-          viewId,
-          (int viewId) {
-            final html.ImageElement img = html.ImageElement()
-              ..src = finalUrl
-              ..style.width = '100%'
-              ..style.height = '100%'
-              ..style.objectFit = fit == BoxFit.cover ? 'cover' : 'contain';
-            return img;
-          },
-        );
+        // Use cross-platform safe registration method
+        registerWebImage(viewId, finalUrl, fit);
 
         imageWidget = SizedBox(
            width: width,
