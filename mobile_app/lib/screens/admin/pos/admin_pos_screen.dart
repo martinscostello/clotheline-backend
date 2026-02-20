@@ -30,6 +30,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
   final _searchController = TextEditingController(); // [NEW]
+  final _notesController = TextEditingController(); // [NEW]
   String _searchQuery = ""; // [NEW]
 
   @override
@@ -55,6 +56,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     _emailController.dispose();
     _addressController.dispose();
     _searchController.dispose();
+    _notesController.dispose(); // [NEW]
     super.dispose();
   }
 
@@ -673,23 +675,28 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                     }).toList(),
 
                     // Custom Delivery Fee Setup
-                    GestureDetector(
-                      onTap: () => _showCustomDeliveryFeeDialog(pos),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: const Column(
-                          children: [
-                            Text("Custom", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                            Text("Custom Fee", style: TextStyle(color: Colors.white54, fontSize: 10)),
-                          ],
-                        ),
-                      ),
+                    Builder(
+                      builder: (context) {
+                        bool isCustom = pos.deliveryFee > 0 && !pos.selectedBranch!.deliveryZones.any((z) => z.baseFee == pos.deliveryFee);
+                        return GestureDetector(
+                          onTap: () => _showCustomDeliveryFeeDialog(pos),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isCustom ? AppTheme.secondaryColor : Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: isCustom ? AppTheme.secondaryColor : Colors.white10),
+                            ),
+                            child: Column(
+                              children: [
+                                Text("Custom", style: TextStyle(color: isCustom ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                Text(isCustom ? CurrencyFormatter.format(pos.deliveryFee) : "Custom Fee", style: TextStyle(color: isCustom ? Colors.black54 : Colors.white54, fontSize: 10)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
                     ),
                   ],
                 ),
@@ -702,6 +709,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                 opacity: 0.1,
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
                 child: TextField(
+                  controller: _notesController,
                   maxLines: 2,
                   style: const TextStyle(color: Colors.white),
                   onChanged: (val) => pos.laundryNotes = val,
@@ -712,6 +720,24 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                     border: InputBorder.none,
                   ),
                 ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  "No Starch", "Heavy Starch", "Hand wash Only", "Fold Only", "Heavy Stains", "Express"
+                ].map((note) => ActionChip(
+                  label: Text(note, style: const TextStyle(fontSize: 10)),
+                  backgroundColor: Colors.white.withOpacity(0.05),
+                  side: const BorderSide(color: Colors.white10),
+                  onPressed: () {
+                    final currentText = _notesController.text;
+                    final newText = currentText.isEmpty ? note : "$currentText, $note";
+                    _notesController.text = newText;
+                    pos.laundryNotes = newText;
+                  },
+                )).toList(),
               ),
             ],
           );
@@ -881,6 +907,10 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
       }
       if (_nameController.text.isEmpty || _phoneController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Name and Phone are required")));
+        return;
+      }
+      if (_phoneController.text.length != 11) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Phone number must be exactly 11 digits"), backgroundColor: Colors.redAccent));
         return;
       }
       pos.setGuestInfo(name: _nameController.text, phone: _phoneController.text, email: _emailController.text);

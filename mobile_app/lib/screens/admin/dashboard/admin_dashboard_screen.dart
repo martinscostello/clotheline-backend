@@ -231,17 +231,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                         if (authService.currentUser?['isMasterAdmin'] == true) ...[
-                          Row(
-                            children: [
-                              Expanded(child: _buildMetricCard("Total Net", CurrencyFormatter.format(summary['total']?.toDouble() ?? 0), Icons.account_balance_wallet, Colors.greenAccent)),
-                              const SizedBox(width: 15),
-                              Expanded(child: _buildMetricCard("Delivery Fees", CurrencyFormatter.format(summary['deliveryFees']?.toDouble() ?? 0), Icons.local_shipping, Colors.blueAccent)),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                        
                         // Analytics Chart (Revenue Overview)
                         const Text("Revenue Overview", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 15),
