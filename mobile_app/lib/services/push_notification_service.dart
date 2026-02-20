@@ -192,6 +192,11 @@ class PushNotificationService {
   }
   
   static Future<String?> getToken() async {
+    if (kIsWeb) {
+      return await _firebaseMessaging.getToken(
+        vapidKey: "BAfn05dkd4-avpPSrXZy1u04Q5JmA9Ft15vib_FOph9kD40IHGg6oNuVGIRIY2nK3vPzKxhmXMBWzeg_N5hysTk",
+      );
+    }
     return await _firebaseMessaging.getToken();
   }
 

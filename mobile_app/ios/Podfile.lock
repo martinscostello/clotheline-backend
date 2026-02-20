@@ -1,7 +1,6 @@
 PODS:
   - connectivity_plus (0.0.1):
     - Flutter
-    - ReachabilitySwift
   - Firebase/CoreOnly (10.25.0):
     - FirebaseCore (= 10.25.0)
   - Firebase/Messaging (10.25.0):
@@ -112,7 +111,6 @@ PODS:
   - printing (1.0.0):
     - Flutter
   - PromisesObjC (2.4.0)
-  - ReachabilitySwift (5.2.4)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -167,7 +165,6 @@ SPEC REPOS:
     - libwebp
     - nanopb
     - PromisesObjC
-    - ReachabilitySwift
     - TOCropViewController
 
 EXTERNAL SOURCES:
@@ -211,7 +208,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
 
 SPEC CHECKSUMS:
-  connectivity_plus: bf0076dd84a130856aa636df1c71ccaff908fa1d
+  connectivity_plus: 2a701ffec2c0ae28a48cf7540e279787e77c447d
   Firebase: 0312a2352584f782ea56f66d91606891d4607f06
   firebase_core: a626d00494efa398e7c54f25f1454a64c8abf197
   firebase_messaging: 1541105e2a2a6ef8bd869bcc44157d31e82f3a50
@@ -220,7 +217,7 @@ SPEC CHECKSUMS:
   FirebaseInstallations: 913cf60d0400ebd5d6b63a28b290372ab44590dd
   FirebaseMessaging: 88950ba9485052891ebe26f6c43a52bb62248952
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
+  flutter_local_notifications: ff50f8405aaa0ccdc7dcfb9022ca192e8ad9688f
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
   geolocator_apple: 66b711889fd333205763b83c9dcf0a57a28c7afd
   Google-Maps-iOS-Utils: 66d6de12be1ce6d3742a54661e7a79cb317a9321
@@ -236,7 +233,6 @@ SPEC CHECKSUMS:
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   printing: 233e1b73bd1f4a05615548e9b5a324c98588640b
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
-  ReachabilitySwift: 32793e867593cfc1177f5d16491e3a197d2fccda
   shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
   sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
   TOCropViewController: 80b8985ad794298fb69d3341de183f33d1853654

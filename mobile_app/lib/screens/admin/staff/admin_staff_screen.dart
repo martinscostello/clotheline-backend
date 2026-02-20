@@ -11,6 +11,7 @@ import '../../../models/branch_model.dart';
 import '../../../services/staff_service.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../utils/toast_utils.dart';
+import '../../../widgets/custom_cached_image.dart'; // [FIX] Imported for web-safe images
 import 'admin_edit_staff_screen.dart';
 import '../../../services/staff_pdf_service.dart';
 import '../../../services/whatsapp_service.dart';
@@ -262,9 +263,13 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
 
   Widget _buildProfileImage(Staff staff, {double radius = 40}) {
     if (staff.passportPhoto != null && staff.passportPhoto!.isNotEmpty) {
-       return CircleAvatar(
-         radius: radius,
-         backgroundImage: NetworkImage(staff.passportPhoto!),
+       return ClipRRect(
+         borderRadius: BorderRadius.circular(radius),
+         child: SizedBox(
+           width: radius * 2,
+           height: radius * 2,
+           child: CustomCachedImage(imageUrl: staff.passportPhoto!, fit: BoxFit.cover),
+         ),
        );
     }
     return CircleAvatar(
@@ -401,14 +406,17 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                              GestureDetector(
                                onTap: () => showDialog(
                                  context: context,
-                                 builder: (_) => InteractiveViewer(child: Dialog(backgroundColor: Colors.transparent, child: Image.network(staff.idCardImage!)))
+                                 builder: (_) => InteractiveViewer(child: Dialog(backgroundColor: Colors.transparent, child: CustomCachedImage(imageUrl: staff.idCardImage!)))
                                ),
                                child: Container(
                                  width: 50, height: 35,
                                  decoration: BoxDecoration(
                                    borderRadius: BorderRadius.circular(5),
-                                   image: DecorationImage(image: NetworkImage(staff.idCardImage!), fit: BoxFit.cover),
                                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]
+                                 ),
+                                 child: ClipRRect(
+                                   borderRadius: BorderRadius.circular(5),
+                                   child: CustomCachedImage(imageUrl: staff.idCardImage!, fit: BoxFit.cover),
                                  ),
                                ),
                              )
@@ -482,9 +490,13 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         color: Colors.white10,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.white24),
-        image: image != null ? DecorationImage(image: NetworkImage(image), fit: BoxFit.cover) : null
       ),
-      child: image == null ? const Icon(Icons.person, color: Colors.white24, size: 40) : null,
+      child: image != null 
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: CustomCachedImage(imageUrl: image, fit: BoxFit.cover),
+            )
+          : const Icon(Icons.person, color: Colors.white24, size: 40),
     );
   }
 
@@ -599,14 +611,9 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(15),
-                          child: Image.network(
-                            staff.guarantor!.idImage!, 
+                          child: CustomCachedImage(
+                            imageUrl: staff.guarantor!.idImage!, 
                             fit: BoxFit.contain,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-                            },
-                            errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.broken_image, color: Colors.white24)),
                           ),
                         ),
                       ),

@@ -84,6 +84,16 @@ exports.sendPushNotification = async (tokens, title, body, data = {}) => {
                 'apns-priority': '10' // High Priority
             }
         },
+        webpush: {
+            notification: {
+                title: title,
+                body: body,
+                icon: '/icons/Icon-192.png.png'
+            },
+            fcmOptions: {
+                link: data.route ? `https://admin.clotheline.com${data.route}` : 'https://admin.clotheline.com'
+            }
+        },
         tokens: uniqueTokens
     };
 

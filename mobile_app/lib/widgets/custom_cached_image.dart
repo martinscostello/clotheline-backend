@@ -61,10 +61,16 @@ class CustomCachedImage extends StatelessWidget {
         // Use cross-platform safe registration method
         registerWebImage(viewId, finalUrl, fit);
 
-        imageWidget = SizedBox(
-           width: width,
-           height: height,
-           child: HtmlElementView(viewType: viewId),
+        imageWidget = LayoutBuilder(
+          builder: (context, constraints) {
+            final w = width ?? (constraints.hasBoundedWidth ? constraints.maxWidth : null);
+            final h = height ?? (constraints.hasBoundedHeight ? constraints.maxHeight : null);
+            return SizedBox(
+              width: w,
+              height: h,
+              child: HtmlElementView(viewType: viewId),
+            );
+          },
         );
       } else {
         imageWidget = CachedNetworkImage(

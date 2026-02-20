@@ -440,7 +440,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                       );
                     }).reversed.toSet(),
                     markers: {
-                      gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(gmaps.BitmapDescriptor.hueAzure)),
+                      gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarker),
                     },
                   ),
 
@@ -657,7 +657,7 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                                 );
                               }).reversed.toSet(),
                               markers: {
-                                gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(gmaps.BitmapDescriptor.hueAzure)),
+                                gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarker),
                               },
                             ),
 

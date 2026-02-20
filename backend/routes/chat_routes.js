@@ -109,7 +109,7 @@ router.post('/send', auth, async (req, res) => {
         thread.lastMessageAt = Date.now();
         if (isAdmin) {
             thread.unreadCountUser += 1;
-            thread.autoResponseSent = false; // [NEW] Reset if admin replies
+            // [FIX] Removed: thread.autoResponseSent = false; so it doesn't spam users after admin responds
         } else {
             thread.unreadCountAdmin += 1;
             // Reopen if user sends a message to a resolved ticket

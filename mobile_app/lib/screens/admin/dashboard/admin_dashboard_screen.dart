@@ -427,6 +427,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       return ReorderableListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: false, // [FIX] Required for Web/Desktop mouse dragging
         itemCount: _quickActions.length,
         itemBuilder: (context, index) {
           final action = _quickActions[index];
@@ -441,7 +442,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   icon: const Icon(Icons.edit, color: Colors.white54, size: 18),
                   onPressed: () => _renameAction(index),
                 ),
-                const Icon(Icons.drag_handle, color: Colors.white54),
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(Icons.drag_handle, color: Colors.white54),
+                  ),
+                ),
               ],
             ),
           );

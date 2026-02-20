@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../services/store_service.dart';
@@ -169,23 +168,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                        )
                     else
                       SliverPadding(
-                        // key: _listKey, // [KEY] Product Grid (Removed)
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        sliver: SliverGrid(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: 0.62, // [FIX] Enforce fixed ratio to prevent layout jumping
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final product = products[index];
-                              // [FIX] Removed .animate() to prevent scrolling stutter
-                              return _buildTemuCard(context, product, isDark);
-                            },
-                            childCount: products.length,
-                          ),
+                        sliver: SliverMasonryGrid.count(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childCount: products.length,
+                          itemBuilder: (context, index) {
+                            final product = products[index];
+                            return _buildTemuCard(context, product, isDark);
+                          },
                         ),
                       ),
                     
@@ -391,11 +383,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   children: [
                       Stack(
                         children: [
-                          AspectRatio(
-                            aspectRatio: 1.0, // [FIX] Force square image area to prevent height jumping during network load
+                          Container(
+                            constraints: const BoxConstraints(minHeight: 140), // [FIX] Prevents 0-height collapse while loading
+                            width: double.infinity,
                             child: CustomCachedImage(
                               imageUrl: product.imagePath,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain, // [FIX] Restored original so images are not cut off
                               borderRadius: 0,
                             ),
                           ),

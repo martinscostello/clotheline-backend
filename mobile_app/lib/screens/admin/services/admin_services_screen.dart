@@ -7,6 +7,7 @@ import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
 import 'admin_edit_service_screen.dart';
 import '../../../../models/service_model.dart';
+import '../../../../widgets/custom_cached_image.dart'; // [FIX] Required for Web images
 
 class AdminServicesScreen extends StatelessWidget {
   const AdminServicesScreen({super.key});
@@ -202,31 +203,38 @@ class _AdminServicesBodyState extends State<AdminServicesBody> {
         // Positioned controls if embedded (Optional: maybe keep them in AppBar?)
         // For now, I'll provide an embedded version that might not have the branch selector in body
         // but maybe we need it.
-        if (!widget.isEmbedded)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 60,
-            right: 20,
-            child: _buildBodyControls(),
-          ),
-        
         // FAB equivalent
         Positioned(
           bottom: 20,
           right: 20,
-          child: FloatingActionButton(
-            backgroundColor: AppTheme.primaryColor,
-            child: const Icon(Icons.add, color: Colors.white),
-            onPressed: () async {
-              final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-              await Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
-                  service: null, // Create Mode
-                  scopeBranch: branchProvider.selectedBranch
-                ))
-              );
-              _loadData();
-            },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FloatingActionButton(
+                heroTag: "editServiceBtn",
+                mini: true,
+                backgroundColor: _isEditMode ? Colors.green : Colors.white24,
+                onPressed: _toggleEditMode,
+                child: Icon(_isEditMode ? Icons.check : Icons.edit, color: Colors.white, size: 20),
+              ),
+              const SizedBox(height: 15),
+              FloatingActionButton(
+                heroTag: "addServiceBtn",
+                backgroundColor: AppTheme.primaryColor,
+                child: const Icon(Icons.add, color: Colors.white),
+                onPressed: () async {
+                  final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+                  await Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
+                      service: null, // Create Mode
+                      scopeBranch: branchProvider.selectedBranch
+                    ))
+                  );
+                  _loadData();
+                },
+              ),
+            ],
           ),
         ),
       ],
@@ -275,16 +283,11 @@ class _AdminServicesBodyState extends State<AdminServicesBody> {
             // IMAGE AT TOP
             Expanded(
               flex: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  image: DecorationImage(
-                    image: service.image.startsWith('http') 
-                        ? NetworkImage(service.image) 
-                        : AssetImage(service.image) as ImageProvider,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                child: service.image.startsWith('http') 
+                    ? CustomCachedImage(imageUrl: service.image, fit: BoxFit.cover, width: double.infinity)
+                    : Image.asset(service.image, fit: BoxFit.cover, width: double.infinity),
               ),
             ),
             // CONTENT BELOW
@@ -329,16 +332,13 @@ class _AdminServicesBodyState extends State<AdminServicesBody> {
         opacity: 0.1,
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-          leading: Container(
+          leading: SizedBox(
             width: 50, height: 50,
-            decoration: BoxDecoration(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              image: DecorationImage(
-                image: service.image.startsWith('http') 
-                    ? NetworkImage(service.image) 
-                    : AssetImage(service.image) as ImageProvider,
-                fit: BoxFit.cover,
-              ),
+              child: service.image.startsWith('http') 
+                  ? CustomCachedImage(imageUrl: service.image, fit: BoxFit.cover)
+                  : Image.asset(service.image, fit: BoxFit.cover),
             ),
           ),
           title: Text(service.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
