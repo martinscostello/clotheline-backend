@@ -33,6 +33,11 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
   final _notesController = TextEditingController(); // [NEW]
   String _searchQuery = ""; // [NEW]
 
+  String? _branchError;
+  String? _nameError;
+  String? _phoneError;
+  String? _checkoutError;
+
   @override
   void initState() {
     super.initState();
@@ -171,7 +176,17 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
           const Text("Identify the client and select their location.", style: TextStyle(color: Colors.white54, fontSize: 13)),
           const SizedBox(height: 25),
           
-          const Text("Select Branch", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              const Text("Select Branch", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+              if (_branchError != null) ...[
+                const SizedBox(width: 10),
+                const Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent, size: 16),
+                const SizedBox(width: 4),
+                Text(_branchError!, style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
+              ]
+            ],
+          ),
           const SizedBox(height: 12),
           Consumer<BranchProvider>(
             builder: (context, branchProvider, _) {
@@ -184,6 +199,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   bool selected = pos.selectedBranch?.id == b.id;
                   return GestureDetector(
                     onTap: () {
+                      setState(() => _branchError = null);
                       pos.setBranch(b);
                       _fetchData();
                     },
@@ -207,9 +223,9 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
           ),
           
           const SizedBox(height: 35),
-          _buildTextField("Client Name", _nameController, Icons.person_outline),
+          _buildTextField("Client Name", _nameController, Icons.person_outline, errorText: _nameError),
           const SizedBox(height: 15),
-          _buildTextField("Phone Number", _phoneController, Icons.phone_android_outlined, keyboardType: TextInputType.phone),
+          _buildTextField("Phone Number", _phoneController, Icons.phone_android_outlined, keyboardType: TextInputType.phone, errorText: _phoneError),
           const SizedBox(height: 15),
           _buildTextField("Email (For digital receipt)", _emailController, Icons.mail_outline, keyboardType: TextInputType.emailAddress),
         ],
@@ -217,21 +233,40 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {TextInputType? keyboardType}) {
-    return GlassContainer(
-      opacity: 0.1,
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          icon: Icon(icon, color: AppTheme.secondaryColor, size: 20),
-          labelText: label,
-          labelStyle: const TextStyle(color: Colors.white54),
-          border: InputBorder.none,
+  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {TextInputType? keyboardType, String? errorText}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GlassContainer(
+          opacity: 0.1,
+          border: errorText != null ? Border.all(color: Colors.redAccent) : Border.all(color: Colors.white10),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            style: const TextStyle(color: Colors.white),
+            onChanged: (val) {
+               if (errorText != null) {
+                  setState(() {
+                    if (controller == _nameController) _nameError = null;
+                    if (controller == _phoneController) _phoneError = null;
+                  });
+               }
+            },
+            decoration: InputDecoration(
+              icon: Icon(icon, color: errorText != null ? Colors.redAccent : AppTheme.secondaryColor, size: 20),
+              labelText: label,
+              labelStyle: const TextStyle(color: Colors.white54),
+              border: InputBorder.none,
+            ),
+          ),
         ),
-      ),
+        if (errorText != null)
+           Padding(
+             padding: const EdgeInsets.only(top: 5, left: 10),
+             child: Text(errorText, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+           ),
+      ],
     );
   }
 
@@ -516,7 +551,6 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   quantity: qty,
                 ));
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Added ${item.name} to bucket"), duration: const Duration(seconds: 1)));
               },
               child: const Text("Add", style: TextStyle(color: Colors.black)),
             ),
@@ -612,7 +646,6 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   quantity: qty,
                 ));
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Added ${product.name} to bucket"), duration: const Duration(seconds: 1)));
               },
               child: const Text("Add", style: TextStyle(color: Colors.black)),
             ),
@@ -805,6 +838,22 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
               const Text("Payment Method", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(height: 15),
               _buildPaymentGrid(pos),
+              
+              if (_checkoutError != null) ...[
+                const SizedBox(height: 20),
+                GlassContainer(
+                  opacity: 0.2,
+                  border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                  padding: const EdgeInsets.all(15),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.redAccent),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(_checkoutError!, style: const TextStyle(color: Colors.redAccent, fontSize: 13))),
+                    ],
+                  ),
+                ),
+              ],
             ],
           );
         }
@@ -901,18 +950,28 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     final pos = Provider.of<AdminPOSProvider>(context, listen: false);
     
     if (_currentStep == 0) {
-      if (pos.selectedBranch == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a branch")));
-        return;
-      }
-      if (_nameController.text.isEmpty || _phoneController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Name and Phone are required")));
-        return;
-      }
-      if (_phoneController.text.length != 11) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Phone number must be exactly 11 digits"), backgroundColor: Colors.redAccent));
-        return;
-      }
+      bool hasError = false;
+      setState(() {
+        _branchError = null;
+        _nameError = null;
+        _phoneError = null;
+        
+        if (pos.selectedBranch == null) {
+          _branchError = "Please select a branch";
+          hasError = true;
+        }
+        if (_nameController.text.isEmpty) {
+          _nameError = "Client name is required";
+          hasError = true;
+        }
+        if (_phoneController.text.length != 11) {
+          _phoneError = "Phone number must be exactly 11 digits";
+          hasError = true;
+        }
+      });
+      
+      if (hasError) return;
+
       pos.setGuestInfo(name: _nameController.text, phone: _phoneController.text, email: _emailController.text);
     }
     
@@ -936,6 +995,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
       builder: (context) => const Center(child: CircularProgressIndicator(color: AppTheme.secondaryColor)),
     );
 
+    setState(() => _checkoutError = null);
     final result = await pos.createOrder();
     
     Navigator.pop(context); // Close loading
@@ -943,7 +1003,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     if (result['success']) {
        _showSuccessDialog(result['order']);
     } else {
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'])));
+       setState(() => _checkoutError = result['message']);
     }
   }
 
