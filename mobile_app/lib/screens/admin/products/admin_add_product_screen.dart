@@ -611,7 +611,8 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
 
   Widget _buildAdminPowerSection() {
     final auth = Provider.of<AuthService>(context, listen: false);
-    final isMaster = auth.currentUser?['isMasterAdmin'] == true;
+    final user = auth.currentUser;
+    final isMaster = user?['isMasterAdmin'] == true || user?['role'] == 'super_admin' || user?['role'] == 'master';
     if (!isMaster) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(20),

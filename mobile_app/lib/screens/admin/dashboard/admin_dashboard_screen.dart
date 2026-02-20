@@ -11,6 +11,7 @@ import '../../../services/analytics_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../utils/currency_formatter.dart';
 import '../notifications/admin_notification_dashboard.dart';
+import '../notifications/admin_broadcast_screen.dart';
 import '../reports/admin_financial_reports_screen.dart';
 import '../orders/admin_orders_screen.dart'; 
 import '../pos/admin_pos_screen.dart';
@@ -118,39 +119,45 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          // Branch Selector
+          // Branch Selector (Icon Only)
           Consumer<BranchProvider>(
             builder: (context, branchProvider, _) {
               if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
               
               return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String?>(
-                    dropdownColor: const Color(0xFF2C2C2E),
-                    value: _selectedBranchId,
-                    hint: const Text("All Branches", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    icon: const Icon(Icons.store, color: AppTheme.secondaryColor, size: 20),
-                    onChanged: _onBranchChanged,
-                    items: [
-                      const DropdownMenuItem<String?>(
-                         value: null, 
-                         child: Text("All Branches", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
-                      ),
-                      ...branchProvider.branches.map((b) => DropdownMenuItem(
-                        value: b.id,
-                        child: Text(b.name, style: const TextStyle(color: Colors.white70))
-                      ))
-                    ],
-                  ),
+                padding: const EdgeInsets.only(right: 0.0),
+                child: PopupMenuButton<String?>(
+                  icon: const Icon(Icons.store, color: AppTheme.secondaryColor, size: 22),
+                  color: const Color(0xFF2C2C2E),
+                  tooltip: "Select Branch",
+                  initialValue: _selectedBranchId,
+                  onSelected: _onBranchChanged,
+                  itemBuilder: (context) => [
+                    const PopupMenuItem<String?>(
+                       value: null, 
+                       child: Text("All Branches", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                    ),
+                    ...branchProvider.branches.map((b) => PopupMenuItem(
+                      value: b.id,
+                      child: Text(b.name, style: const TextStyle(color: Colors.white70))
+                    ))
+                  ],
                 ),
               );
             }
           ),
+          // Broadcast Icon
+          IconButton(
+            icon: const Icon(Icons.campaign, color: Colors.blueAccent), 
+            tooltip: "Broadcast",
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminBroadcastScreen())),
+          ),
+          // Refresh Icon
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.secondaryColor), 
             onPressed: _fetchData
           ),
+          // Notifications
           Consumer<NotificationService>(
             builder: (context, notifService, _) {
               return Stack(

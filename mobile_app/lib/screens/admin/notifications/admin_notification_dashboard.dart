@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart'; 
 import 'package:laundry_app/theme/app_theme.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
-import '../../../widgets/glass/LiquidBackground.dart'; // [FIX] Import Admin Background
+import '../../../widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/services/api_service.dart';
 import 'package:laundry_app/services/auth_service.dart'; 
 import 'package:laundry_app/utils/toast_utils.dart';
@@ -19,30 +19,17 @@ class AdminNotificationDashboard extends StatefulWidget {
   State<AdminNotificationDashboard> createState() => _AdminNotificationDashboardState();
 }
 
-class _AdminNotificationDashboardState extends State<AdminNotificationDashboard> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final _titleController = TextEditingController();
-  final _messageController = TextEditingController();
-  String _targetAudience = 'all'; // all, active_orders
+class _AdminNotificationDashboardState extends State<AdminNotificationDashboard> {
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     Future.microtask(() {
        final ns = Provider.of<NotificationService>(context, listen: false);
        ns.fetchNotifications();
        ns.markAllAsRead(); // [Auto-Read Policy]
     });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _titleController.dispose();
-    _messageController.dispose();
-    super.dispose();
   }
 
   Future<void> _forceSyncToken() async {
@@ -68,37 +55,6 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
       } finally {
          setState(() => _isLoading = false);
       }
-  }
-
-  Future<void> _sendBroadcast() async {
-    if (_titleController.text.isEmpty || _messageController.text.isEmpty) {
-      ToastUtils.show(context, "Title and Message are required", type: ToastType.info);
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final api = ApiService();
-      await api.client.post('/broadcast', data: {
-        'title': _titleController.text,
-        'message': _messageController.text,
-        'targetAudience': _targetAudience
-      });
-
-      if (mounted) {
-        ToastUtils.show(context, "Broadcast Sent Successfully", type: ToastType.success);
-        _titleController.clear();
-        _messageController.clear();
-        setState(() => _targetAudience = 'all');
-      }
-    } catch (e) {
-      if (mounted) {
-        ToastUtils.show(context, "Failed to send: $e", type: ToastType.error);
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
   }
 
   Future<void> _testNotificationSettings() async {
@@ -195,27 +151,9 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
           backgroundColor: Colors.transparent,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
-          // Actions removed (Debug button)
-          bottom: TabBar(
-            controller: _tabController,
-            indicatorColor: AppTheme.primaryColor,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white54,
-            tabs: const [
-              Tab(text: "Inbox"),
-              Tab(text: "Compose"),
-            ],
-          ),
         ),
-        // [FIX] Use LiquidBackground for Admin Dark UI
         body: LiquidBackground(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildInboxTab(),
-              _buildComposeTab(),
-            ],
-          ),
+          child: _buildInboxTab(),
         ),
       ),
     );
@@ -230,7 +168,7 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
         return RefreshIndicator(
           onRefresh: () => ns.fetchNotifications(),
           child: ListView.builder(
-            padding: const EdgeInsets.only(top: 140, left: 20, right: 20, bottom: 20), // Added top padding for header
+            padding: const EdgeInsets.only(top: 100, left: 20, right: 20, bottom: 20),
             itemCount: ns.notifications.length,
             itemBuilder: (context, index) {
               final n = ns.notifications[index];
@@ -238,16 +176,13 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
                 padding: const EdgeInsets.only(bottom: 10),
                 child: GestureDetector(
                   onTap: () {
-                    // Deep Linking Logic
                     final meta = n['metadata'];
                     if (n['type'] == 'order' && meta != null && meta['orderId'] != null) {
                       Navigator.push(context, MaterialPageRoute(
                         builder: (_) => AdminOrderDetailScreen(orderId: meta['orderId'])
                       ));
                     } else if (n['type'] == 'chat') {
-                      // Support both threadId and userId if needed, currently threadId
                       final threadId = meta != null ? meta['threadId'] : null;
-                      // Fallback: If no threadId, just go to chat dashboard
                       Navigator.push(context, MaterialPageRoute(
                         builder: (_) => AdminChatScreen(initialThreadId: threadId)
                       ));
@@ -290,111 +225,6 @@ class _AdminNotificationDashboardState extends State<AdminNotificationDashboard>
           ),
         );
       }
-    );
-  }
-
-  Widget _buildComposeTab() {
-    return SingleChildScrollView(
-      // [FIX] padding top to clear Header + Tabs (approx 160)
-      padding: const EdgeInsets.only(top: 160, left: 20, right: 20, bottom: 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Send Broadcast", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 5),
-          const Text("Send a message to all users or specific groups.", style: TextStyle(color: Colors.white54)),
-          const SizedBox(height: 20),
-
-          GlassContainer(
-            opacity: 0.1,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel("Title"),
-                TextField(
-                  controller: _titleController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration("e.g. holiday Sale!"),
-                ),
-                const SizedBox(height: 20),
-                
-                _buildLabel("Message"),
-                TextField(
-                  controller: _messageController,
-                  maxLines: 4,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration("Enter your message here..."),
-                ),
-                const SizedBox(height: 20),
-
-                _buildLabel("Target Audience"),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white10)
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _targetAudience,
-                      dropdownColor: const Color(0xFF1E1E2C),
-                      isExpanded: true,
-                      style: const TextStyle(color: Colors.white),
-                      items: const [
-                        DropdownMenuItem(value: 'all', child: Text("All Users")),
-                        DropdownMenuItem(value: 'benin', child: Text("Users in Benin")),
-                        DropdownMenuItem(value: 'abuja', child: Text("Users in Abuja")),
-                        DropdownMenuItem(value: 'active_orders', child: Text("Users with Active Orders")),
-                        DropdownMenuItem(value: 'cancelled_orders', child: Text("Users with Cancelled Orders")),
-                        DropdownMenuItem(value: 'zero_orders', child: Text("Users with Zero Orders")),
-                      ],
-                      onChanged: (val) => setState(() => _targetAudience = val!),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _sendBroadcast,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
-                    ),
-                    child: _isLoading 
-                      ? const CircularProgressIndicator(color: Colors.white) 
-                      : const Text("SEND BROADCAST", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                  ),
-                )
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-
-  Widget _buildLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(label, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white24),
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)
     );
   }
 }
