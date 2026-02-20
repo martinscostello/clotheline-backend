@@ -25,6 +25,7 @@ echo "==== Preparing Output ===="
 cd ..
 rm -rf public
 mkdir -p public
-cp -r mobile_app/build/web/* public/
+cp -R mobile_app/build/web/* public/
+cp mobile_app/build/web/.* public/ 2>/dev/null || :
 
 echo "==== Build Complete ===="
