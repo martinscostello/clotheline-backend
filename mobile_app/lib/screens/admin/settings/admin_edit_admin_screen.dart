@@ -39,6 +39,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
     'managePOS': false,
     'manageStaff': false,
     'manageFinancials': false,
+    'viewRevenueOverview': false,
   };
 
   String? _selectedAvatarId;
@@ -196,6 +197,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
                         _buildSwitch("Access POS Checkout", 'managePOS'),
                         _buildSwitch("Manage Staff Profiles & Warnings", 'manageStaff'),
                         _buildSwitch("View Financial Reports (Investor)", 'manageFinancials'),
+                        _buildSwitch("View Dashboard Revenue Chart", 'viewRevenueOverview'),
                       ],
                     ),
                   ),

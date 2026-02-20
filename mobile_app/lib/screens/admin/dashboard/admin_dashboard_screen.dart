@@ -230,15 +230,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   return Column(
                      crossAxisAlignment: CrossAxisAlignment.start,
                      children: [
-                        Row(
-                          children: [
-                            Expanded(child: _buildMetricCard("Total Net", CurrencyFormatter.format(summary['total']?.toDouble() ?? 0), Icons.account_balance_wallet, Colors.greenAccent)),
-                            const SizedBox(width: 15),
-                            Expanded(child: _buildMetricCard("Delivery Fees", CurrencyFormatter.format(summary['deliveryFees']?.toDouble() ?? 0), Icons.local_shipping, Colors.blueAccent)),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
+                        if (authService.currentUser?['isMasterAdmin'] == true) ...[
+                          Row(
+                            children: [
+                              Expanded(child: _buildMetricCard("Total Net", CurrencyFormatter.format(summary['total']?.toDouble() ?? 0), Icons.account_balance_wallet, Colors.greenAccent)),
+                              const SizedBox(width: 15),
+                              Expanded(child: _buildMetricCard("Delivery Fees", CurrencyFormatter.format(summary['deliveryFees']?.toDouble() ?? 0), Icons.local_shipping, Colors.blueAccent)),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                        ],
                         
+                        // Analytics Chart (Revenue Overview)
+                        const Text("Revenue Overview", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 15),
+                        GlassContainer(
+                          opacity: 0.1,
+                          padding: const EdgeInsets.all(15),
+                          child: SizedBox(
+                            height: 220,
+                            child: _canViewRevenue() 
+                                ? _RevenueChart(data: dataPoints, range: _timeRange)
+                                : const Center(child: Text("****", style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold, letterSpacing: 8))),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+
                         // Edit Quick Actions Header
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -258,60 +275,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                         const SizedBox(height: 10),
 
-                        // Quick Actions Horizontal List
-                        SizedBox(
-                          height: 90,
-                          child: ReorderableListView(
-                            scrollDirection: Axis.horizontal,
-                            onReorder: (oldIndex, newIndex) {
-                              setState(() {
-                                if (newIndex > oldIndex) newIndex -= 1;
-                                final item = _quickActions.removeAt(oldIndex);
-                                _quickActions.insert(newIndex, item);
-                                _savePreferences(); // Auto-save on drag drop
-                              });
-                            },
-                            children: [
-                              for (int i = 0; i < _quickActions.length; i++)
-                                Container(
-                                  key: ValueKey(_quickActions[i]['id']),
-                                  width: 80,
-                                  margin: const EdgeInsets.only(right: 15),
-                                  child: Stack(
-                                    children: [
-                                      _buildQuickActionCard(context, _quickActions[i], isTablet),
-                                      if (_isEditMode)
-                                        Positioned(
-                                          top: 0, right: 0,
-                                          child: GestureDetector(
-                                            onTap: () => _showEditLabelDialog(i),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: const BoxDecoration(color: Colors.blueAccent, shape: BoxShape.circle),
-                                              child: const Icon(Icons.edit, size: 12, color: Colors.white),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                )
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 30),
-
-                        // Analytics Chart
-                        const Text("Revenue Overview", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 15),
-                        GlassContainer(
-                          opacity: 0.1,
-                          padding: const EdgeInsets.all(15),
-                          child: SizedBox(
-                            height: 220,
-                            child: _RevenueChart(data: dataPoints, range: _timeRange),
-                          ),
-                        ),
+                        // Quick Actions Grid
+                        _buildQuickActionsGrid(context),
 
                         const SizedBox(height: 30),
 
@@ -325,17 +290,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             itemCount: analytics.topItems!.length,
                             itemBuilder: (context, index) {
                               final item = analytics.topItems![index];
-                              return ListTile(
-                                dense: true,
-                                contentPadding: EdgeInsets.zero,
-                                leading: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), shape: BoxShape.circle),
-                                  child: Text("#${index + 1}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                              return GlassContainer(
+                                opacity: 0.05,
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                child: ListTile(
+                                  dense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), shape: BoxShape.circle),
+                                    child: Text("#${index + 1}", style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                                  ),
+                                  title: Text(item['_id'] ?? "Unknown", style: const TextStyle(color: Colors.white, fontSize: 14)),
+                                  trailing: Text("${item['totalSold'] ?? 0} sold", style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                                  subtitle: Text(CurrencyFormatter.format((item['totalRevenue'] ?? 0).toDouble()), style: const TextStyle(color: Colors.greenAccent, fontSize: 12)),
                                 ),
-                                title: Text(item['_id'] ?? "Unknown", style: const TextStyle(color: Colors.white, fontSize: 14)),
-                                trailing: Text("${item['totalSold'] ?? 0} sold", style: const TextStyle(color: Colors.white54, fontSize: 13)),
-                                subtitle: Text(CurrencyFormatter.format((item['totalRevenue'] ?? 0).toDouble()), style: const TextStyle(color: Colors.greenAccent, fontSize: 12)),
                               );
                             },
                           )
@@ -417,6 +387,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return allowed;
   }
 
+  bool _canViewRevenue() {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final user = auth.currentUser;
+    if (user == null) return false;
+    if (user['isMasterAdmin'] == true) return true;
+    return user['permissions']?['viewRevenueOverview'] == true;
+  }
+
   void _showDeniedDialog(String feature) {
     showDialog(
       context: context,
@@ -490,11 +468,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isTablet ? 4 : 2,
-        crossAxisSpacing: 15,
-        mainAxisSpacing: 15,
-        childAspectRatio: isTablet ? 1.5 : 1.1,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 0.85,
       ),
       itemCount: _quickActions.length,
       itemBuilder: (context, index) {
@@ -562,14 +540,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildFilterTabs() {
-    return Row(
-      children: [
-        _buildTab("Today", "day"),
-        const SizedBox(width: 10),
-        _buildTab("This Week", "week"),
-        const SizedBox(width: 10),
-        _buildTab("This Month", "month"),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildTab("Today", "day"),
+          const SizedBox(width: 10),
+          _buildTab("This Week", "week"),
+          const SizedBox(width: 10),
+          _buildTab("This Month", "month"),
+          const SizedBox(width: 10),
+          _buildTab("This Year", "year"),
+        ],
+      ),
     );
   }
 
