@@ -29,6 +29,37 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  final GlobalKey<NavigatorState> _dashboardNavigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final bool isTablet = width >= 600;
+
+    if (isTablet) {
+      return Navigator(
+        key: _dashboardNavigatorKey,
+        onGenerateRoute: (settings) {
+          return MaterialPageRoute(
+            builder: (context) => const AdminDashboardContent(),
+            settings: settings,
+          );
+        },
+      );
+    }
+    
+    return const AdminDashboardContent();
+  }
+}
+
+class AdminDashboardContent extends StatefulWidget {
+  const AdminDashboardContent({super.key});
+
+  @override
+  State<AdminDashboardContent> createState() => _AdminDashboardContentState();
+}
+
+class _AdminDashboardContentState extends State<AdminDashboardContent> {
   String _timeRange = 'week'; 
   String? _selectedBranchId; // [New]
   bool _isEditMode = false;
@@ -113,14 +144,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     _fetchData();
   }
 
-  final GlobalKey<NavigatorState> _dashboardNavigatorKey = GlobalKey<NavigatorState>();
-
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
     final bool isTablet = width >= 600;
 
-    Widget dashboardContent = Scaffold(
+    return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text("Admin Dashboard", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -168,7 +197,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               onPressed: () async {
                 // To be robustly implemented next, will trigger browser permission
                 await PushNotificationService.requestWebPermission();
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("If not blocked globally, Notification prompt triggered.")));
+                if (context.mounted) {
+                  await Provider.of<AuthService>(context, listen: false).syncFcmToken();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Notification prompt completed. Token synced.")));
+                }
               },
             ),
           // Refresh Icon
@@ -329,19 +361,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
     );
 
-    if (isTablet) {
-      return Navigator(
-        key: _dashboardNavigatorKey,
-        onGenerateRoute: (settings) {
-          return MaterialPageRoute(
-            builder: (context) => dashboardContent,
-            settings: settings,
-          );
-        },
-      );
-    }
-    
-    return dashboardContent;
   }
 
   Widget _buildRangeToggle(String value, String label) {
