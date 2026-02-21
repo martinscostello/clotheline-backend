@@ -54,21 +54,26 @@ class PushNotificationService {
       await Firebase.initializeApp();
     }
 
-    // 1. Request Permission
-    NotificationSettings settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
+    // 1. Request Permission (Wrapped in try-catch for Web Safari constraints)
+    NotificationSettings? settings;
+    try {
+      settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+    } catch (e) {
+      if (kDebugMode) print('Permission request failed/blocked (likely Web/Safari constraints): $e');
+    }
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    if (settings?.authorizationStatus == AuthorizationStatus.authorized) {
       if (kDebugMode) {
         print('User granted permission');
       }
     } else {
       if (kDebugMode) {
-        print('User declined or has not accepted permission');
+        print('User declined or has not accepted permission (or blocked by browser)');
       }
       return;
     }
@@ -78,15 +83,19 @@ class PushNotificationService {
 
     // 3. Get FCM Token & Subscribe to Broadcasts
     String? token;
-    if (kIsWeb) {
-      token = await _firebaseMessaging.getToken(
-        vapidKey: "BAfn05dkd4-avpPSrXZy1u04Q5JmA9Ft15vib_FOph9kD40IHGg6oNuVGIRIY2nK3vPzKxhmXMBWzeg_N5hysTk",
-      );
-    } else {
-      token = await _firebaseMessaging.getToken();
-    }
-    if (kDebugMode) {
-      print('FCM Token: $token');
+    try {
+      if (kIsWeb) {
+        token = await _firebaseMessaging.getToken(
+          vapidKey: "BAfn05dkd4-avpPSrXZy1u04Q5JmA9Ft15vib_FOph9kD40IHGg6oNuVGIRIY2nK3vPzKxhmXMBWzeg_N5hysTk",
+        );
+      } else {
+        token = await _firebaseMessaging.getToken();
+      }
+      if (kDebugMode) {
+        print('FCM Token: $token');
+      }
+    } catch (e) {
+      if (kDebugMode) print('Failed to get FCM Token: $e');
     }
     
     // [NEW] Subscribe to global broadcast topic so Guests receive promotions
@@ -192,12 +201,17 @@ class PushNotificationService {
   }
   
   static Future<String?> getToken() async {
-    if (kIsWeb) {
-      return await _firebaseMessaging.getToken(
-        vapidKey: "BAfn05dkd4-avpPSrXZy1u04Q5JmA9Ft15vib_FOph9kD40IHGg6oNuVGIRIY2nK3vPzKxhmXMBWzeg_N5hysTk",
-      );
+    try {
+      if (kIsWeb) {
+        return await _firebaseMessaging.getToken(
+          vapidKey: "BAfn05dkd4-avpPSrXZy1u04Q5JmA9Ft15vib_FOph9kD40IHGg6oNuVGIRIY2nK3vPzKxhmXMBWzeg_N5hysTk",
+        );
+      }
+      return await _firebaseMessaging.getToken();
+    } catch (e) {
+      if (kDebugMode) print('Failed to get FCM Token: $e');
+      return null;
     }
-    return await _firebaseMessaging.getToken();
   }
 
   // [DEAD-STATE] Handle interaction when app opens from Dead/Background state

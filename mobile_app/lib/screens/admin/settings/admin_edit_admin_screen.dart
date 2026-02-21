@@ -40,6 +40,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
     'manageStaff': false,
     'manageFinancials': false,
     'viewRevenueOverview': false,
+    'manageProductIllusions': false,
   };
 
   String? _selectedAvatarId;
@@ -56,7 +57,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
       _isRevoked = admin['isRevoked'] ?? false;
       
       if (admin['permissions'] != null) {
-        _permissions = Map<String, bool>.from(admin['permissions']);
+        _permissions.addAll(Map<String, bool>.from(admin['permissions']));
       }
       if (admin['assignedBranches'] != null) {
         _assignedBranches = List<String>.from(admin['assignedBranches'].map((b) => b is Map ? b['_id'] : b));
@@ -198,6 +199,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
                         _buildSwitch("Manage Staff Profiles & Warnings", 'manageStaff'),
                         _buildSwitch("View Financial Reports (Investor)", 'manageFinancials'),
                         _buildSwitch("View Dashboard Revenue Chart", 'viewRevenueOverview'),
+                        _buildSwitch("Manage Product Ext. Illusions", 'manageProductIllusions'),
                       ],
                     ),
                   ),

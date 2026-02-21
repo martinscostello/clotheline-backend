@@ -439,9 +439,6 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                         strokeWidth: 2,
                       );
                     }).reversed.toSet(),
-                    markers: {
-                      gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarker),
-                    },
                   ),
 
                   // Close Button
@@ -656,9 +653,6 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                                   strokeWidth: 2,
                                 );
                               }).reversed.toSet(),
-                              markers: {
-                                gmaps.Marker(markerId: const gmaps.MarkerId('branch'), position: center, icon: gmaps.BitmapDescriptor.defaultMarker),
-                              },
                             ),
 
                             // Map Controls
