@@ -214,6 +214,25 @@ class PushNotificationService {
     }
   }
 
+  // [NEW] Manual request to bypass Web DOMExceptions when not booted from user interaction
+  static Future<void> requestWebPermission() async {
+    if (!kIsWeb) return;
+    try {
+      NotificationSettings settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        String? token = await getToken();
+        if (kDebugMode) print("FCM Token retrieved after manual interaction: $token");
+      }
+    } catch (e) {
+      if (kDebugMode) print("Manual web permission request failed (Still rejected): $e");
+    }
+  }
+
   // [DEAD-STATE] Handle interaction when app opens from Dead/Background state
   static Future<void> setupInteractedMessage(BuildContext context) async {
     // 1. App Killed -> Tap Notification -> Application Open

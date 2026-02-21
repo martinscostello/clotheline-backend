@@ -157,6 +157,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             tooltip: "Broadcast",
             onPressed: () => Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminBroadcastScreen())),
           ),
+          // Request Web Push (Only for Web)
+          if (kIsWeb)
+            IconButton(
+              icon: const Icon(Icons.notification_add, color: Colors.orangeAccent),
+              tooltip: "Enable Web Push Notifications",
+              onPressed: () async {
+                // To be robustly implemented next, will trigger browser permission
+                await PushNotificationService.requestWebPermission();
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("If not blocked globally, Notification prompt triggered.")));
+              },
+            ),
           // Refresh Icon
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.secondaryColor), 
@@ -252,8 +263,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           children: [
                             const Text("Quick Actions", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                             TextButton.icon(
-                              icon: Icon(_isEditMode ? Icons.check : Icons.edit, size: 14, color: AppTheme.secondaryColor),
-                              label: Text(_isEditMode ? "Done" : "Edit", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 12)),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Larger hit area
+                              ),
+                              icon: Icon(_isEditMode ? Icons.check : Icons.edit, size: 20, color: AppTheme.secondaryColor),
+                              label: Text(_isEditMode ? "Done" : "Edit", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 15, fontWeight: FontWeight.bold)),
                               onPressed: () {
                                 setState(() {
                                   _isEditMode = !_isEditMode;
@@ -427,7 +441,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       return ReorderableListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        buildDefaultDragHandles: false, // [FIX] Required for Web/Desktop mouse dragging
+        buildDefaultDragHandles: true, // Native drag handles work best on web
         itemCount: _quickActions.length,
         itemBuilder: (context, index) {
           final action = _quickActions[index];
@@ -435,21 +449,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             key: ValueKey(action['id']),
             leading: Icon(action['icon'], color: action['color']),
             title: Text(action['label'], style: const TextStyle(color: Colors.white)),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.white54, size: 18),
-                  onPressed: () => _renameAction(index),
-                ),
-                ReorderableDragStartListener(
-                  index: index,
-                  child: const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Icon(Icons.drag_handle, color: Colors.white54),
-                  ),
-                ),
-              ],
+            trailing: IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white54, size: 24), // Larger icon
+              onPressed: () => _renameAction(index),
             ),
           );
         },
