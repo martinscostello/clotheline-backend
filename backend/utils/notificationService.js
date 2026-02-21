@@ -61,8 +61,7 @@ exports.sendPushNotification = async (tokens, title, body, data = {}) => {
             title: title,
             body: body
         },
-        data: data, // Custom data like { route: '/orders/123' }
-        // [CRITICAL] Platform overrides for High Priority & Heads-up
+        data: data || {}, // Custom data like { route: '/orders/123' }
         android: {
             priority: 'high',
             notification: {
@@ -76,7 +75,7 @@ exports.sendPushNotification = async (tokens, title, body, data = {}) => {
         apns: {
             payload: {
                 aps: {
-                    'content-available': 1, // Wake up app
+                    contentAvailable: true, // Wake up app
                     sound: 'default'
                 }
             },
@@ -88,10 +87,12 @@ exports.sendPushNotification = async (tokens, title, body, data = {}) => {
             notification: {
                 title: title,
                 body: body,
-                icon: '/icons/Icon-192.png.png'
+                icon: '/icons/Icon-192.png',
+                requireInteraction: true // Keep it on screen until closed for Admins
             },
             fcmOptions: {
-                link: data.route ? `https://admin.clotheline.com${data.route}` : 'https://admin.clotheline.com'
+                // Ensure data.route exists before appending
+                link: (data && data.route) ? `https://admin.clotheline.com${data.route}` : 'https://admin.clotheline.com'
             }
         },
         tokens: uniqueTokens
