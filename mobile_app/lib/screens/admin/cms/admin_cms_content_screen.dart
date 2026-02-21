@@ -255,6 +255,7 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
       url = await _contentService.uploadImage(
         croppedFile.path,
         fileBytes: bytes,
+        explicitFileName: croppedFile.path.split('/').last,
         onProgress: (sent, total) {
           if (total > 0) {
             setState(() => _uploadProgress = sent / total);
@@ -313,6 +314,7 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
         videoUrl = await _contentService.uploadImage(
           video.path,
           fileBytes: bytes,
+          explicitFileName: video.name, // [CRITICAL] Web blob URLs drop extensions; use original XFile name
           onProgress: (sent, total) {
             if (total > 0) {
               setState(() => _uploadProgress = (sent / total) * 0.8); // 80% for video

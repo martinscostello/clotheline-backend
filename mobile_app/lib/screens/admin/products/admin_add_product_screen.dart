@@ -189,9 +189,10 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
     final List<XFile> images = await _picker.pickMultiImage();
     if (images.isNotEmpty) {
       for (var xFile in images) {
-        final file = File(xFile.path);
+        final file = File(xFile.path); // Fallback for Mobile Cached Image Preview
         final id = DateTime.now().microsecondsSinceEpoch.toString();
-        final item = UploadItem(id: id, localFile: file, status: UploadStatus.uploading);
+        // [CRITICAL] Supply xFile directly for Web Blob extraction
+        final item = UploadItem(id: id, localFile: file, xFile: xFile, status: UploadStatus.uploading);
         
         setState(() => _uploadItems.add(item));
         _uploadFile(item);
@@ -200,16 +201,21 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
   }
 
   Future<void> _uploadFile(UploadItem item) async {
-    if (item.localFile == null) return;
+    // If Web, rely on XFile blob. Otherwise, rely on LocalFile.
+    if (kIsWeb && item.xFile == null) return;
+    if (!kIsWeb && item.localFile == null) return;
+
     try {
       final dio = Dio();
       final uploadUrl = '${ApiService.baseUrl}/upload';
-      String fileName = item.localFile!.path.split('/').last;
+      
+      // Extract True Name/Extension to prevent Web Blob URLs from dropping MIME types
+      String fileName = kIsWeb ? item.xFile!.name : item.localFile!.path.split('/').last;
 
       MultipartFile multipartFile;
       if (kIsWeb) {
-        // [CRITICAL] Read bytes into memory for Web to bypass blocked browser file paths
-        final bytes = await item.localFile!.readAsBytes();
+        // [CRITICAL] Extract raw memory bytes from XFile blob, NOT dart:io File
+        final bytes = await item.xFile!.readAsBytes();
         multipartFile = MultipartFile.fromBytes(bytes, filename: fileName);
       } else {
         multipartFile = await MultipartFile.fromFile(item.localFile!.path, filename: fileName);

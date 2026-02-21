@@ -125,9 +125,9 @@ class ContentService {
     }
   }
 
-  Future<String?> uploadImage(String filePath, {Uint8List? fileBytes, Function(int, int)? onProgress}) async {
+  Future<String?> uploadImage(String filePath, {Uint8List? fileBytes, String? explicitFileName, Function(int, int)? onProgress}) async {
     try {
-      String fileName = filePath.split('/').last;
+      String fileName = explicitFileName ?? filePath.split('/').last;
       String mimeType = 'jpeg';
       String type = 'image';
       
