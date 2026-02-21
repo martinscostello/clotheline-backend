@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:universal_html/html.dart' as html;
 import '../screens/user/main_layout.dart';
 import '../screens/admin/admin_main_layout.dart'; // [NEW]
 import '../screens/user/products/submit_review_screen.dart';
@@ -114,6 +115,11 @@ class PushNotificationService {
         print('Message data: ${message.data}');
       }
 
+      // [NEW] Trigger native Web Audio Ping 
+      if (kIsWeb) {
+        _playWebNotificationSound();
+      }
+
       if (message.notification != null) {
         if (kDebugMode) {
           print('Message also contained a notification: ${message.notification}');
@@ -211,6 +217,40 @@ class PushNotificationService {
     } catch (e) {
       if (kDebugMode) print('Failed to get FCM Token: $e');
       return null;
+    }
+  }
+
+  // [NEW] Play a native web audio ping for foreground notifications
+  static void _playWebNotificationSound() {
+    if (!kIsWeb) return;
+    try {
+      final audioCtx = html.AudioContext();
+      
+      // Dual oscillator for a pleasant "chime" sound (A5 + C#6)
+      final osc1 = audioCtx.createOscillator();
+      final osc2 = audioCtx.createOscillator();
+      final gainNode = audioCtx.createGain();
+
+      osc1.type = 'sine';
+      osc1.frequency?.value = 880.0; // A5
+
+      osc2.type = 'sine';
+      osc2.frequency?.value = 1108.73; // C#6
+
+      // Fade out to avoid clipping
+      gainNode.gain?.setValueAtTime(0.1, audioCtx.currentTime ?? 0);
+      gainNode.gain?.exponentialRampToValueAtTime(0.001, (audioCtx.currentTime ?? 0) + 0.5);
+
+      osc1.connectNode(gainNode);
+      osc2.connectNode(gainNode);
+      gainNode.connectNode(audioCtx.destination);
+
+      osc1.start();
+      osc2.start();
+      osc1.stop((audioCtx.currentTime ?? 0) + 0.5);
+      osc2.stop((audioCtx.currentTime ?? 0) + 0.5);
+    } catch (e) {
+      if (kDebugMode) print("Web Audio Ping Failed: $e");
     }
   }
 
