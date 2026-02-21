@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // [NEW] for kIsWeb
 import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
@@ -248,14 +249,28 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
     });
     
     // Upload
-    String? url = await _contentService.uploadImage(
-      croppedFile.path,
-      onProgress: (sent, total) {
-        if (total > 0) {
-          setState(() => _uploadProgress = sent / total);
+    String? url;
+    if (kIsWeb) {
+      final bytes = await croppedFile.readAsBytes();
+      url = await _contentService.uploadImage(
+        croppedFile.path,
+        fileBytes: bytes,
+        onProgress: (sent, total) {
+          if (total > 0) {
+            setState(() => _uploadProgress = sent / total);
+          }
         }
-      }
-    );
+      );
+    } else {
+      url = await _contentService.uploadImage(
+        croppedFile.path,
+        onProgress: (sent, total) {
+          if (total > 0) {
+            setState(() => _uploadProgress = sent / total);
+          }
+        }
+      );
+    }
     
     setState(() => _isUploading = false);
     
@@ -278,29 +293,46 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
     });
 
     try {
-      // 1. Generate Thumbnail
-      final String? thumbPath = await VideoThumbnail.thumbnailFile(
-        video: video.path,
-        thumbnailPath: (await getTemporaryDirectory()).path,
-        imageFormat: ImageFormat.JPEG,
-        maxWidth: 640,
-        quality: 85, // Higher quality for hero 
-        timeMs: 0, // CRITICAL: Start from first frame
-      );
+      // 1. Generate Thumbnail (Skip on Web as it requires native file system)
+      String? thumbPath;
+      if (!kIsWeb) {
+        thumbPath = await VideoThumbnail.thumbnailFile(
+          video: video.path,
+          thumbnailPath: (await getTemporaryDirectory()).path,
+          imageFormat: ImageFormat.JPEG,
+          maxWidth: 640,
+          quality: 85, // Higher quality for hero 
+          timeMs: 0, // CRITICAL: Start from first frame
+        );
+      }
 
       // 2. Upload Video
-      String? videoUrl = await _contentService.uploadImage(
-        video.path,
-        onProgress: (sent, total) {
-          if (total > 0) {
-            setState(() => _uploadProgress = (sent / total) * 0.8); // 80% for video
+      String? videoUrl;
+      if (kIsWeb) {
+        final bytes = await video.readAsBytes();
+        videoUrl = await _contentService.uploadImage(
+          video.path,
+          fileBytes: bytes,
+          onProgress: (sent, total) {
+            if (total > 0) {
+              setState(() => _uploadProgress = (sent / total) * 0.8); // 80% for video
+            }
           }
-        }
-      );
+        );
+      } else {
+        videoUrl = await _contentService.uploadImage(
+          video.path,
+          onProgress: (sent, total) {
+            if (total > 0) {
+              setState(() => _uploadProgress = (sent / total) * 0.8); // 80% for video
+            }
+          }
+        );
+      }
 
       if (videoUrl == null) throw Exception("Video upload failed");
 
-      // 3. Upload Thumbnail
+      // 3. Upload Thumbnail (Only if generated/available)
       String? thumbUrl;
       if (thumbPath != null) {
         thumbUrl = await _contentService.uploadImage(

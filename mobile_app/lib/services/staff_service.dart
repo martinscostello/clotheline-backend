@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'api_service.dart';
 import '../models/staff_model.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,8 +10,17 @@ class StaffService {
 
   Future<String?> uploadImage(String filePath) async {
     try {
+      MultipartFile multipartFile;
+      if (kIsWeb) {
+        final file = File(filePath);
+        final bytes = await file.readAsBytes();
+        multipartFile = MultipartFile.fromBytes(bytes, filename: filePath.split('/').last);
+      } else {
+        multipartFile = await MultipartFile.fromFile(filePath);
+      }
+
       final formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(filePath),
+        'image': multipartFile,
       });
       final response = await _apiService.client.post('/upload', data: formData);
       if (response.statusCode == 200) {

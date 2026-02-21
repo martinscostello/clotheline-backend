@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart'; // [NEW] Added for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'api_service.dart';
@@ -119,12 +120,25 @@ class ReviewService extends ChangeNotifier {
   Future<String?> _uploadImage(File imageFile) async {
     try {
       String fileName = imageFile.path.split('/').last;
-      FormData formData = FormData.fromMap({
-        "image": await MultipartFile.fromFile(
+      
+      MultipartFile multipartFile;
+      if (kIsWeb) {
+        final bytes = await imageFile.readAsBytes();
+        multipartFile = MultipartFile.fromBytes(
+          bytes,
+          filename: fileName,
+          contentType: MediaType("image", "jpeg"),
+        );
+      } else {
+        multipartFile = await MultipartFile.fromFile(
           imageFile.path,
           filename: fileName,
           contentType: MediaType("image", "jpeg"),
-        ),
+        );
+      }
+
+      FormData formData = FormData.fromMap({
+        "image": multipartFile,
       });
 
       final response = await _apiService.client.post("/upload", data: formData);

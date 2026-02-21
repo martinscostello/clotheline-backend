@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -204,9 +205,18 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
       final dio = Dio();
       final uploadUrl = '${ApiService.baseUrl}/upload';
       String fileName = item.localFile!.path.split('/').last;
+
+      MultipartFile multipartFile;
+      if (kIsWeb) {
+        // [CRITICAL] Read bytes into memory for Web to bypass blocked browser file paths
+        final bytes = await item.localFile!.readAsBytes();
+        multipartFile = MultipartFile.fromBytes(bytes, filename: fileName);
+      } else {
+        multipartFile = await MultipartFile.fromFile(item.localFile!.path, filename: fileName);
+      }
       
       FormData formData = FormData.fromMap({
-        "image": await MultipartFile.fromFile(item.localFile!.path, filename: fileName),
+        "image": multipartFile,
       });
 
       await dio.post(

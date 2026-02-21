@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:typed_data'; // [NEW] For Web Byte Buffers
 import 'package:laundry_app/data/seed_data.dart'; // Added Import
 
 class ContentService {
@@ -124,7 +125,7 @@ class ContentService {
     }
   }
 
-  Future<String?> uploadImage(String filePath, {Function(int, int)? onProgress}) async {
+  Future<String?> uploadImage(String filePath, {Uint8List? fileBytes, Function(int, int)? onProgress}) async {
     try {
       String fileName = filePath.split('/').last;
       String mimeType = 'jpeg';
@@ -139,13 +140,25 @@ class ContentService {
       else if (lowerName.endsWith('.mov')) { type = 'video'; mimeType = 'quicktime'; }
       else if (lowerName.endsWith('.avi')) { type = 'video'; mimeType = 'x-msvideo'; }
 
-      // Create FormData
-      final formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(
+      // [CRITICAL] Create MultipartFile conditionally based on platform (Bytes vs File Paths)
+      MultipartFile multipartFile;
+      if (fileBytes != null) {
+        multipartFile = MultipartFile.fromBytes(
+          fileBytes,
+          filename: fileName,
+          contentType: MediaType(type, mimeType),
+        );
+      } else {
+        multipartFile = await MultipartFile.fromFile(
           filePath,
           filename: fileName,
           contentType: MediaType(type, mimeType), 
-        ),
+        );
+      }
+
+      // Create FormData
+      final formData = FormData.fromMap({
+        'image': multipartFile,
       });
 
       final response = await _apiService.client.post(
