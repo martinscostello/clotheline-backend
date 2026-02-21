@@ -400,6 +400,8 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
   }
   
   void _expandMap() {
+    if (kIsWeb) return; // Prevent full screen map expansion on Web
+
     final lat = double.tryParse(_latCtrl.text) ?? widget.branch.location.latitude;
     final lng = double.tryParse(_lngCtrl.text) ?? widget.branch.location.longitude;
     final center = gmaps.LatLng(lat, lng);
@@ -622,8 +624,9 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                   const SizedBox(height: 100),
                   
                   // --- GOOGLE MAP SECTION ---
-                  SizedBox(
-                    height: 400,
+                  if (!kIsWeb)
+                    SizedBox(
+                      height: 400,
                     child: Container(
                       margin: const EdgeInsets.all(20),
                       decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.white12), boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 15)]),
@@ -694,6 +697,16 @@ class _BranchMapEditorState extends State<_BranchMapEditor> {
                           _buildInput("Address", _addressCtrl),
                           const SizedBox(height: 10),
                           _buildInput("Phone", _phoneCtrl),
+                          if (kIsWeb) ...[
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(child: _buildInput("Latitude", _latCtrl)),
+                                const SizedBox(width: 10),
+                                Expanded(child: _buildInput("Longitude", _lngCtrl)),
+                              ]
+                            ),
+                          ],
                         ],
                       ),
                     ),

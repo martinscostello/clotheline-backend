@@ -159,3 +159,14 @@ exports.sendPushToTopic = async (topic, title, body, data = {}) => {
         console.error('[NotificationService] Error sending message to topic:', error);
     }
 };
+
+exports.subscribeToTopic = async (token, topic) => {
+    if (!isInitialized || !token || !topic) return;
+
+    try {
+        const response = await admin.messaging().subscribeToTopic(token, topic);
+        console.log(`[NotificationService] Subscribed token to topic ${topic} successfully.`, response);
+    } catch (error) {
+        console.error('[NotificationService] Error subscribing to topic:', error);
+    }
+};

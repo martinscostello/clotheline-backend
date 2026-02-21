@@ -439,6 +439,11 @@ exports.updateFcmToken = async (req, res) => {
             { new: true }
         );
 
+        // [NEW] Manually subscribe to 'all_users' from the backend, because Firebase Web SDK 
+        // does not natively support client-side topic subscriptions!
+        const notificationService = require('../utils/notificationService');
+        await notificationService.subscribeToTopic(token, 'all_users');
+
         res.json({ msg: 'Token updated and deduplicated' });
     } catch (err) {
         console.error("[Auth] Token Update Error:", err.message);
