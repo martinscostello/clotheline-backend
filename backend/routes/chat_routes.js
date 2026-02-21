@@ -148,7 +148,7 @@ router.post('/send', auth, async (req, res) => {
         // Push Alert
         try {
             if (!isAdmin) {
-                const admins = await User.find({ role: 'admin' }).select('_id');
+                const admins = await User.find({ role: 'admin' }).select('_id fcmTokens');
 
                 // Fetch Branch Name for context
                 const Branch = require('../models/Branch');
@@ -168,6 +168,26 @@ router.post('/send', auth, async (req, res) => {
                     metadata: { threadId: thread._id }
                 }));
                 if (adminNotifications.length > 0) await Notification.insertMany(adminNotifications);
+
+                // [NEW] Fire Live Push Notification to ALL Admins (Web, iOS, Android)
+                const NotificationService = require('../utils/notificationService');
+                let adminTokensRaw = [];
+                admins.forEach(adm => {
+                    if (adm.fcmTokens && Array.isArray(adm.fcmTokens)) {
+                        adminTokensRaw = adminTokensRaw.concat(adm.fcmTokens);
+                    }
+                });
+                const adminTokens = [...new Set(adminTokensRaw.filter(t => t))];
+
+                if (adminTokens.length > 0) {
+                    await NotificationService.sendPushNotification(
+                        adminTokens,
+                        "New Customer Message",
+                        `New message from ${senderName} at ${branchName}`,
+                        { threadId: thread._id.toString(), type: 'chat', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
+                    );
+                }
+
             } else {
                 await new Notification({
                     userId: thread.userId,
@@ -176,8 +196,22 @@ router.post('/send', auth, async (req, res) => {
                     type: 'chat',
                     branchId: thread.branchId
                 }).save();
+
+                // Fire Push to User
+                const NotificationService = require('../utils/notificationService');
+                const customer = await User.findById(thread.userId).select('fcmTokens');
+                if (customer && customer.fcmTokens && customer.fcmTokens.length > 0) {
+                    await NotificationService.sendPushNotification(
+                        customer.fcmTokens,
+                        "Support Replied",
+                        "You have a new message from Support.",
+                        { threadId: thread._id.toString(), type: 'chat', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
+                    );
+                }
             }
-        } catch (e) { }
+        } catch (e) {
+            console.error("Chat Push Notification Error:", e);
+        }
 
         res.json(newMessage);
     } catch (err) {
