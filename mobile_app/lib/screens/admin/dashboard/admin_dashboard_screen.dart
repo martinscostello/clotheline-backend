@@ -34,7 +34,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
-    final bool isTablet = width >= 600;
+    final bool isTablet = (width >= 600) || kIsWeb;
 
     if (isTablet) {
       return Navigator(
@@ -147,7 +147,7 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
-    final bool isTablet = width >= 600;
+    final bool isTablet = (width >= 600) || kIsWeb;
 
     return Scaffold(
       extendBodyBehindAppBar: true,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'PremiumNavBar.dart';
 import 'GlassSidebar.dart';
 
@@ -27,7 +28,7 @@ class NavScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
-    final bool isTablet = width >= 600; // Galaxy Z Fold 6 Threshold (600px+)
+    final bool isTablet = (width >= 600) || kIsWeb; // Galaxy Z Fold 6 Threshold (600px+)
 
     if (isTablet) {
       return Scaffold(

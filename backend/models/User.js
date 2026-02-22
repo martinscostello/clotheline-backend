@@ -96,6 +96,7 @@ const UserSchema = new mongoose.Schema({
         manageFinancials: { type: Boolean, default: false },
         viewRevenueOverview: { type: Boolean, default: false },
         manageProductIllusions: { type: Boolean, default: false },
+        manageBackup: { type: Boolean, default: false },
     },
     // Device Tokens for Notifications
     fcmTokens: [{

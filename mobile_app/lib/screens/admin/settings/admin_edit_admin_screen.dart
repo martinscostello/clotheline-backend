@@ -41,6 +41,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
     'manageFinancials': false,
     'viewRevenueOverview': false,
     'manageProductIllusions': false,
+    'manageBackup': false,
   };
 
   String? _selectedAvatarId;
@@ -200,6 +201,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
                         _buildSwitch("View Financial Reports (Investor)", 'manageFinancials'),
                         _buildSwitch("View Dashboard Revenue Chart", 'viewRevenueOverview'),
                         _buildSwitch("Manage Product Ext. Illusions", 'manageProductIllusions'),
+                        _buildSwitch("Generate Database Backups", 'manageBackup'),
                       ],
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:laundry_app/widgets/glass/LiquidBackground.dart';
 import 'package:laundry_app/widgets/glass/GlassContainer.dart';
 import 'package:laundry_app/theme/app_theme.dart';
@@ -16,8 +17,40 @@ import 'admin_manage_data_screen.dart'; // [NEW]
 import '../reports/admin_financial_reports_screen.dart'; // [NEW]
 import '../../../utils/toast_utils.dart';
 
-class AdminSettingsScreen extends StatelessWidget {
+class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({super.key});
+
+  @override
+  State<AdminSettingsScreen> createState() => _AdminSettingsScreenState();
+}
+
+class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
+  final GlobalKey<NavigatorState> _settingsNavigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final bool isTablet = (width >= 600) || kIsWeb;
+
+    if (isTablet) {
+      return Navigator(
+        key: _settingsNavigatorKey,
+        onGenerateRoute: (settings) {
+          return MaterialPageRoute(
+            builder: (context) => AdminSettingsContent(isTablet: isTablet),
+            settings: settings,
+          );
+        },
+      );
+    }
+
+    return AdminSettingsContent(isTablet: isTablet);
+  }
+}
+
+class AdminSettingsContent extends StatelessWidget {
+  final bool isTablet;
+  const AdminSettingsContent({super.key, required this.isTablet});
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +62,7 @@ class AdminSettingsScreen extends StatelessWidget {
           title: const Text("Admin Config", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           backgroundColor: Colors.transparent,
           elevation: 0,
+          leading: Navigator.canPop(context) ? const BackButton(color: Colors.white) : null,
         ),
         body: LiquidBackground(
           child: SingleChildScrollView(
@@ -87,52 +121,49 @@ class AdminSettingsScreen extends StatelessWidget {
                   child: Consumer<AuthService>(
                     builder: (context, auth, _) {
                       final isMaster = auth.currentUser != null && auth.currentUser!['isMasterAdmin'] == true;
+                      final permissions = auth.currentUser?['permissions'] ?? {};
+
                       return Column(
                         children: [
                           _buildSettingTile(Icons.admin_panel_settings, "Manage Administrators", () {
-                             final permissions = auth.currentUser?['permissions'] ?? {};
                              if (isMaster || permissions['manageAdmins'] == true) {
-                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManageAdminsScreen()));
+                               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminManageAdminsScreen()));
                              } else {
                                _showDeniedDialog(context, "Admin Management");
                                auth.logPermissionViolation("Admin Management");
                              }
                           }),
                            _buildSettingTile(Icons.badge_outlined, "Staff Profiles", () {
-                              final permissions = auth.currentUser?['permissions'] ?? {};
                               if (isMaster || permissions['manageStaff'] == true) {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminStaffScreen()));
+                                Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminStaffScreen()));
                               } else {
                                 _showDeniedDialog(context, "Staff Management");
                                 auth.logPermissionViolation("Staff Management");
                               }
                            }),
                           _buildSettingTile(Icons.local_shipping, "Delivery Zones & Fees", () {
-                             final permissions = auth.currentUser?['permissions'] ?? {};
                              if (isMaster || permissions['manageSettings'] == true) {
-                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
+                               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminDeliverySettingsScreen()));
                              } else {
                                _showDeniedDialog(context, "Delivery Settings");
                                auth.logPermissionViolation("Delivery Settings");
                              }
                           }),
                           _buildSettingTile(Icons.percent, "Tax Settings (VAT)", () {
-                             final permissions = auth.currentUser?['permissions'] ?? {};
                              if (isMaster || permissions['manageSettings'] == true) {
-                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminTaxSettingsScreen()));
+                               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminTaxSettingsScreen()));
                              } else {
                                _showDeniedDialog(context, "Tax Settings");
                                auth.logPermissionViolation("Tax Settings");
                              }
                           }),
-                           if (isMaster)
+                           if (isMaster || permissions['manageCMS'] == true)
                             _buildSettingTile(Icons.storage, "Manage Data", () {
-                               Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManageDataScreen()));
+                               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminManageDataScreen()));
                             }),
                            _buildSettingTile(Icons.auto_graph, "Financial Intelligence", () {
-                              final permissions = auth.currentUser?['permissions'] ?? {};
-                              if (isMaster || permissions['manageSettings'] == true) { // Or specific permission
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminFinancialReportsScreen()));
+                              if (isMaster || permissions['manageFinancials'] == true || permissions['manageSettings'] == true) { 
+                                Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminFinancialReportsScreen()));
                               } else {
                                 _showDeniedDialog(context, "Financial Reports");
                                 auth.logPermissionViolation("Financial Reports");
@@ -149,13 +180,27 @@ class AdminSettingsScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 GlassContainer(
                    opacity: 0.1,
-                   child: Column(
-                     children: [
-                       _buildSettingTile(Icons.notifications_active, "Push Notifications", () {
-                         Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminNotificationSettingsScreen()));
-                       }),
-                       _buildSettingTile(Icons.backup, "Database Backup", () => _showBackupInfo(context)),
-                     ],
+                   child: Consumer<AuthService>(
+                     builder: (context, auth, _) {
+                       final isMaster = auth.currentUser != null && auth.currentUser!['isMasterAdmin'] == true;
+                       final permissions = auth.currentUser?['permissions'] ?? {};
+
+                       return Column(
+                         children: [
+                           _buildSettingTile(Icons.notifications_active, "Push Notifications", () {
+                             Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminNotificationSettingsScreen()));
+                           }),
+                           _buildSettingTile(Icons.backup, "Database Backup", () {
+                             if (isMaster || permissions['manageBackup'] == true) {
+                               _showBackupInfo(context);
+                             } else {
+                               _showDeniedDialog(context, "Database Backup");
+                               auth.logPermissionViolation("Database Backup");
+                             }
+                           }),
+                         ],
+                       );
+                     }
                    ),
                  ),
   
@@ -168,17 +213,17 @@ class AdminSettingsScreen extends StatelessWidget {
                       foregroundColor: Colors.red,
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
-                    onPressed: () async {
-                       await Provider.of<AuthService>(context, listen: false).logout();
-                       if (context.mounted) {
-                         Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
-                            (route) => false
-                         );
-                       }
-                    }, 
-                    icon: const Icon(Icons.logout),
-                    label: const Text("Admin Logout"),
+                     onPressed: () async {
+                        await Provider.of<AuthService>(context, listen: false).logout();
+                        if (context.mounted) {
+                          Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                             MaterialPageRoute(builder: (_) => const LoginScreen()),
+                             (route) => false
+                          );
+                        }
+                     }, 
+                     icon: const Icon(Icons.logout),
+                     label: const Text("Admin Logout"),
                   ),
                 )
               ],
