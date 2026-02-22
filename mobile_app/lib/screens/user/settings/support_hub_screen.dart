@@ -33,6 +33,52 @@ class _SupportHubScreenState extends State<SupportHubScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleDirectMessage() async {
+    final text = _searchController.text.trim();
+    if (text.isEmpty) return;
+
+    final branchProvider = context.read<BranchProvider>();
+    final chatService = context.read<ChatService>();
+
+    if (branchProvider.selectedBranch == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a branch first")),
+      );
+      return;
+    }
+
+    try {
+      // 1. Ensure thread exists or is initialized for this branch
+      if (chatService.currentThread == null || chatService.currentThread!['branchId'] != branchProvider.selectedBranch!.id) {
+         await chatService.initThread(branchProvider.selectedBranch!.id);
+      }
+
+      // 2. Send the message
+      await chatService.sendMessage(text);
+
+      // 3. Clear and Navigate
+      if (mounted) {
+        _searchController.clear();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ChatScreen(branchId: branchProvider.selectedBranch!.id))
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
@@ -76,11 +122,15 @@ class _SupportHubScreenState extends State<SupportHubScreen> {
                       child: TextField(
                         controller: _searchController,
                         style: TextStyle(color: textColor),
+                        onSubmitted: (_) => _handleDirectMessage(),
                         decoration: InputDecoration(
                           hintText: "Have any questions? Ask them here!",
                           hintStyle: TextStyle(color: secondaryTextColor, fontSize: 14),
                           border: InputBorder.none,
-                          suffixIcon: Icon(Icons.search, color: AppTheme.primaryColor),
+                          suffixIcon: IconButton(
+                            icon: Icon(Icons.send_rounded, color: AppTheme.primaryColor),
+                            onPressed: _handleDirectMessage,
+                          ),
                         ),
                       ),
                     ),

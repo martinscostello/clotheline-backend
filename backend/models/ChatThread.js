@@ -13,8 +13,21 @@ const ChatThreadSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['open', 'resolved'],
+        enum: ['open', 'picked_up', 'resolved'],
         default: 'open'
+    },
+    assignedToAdminId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    assignedToAdminName: {
+        type: String,
+        default: null
+    },
+    assignedAt: {
+        type: Date,
+        default: null
     },
     resolvedAt: {
         type: Date,
@@ -47,6 +60,19 @@ const ChatThreadSchema = new mongoose.Schema({
     autoResponseSent: {
         type: Boolean,
         default: false
+    },
+    // SLA / Performance Tracking
+    firstResponseAt: {
+        type: Date,
+        default: null
+    },
+    lastAdminReplyAt: {
+        type: Date,
+        default: null
+    },
+    resolutionTime: {
+        type: Number, // in minutes/seconds
+        default: null
     }
 });
 

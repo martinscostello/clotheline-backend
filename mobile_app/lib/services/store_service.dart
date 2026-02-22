@@ -33,17 +33,19 @@ class StoreService extends ChangeNotifier {
   bool get isHydrated => _isHydrated;
 
   // 1. Load Cache Only
-  Future<void> loadFromCache({String? branchId}) async {
+  Future<void> loadFromCache({String? branchId, bool isAdmin = false}) async {
     final prefs = await SharedPreferences.getInstance();
     try {
-      // 1. Products Cache (Branch Aware)
-      final prodKey = branchId != null ? 'products_cache_$branchId' : 'products_cache';
+      // 1. Products Cache (Branch + Admin Aware)
+      final baseKey = isAdmin ? 'products_cache_admin' : 'products_cache';
+      final prodKey = branchId != null ? '${baseKey}_$branchId' : baseKey;
+      
       final cached = prefs.getString(prodKey);
       if (cached != null) {
         final List<dynamic> data = jsonDecode(cached);
         _products = data.whereType<Map>().map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
-      } else if (branchId == null) {
-        // Fallback to Seed Data only for global context
+      } else if (branchId == null && !isAdmin) {
+        // Fallback to Seed Data only for global context and NOT admin
         _products = kDefaultProducts.map((json) => StoreProduct.fromJson(json)).toList();
       }
       
@@ -64,8 +66,11 @@ class StoreService extends ChangeNotifier {
   }
 
   // Silent Sync
-  Future<void> fetchFromApi({String? branchId, bool isAdmin = false}) async {
-    _isLoading = true;
+  Future<void> fetchFromApi({String? branchId, bool isAdmin = false, bool showLoading = true}) async {
+    if (showLoading) {
+       _isLoading = true;
+       notifyListeners(); // Ensure spinner shows
+    }
     
     // Fetch Products
     try {
@@ -79,10 +84,14 @@ class StoreService extends ChangeNotifier {
         final List<dynamic> data = response.data;
         final newProducts = data.whereType<Map>().map((json) => StoreProduct.fromJson(Map<String, dynamic>.from(json))).toList();
         
-        // Cache Logic (Simple overwrite for now, optimized diffing can be added if needed)
         _products = newProducts;
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('products_cache_$branchId', jsonEncode(data)); // Branch-aware cache key
+        
+        // Cache Logic (Admin Aware)
+        final baseKey = isAdmin ? 'products_cache_admin' : 'products_cache';
+        final prodKey = branchId != null ? '${baseKey}_$branchId' : baseKey;
+        await prefs.setString(prodKey, jsonEncode(data));
+        
         notifyListeners();
       }
     } catch (e) {
@@ -111,14 +120,19 @@ class StoreService extends ChangeNotifier {
        debugPrint("Error fetching categories: $e");
     }
 
-    _isLoading = false;
+    if (showLoading) {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // COMPATIBILITY (Wraps silent sync)
-  Future<void> fetchProducts({String? branchId, bool forceRefresh = false, bool isAdmin = false}) async {
-    // Note: We might want separate cache keys for Separate branches.
-    if (!_isHydrated && branchId == null) await loadFromCache(branchId: branchId);
-    await fetchFromApi(branchId: branchId, isAdmin: isAdmin);
+  Future<void> fetchProducts({String? branchId, bool forceRefresh = false, bool isAdmin = false, bool? showLoading}) async {
+    // If showLoading not explicitly set, show it ONLY if we have no products
+    final bool resolvedShowLoading = showLoading ?? _products.isEmpty;
+
+    if (!_isHydrated && branchId == null) await loadFromCache(branchId: branchId, isAdmin: isAdmin);
+    await fetchFromApi(branchId: branchId, isAdmin: isAdmin, showLoading: resolvedShowLoading);
   }
   
   // Categories Helper
@@ -228,7 +242,7 @@ class StoreService extends ChangeNotifier {
       final response = await _apiService.client.post('/products', data: productData);
       if (response.statusCode == 200) {
         final branchId = productData['branchId'];
-        await fetchProducts(branchId: branchId, forceRefresh: true, isAdmin: isAdmin); // Refresh
+        await fetchProducts(branchId: branchId, forceRefresh: true, isAdmin: isAdmin, showLoading: false); // Silent Refresh
         return true;
       }
       return false;
@@ -243,7 +257,7 @@ class StoreService extends ChangeNotifier {
       final response = await _apiService.client.put('/products/$id', data: updates);
       if (response.statusCode == 200) {
         final branchId = updates['branchId'];
-        await fetchProducts(branchId: branchId, forceRefresh: true, isAdmin: isAdmin);
+        await fetchProducts(branchId: branchId, forceRefresh: true, isAdmin: isAdmin, showLoading: false); // Silent Refresh
         return true;
       }
       return false;

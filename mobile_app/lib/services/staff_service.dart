@@ -22,7 +22,14 @@ class StaffService {
       final formData = FormData.fromMap({
         'image': multipartFile,
       });
-      final response = await _apiService.client.post('/upload', data: formData);
+      final response = await _apiService.client.post(
+        '/upload', 
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 5),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
       if (response.statusCode == 200) {
         return response.data['filePath'];
       }

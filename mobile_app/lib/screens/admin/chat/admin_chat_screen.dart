@@ -224,20 +224,28 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                         Text(timeStr, style: const TextStyle(fontSize: 10, color: Colors.grey)),
                       ],
                     ),
-                    subtitle: Row(
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: Text(thread['lastMessageText'] ?? "No messages", style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.black54), overflow: TextOverflow.ellipsis)),
-                        const SizedBox(width: 8),
-                        if (thread['unreadCountAdmin'] != null && thread['unreadCountAdmin'] > 0)
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
-                            child: Text(thread['unreadCountAdmin'].toString(), style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                          ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.white38, size: 18),
-                          onPressed: () => _confirmDeleteThread(context, chatService, thread['_id']),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            _buildStatusBadge(thread),
+                            const Spacer(),
+                            if (thread['unreadCountAdmin'] != null && thread['unreadCountAdmin'] > 0)
+                              Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+                                child: Text(thread['unreadCountAdmin'].toString(), style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.white38, size: 18),
+                              onPressed: () => _confirmDeleteThread(context, chatService, thread['_id']),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 2),
+                        Text(thread['lastMessageText'] ?? "No messages", style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.black54), overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   );
@@ -266,6 +274,29 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatusBadge(dynamic thread) {
+    String status = (thread['status'] ?? 'open').toString().toUpperCase();
+    Color color = Colors.orangeAccent;
+    String label = status;
+
+    if (status == 'RESOLVED') {
+      color = Colors.green;
+    } else if (status == 'PICKED_UP') {
+      color = Colors.blue;
+      label = "PICKED UP - ${thread['assignedToAdminName'] ?? 'Admin'}";
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.5), width: 0.5)
+      ),
+      child: Text(label, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -330,6 +361,12 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
        final userName = thread['userId'] != null ? thread['userId']['name'] : "User";
        const isDark = true; 
 
+       final auth = Provider.of<AuthService>(context, listen: false);
+       final currentUserId = auth.currentUser?['_id'];
+       final assignedToId = thread['assignedToAdminId'];
+       final isAssignedToMe = assignedToId == currentUserId;
+       final isPickedUp = thread['status'] == 'picked_up';
+
        return Column(
           children: [
             // Chat Header
@@ -344,18 +381,41 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Text(thread['status'].toString().toUpperCase(), style: TextStyle(fontSize: 10, color: thread['status'] == 'resolved' ? Colors.green : Colors.orangeAccent)),
+                      _buildHeaderStatusBadge(thread),
                     ],
                   ),
                   const Spacer(),
-                  _buildActionChip(
-                    thread['status'] == 'open' ? Icons.check_circle_outline : Icons.replay,
-                    thread['status'] == 'open' ? "Resolve Ticket" : "Reopen Ticket",
-                    () {
-                      final newStatus = thread['status'] == 'open' ? 'resolved' : 'open';
-                      chatService.updateThreadStatus(thread['_id'], newStatus);
-                    },
-                  ),
+                  if (!isPickedUp && thread['status'] != 'resolved')
+                     _buildActionChip(
+                       Icons.pan_tool_outlined,
+                       "Pick Up",
+                       () => chatService.pickupThread(thread['_id']),
+                       color: Colors.blue
+                     ),
+                  
+                  if (isAssignedToMe && isPickedUp) ...[
+                    _buildActionChip(
+                      Icons.check_circle_outline,
+                      "Resolve",
+                      () => chatService.updateThreadStatus(thread['_id'], 'resolved'),
+                      color: Colors.green
+                    ),
+                    const SizedBox(width: 8),
+                    _buildActionChip(
+                      Icons.swap_horiz,
+                      "Transfer",
+                      () => _showTransferDialog(context, chatService, thread['_id']),
+                      color: Colors.orangeAccent
+                    ),
+                  ],
+                  
+                  if (thread['status'] == 'resolved')
+                    _buildActionChip(
+                      Icons.replay,
+                      "Reopen",
+                      () => chatService.updateThreadStatus(thread['_id'], 'open'),
+                      color: Colors.blue
+                    ),
                 ],
               ),
             ),
@@ -375,72 +435,132 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
               ),
             ),
             // Input
-            Container(
-              padding: EdgeInsets.only(
-                top: 15,
-                left: 15,
-                right: 15,
-                bottom: MediaQuery.of(context).viewInsets.bottom > 0 
-                    ? MediaQuery.of(context).viewInsets.bottom + 10 
-                    : MediaQuery.of(context).padding.bottom + 10, // Standard padding inside
-              ),
-              decoration: BoxDecoration(
-                border: const Border(top: BorderSide(color: Colors.white10)),
-                color: Colors.black.withOpacity(0.6), 
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _msgController,
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
-                      style: const TextStyle(color: Colors.white), 
-                      decoration: InputDecoration(
-                        hintText: "Type a reply...",
-                        hintStyle: const TextStyle(fontSize: 14, color: Colors.white54),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.1),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            // Input or Assignment Notification
+            if (isPickedUp && !isAssignedToMe)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                color: Colors.blue.withOpacity(0.1),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "Conversation assigned to ${thread['assignedToAdminName'] ?? 'another admin'}",
+                        style: const TextStyle(color: Colors.blue, fontSize: 13, fontWeight: FontWeight.bold),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: (_msgController.text.trim().isEmpty || _isSending) 
-                        ? null 
-                        : () async {
-                          final text = _msgController.text.trim();
-                          setState(() => _isSending = true);
-                          await chatService.sendMessage(text);
-                          if (mounted) {
-                            _msgController.clear();
-                            setState(() => _isSending = false);
-                            Future.delayed(const Duration(milliseconds: 100), () => _scrollToBottom());
-                          }
-                        },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: 44,
-                      width: 44,
-                      decoration: BoxDecoration(
-                        color: (_msgController.text.trim().isEmpty || _isSending) 
-                            ? Colors.grey.withOpacity(0.3) 
-                            : AppTheme.primaryColor,
-                        shape: BoxShape.circle
-                      ),
-                      child: Center(
-                        child: _isSending
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                  ],
+                ),
+              )
+            else if (thread['status'] == 'resolved')
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                color: Colors.green.withOpacity(0.1),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "This ticket is resolved. Reopen to reply.",
+                        style: TextStyle(color: Colors.green, fontSize: 13, fontWeight: FontWeight.bold),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              )
+            else if (!isPickedUp && thread['status'] == 'open')
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                color: Colors.orange.withOpacity(0.1),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        "Pick up this conversation to start replying.",
+                        style: TextStyle(color: Colors.orange, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => chatService.pickupThread(thread['_id']),
+                      child: const Text("Pick Up Now"),
+                    )
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: EdgeInsets.only(
+                  top: 15,
+                  left: 15,
+                  right: 15,
+                  bottom: MediaQuery.of(context).viewInsets.bottom > 0 
+                      ? MediaQuery.of(context).viewInsets.bottom + 10 
+                      : MediaQuery.of(context).padding.bottom + 10,
+                ),
+                decoration: BoxDecoration(
+                  border: const Border(top: BorderSide(color: Colors.white10)),
+                  color: Colors.black.withOpacity(0.6), 
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _msgController,
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                        style: const TextStyle(color: Colors.white), 
+                        decoration: InputDecoration(
+                          hintText: "Type a reply...",
+                          hintStyle: const TextStyle(fontSize: 14, color: Colors.white54),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: (_msgController.text.trim().isEmpty || _isSending) 
+                          ? null 
+                          : () async {
+                            final text = _msgController.text.trim();
+                            setState(() => _isSending = true);
+                            await chatService.sendMessage(text);
+                            if (mounted) {
+                              _msgController.clear();
+                              setState(() => _isSending = false);
+                              Future.delayed(const Duration(milliseconds: 100), () => _scrollToBottom());
+                            }
+                          },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        height: 44,
+                        width: 44,
+                        decoration: BoxDecoration(
+                          color: (_msgController.text.trim().isEmpty || _isSending) 
+                              ? Colors.grey.withOpacity(0.3) 
+                              : AppTheme.primaryColor,
+                          shape: BoxShape.circle
+                        ),
+                        child: Center(
+                          child: _isSending
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
        );
       }
@@ -497,20 +617,110 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
     );
   }
 
-  Widget _buildActionChip(IconData icon, String label, VoidCallback onTap) {
+  Widget _buildHeaderStatusBadge(dynamic thread) {
+    String status = (thread['status'] ?? 'open').toString().toUpperCase();
+    Color color = Colors.orangeAccent;
+    String label = status;
+
+    if (status == 'RESOLVED') {
+      color = Colors.green;
+    } else if (status == 'PICKED_UP') {
+      color = Colors.blue;
+      label = "PICKED UP - ${thread['assignedToAdminName'] ?? 'Admin'}";
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.5), width: 0.5)
+      ),
+      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  void _showTransferDialog(BuildContext context, ChatService chatService, String threadId) {
+    // For simplicity, we'll fetch all admins. 
+    // Usually this would be in a provider, but we'll use a simple dialog for now.
+    // In a real implementation, you'd want a list of admins from the AuthService or UserProvider.
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Text("Transfer Conversation", style: TextStyle(color: Colors.white)),
+          content: const Text("Would you like to transfer this conversation to a Master Admin for further assistance?", style: TextStyle(color: Colors.white70)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+              onPressed: () async {
+                // In this simplified version, we'll look for a master admin on the backend.
+                // The backend transfer route handles finding the target admin if we provide a specific ID,
+                // but for now let's just use a placeholder logic or prompt for an ID.
+                // Let's assume we want to transfer to 'master_admin_id' (to be replaced by real logic)
+                // For now, I'll just show a "Coming Soon" or a simple text field.
+                
+                final TextEditingController adminIdController = TextEditingController();
+                Navigator.pop(context); // Close first dialog
+                
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: const Color(0xFF1A1A1A),
+                    title: const Text("Enter Admin ID", style: TextStyle(color: Colors.white)),
+                    content: TextField(
+                      controller: adminIdController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: "Admin ID",
+                        hintStyle: TextStyle(color: Colors.white24),
+                      ),
+                    ),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+                      ElevatedButton(
+                        onPressed: () async {
+                          if (adminIdController.text.isNotEmpty) {
+                            await chatService.transferThread(threadId, adminIdController.text.trim());
+                            if (mounted) Navigator.pop(context);
+                          }
+                        },
+                        child: const Text("Transfer"),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: const Text("Transfer"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildActionChip(IconData icon, String label, VoidCallback onTap, {Color color = AppTheme.primaryColor}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.5)),
+          color: color.withOpacity(0.1),
+          border: Border.all(color: color.withOpacity(0.5)),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 14, color: AppTheme.primaryColor),
+            Icon(icon, size: 14, color: color),
             const SizedBox(width: 4),
-            Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+            Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

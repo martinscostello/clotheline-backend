@@ -279,6 +279,38 @@ class ChatService extends ChangeNotifier {
       print("Delete thread error: $e");
     }
   }
+
+  Future<void> pickupThread(String threadId) async {
+    try {
+      final response = await _apiService.client.post('/chat/admin/pickup/$threadId');
+      if (response.statusCode == 200) {
+        _currentThread = response.data;
+        final idx = _threads.indexWhere((t) => t['_id'] == threadId);
+        if (idx != -1) _threads[idx] = response.data;
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Pickup thread error: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> transferThread(String threadId, String targetAdminId) async {
+    try {
+      final response = await _apiService.client.post('/chat/admin/transfer/$threadId', data: {
+        'targetAdminId': targetAdminId
+      });
+      if (response.statusCode == 200) {
+        _currentThread = response.data;
+        final idx = _threads.indexWhere((t) => t['_id'] == threadId);
+        if (idx != -1) _threads[idx] = response.data;
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Transfer thread error: $e");
+      rethrow;
+    }
+  }
   
   @override
   void dispose() {

@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:js/js.dart' as js;
-import 'dart:js' as dart_js;
+import '../utils/web_audio.dart';
 import '../screens/user/main_layout.dart';
 import '../screens/admin/admin_main_layout.dart'; // [NEW]
 import '../screens/user/products/submit_review_screen.dart';
@@ -223,42 +222,7 @@ class PushNotificationService {
 
   // [NEW] Play a native web audio ping for foreground notifications
   static void _playWebNotificationSound() {
-    if (!kIsWeb) return;
-    try {
-      // Execute pure JavaScript to bypass Dart/WASM mapping issues with universal_html
-      dart_js.context.callMethod('eval', [
-        '''
-        try {
-          var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          var osc1 = audioCtx.createOscillator();
-          var osc2 = audioCtx.createOscillator();
-          var gainNode = audioCtx.createGain();
-
-          osc1.type = 'sine';
-          osc1.frequency.value = 880.0; // A5
-
-          osc2.type = 'sine';
-          osc2.frequency.value = 1108.73; // C#6
-
-          gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-
-          osc1.connect(gainNode);
-          osc2.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
-
-          osc1.start();
-          osc2.start();
-          osc1.stop(audioCtx.currentTime + 0.5);
-          osc2.stop(audioCtx.currentTime + 0.5);
-        } catch(e) {
-          console.error("Audio Playback Error: ", e);
-        }
-        '''
-      ]);
-    } catch (e) {
-      if (kDebugMode) print("Web Audio Ping Failed: $e");
-    }
+    playWebNotificationSound();
   }
 
   // [NEW] Manual request to bypass Web DOMExceptions when not booted from user interaction

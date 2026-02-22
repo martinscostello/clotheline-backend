@@ -154,7 +154,7 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
                                    } else if (currentModule == 'product_categories') {
                                        Provider.of<StoreService>(context, listen: false).fetchCategories(branchId: val);
                                    } else if (currentModule == 'products') {
-                                       Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: val, forceRefresh: true, isAdmin: true);
+                                       Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: val, forceRefresh: true, isAdmin: true, showLoading: true);
                                    }
                                 }
                             },

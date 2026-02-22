@@ -165,6 +165,10 @@ class ContentService {
         '/upload',
         data: formData,
         onSendProgress: onProgress,
+        options: Options(
+          sendTimeout: const Duration(minutes: 5),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
       );
 
       if (response.statusCode == 200) {

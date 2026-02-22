@@ -88,6 +88,7 @@ const UserSchema = new mongoose.Schema({
         manageProducts: { type: Boolean, default: false },
         manageUsers: { type: Boolean, default: false }, // Broadcast
         manageChat: { type: Boolean, default: false },
+        canPickupChats: { type: Boolean, default: false },
         manageSettings: { type: Boolean, default: false },
         manageAdmins: { type: Boolean, default: false },
         managePOS: { type: Boolean, default: false },

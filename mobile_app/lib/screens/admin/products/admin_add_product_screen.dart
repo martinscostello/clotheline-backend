@@ -233,6 +233,10 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
             setState(() { item.progress = sent / total; });
           }
         },
+        options: Options(
+          sendTimeout: const Duration(minutes: 5),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
       ).then((response) {
         if (response.statusCode == 200) {
             String path = response.data['filePath'];

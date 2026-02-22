@@ -50,7 +50,7 @@ class AdminProductsScreen extends StatelessWidget {
                             final branch = branchProvider.branches.firstWhere((b) => b.id == val);
                             branchProvider.selectBranch(branch);
                             // Trigger Fetch
-                            Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: val, forceRefresh: true, isAdmin: true);
+                            Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: val, forceRefresh: true, isAdmin: true, showLoading: true);
                          }
                       },
                       items: branchProvider.branches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, style: const TextStyle(color: Colors.white, fontSize: 13)))).toList(),
@@ -133,9 +133,10 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
             }
 
             return RefreshIndicator(
-              onRefresh: () => storeService.fetchProducts(branchId: branchProvider.selectedBranch!.id, isAdmin: true),
+              onRefresh: () => storeService.fetchProducts(branchId: branchProvider.selectedBranch!.id, isAdmin: true, showLoading: false),
               color: AppTheme.primaryColor,
               child: GridView.builder(
+                key: const PageStorageKey('admin_products_grid'),
                 padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? 20 : 100, 20, 100),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
@@ -146,7 +147,11 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
                 itemCount: storeService.products.length,
                 itemBuilder: (context, index) {
                   final product = storeService.products[index];
-                  return _buildProductCard(product, branchProvider.selectedBranch!.id);
+                  return _buildProductCard(
+                    product, 
+                    branchProvider.selectedBranch!.id, 
+                    key: ValueKey("admin_prod_${product.id}")
+                  );
                 },
               ),
             );
@@ -189,8 +194,9 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
     );
   }
 
-  Widget _buildProductCard(StoreProduct product, String branchId) {
+  Widget _buildProductCard(StoreProduct product, String branchId, {Key? key}) {
     return GestureDetector(
+      key: key,
       onTap: () async {
         if (widget.isEmbedded && widget.onNavigate != null) {
           widget.onNavigate!('add_product', {
@@ -276,16 +282,16 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
                         product.name, 
                         maxLines: 2, 
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       const SizedBox(height: 4),
-                       Text(
+                      Text(
                         CurrencyFormatter.format(product.price), 
-                        style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14)
+                        style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                       Text(
                         "Qty: ${product.stockLevel}", 
-                        style: const TextStyle(color: Colors.white70, fontSize: 11)
+                        style: const TextStyle(color: Colors.white70, fontSize: 11),
                       ),
                     ],
                   ),

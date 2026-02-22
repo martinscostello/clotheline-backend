@@ -109,23 +109,25 @@ router.post('/send', auth, async (req, res) => {
         thread.lastMessageAt = Date.now();
         if (isAdmin) {
             thread.unreadCountUser += 1;
-            // [FIX] Removed: thread.autoResponseSent = false; so it doesn't spam users after admin responds
+            // SLA Tracking
+            thread.lastAdminReplyAt = Date.now();
+            if (!thread.firstResponseAt) thread.firstResponseAt = Date.now();
         } else {
             thread.unreadCountAdmin += 1;
-            // Reopen if user sends a message to a resolved ticket
-            if (thread.status === 'resolved') {
+            // Reopen if user sends a message to a resolved OR assigned ticket (resetting assignment)
+            if (thread.status === 'resolved' || (thread.status === 'picked_up' && thread.assignedToAdminId)) {
                 thread.status = 'open';
                 thread.resolvedAt = null;
-                thread.autoResponseSent = false; // [NEW] Reset if reopened
+                thread.assignedToAdminId = null;
+                thread.assignedToAdminName = null;
+                thread.assignedAt = null;
+                thread.autoResponseSent = false;
             }
 
             // [AUTO-RESPONSE LOGIC]
             if (!thread.autoResponseSent) {
                 const autoReplyText = "Your ticket has been created, an agent will respond to you shortly. 🤖";
-
-                // Find an admin to be the "sender" (usually the first admin or a system dummy)
                 const systemAdmin = await User.findOne({ role: 'admin' });
-
                 if (systemAdmin) {
                     const autoMessage = new ChatMessage({
                         threadId,
@@ -134,7 +136,6 @@ router.post('/send', auth, async (req, res) => {
                         messageText: autoReplyText
                     });
                     await autoMessage.save();
-
                     thread.lastMessageText = autoReplyText;
                     thread.lastMessageAt = Date.now();
                     thread.unreadCountUser += 1;
@@ -142,53 +143,71 @@ router.post('/send', auth, async (req, res) => {
                 }
             }
         }
-        thread.isHiddenFromAdmin = false; // [NEW] Unhide if admin deleted it previously
+        thread.isHiddenFromAdmin = false;
         await thread.save();
 
-        // Push Alert
+        // Push Alert Consolidation
         try {
+            const NotificationService = require('../utils/notificationService');
             if (!isAdmin) {
-                const admins = await User.find({ role: 'admin' }).select('_id fcmTokens');
-
-                // Fetch Branch Name for context
-                const Branch = require('../models/Branch');
-                let branchName = "Unknown Branch";
-                if (thread.branchId) {
-                    const branch = await Branch.findById(thread.branchId);
-                    if (branch) branchName = branch.name;
+                // 1. Determine target admins (Branch-Aware & Owner-Aware)
+                let targetAdmins = [];
+                if (thread.assignedToAdminId) {
+                    // Send ONLY to the assigned admin
+                    targetAdmins = await User.find({ _id: thread.assignedToAdminId }).select('_id fcmTokens');
+                } else {
+                    // Send to all admins associated with this branch (assignedBranches or subscribedBranches)
+                    targetAdmins = await User.find({
+                        role: 'admin',
+                        $or: [
+                            { assignedBranches: thread.branchId },
+                            { 'adminNotificationPreferences.subscribedBranches': thread.branchId },
+                            { isMasterAdmin: true } // Master admins see everything
+                        ]
+                    }).select('_id fcmTokens');
                 }
-                const senderName = req.user.name || "Customer";
 
-                const adminNotifications = admins.map(adm => ({
-                    userId: adm._id,
-                    title: "New Message",
-                    message: `(New Message from ${branchName} | ${senderName})`,
-                    type: 'chat',
-                    branchId: thread.branchId,
-                    metadata: { threadId: thread._id }
-                }));
-                if (adminNotifications.length > 0) await Notification.insertMany(adminNotifications);
-
-                // [NEW] Fire Live Push Notification to ALL Admins (Web, iOS, Android)
-                const NotificationService = require('../utils/notificationService');
-                let adminTokensRaw = [];
-                admins.forEach(adm => {
-                    if (adm.fcmTokens && Array.isArray(adm.fcmTokens)) {
-                        adminTokensRaw = adminTokensRaw.concat(adm.fcmTokens);
+                if (targetAdmins.length > 0) {
+                    // Fetch Branch Name for context
+                    const Branch = require('../models/Branch');
+                    let branchName = "Unknown Branch";
+                    if (thread.branchId) {
+                        const branch = await Branch.findById(thread.branchId);
+                        if (branch) branchName = branch.name;
                     }
-                });
-                const adminTokens = [...new Set(adminTokensRaw.filter(t => t))];
+                    const senderName = req.user.name || "Customer";
 
-                if (adminTokens.length > 0) {
-                    await NotificationService.sendPushNotification(
-                        adminTokens,
-                        "New Customer Message",
-                        `New message from ${senderName} at ${branchName}`,
-                        { threadId: thread._id.toString(), type: 'chat', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
-                    );
+                    // Insert database notification logs for each target admin
+                    const adminNotifications = targetAdmins.map(adm => ({
+                        userId: adm._id,
+                        title: "New Message",
+                        message: `(New Message from ${branchName} | ${senderName})`,
+                        type: 'chat',
+                        branchId: thread.branchId,
+                        metadata: { threadId: thread._id }
+                    }));
+                    await Notification.insertMany(adminNotifications);
+
+                    // Consolidate tokens and fire push
+                    let adminTokensRaw = [];
+                    targetAdmins.forEach(adm => {
+                        if (adm.fcmTokens && Array.isArray(adm.fcmTokens)) {
+                            adminTokensRaw = adminTokensRaw.concat(adm.fcmTokens);
+                        }
+                    });
+                    const adminTokens = [...new Set(adminTokensRaw.filter(t => t))];
+
+                    if (adminTokens.length > 0) {
+                        await NotificationService.sendPushNotification(
+                            adminTokens,
+                            "New Customer Message",
+                            `New message from ${senderName} at ${branchName}`,
+                            { threadId: thread._id.toString(), type: 'chat', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
+                        );
+                    }
                 }
-
             } else {
+                // Notify User
                 await new Notification({
                     userId: thread.userId,
                     title: "Support Replied",
@@ -197,8 +216,6 @@ router.post('/send', auth, async (req, res) => {
                     branchId: thread.branchId
                 }).save();
 
-                // Fire Push to User
-                const NotificationService = require('../utils/notificationService');
                 const customer = await User.findById(thread.userId).select('fcmTokens');
                 if (customer && customer.fcmTokens && customer.fcmTokens.length > 0) {
                     await NotificationService.sendPushNotification(
@@ -268,8 +285,14 @@ router.put('/admin/status/:threadId', auth, async (req, res) => {
         thread.status = status;
         if (status === 'resolved') {
             thread.resolvedAt = Date.now();
+            // Calculate resolution time in minutes
+            if (thread.createdAt) {
+                const diffMs = thread.resolvedAt - thread.createdAt;
+                thread.resolutionTime = Math.round(diffMs / 60000); // Minutes
+            }
         } else {
             thread.resolvedAt = null;
+            // We don't necessarily clear resolutionTime unless we want to "reset" metrics
         }
         await thread.save();
         res.json(thread);
@@ -362,6 +385,83 @@ router.delete('/admin/thread/:threadId', auth, admin, async (req, res) => {
         await thread.save();
 
         res.json({ msg: 'Thread removed from admin view' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// POST /admin/pickup/:threadId - Admin picking up a chat
+router.post('/admin/pickup/:threadId', auth, admin, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user.permissions.manageChat && !user.permissions.canPickupChats) {
+            return res.status(403).json({ msg: 'No permission to pickup chats' });
+        }
+
+        // Atomic update: only pick up if it's not already assigned
+        const thread = await ChatThread.findOneAndUpdate(
+            { _id: req.params.threadId, assignedToAdminId: null },
+            {
+                assignedToAdminId: req.user.id,
+                assignedToAdminName: req.user.name,
+                assignedAt: Date.now(),
+                status: 'picked_up'
+            },
+            { new: true }
+        ).populate('userId', 'name email');
+
+        if (!thread) {
+            return res.status(400).json({ msg: 'Conversation already assigned or not found' });
+        }
+
+        res.json(thread);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// POST /admin/transfer/:threadId - Transfering chat to another admin
+router.post('/admin/transfer/:threadId', auth, admin, async (req, res) => {
+    try {
+        const { targetAdminId } = req.body;
+        const currentUser = await User.findById(req.user.id);
+        if (!currentUser.permissions.manageChat && !currentUser.permissions.canPickupChats) {
+            return res.status(403).json({ msg: 'No permission to transfer chats' });
+        }
+
+        const targetAdmin = await User.findById(targetAdminId);
+        if (!targetAdmin || targetAdmin.role !== 'admin') {
+            return res.status(400).json({ msg: 'Invalid target admin' });
+        }
+
+        const thread = await ChatThread.findByIdAndUpdate(
+            req.params.threadId,
+            {
+                assignedToAdminId: targetAdmin._id,
+                assignedToAdminName: targetAdmin.name,
+                assignedAt: Date.now(),
+                status: 'picked_up'
+            },
+            { new: true }
+        ).populate('userId', 'name email');
+
+        if (!thread) return res.status(404).json({ msg: 'Thread not found' });
+
+        // Notify the new admin
+        const NotificationService = require('../utils/notificationService');
+        if (targetAdmin.fcmTokens && targetAdmin.fcmTokens.length > 0) {
+            const customerName = thread.userId?.name || "a customer";
+            await NotificationService.sendPushNotification(
+                targetAdmin.fcmTokens,
+                "Chat Transferred",
+                `A conversation with ${customerName} was transferred to you.`,
+                { threadId: thread._id.toString(), type: 'chat', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
+            );
+        }
+
+        res.json(thread);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
