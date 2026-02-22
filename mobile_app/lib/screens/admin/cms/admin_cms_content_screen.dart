@@ -255,7 +255,7 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
       url = await _contentService.uploadImage(
         croppedFile.path,
         fileBytes: bytes,
-        explicitFileName: croppedFile.path.split('/').last,
+        explicitFileName: image.name, // [CRITICAL] Web blob URLs drop extensions; use original XFile name
         onProgress: (sent, total) {
           if (total > 0) {
             setState(() => _uploadProgress = sent / total);
