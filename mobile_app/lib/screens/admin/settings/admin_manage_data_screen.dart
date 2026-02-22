@@ -19,8 +19,41 @@ class AdminManageDataScreen extends StatefulWidget {
 class _AdminManageDataScreenState extends State<AdminManageDataScreen> {
   bool _isLoading = false;
 
-  @override
+   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final isMaster = auth.currentUser != null && auth.currentUser!['isMasterAdmin'] == true;
+
+    if (!isMaster) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline, color: Colors.redAccent, size: 80),
+              const SizedBox(height: 20),
+              const Text("ACCESS RESTRICTED", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  "Only Master Admins can access data wipe tools. Your attempt has been logged.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("GO BACK"),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Theme(
       data: AppTheme.darkTheme,
       child: Scaffold(

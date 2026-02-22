@@ -157,7 +157,7 @@ class AdminSettingsContent extends StatelessWidget {
                                auth.logPermissionViolation("Tax Settings");
                              }
                           }),
-                           if (isMaster || permissions['manageCMS'] == true)
+                           if (isMaster)
                             _buildSettingTile(Icons.storage, "Manage Data", () {
                                Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminManageDataScreen()));
                             }),
