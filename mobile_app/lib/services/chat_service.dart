@@ -19,18 +19,25 @@ class ChatService extends ChangeNotifier {
 
   Timer? _pollTimer;
   int _pollIntervalSeconds = 5;
-  bool _isAppActive = true;
+  bool _highSpeedPolling = false;
 
   void setAppState(bool active) {
     _isAppActive = active;
     _adjustPollingSpeed();
   }
 
+  void setHighSpeedPolling(bool highSpeed) {
+    _highSpeedPolling = highSpeed;
+    _adjustPollingSpeed();
+  }
+
   void _adjustPollingSpeed() {
     if (!_isAppActive) {
       _pollIntervalSeconds = 30; // Slow down when backgrounded
+    } else if (_highSpeedPolling) {
+      _pollIntervalSeconds = 2; // Fast when actively in chat
     } else {
-      _pollIntervalSeconds = 5;
+      _pollIntervalSeconds = 5; // Default active
     }
     
     if (_pollTimer != null && _pollTimer!.isActive) {
@@ -78,7 +85,36 @@ class ChatService extends ChangeNotifier {
     try {
       final response = await _apiService.client.get('/chat/messages/${_currentThread!['_id']}');
       if (response.statusCode == 200) {
-        _messages = List<dynamic>.from(response.data);
+        final List<dynamic> newMessages = List<dynamic>.from(response.data);
+        
+        // Merge Logic: Keep local optimistic messages that haven't been confirmed yet
+        // and ignore duplicates from server if we already have them.
+        final List<dynamic> merged = [];
+        
+        // 1. Add all from server
+        merged.addAll(newMessages);
+        
+        // 2. Add local 'sending' or 'failed' messages that aren't in server yet
+        for (var local in _messages) {
+          final isOptimistic = local['_id'].toString().startsWith('temp_');
+          if (isOptimistic && (local['status'] == 'sending' || local['status'] == 'failed')) {
+            final clientMsgId = local['_id'].toString().replaceFirst('temp_', '');
+            // Check if server already has this via clientMessageId
+            final alreadyInServer = newMessages.any((m) => m['clientMessageId'] == clientMsgId);
+            if (!alreadyInServer) {
+              merged.add(local);
+            }
+          }
+        }
+        
+        // Sort by date
+        merged.sort((a, b) {
+          final da = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
+          final db = DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
+          return da.compareTo(db);
+        });
+
+        _messages = merged;
         notifyListeners();
       }
     } catch (e) {
@@ -86,14 +122,14 @@ class ChatService extends ChangeNotifier {
     }
   }
 
-  Future<void> sendMessage(String text, {String? orderId}) async {
+  Future<void> sendMessage(String text, {String? orderId, String? senderType = 'user'}) async {
     if (_currentThread == null) return;
     
     final tempId = DateTime.now().millisecondsSinceEpoch.toString();
     final optimisticMessage = {
       '_id': 'temp_$tempId',
       'threadId': _currentThread!['_id'],
-      'senderType': 'user', 
+      'senderType': senderType, 
       'senderId': 'current_user', 
       'messageText': text,
       'orderId': orderId,
@@ -127,6 +163,7 @@ class ChatService extends ChangeNotifier {
         _messages[idx]['status'] = 'failed';
         notifyListeners();
       }
+      rethrow; // Propagate to UI for feedback
     }
   }
 

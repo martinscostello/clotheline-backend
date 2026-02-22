@@ -40,6 +40,9 @@ class _ChatScreenState extends State<ChatScreen> {
     
     if (branchIdToUse != null) {
       service.startPolling(branchIdToUse);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        service.setHighSpeedPolling(true);
+      });
     }
     
     _msgController.addListener(() {
@@ -47,18 +50,15 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     // If orderId is provided, pre-fill or send automated message?
-    // Requirement says: "Attaches orderId as context"
     if (widget.orderId != null) {
-      // Small delay to ensure thread is ready
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted && service.messages.isEmpty) {
-          service.sendMessage("I have a question about Order #${widget.orderId!.substring(widget.orderId!.length-6).toUpperCase()}", orderId: widget.orderId);
+          service.sendMessage("I have a question about Order #${widget.orderId!.substring(widget.orderId!.length-6).toUpperCase()}", orderId: widget.orderId, senderType: 'user');
         }
       });
     }
 
-    // Scroll to bottom after init
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    _scrollToBottom();
   }
 
   @override
@@ -299,12 +299,19 @@ class _ChatScreenState extends State<ChatScreen> {
           GestureDetector(
              onTap: canSend ? () async {
                 final text = _msgController.text.trim();
+                // INSTANT UI FEEDBACK
+                _msgController.clear();
                 setState(() => _isSending = true);
-                await Provider.of<ChatService>(context, listen: false).sendMessage(text, orderId: widget.orderId);
+                
+                try {
+                  await Provider.of<ChatService>(context, listen: false).sendMessage(text, orderId: widget.orderId, senderType: 'user');
+                } catch (e) {
+                  // chat_service marks it failed
+                }
+                
                 if (mounted) {
-                  _msgController.clear();
                   setState(() => _isSending = false);
-                  Future.delayed(const Duration(milliseconds: 100), () => _scrollToBottom());
+                  _scrollToBottom();
                 }
              } : null,
              child: AnimatedContainer(

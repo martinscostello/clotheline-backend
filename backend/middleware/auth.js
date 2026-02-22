@@ -28,6 +28,7 @@ module.exports = async function (req, res, next) {
 
         // Pass fresh user data if needed
         if (user) {
+            req.user.name = user.name;
             req.user.permissions = user.permissions;
             req.user.isMasterAdmin = user.isMasterAdmin;
         }

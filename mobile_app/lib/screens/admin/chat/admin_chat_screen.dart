@@ -327,10 +327,17 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
   void initState() {
     super.initState();
     _msgController.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ChatService>(context, listen: false).setHighSpeedPolling(true);
+      _scrollToBottom();
+    });
   }
 
   @override
   void dispose() {
+    try {
+      Provider.of<ChatService>(context, listen: false).setHighSpeedPolling(false);
+    } catch (_) {}
     _msgController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -533,10 +540,18 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
                           ? null 
                           : () async {
                             final text = _msgController.text.trim();
+                            // INSTANT UI FEEDBACK
+                            _msgController.clear();
                             setState(() => _isSending = true);
-                            await chatService.sendMessage(text);
+                            
+                            try {
+                              await chatService.sendMessage(text, senderType: 'admin');
+                            } catch (e) {
+                              // If it fails, maybe restore the text or show error
+                              // but for now, we rely on chat_service marking it 'failed'
+                            }
+                            
                             if (mounted) {
-                              _msgController.clear();
                               setState(() => _isSending = false);
                               Future.delayed(const Duration(milliseconds: 100), () => _scrollToBottom());
                             }
