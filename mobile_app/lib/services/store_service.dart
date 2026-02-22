@@ -64,12 +64,16 @@ class StoreService extends ChangeNotifier {
   }
 
   // Silent Sync
-  Future<void> fetchFromApi({String? branchId}) async {
+  Future<void> fetchFromApi({String? branchId, bool isAdmin = false}) async {
     _isLoading = true;
     
     // Fetch Products
     try {
-      final endpoint = branchId != null ? '/products?branchId=$branchId' : '/products'; // Strict Scope
+      String endpoint = branchId != null ? '/products?branchId=$branchId' : '/products'; // Strict Scope
+      if (isAdmin) {
+        endpoint += branchId != null ? '&admin=true' : '?admin=true';
+      }
+
       final response = await _apiService.client.get(endpoint);
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
@@ -111,10 +115,10 @@ class StoreService extends ChangeNotifier {
   }
 
   // COMPATIBILITY (Wraps silent sync)
-  Future<void> fetchProducts({String? branchId, bool forceRefresh = false}) async {
+  Future<void> fetchProducts({String? branchId, bool forceRefresh = false, bool isAdmin = false}) async {
     // Note: We might want separate cache keys for Separate branches.
     if (!_isHydrated && branchId == null) await loadFromCache(branchId: branchId);
-    await fetchFromApi(branchId: branchId);
+    await fetchFromApi(branchId: branchId, isAdmin: isAdmin);
   }
   
   // Categories Helper

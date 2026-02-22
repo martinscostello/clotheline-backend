@@ -152,6 +152,11 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
           IOSUiSettings(
             title: 'Crop Service Image',
           ),
+          WebUiSettings(
+            context: context,
+            presentStyle: WebPresentStyle.dialog,
+             barrierColor: Colors.black.withOpacity(0.5),
+          ),
         ],
       );
 

@@ -49,7 +49,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
       final pos = Provider.of<AdminPOSProvider>(context, listen: false);
       if (pos.selectedBranch != null) {
         Provider.of<LaundryService>(context, listen: false).fetchServices(branchId: pos.selectedBranch!.id);
-        Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: pos.selectedBranch!.id);
+        Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: pos.selectedBranch!.id, isAdmin: true);
       }
     });
   }

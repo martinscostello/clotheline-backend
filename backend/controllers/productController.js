@@ -16,10 +16,13 @@ exports.getAllProducts = async (req, res) => {
             .limit(limit);
 
         // [RANDOMIZE] Shuffle the products so the store feels fresh on every refresh
-        // Fisher-Yates Shuffle
-        for (let i = products.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [products[i], products[j]] = [products[j], products[i]];
+        // Skip shuffle if requested by the Admin app (for consistent inventory management)
+        if (req.query.admin !== 'true') {
+            // Fisher-Yates Shuffle
+            for (let i = products.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [products[i], products[j]] = [products[j], products[i]];
+            }
         }
 
         res.json(products);

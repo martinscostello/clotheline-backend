@@ -50,7 +50,7 @@ class AdminProductsScreen extends StatelessWidget {
                             final branch = branchProvider.branches.firstWhere((b) => b.id == val);
                             branchProvider.selectBranch(branch);
                             // Trigger Fetch
-                            Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: val, forceRefresh: true);
+                            Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: val, forceRefresh: true, isAdmin: true);
                          }
                       },
                       items: branchProvider.branches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name, style: const TextStyle(color: Colors.white, fontSize: 13)))).toList(),
@@ -98,7 +98,7 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
     }
 
     if (branchProvider.selectedBranch != null) {
-      await storeService.fetchProducts(branchId: branchProvider.selectedBranch!.id);
+      await storeService.fetchProducts(branchId: branchProvider.selectedBranch!.id, isAdmin: true);
     }
   }
 
@@ -133,7 +133,7 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
             }
 
             return RefreshIndicator(
-              onRefresh: () => storeService.fetchProducts(branchId: branchProvider.selectedBranch!.id),
+              onRefresh: () => storeService.fetchProducts(branchId: branchProvider.selectedBranch!.id, isAdmin: true),
               color: AppTheme.primaryColor,
               child: GridView.builder(
                 padding: EdgeInsets.fromLTRB(20, widget.isEmbedded ? 20 : 100, 20, 100),
@@ -176,7 +176,7 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
                       )),
                     );
                     if (context.mounted && branchProvider.selectedBranch != null) {
-                      Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchProvider.selectedBranch!.id, forceRefresh: true);
+                      Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchProvider.selectedBranch!.id, forceRefresh: true, isAdmin: true);
                     }
                   }
                 },
@@ -209,7 +209,7 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
             )), 
           );
           if (context.mounted) {
-              Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchId, forceRefresh: true);
+              Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchId, forceRefresh: true, isAdmin: true);
           }
         }
       },

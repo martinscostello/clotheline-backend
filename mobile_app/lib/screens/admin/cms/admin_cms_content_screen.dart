@@ -238,6 +238,11 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
         IOSUiSettings(
           title: 'Crop Image',
         ),
+        WebUiSettings(
+          context: context,
+          presentStyle: WebPresentStyle.dialog,
+          barrierColor: Colors.black.withOpacity(0.5),
+        ),
       ],
     );
 
