@@ -223,11 +223,12 @@ class StoreService extends ChangeNotifier {
     }
   }
 
-  Future<bool> addProduct(Map<String, dynamic> productData) async {
+  Future<bool> addProduct(Map<String, dynamic> productData, {bool isAdmin = false}) async {
     try {
       final response = await _apiService.client.post('/products', data: productData);
       if (response.statusCode == 200) {
-        await fetchProducts(forceRefresh: true); // Refresh
+        final branchId = productData['branchId'];
+        await fetchProducts(branchId: branchId, forceRefresh: true, isAdmin: isAdmin); // Refresh
         return true;
       }
       return false;
@@ -237,11 +238,12 @@ class StoreService extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateProduct(String id, Map<String, dynamic> updates) async {
+  Future<bool> updateProduct(String id, Map<String, dynamic> updates, {bool isAdmin = false}) async {
     try {
       final response = await _apiService.client.put('/products/$id', data: updates);
       if (response.statusCode == 200) {
-        await fetchProducts(forceRefresh: true);
+        final branchId = updates['branchId'];
+        await fetchProducts(branchId: branchId, forceRefresh: true, isAdmin: isAdmin);
         return true;
       }
       return false;

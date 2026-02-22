@@ -175,9 +175,6 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
                         product: null
                       )),
                     );
-                    if (context.mounted && branchProvider.selectedBranch != null) {
-                      Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchProvider.selectedBranch!.id, forceRefresh: true, isAdmin: true);
-                    }
                   }
                 },
                 backgroundColor: AppTheme.primaryColor,
@@ -208,9 +205,6 @@ class _AdminProductsBodyState extends State<AdminProductsBody> {
               branchId: branchId
             )), 
           );
-          if (context.mounted) {
-              Provider.of<StoreService>(context, listen: false).fetchProducts(branchId: branchId, forceRefresh: true, isAdmin: true);
-          }
         }
       },
       child: Container(

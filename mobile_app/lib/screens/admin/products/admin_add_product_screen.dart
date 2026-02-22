@@ -306,9 +306,9 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
 
       bool success;
       if (widget.product != null) {
-        success = await Provider.of<StoreService>(context, listen: false).updateProduct(widget.product!.id, productData);
+        success = await Provider.of<StoreService>(context, listen: false).updateProduct(widget.product!.id, productData, isAdmin: true);
       } else {
-        success = await Provider.of<StoreService>(context, listen: false).addProduct(productData);
+        success = await Provider.of<StoreService>(context, listen: false).addProduct(productData, isAdmin: true);
       }
 
       if (mounted) {
