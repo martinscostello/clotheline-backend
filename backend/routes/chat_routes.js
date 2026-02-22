@@ -114,18 +114,22 @@ router.post('/send', auth, async (req, res) => {
             if (!thread.firstResponseAt) thread.firstResponseAt = Date.now();
         } else {
             thread.unreadCountAdmin += 1;
-            // Reopen if user sends a message to a resolved OR assigned ticket (resetting assignment)
-            if (thread.status === 'resolved' || (thread.status === 'picked_up' && thread.assignedToAdminId)) {
+            // Reopen OR preserve assignment
+            if (thread.status === 'resolved') {
                 thread.status = 'open';
                 thread.resolvedAt = null;
                 thread.assignedToAdminId = null;
                 thread.assignedToAdminName = null;
                 thread.assignedAt = null;
                 thread.autoResponseSent = false;
+            } else if (thread.status === 'picked_up' && thread.assignedToAdminId) {
+                // Keep it picked up! Do not reset.
+            } else {
+                thread.status = 'open'; // Safety for any other states
             }
 
-            // [AUTO-RESPONSE LOGIC]
-            if (!thread.autoResponseSent) {
+            // [AUTO-RESPONSE LOGIC] - Only send if NEW thread (not picked up)
+            if (!thread.autoResponseSent && thread.status !== 'picked_up') {
                 const autoReplyText = "Your ticket has been created, an agent will respond to you shortly. 🤖";
                 const systemAdmin = await User.findOne({ role: 'admin' });
                 if (systemAdmin) {
