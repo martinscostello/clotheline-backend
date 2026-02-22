@@ -19,6 +19,7 @@ class ChatService extends ChangeNotifier {
 
   Timer? _pollTimer;
   int _pollIntervalSeconds = 5;
+  bool _isAppActive = true;
   bool _highSpeedPolling = false;
 
   void setAppState(bool active) {
