@@ -17,8 +17,11 @@ exports.getAllProducts = async (req, res) => {
 
         // [RANDOMIZE] Shuffle the products so the store feels fresh on every refresh
         // Skip shuffle if requested by the Admin app (for consistent inventory management)
-        if (req.query.admin !== 'true') {
-            // Fisher-Yates Shuffle
+        // Bypass randomization for admin views
+        const isAdmin = req.query.admin === 'true' || String(req.query.admin).toLowerCase() === 'true';
+
+        if (!isAdmin) {
+            // Fisher-Yates Shuffle for customer views
             for (let i = products.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [products[i], products[j]] = [products[j], products[i]];
