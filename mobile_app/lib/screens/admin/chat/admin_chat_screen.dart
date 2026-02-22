@@ -210,43 +210,37 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                   final userName = thread['userId'] != null ? thread['userId']['name'] : "Unknown User";
 
                   return ListTile(
-                    selected: isSelected, // Only highlights in Split View
-                    selectedTileColor: AppTheme.primaryColor.withOpacity(0.1),
+                    selected: isSelected,
+                    selectedTileColor: AppTheme.primaryColor.withOpacity(0.05),
                     onTap: () => onSelect(thread['_id']),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                     leading: CircleAvatar(
-                      radius: 18,
+                      radius: 16,
                       backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
-                      child: Text(userName.isNotEmpty ? userName[0] : '?', style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                      child: Text(userName.isNotEmpty ? userName[0] : '?', style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(child: Text(userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis)),
-                        Text(timeStr, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                      ],
-                    ),
-                    subtitle: Column(
+                    title: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(child: Text(userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                            Text(timeStr, style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
                         Row(
                           children: [
                             _buildStatusBadge(thread),
                             const Spacer(),
                             if (thread['unreadCountAdmin'] != null && thread['unreadCountAdmin'] > 0)
                               Container(
-                                padding: const EdgeInsets.all(5),
+                                padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
-                                child: Text(thread['unreadCountAdmin'].toString(), style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                                child: Text(thread['unreadCountAdmin'].toString(), style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                               ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.white38, size: 18),
-                              onPressed: () => _confirmDeleteThread(context, chatService, thread['_id']),
-                            ),
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(thread['lastMessageText'] ?? "No messages", style: TextStyle(fontSize: 11, color: isDark ? Colors.white60 : Colors.black54), overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   );
@@ -287,17 +281,17 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
       color = Colors.green;
     } else if (status == 'PICKED_UP') {
       color = Colors.blue;
-      label = "PICKED UP - ${thread['assignedToAdminName'] ?? 'Admin'}";
+      label = "PICKED UP - ${thread['assignedToAdminName']?.split(' ')[0] ?? 'Admin'}";
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.5), width: 0.5)
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color.withOpacity(0.4), width: 0.5)
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
+      child: Text(label, style: TextStyle(color: color, fontSize: 7, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -363,9 +357,9 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
        const isDark = true; 
 
        final auth = Provider.of<AuthService>(context, listen: false);
-       final currentUserId = auth.currentUser?['_id'];
-       final assignedToId = thread['assignedToAdminId'];
-       final isAssignedToMe = assignedToId == currentUserId;
+       final currentUserId = (auth.currentUser?['_id'] ?? auth.currentUser?['id'])?.toString();
+       final assignedToId = thread['assignedToAdminId']?.toString();
+       final isAssignedToMe = assignedToId != null && assignedToId == currentUserId;
        final isPickedUp = thread['status'] == 'picked_up';
 
        return Column(
@@ -381,8 +375,13 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      _buildHeaderStatusBadge(thread),
+                      Text(userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      if (isPickedUp)
+                         Text("Assigned to: ${thread['assignedToAdminName'] ?? 'Unknown Admin'}", style: const TextStyle(color: Colors.white38, fontSize: 10))
+                      else if (thread['status'] == 'resolved')
+                         const Text("Status: RESOLVED", style: TextStyle(color: Colors.green, fontSize: 10))
+                      else
+                         const Text("Status: OPEN", style: TextStyle(color: Colors.orangeAccent, fontSize: 10)),
                     ],
                   ),
                   const Spacer(),
@@ -424,7 +423,7 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 itemCount: chatService.messages.length,
                 itemBuilder: (context, index) {
                    final msg = chatService.messages[index];
@@ -597,21 +596,21 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
               ),
             ),
           Container(
-            margin: const EdgeInsets.only(bottom: 5),
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 2),
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: isAdmin ? AppTheme.primaryColor : Colors.white10,
-              borderRadius: BorderRadius.circular(15).copyWith(
-                bottomRight: isAdmin ? Radius.zero : const Radius.circular(15),
-                bottomLeft: isAdmin ? const Radius.circular(15) : Radius.zero,
+              borderRadius: BorderRadius.circular(12).copyWith(
+                bottomRight: isAdmin ? Radius.zero : const Radius.circular(12),
+                bottomLeft: isAdmin ? const Radius.circular(12) : Radius.zero,
               ),
             ),
-            child: Text(text, style: TextStyle(color: Colors.white, fontSize: 13)),
+            child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 12)),
           ),
           Padding(
-            padding: const EdgeInsets.only(bottom: 12, left: 4, right: 4),
-            child: Text(DateFormat('h:mm a').format(time), style: const TextStyle(color: Colors.white38, fontSize: 9)),
+            padding: const EdgeInsets.only(bottom: 6, left: 4, right: 4),
+            child: Text(DateFormat('h:mm a').format(time), style: const TextStyle(color: Colors.white38, fontSize: 8)),
           ),
         ],
       ),
