@@ -144,6 +144,7 @@ exports.updateService = async (req, res) => {
         } = req.body;
 
         console.log(`UPDATE SERVICE: ${req.params.id} | Branch: ${branchId || 'Global'}`);
+        console.log(`BODY:`, JSON.stringify(req.body, null, 2));
 
         let service = await Service.findById(req.params.id);
         if (!service) return res.status(404).json({ msg: 'Service not found' });

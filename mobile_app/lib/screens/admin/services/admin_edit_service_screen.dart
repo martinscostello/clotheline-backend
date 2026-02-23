@@ -411,6 +411,12 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    Color textColor = isDark ? Colors.white : Colors.black87;
+    Color labelColor = isDark ? Colors.white54 : Colors.black54;
+    Color subLabelColor = isDark ? Colors.white30 : Colors.black38;
+    Color borderLineColor = isDark ? Colors.white24 : Colors.black12;
+
     return Stack(
       children: [
         SingleChildScrollView(
@@ -470,24 +476,24 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                         const SizedBox(height: 15),
                         TextFormField(
                           controller: _nameController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: const InputDecoration(
+                          style: TextStyle(color: textColor),
+                          decoration: InputDecoration(
                             labelText: "Service Name",
-                            labelStyle: TextStyle(color: Colors.white54),
-                            border: OutlineInputBorder(),
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                            labelStyle: TextStyle(color: labelColor),
+                            border: const OutlineInputBorder(),
+                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderLineColor))
                           ),
                         ),
                         const SizedBox(height: 15),
                         DropdownButtonFormField<String>(
                           value: _fulfillmentMode,
                           dropdownColor: const Color(0xFF2A2A2A),
-                          style: const TextStyle(color: Colors.white),
-                          decoration: const InputDecoration(
+                          style: TextStyle(color: textColor),
+                          decoration: InputDecoration(
                             labelText: "Fulfillment Mode",
-                            labelStyle: TextStyle(color: Colors.white54),
-                            border: OutlineInputBorder(),
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                            labelStyle: TextStyle(color: labelColor),
+                            border: const OutlineInputBorder(),
+                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderLineColor))
                           ),
                           items: const [
                             DropdownMenuItem(value: "logistics", child: Text("Logistics (Pickup & Delivery)")),
@@ -503,12 +509,12 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                               child: TextFormField(
                                 controller: _discountController,
                                 keyboardType: TextInputType.number,
-                                style: const TextStyle(color: Colors.white),
-                                decoration: const InputDecoration(
+                                style: TextStyle(color: textColor),
+                                decoration: InputDecoration(
                                   labelText: "Discount %",
-                                  labelStyle: TextStyle(color: Colors.white54),
-                                  border: OutlineInputBorder(),
-                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                                  labelStyle: TextStyle(color: labelColor),
+                                  border: const OutlineInputBorder(),
+                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderLineColor))
                                 ),
                               ),
                             ),
@@ -516,12 +522,12 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                              Expanded(
                               child: TextFormField(
                                 controller: _discountLabelController,
-                                style: const TextStyle(color: Colors.white),
-                                decoration: const InputDecoration(
+                                style: TextStyle(color: textColor),
+                                decoration: InputDecoration(
                                   labelText: "Label (e.g. 15% OFF)",
-                                  labelStyle: TextStyle(color: Colors.white54),
-                                  border: OutlineInputBorder(),
-                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                                  labelStyle: TextStyle(color: labelColor),
+                                  border: const OutlineInputBorder(),
+                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderLineColor))
                                 ),
                               ),
                             ),
@@ -541,19 +547,19 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                       children: [
                         const Text("Custom Field Labels", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 5),
-                        const Text("Change how these appear in the booking sheet", style: TextStyle(color: Colors.white30, fontSize: 11)),
+                        Text("Change how these appear in the booking sheet", style: TextStyle(color: subLabelColor, fontSize: 11)),
                         const SizedBox(height: 15),
                         Row(
                           children: [
                             Expanded(
                               child: TextFormField(
                                 controller: _typeLabelController,
-                                style: const TextStyle(color: Colors.white),
-                                decoration: const InputDecoration(
+                                style: TextStyle(color: textColor),
+                                decoration: InputDecoration(
                                   labelText: "Type Label (e.g. Select Type)",
-                                  labelStyle: TextStyle(color: Colors.white54),
-                                  border: OutlineInputBorder(),
-                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                                  labelStyle: TextStyle(color: labelColor),
+                                  border: const OutlineInputBorder(),
+                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderLineColor))
                                 ),
                               ),
                             ),
@@ -561,12 +567,12 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                             Expanded(
                               child: TextFormField(
                                 controller: _subTypeLabelController,
-                                style: const TextStyle(color: Colors.white),
-                                decoration: const InputDecoration(
+                                style: TextStyle(color: textColor),
+                                decoration: InputDecoration(
                                   labelText: "Sub-Type Label (e.g. Service Type)",
-                                  labelStyle: TextStyle(color: Colors.white54),
-                                  border: OutlineInputBorder(),
-                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                                  labelStyle: TextStyle(color: labelColor),
+                                  border: const OutlineInputBorder(),
+                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderLineColor))
                                 ),
                               ),
                             ),
@@ -588,8 +594,8 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                         const SizedBox(height: 10),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text("Quote Required", style: TextStyle(color: Colors.white, fontSize: 14)),
-                          subtitle: const Text("Users pay an inspection fee first", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                          title: Text("Quote Required", style: TextStyle(color: textColor, fontSize: 14)),
+                          subtitle: Text("Users pay an inspection fee first", style: TextStyle(color: labelColor, fontSize: 12)),
                           value: _quoteRequired,
                           onChanged: (val) => setState(() => _quoteRequired = val),
                         ),
@@ -598,13 +604,13 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                           TextFormField(
                             controller: _inspectionFeeController,
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: const InputDecoration(
-                              labelText: "Base Inspection Fee (₦)",
-                              labelStyle: TextStyle(color: Colors.white54),
-                              border: OutlineInputBorder(),
-                              enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
-                            ),
+                             style: TextStyle(color: textColor),
+                             decoration: InputDecoration(
+                               labelText: "Base Inspection Fee (₦)",
+                               labelStyle: TextStyle(color: labelColor),
+                               border: const OutlineInputBorder(),
+                               enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderLineColor))
+                             ),
                           ),
                           const SizedBox(height: 20),
                           const Text("Deployment Origin (Origin Coordinates)", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
@@ -615,9 +621,9 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                                 child: TextFormField(
                                   initialValue: _deploymentLocation?.latitude.toString() ?? "0.0",
                                   keyboardType: TextInputType.number,
-                                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                                  decoration: const InputDecoration(labelText: "Latitude", isDense: true),
-                                  onChanged: (val) => _deploymentLocation = LatLng(double.tryParse(val) ?? 0.0, _deploymentLocation?.longitude ?? 0.0),
+                                   style: TextStyle(color: textColor, fontSize: 13),
+                                   decoration: InputDecoration(labelText: "Latitude", isDense: true, labelStyle: TextStyle(color: labelColor)),
+                                   onChanged: (val) => _deploymentLocation = LatLng(double.tryParse(val) ?? 0.0, _deploymentLocation?.longitude ?? 0.0),
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -625,9 +631,9 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                                 child: TextFormField(
                                   initialValue: _deploymentLocation?.longitude.toString() ?? "0.0",
                                   keyboardType: TextInputType.number,
-                                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                                  decoration: const InputDecoration(labelText: "Longitude", isDense: true),
-                                  onChanged: (val) => _deploymentLocation = LatLng(_deploymentLocation?.latitude ?? 0.0, double.tryParse(val) ?? 0.0),
+                                   style: TextStyle(color: textColor, fontSize: 13),
+                                   decoration: InputDecoration(labelText: "Longitude", isDense: true, labelStyle: TextStyle(color: labelColor)),
+                                   onChanged: (val) => _deploymentLocation = LatLng(_deploymentLocation?.latitude ?? 0.0, double.tryParse(val) ?? 0.0),
                                 ),
                               ),
                             ],
@@ -645,20 +651,28 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                                   Expanded(
                                     child: TextFormField(
                                       initialValue: zone.radiusKm.toString(),
-                                      keyboardType: TextInputType.number,
-                                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                                      decoration: const InputDecoration(labelText: "Radius (km)", isDense: true),
-                                      onChanged: (val) => _inspectionZones[i] = InspectionZone(radiusKm: double.tryParse(val) ?? zone.radiusKm, fee: zone.fee),
+                                       keyboardType: TextInputType.number,
+                                       style: TextStyle(color: textColor, fontSize: 13),
+                                       decoration: InputDecoration(labelText: "Radius (km)", isDense: true, labelStyle: TextStyle(color: labelColor)),
+                                      onChanged: (val) {
+                                         setState(() {
+                                            _inspectionZones[i] = InspectionZone(radiusKm: double.tryParse(val) ?? 0.0, fee: zone.fee);
+                                         });
+                                      },
                                     ),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: TextFormField(
                                       initialValue: zone.fee.toString(),
-                                      keyboardType: TextInputType.number,
-                                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                                      decoration: const InputDecoration(labelText: "Fee (₦)", isDense: true),
-                                      onChanged: (val) => _inspectionZones[i] = InspectionZone(radiusKm: zone.radiusKm, fee: double.tryParse(val) ?? zone.fee),
+                                       keyboardType: TextInputType.number,
+                                       style: TextStyle(color: textColor, fontSize: 13),
+                                       decoration: InputDecoration(labelText: "Fee (₦)", isDense: true, labelStyle: TextStyle(color: labelColor)),
+                                      onChanged: (val) {
+                                         setState(() {
+                                            _inspectionZones[i] = InspectionZone(radiusKm: zone.radiusKm, fee: double.tryParse(val) ?? 0.0);
+                                         });
+                                      },
                                     ),
                                   ),
                                   IconButton(
@@ -715,8 +729,8 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                        children: [
                          SwitchListTile(
                            contentPadding: EdgeInsets.zero,
-                           title: Text(widget.scopeBranch != null ? "Lock Service (${widget.scopeBranch!.name})" : "Global Lock", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                           subtitle: const Text("Prevent users from booking this service", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                           title: Text(widget.scopeBranch != null ? "Lock Service (${widget.scopeBranch!.name})" : "Global Lock", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                           subtitle: Text("Prevent users from booking this service", style: TextStyle(color: labelColor, fontSize: 12)),
                            value: _isLocked,
                            activeColor: Colors.redAccent,
                            onChanged: (val) => setState(() => _isLocked = val),

@@ -371,9 +371,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       children: [
         _buildSectionHeader("Service Location", textColor),
         const SizedBox(height: 15),
-        const Text(
+        Text(
           "Please select where the cleaning service will take place. Our specialists will arrive at this location.",
-          style: TextStyle(color: Colors.white54, fontSize: 13),
+          style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 13),
         ),
         const SizedBox(height: 15),
         _buildAddressInputs(true), // Reuse pickup address logic for service location
@@ -649,7 +649,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
               ],
             ),
             const SizedBox(height: 4),
-            Text("Payable only AFTER on-site inspection", style: TextStyle(color: Colors.orangeAccent.shade100, fontSize: 10, fontStyle: FontStyle.italic)),
+            Text("Payable only AFTER on-site inspection", style: TextStyle(color: isDark ? Colors.orangeAccent.shade100 : Colors.orange.shade800, fontSize: 10, fontStyle: FontStyle.italic)),
             const SizedBox(height: 16),
             const Divider(thickness: 1),
             const SizedBox(height: 16),

@@ -161,14 +161,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     ), 
                     children: [
                       // Laundry Items
-                      ..._cartService.items.map((item) => _buildBucketItem(
-                        title: item.item.name,
-                        subtitle: item.serviceType?.name ?? "Regular Service",
-                        quantity: item.quantity,
-                        price: item.totalPrice,
-                        onDelete: () => _cartService.removeItem(item),
-                        isDark: isDark, textColor: textColor, secondaryTextColor: secondaryTextColor
-                      )),
+                       ..._cartService.items.map((item) {
+                         bool isPending = item.quoteRequired && item.deploymentLocation == null && _cartService.deliveryLocation == null;
+                         return _buildBucketItem(
+                           title: item.item.name,
+                           subtitle: item.serviceType?.name ?? "Regular Service",
+                           quantity: item.quantity,
+                           price: item.totalPrice,
+                           isPending: isPending,
+                           onDelete: () => _cartService.removeItem(item),
+                           isDark: isDark, textColor: textColor, secondaryTextColor: secondaryTextColor
+                         );
+                       }),
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -265,7 +269,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Widget _buildBucketItem({
     required String title, required String subtitle, required int quantity, required double price, required VoidCallback onDelete,
-    required bool isDark, required Color textColor, required Color secondaryTextColor
+    required bool isDark, required Color textColor, required Color secondaryTextColor, bool isPending = false
   }) {
     final content = Padding(
       padding: const EdgeInsets.all(12),
@@ -292,7 +296,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(CurrencyFormatter.format(price), style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+              Text(isPending ? "Pending" : CurrencyFormatter.format(price), style: TextStyle(color: isPending ? Colors.orange : textColor, fontWeight: FontWeight.bold, fontSize: isPending ? 12 : 14)),
               IconButton(
                 icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
                 padding: EdgeInsets.zero,

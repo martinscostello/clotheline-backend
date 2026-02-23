@@ -1160,8 +1160,8 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                          return ListTile(
                            dense: true,
                            contentPadding: EdgeInsets.zero,
-                            title: Text("${item.quantity}x ${item.item.name} (${item.serviceType?.name ?? 'Generic'})", style: const TextStyle(color: Colors.white)),
-                           subtitle: Text(CurrencyFormatter.format(item.totalPrice), style: const TextStyle(color: Colors.white54)),
+                            title: Text("${item.quantity}x ${item.item.name} (${item.serviceType?.name ?? 'Generic'})", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87)),
+                            subtitle: Text(CurrencyFormatter.format(item.totalPrice), style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Colors.black54)),
                            trailing: IconButton(
                              icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
                              onPressed: () {
@@ -1184,8 +1184,8 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                          return ListTile(
                            dense: true,
                            contentPadding: EdgeInsets.zero,
-                           title: Text("${item.quantity}x ${item.product.name}", style: const TextStyle(color: Colors.white)),
-                           subtitle: Text(CurrencyFormatter.format(item.totalPrice), style: const TextStyle(color: Colors.white54)),
+                           title: Text("${item.quantity}x ${item.product.name}", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87)),
+                           subtitle: Text(CurrencyFormatter.format(item.totalPrice), style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Colors.black54)),
                            trailing: IconButton(
                              icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
                              onPressed: () {

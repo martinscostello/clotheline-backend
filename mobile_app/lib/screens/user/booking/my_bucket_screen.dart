@@ -105,9 +105,15 @@ class MyBucketScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            Text(
-                              CurrencyFormatter.format(item.totalPrice),
-                              style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                            Builder(
+                              builder: (context) {
+                                final cartService = Provider.of<CartService>(context, listen: false);
+                                bool isPending = item.quoteRequired && item.deploymentLocation == null && cartService.deliveryLocation == null;
+                                return Text(
+                                  isPending ? "Pending" : CurrencyFormatter.format(item.totalPrice),
+                                  style: TextStyle(color: isPending ? Colors.orange : textColor, fontWeight: FontWeight.bold, fontSize: isPending ? 14 : 16),
+                                );
+                              }
                             ),
                           ],
                         ),
@@ -138,7 +144,16 @@ class MyBucketScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Subtotal", style: TextStyle(color: secondaryTextColor, fontSize: 16)),
-                          Text(CurrencyFormatter.format(grossSubtotal), style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w500)),
+                          Builder(
+                            builder: (context) {
+                              final cartService = Provider.of<CartService>(context);
+                              bool hasPending = cartService.items.any((item) => item.quoteRequired && item.deploymentLocation == null && cartService.deliveryLocation == null);
+                              return Text(
+                                hasPending ? "Pending Address" : CurrencyFormatter.format(grossSubtotal),
+                                style: TextStyle(color: hasPending ? Colors.orange : textColor, fontSize: 16, fontWeight: FontWeight.w500)
+                              );
+                            }
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
