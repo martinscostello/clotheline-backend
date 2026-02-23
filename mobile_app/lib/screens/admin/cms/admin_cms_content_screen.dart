@@ -12,6 +12,9 @@ import '../../../../widgets/custom_cached_image.dart';
 import 'package:laundry_app/utils/toast_utils.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import '../../../../providers/branch_provider.dart';
+import '../../../../models/branch_model.dart';
 class AdminCMSContentScreen extends StatelessWidget {
   final String section;
   const AdminCMSContentScreen({super.key, required this.section});
@@ -60,6 +63,7 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
   final ContentService _contentService = ContentService();
   AppContentModel? _content;
   bool _isLoading = true;
+  String? _selectedBranchId; // Selection: null = global, ID = branch override
   bool _isUploading = false;
   double _uploadProgress = 0.0;
   final _formKey = GlobalKey<FormState>();
@@ -112,7 +116,8 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
 
   Future<void> _fetchContent() async {
     try {
-      final content = await _contentService.getAppContent();
+      setState(() => _isLoading = true);
+      final content = await _contentService.getAppContent(branchId: _selectedBranchId);
       if (mounted) {
         // Ensure minimum items for placeholders
         while (content.heroCarousel.length < 3) {
@@ -193,13 +198,24 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
     
     setState(() => _isUploading = true);
     
-    final success = await _contentService.updateAppContent(updateData);
+    bool success;
+    if (_selectedBranchId != null) {
+      // Save as branch override (Hero Carousel and Product Ads only)
+      success = await _contentService.updateBranchContentOverride(
+        _selectedBranchId!,
+        heroCarousel: cleanCarousel.map((e) => e.toJson()).toList(),
+        productAds: cleanAds.map((e) => e.toJson()).toList(),
+      );
+    } else {
+      // Save as global content
+      success = await _contentService.updateAppContent(updateData);
+    }
     
     if (mounted) {
       setState(() => _isUploading = false);
       if (success) {
         ToastUtils.show(context, "Saved Successfully", type: ToastType.success);
-        await _contentService.refreshAppContent(); // Force update cache from server
+        await _contentService.refreshAppContent(branchId: _selectedBranchId); // Force update cache from server
         _fetchContent();
       } else {
         ToastUtils.show(context, "Failed to save", type: ToastType.error);
@@ -404,12 +420,98 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
   Widget _buildSectionContent() {
     if (_content == null) return const Center(child: Text("Failed to load content", style: TextStyle(color: Colors.white)));
 
+    return Column(
+      children: [
+        _buildBranchSelector(),
+        const SizedBox(height: 20),
+        Expanded(child: _buildSectionSpecificContent()),
+      ],
+    );
+  }
+
+  Widget _buildSectionSpecificContent() {
     switch(widget.section) {
       case 'home': return _buildHomeConfig();
       case 'ads': return _buildAdsConfig();
       case 'branding': return _buildBrandingConfig();
       default: return const SizedBox();
     }
+  }
+
+  Widget _buildBranchSelector() {
+    final branchProvider = Provider.of<BranchProvider>(context);
+    final branches = branchProvider.branches;
+
+    return GlassContainer(
+      opacity: 0.1,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.account_tree, color: AppTheme.secondaryColor, size: 20),
+          const SizedBox(width: 12),
+          const Text("Editing Mode:", style: TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButton<String?>(
+              value: _selectedBranchId,
+              dropdownColor: const Color(0xFF1E1E1E),
+              underline: const SizedBox(),
+              isExpanded: true,
+              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text("Global (All Branches)"),
+                ),
+                ...branches.map((b) => DropdownMenuItem<String?>(
+                  value: b.id,
+                  child: Text("Branch: ${b.name}"),
+                )),
+              ],
+              onChanged: (val) {
+                setState(() {
+                  _selectedBranchId = val;
+                });
+                _fetchContent();
+              },
+            ),
+          ),
+          if (_selectedBranchId != null)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
+              tooltip: "Clear Branch Override",
+              onPressed: _showClearOverrideDialog,
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showClearOverrideDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text("Clear Override?", style: TextStyle(color: Colors.white)),
+        content: const Text("This branch will revert to using the Global content. Continue?", style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() => _isUploading = true);
+              final success = await _contentService.clearBranchContentOverride(_selectedBranchId!);
+              setState(() => _isUploading = false);
+              if (success) {
+                ToastUtils.show(context, "Override Cleared", type: ToastType.success);
+                _fetchContent();
+              }
+            },
+            child: const Text("Clear", style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBrandingConfig() {
