@@ -260,6 +260,9 @@ class CartService extends ChangeNotifier {
   // Gross Subtotals (Before Store Items)
   // [NEW] servicePayableSubtotal = Sum of CartItem.totalPrice (respects quoteRequired)
   double get servicePayableSubtotal => _items.fold(0, (sum, item) => sum + item.totalPrice);
+
+  // [NEW] Helper to check if any item is pending a quote
+  bool get hasPendingQuote => _items.any((item) => item.quoteRequired && deliveryLocation == null);
   
   // [NEW] serviceEstimateSubtotal = Sum of CartItem.fullEstimate (ignores quoteRequired)
   double get serviceEstimateSubtotal => _items.fold(0, (sum, item) => sum + item.fullEstimate);

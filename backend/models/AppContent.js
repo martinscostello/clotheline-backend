@@ -41,7 +41,27 @@ const AppContentSchema = new mongoose.Schema({
         text: { type: String, default: "Arrives in as little as [2 days]" },
         icon: { type: String, enum: ['van', 'bike', 'clock'], default: 'van' },
         active: { type: Boolean, default: true }
-    }
+    },
+    branchOverrides: [{
+        branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+        heroCarousel: [{
+            imageUrl: { type: String, required: true },
+            title: String,
+            titleColor: { type: String, default: "0xFFFFFFFF" },
+            tagLine: String,
+            tagLineColor: { type: String, default: "0xFFFFFFFF" },
+            actionUrl: String,
+            mediaType: { type: String, default: 'image', enum: ['image', 'video'] },
+            videoThumbnail: String,
+            duration: { type: Number, default: 5000 },
+            active: { type: Boolean, default: true }
+        }],
+        productAds: [{
+            imageUrl: { type: String, required: true },
+            targetScreen: String,
+            active: { type: Boolean, default: true }
+        }]
+    }]
 }, { timestamps: true });
 
 // Ensure we only have one config document

@@ -59,13 +59,24 @@ class ContentService {
 
   // --- OFFLINE FIRST CONTENT LOGIC ---
 
-  // 1. Load Cache Only
-  Future<AppContentModel?> loadFromCache() async {
+  // Branch-aware cache key
+  String _cacheKey(String? branchId) =>
+      branchId != null ? 'app_content_cache_$branchId' : 'app_content_cache';
+
+  // 1. Load Cache Only (branch-aware)
+  Future<AppContentModel?> loadFromCache({String? branchId}) async {
     final prefs = await SharedPreferences.getInstance();
     try {
-      final cachedString = prefs.getString('app_content_cache');
+      final cachedString = prefs.getString(_cacheKey(branchId));
       if (cachedString != null) {
         return AppContentModel.fromJson(jsonDecode(cachedString));
+      }
+      // Fall back to global cache if branch cache is empty
+      if (branchId != null) {
+        final globalCached = prefs.getString(_cacheKey(null));
+        if (globalCached != null) {
+          return AppContentModel.fromJson(jsonDecode(globalCached));
+        }
       }
     } catch (_) {}
     
@@ -73,14 +84,15 @@ class ContentService {
     return AppContentModel.fromJson(kDefaultContent); 
   }
   
-  // 2. Silent Sync
-  Future<AppContentModel?> fetchFromApi() async {
+  // 2. Silent Sync (branch-aware)
+  Future<AppContentModel?> fetchFromApi({String? branchId}) async {
     final prefs = await SharedPreferences.getInstance();
-     try {
-      final response = await _apiService.client.get('/content');
+    try {
+      final queryParams = branchId != null ? '?branchId=$branchId' : '';
+      final response = await _apiService.client.get('/content$queryParams');
       if (response.statusCode == 200) {
-        // Cache data
-        await prefs.setString('app_content_cache', jsonEncode(response.data));
+        // Cache data under branch-specific key
+        await prefs.setString(_cacheKey(branchId), jsonEncode(response.data));
         return AppContentModel.fromJson(response.data);
       }
     } catch (e) {
@@ -90,13 +102,13 @@ class ContentService {
   }
   
   // COMPATIBILITY METHODS (Wrapper)
-  Future<AppContentModel> getAppContent() async {
-     // Try cache first
-     final cached = await loadFromCache();
+  Future<AppContentModel> getAppContent({String? branchId}) async {
+     // Try branch-specific cache first
+     final cached = await loadFromCache(branchId: branchId);
      if (cached != null) return cached;
      
      // Fallback to API
-     final api = await fetchFromApi();
+     final api = await fetchFromApi(branchId: branchId);
      if (api != null) return api;
 
      return AppContentModel(
@@ -111,8 +123,8 @@ class ContentService {
      );
   }
 
-  Future<AppContentModel?> refreshAppContent() async {
-    return fetchFromApi();
+  Future<AppContentModel?> refreshAppContent({String? branchId}) async {
+    return fetchFromApi(branchId: branchId);
   }
 
   Future<bool> updateAppContent(Map<String, dynamic> updates) async {
@@ -125,6 +137,57 @@ class ContentService {
     }
   }
 
+  // --- BRANCH OVERRIDE MANAGEMENT ---
+
+  Future<bool> updateBranchContentOverride(String branchId, {
+    List<Map<String, dynamic>>? heroCarousel,
+    List<Map<String, dynamic>>? productAds,
+  }) async {
+    try {
+      final response = await _apiService.client.put('/content/branch-override', data: {
+        'branchId': branchId,
+        if (heroCarousel != null) 'heroCarousel': heroCarousel,
+        if (productAds != null) 'productAds': productAds,
+      });
+      if (response.statusCode == 200) {
+        // Invalidate branch cache to force refetch
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_cacheKey(branchId));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error updating branch content override: $e");
+      return false;
+    }
+  }
+
+  Future<bool> clearBranchContentOverride(String branchId) async {
+    try {
+      final response = await _apiService.client.delete('/content/branch-override/$branchId');
+      if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_cacheKey(branchId));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error clearing branch content override: $e");
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getBranchContentOverride(String branchId) async {
+    try {
+      final response = await _apiService.client.get('/content/branch-override/$branchId');
+      if (response.statusCode == 200) return response.data;
+      return null;
+    } catch (e) {
+      debugPrint("Error fetching branch content override: $e");
+      return null;
+    }
+  }
+
   Future<String?> uploadImage(String filePath, {Uint8List? fileBytes, String? explicitFileName, Function(int, int)? onProgress}) async {
     try {
       String fileName = explicitFileName ?? filePath.split('/').last;
@@ -134,8 +197,8 @@ class ContentService {
       final lowerName = fileName.toLowerCase();
       if (lowerName.endsWith('.png')) {
         mimeType = 'png';
-      } else if (lowerName.endsWith('.gif')) mimeType = 'gif';
-      else if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) mimeType = 'jpeg';
+      } else if (lowerName.endsWith('.gif')) { mimeType = 'gif'; }
+      else if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) { mimeType = 'jpeg'; }
       else if (lowerName.endsWith('.mp4')) { type = 'video'; mimeType = 'mp4'; }
       else if (lowerName.endsWith('.mov')) { type = 'video'; mimeType = 'quicktime'; }
       else if (lowerName.endsWith('.avi')) { type = 'video'; mimeType = 'x-msvideo'; }

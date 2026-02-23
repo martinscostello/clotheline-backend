@@ -162,7 +162,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     children: [
                       // Laundry Items
                        ..._cartService.items.map((item) {
-                         bool isPending = item.quoteRequired && item.deploymentLocation == null && _cartService.deliveryLocation == null;
+                         bool isPending = (item.quoteRequired || item.fulfillmentMode == 'deployment');
                          return _buildBucketItem(
                            title: item.item.name,
                            subtitle: item.serviceType?.name ?? "Regular Service",
@@ -203,7 +203,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               _cartService.activeModes.contains('deployment') ? "Payable Now" : "Total Estimate", 
                               style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 14)
                             ),
-                            Text(CurrencyFormatter.format(_cartService.totalAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                            Builder(
+                              builder: (context) {
+                                 bool isTotalPending = _cartService.items.any((item) => (item.quoteRequired || item.fulfillmentMode == 'deployment'));
+                                 return Text(
+                                   isTotalPending ? "Pending Address" : CurrencyFormatter.format(_cartService.totalAmount), 
+                                   style: TextStyle(color: isTotalPending ? Colors.orange : AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: isTotalPending ? 14 : 18)
+                                 );
+                              }
+                            ),
                           ],
                         ),
                         const SizedBox(height: 10),

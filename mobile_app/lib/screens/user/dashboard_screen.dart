@@ -68,6 +68,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   AppContentModel? _appContent;
   bool _isHydrated = false; // The Hydration Gate
   bool _isTabActive = true; 
+  String? _activeBranchId; // [Branch-Aware] Track active branch for content
   
   Timer? _rotationTimer;
 
@@ -90,8 +91,10 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     // We just render cache immediately.
     _isHydrated = true; 
     
-    // Attempt to load content cache if not bootstrapped (ContentService wasn't strictly bootstrapped yet)
-    _contentService.loadFromCache().then((content) {
+    // [Branch-Aware] Load content cache for the current branch immediately
+    final initialBranchId = Provider.of<BranchProvider>(context, listen: false).selectedBranch?.id;
+    _activeBranchId = initialBranchId;
+    _contentService.loadFromCache(branchId: initialBranchId).then((content) {
        if (content != null && mounted) {
           setState(() { _appContent = content; });
           _initializeVideoControllers(content);
@@ -129,6 +132,26 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   }
 
   
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // [Branch-Aware] Detect branch change and reload content
+    final newBranchId = Provider.of<BranchProvider>(context, listen: true).selectedBranch?.id;
+    if (newBranchId != _activeBranchId) {
+      _activeBranchId = newBranchId;
+      debugPrint('[Content] Branch changed to $newBranchId — reloading content.');
+      // Load from cache immediately for snappy UX
+      _contentService.loadFromCache(branchId: newBranchId).then((cached) {
+        if (cached != null && mounted) {
+          setState(() { _appContent = cached; });
+          _initializeVideoControllers(cached);
+        }
+      });
+      // Then fetch fresh from API
+      _lastSyncTime = null; // Bypass throttle for branch switch
+      Future.microtask(() => _performSilentSync());
+    }
+  }
 
   void _handleTabChange() {
     if (widget.tabNotifier == null) return;
@@ -156,8 +179,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     _lastSyncTime = now;
     debugPrint("Starting Silent Sync... (isResume: $isResume)");
 
-    // A. Sync Content
-    _contentService.fetchFromApi().then((updatedContent) {
+    // A. Sync Content (branch-aware)
+    final branchIdForSync = _activeBranchId;
+    _contentService.fetchFromApi(branchId: branchIdForSync).then((updatedContent) {
       if (updatedContent != null && mounted) {
         final currentJson = jsonEncode(_appContent?.toJson());
         final newJson = jsonEncode(updatedContent.toJson());

@@ -107,8 +107,7 @@ class MyBucketScreen extends StatelessWidget {
                             ),
                             Builder(
                               builder: (context) {
-                                final cartService = Provider.of<CartService>(context, listen: false);
-                                bool isPending = item.quoteRequired && item.deploymentLocation == null && cartService.deliveryLocation == null;
+                                bool isPending = (item.quoteRequired || item.fulfillmentMode == 'deployment');
                                 return Text(
                                   isPending ? "Pending" : CurrencyFormatter.format(item.totalPrice),
                                   style: TextStyle(color: isPending ? Colors.orange : textColor, fontWeight: FontWeight.bold, fontSize: isPending ? 14 : 16),
@@ -147,7 +146,7 @@ class MyBucketScreen extends StatelessWidget {
                           Builder(
                             builder: (context) {
                               final cartService = Provider.of<CartService>(context);
-                              bool hasPending = cartService.items.any((item) => item.quoteRequired && item.deploymentLocation == null && cartService.deliveryLocation == null);
+                              bool hasPending = cartService.items.any((item) => (item.quoteRequired || item.fulfillmentMode == 'deployment'));
                               return Text(
                                 hasPending ? "Pending Address" : CurrencyFormatter.format(grossSubtotal),
                                 style: TextStyle(color: hasPending ? Colors.orange : textColor, fontSize: 16, fontWeight: FontWeight.w500)

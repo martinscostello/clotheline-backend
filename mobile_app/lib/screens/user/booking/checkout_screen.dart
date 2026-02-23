@@ -673,7 +673,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                     style: TextStyle(color: textColor, fontWeight: isQuoteRequiredMode ? FontWeight.bold : FontWeight.normal)
                   )
                 ),
-                Text(CurrencyFormatter.format(item.totalPrice), style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                Text(
+                  (_cartService.deliveryLocation == null && (item.quoteRequired || item.fulfillmentMode == 'deployment'))
+                    ? "Pending"
+                    : CurrencyFormatter.format(item.totalPrice), 
+                  style: TextStyle(fontWeight: FontWeight.bold, color: (_cartService.deliveryLocation == null && (item.quoteRequired || item.fulfillmentMode == 'deployment')) ? Colors.orange : AppTheme.primaryColor)
+                ),
               ],
             ),
           )),
@@ -737,7 +742,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(isQuoteRequiredMode ? "Total Due Now" : "Total", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
-              Text(CurrencyFormatter.format(total), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
+              Text(
+                (_cartService.deliveryLocation == null && _cartService.items.any((i) => i.quoteRequired || i.fulfillmentMode == 'deployment'))
+                  ? "Pending Address"
+                  : CurrencyFormatter.format(total), 
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: (_cartService.deliveryLocation == null && _cartService.items.any((i) => i.quoteRequired || i.fulfillmentMode == 'deployment')) ? Colors.orange : AppTheme.primaryColor)
+              ),
             ],
           ),
         ],
