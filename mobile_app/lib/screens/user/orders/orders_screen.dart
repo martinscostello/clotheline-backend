@@ -195,8 +195,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Total Estimate", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text(CurrencyFormatter.format(_cartService.serviceTotalAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                            Text(
+                              _cartService.activeModes.contains('deployment') ? "Payable Now" : "Total Estimate", 
+                              style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 14)
+                            ),
+                            Text(CurrencyFormatter.format(_cartService.totalAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)),
                           ],
                         ),
                         const SizedBox(height: 10),

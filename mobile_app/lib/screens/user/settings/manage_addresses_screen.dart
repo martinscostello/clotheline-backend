@@ -5,6 +5,7 @@ import '../../../widgets/glass/UnifiedGlassHeader.dart';
 import '../../../widgets/glass/GlassContainer.dart';
 import '../../../services/address_service.dart';
 import '../../../widgets/delivery_location_selector.dart';
+import '../../../data/areas_data.dart';
 import '../../../models/delivery_location_model.dart';
 import '../../../utils/toast_utils.dart';
 
@@ -118,7 +119,7 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
                         'addressLabel': tempSelection!.addressLabel,
                         'lat': tempSelection!.lat,
                         'lng': tempSelection!.lng,
-                        'city': tempSelection!.area ?? "Benin", // Fallback city
+                        'city': tempSelection?.area != null ? nigeriaAreas.firstWhere((a) => a.name == tempSelection!.area).city : "Abuja", 
                         'landmark': tempSelection!.landmark,
                       });
 

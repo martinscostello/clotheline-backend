@@ -12,6 +12,8 @@ import '../../../services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../../utils/toast_utils.dart';
+import '../../../models/booking_models.dart';
+import '../../../models/service_model.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'combined_order_summary_screen.dart';
@@ -458,6 +460,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 
                 if (isPickup) {
                   _pickupFee = fee;
+
+                  // [NEW] Deployment Mode Inspection Fee Calculation
+                  if (widget.fulfillmentMode == 'deployment') {
+                    _pickupFee = 0.0; // Don't double charge logistics fee, inspection fee covers it
+                    for (var item in _cartService.items) {
+                      if (item.fulfillmentMode == 'deployment' && item.quoteRequired) {
+                        item.inspectionFee = _calculateInspectionFee(selection.lat, selection.lng, item);
+                      }
+                    }
+                  }
                 } else {
                   _deliveryFee = fee;
                 }
@@ -476,6 +488,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         ],
       ),
     );
+  }
+
+  double _calculateInspectionFee(double userLat, double userLng, CartItem item) {
+    if (item.deploymentLocation == null || item.inspectionFeeZones.isEmpty) {
+      return item.inspectionFee; 
+    }
+    
+    const Distance distanceCalc = Distance();
+    final userPoint = LatLng(userLat, userLng);
+    final double distanceKm = distanceCalc.as(LengthUnit.Meter, userPoint, item.deploymentLocation!) / 1000;
+    
+    final zones = List<InspectionZone>.from(item.inspectionFeeZones);
+    zones.sort((a, b) => a.radiusKm.compareTo(b.radiusKm));
+    
+    for (var zone in zones) {
+      if (distanceKm <= zone.radiusKm) {
+        return zone.fee;
+      }
+    }
+    
+    // If out of range, return the highest zone fee or current base fee
+    return zones.isNotEmpty ? zones.last.fee : item.inspectionFee;
   }
 
   Widget _buildTextField(
@@ -546,12 +580,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   Widget _buildSummaryCard(bool isDark, Color textColor) {
-    // Correct Total Calculation incl Tax and Logistics
-    // Correct Total Calculation incl Tax and Logistics (Service Only)
-    double subtotal = _cartService.serviceTotalAmount;
-    double tax = _cartService.serviceTaxAmount; // Use granular service tax
+    bool isQuoteRequiredMode = widget.fulfillmentMode == 'deployment';
+
     double logistics = _pickupFee + _deliveryFee;
-    double total = subtotal + tax + logistics; // Calculate locally to ensure isolation 
+    double subtotal = _cartService.servicePayableSubtotal;
+    double tax = _cartService.serviceTaxAmount; 
+    double total = _cartService.totalAmount + logistics; 
+
+    double estimateTax = _cartService.serviceEstimateTaxAmount;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -560,51 +596,110 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         borderRadius: BorderRadius.circular(15),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Laundry Items
-          ..._cartService.items.map((item) => Padding(
+          if (isQuoteRequiredMode) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("SERVICE ESTIMATE", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
+                Text(CurrencyFormatter.format(_cartService.serviceEstimateTotalAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Itemized estimate
+            ..._cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text("${item.quantity}x ${item.item.name} (${item.serviceType.name})", style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12))),
+                  Text(CurrencyFormatter.format(item.fullEstimate), style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12)),
+                ],
+              ),
+            )),
+            
+            // Itemized Discounts (Estimate based)
+            ..._cartService.laundryDiscounts.entries.map((e) => Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 11)),
+                  Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
+                ],
+              ),
+            )),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("VAT (${_cartService.taxRate}%)", style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 11)),
+                Text(CurrencyFormatter.format(estimateTax), style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 11)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text("Payable only AFTER on-site inspection", style: TextStyle(color: Colors.orangeAccent.shade100, fontSize: 10, fontStyle: FontStyle.italic)),
+            const SizedBox(height: 16),
+            const Divider(thickness: 1),
+            const SizedBox(height: 16),
+          ],
+
+          if (isQuoteRequiredMode)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text("TOTAL PAYABLE NOW", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
+            ),
+
+          // Items
+          ..._cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).map((item) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: Text("${item.quantity}x ${item.item.name} (${item.serviceType.name})", style: TextStyle(color: textColor))),
+                Expanded(
+                  child: Text(
+                    "${item.quantity}x ${item.item.name} [Inspection Fee]", 
+                    style: TextStyle(color: textColor, fontWeight: isQuoteRequiredMode ? FontWeight.bold : FontWeight.normal)
+                  )
+                ),
                 Text(CurrencyFormatter.format(item.totalPrice), style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
               ],
             ),
           )),
           
-          const Divider(),
-          
-          // Subtotal Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Subtotal", style: TextStyle(color: textColor)),
-              Text(CurrencyFormatter.format(subtotal), style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
-            ],
-          ),
-          const SizedBox(height: 5),
-
-          // [NEW] Itemized Discounts
-          ..._cartService.laundryDiscounts.entries.map((e) => Padding(
-            padding: const EdgeInsets.only(bottom: 5.0),
-            child: Row(
+          if (!isQuoteRequiredMode) ...[
+            const Divider(),
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 13)),
-                Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                Text("Subtotal", style: TextStyle(color: textColor)),
+                Text(CurrencyFormatter.format(subtotal), style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
               ],
             ),
-          )),
+            const SizedBox(height: 5),
 
-           // VAT Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("VAT (${_cartService.taxRate}%)", style: TextStyle(color: textColor)),
-              Text(CurrencyFormatter.format(tax), style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
-            ],
-          ),
+            // Itemized Discounts
+            ..._cartService.laundryDiscounts.entries.map((e) => Padding(
+              padding: const EdgeInsets.only(bottom: 5.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 13)),
+                  Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            )),
+
+             // VAT Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("VAT (${_cartService.taxRate}%)", style: TextStyle(color: textColor)),
+                Text(CurrencyFormatter.format(tax), style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
+              ],
+            ),
+          ],
 
           if (_beforeWashOption == 1 || _afterWashOption == 1) const Divider(),
 
@@ -613,7 +708,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
              Row(
                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                children: [
-                 Text("Pickup Fee", style: TextStyle(color: textColor)),
+                 Text("Logistics / Pickup Fee", style: TextStyle(color: textColor)),
                  Text(CurrencyFormatter.format(_pickupFee), style: const TextStyle(fontWeight: FontWeight.bold)),
                ],
              ),
@@ -631,7 +726,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Total", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
+              Text(isQuoteRequiredMode ? "Total Due Now" : "Total", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
               Text(CurrencyFormatter.format(total), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryColor)),
             ],
           ),
@@ -641,6 +736,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   Widget _buildLogisticsSummary(bool isDark, Color textColor) {
+    if (widget.fulfillmentMode == 'deployment') {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white10 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: _buildLogisticsRow(
+          "Service Location", 
+          _pickupSelection?.addressLabel ?? 'Not set', 
+          textColor
+        ),
+      );
+    }
+
     final branch = Provider.of<BranchProvider>(context, listen: false).selectedBranch;
     final displayAddress = branch?.address ?? _branchAddress;
     final displayPhone = branch?.phone ?? _branchPhone;
@@ -933,7 +1043,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                   onPressed: _isSubmitting ? null : _submitOrder,
                   child: _isSubmitting 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(_isQuoteRequired ? "SUBMIT FOR QUOTE" : "PAY NOW", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text(_isQuoteRequired ? "PAY INSPECTION FEE" : "PAY NOW", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 12),

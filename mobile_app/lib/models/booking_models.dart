@@ -1,3 +1,6 @@
+import 'service_model.dart';
+import 'package:latlong2/latlong.dart';
+
 class ServiceType {
   final String id;
   final String name;
@@ -50,23 +53,31 @@ class CartItem {
   final ServiceType serviceType;
   final double discountPercentage;
   final String fulfillmentMode;
-  final bool quoteRequired; // [NEW]
-  final double inspectionFee; // [NEW]
+  final bool quoteRequired; 
+  double inspectionFee; // [CHANGED] Allow updating during checkout
+  final List<InspectionZone> inspectionFeeZones; // [NEW]
+  final LatLng? deploymentLocation; // [NEW]
   int quantity;
 
   CartItem({
     required this.item, 
-    required this.serviceType, 
+    this.serviceType, 
     this.quantity = 1, 
     this.discountPercentage = 0.0,
     this.fulfillmentMode = 'logistics',
     this.quoteRequired = false,
     this.inspectionFee = 0.0,
+    this.inspectionFeeZones = const [],
+    this.deploymentLocation,
   });
 
   double get totalPrice {
      if (quoteRequired) return inspectionFee;
-     double base = item.basePrice * serviceType.priceMultiplier * quantity;
+     return fullEstimate;
+  }
+
+  double get fullEstimate {
+     double base = item.basePrice * (serviceType?.priceMultiplier ?? 1.0) * quantity;
      if (discountPercentage > 0) {
        return base * (1 - (discountPercentage / 100));
      }
@@ -75,23 +86,27 @@ class CartItem {
 
   Map<String, dynamic> toJson() => {
     'item': item.toJson(),
-    'serviceType': serviceType.toJson(),
+    'serviceType': serviceType?.toJson(),
     'quantity': quantity,
     'discountPercentage': discountPercentage,
     'fulfillmentMode': fulfillmentMode,
     'quoteRequired': quoteRequired,
     'inspectionFee': inspectionFee,
+    'inspectionFeeZones': inspectionFeeZones.map((z) => z.toJson()).toList(),
+    'deploymentLocation': deploymentLocation != null ? {'lat': deploymentLocation!.latitude, 'lng': deploymentLocation!.longitude} : null,
   };
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
     return CartItem(
       item: ClothingItem.fromJson(json['item']),
-      serviceType: ServiceType.fromJson(json['serviceType']),
+      serviceType: json['serviceType'] != null ? ServiceType.fromJson(json['serviceType']) : null,
       quantity: json['quantity'] ?? 1,
       discountPercentage: (json['discountPercentage'] as num?)?.toDouble() ?? 0.0,
       fulfillmentMode: json['fulfillmentMode'] ?? 'logistics',
       quoteRequired: json['quoteRequired'] ?? false,
       inspectionFee: (json['inspectionFee'] as num?)?.toDouble() ?? 0.0,
+      inspectionFeeZones: (json['inspectionFeeZones'] as List?)?.map((z) => InspectionZone.fromJson(z)).toList() ?? [],
+      deploymentLocation: json['deploymentLocation'] != null ? LatLng(json['deploymentLocation']['lat'], json['deploymentLocation']['lng']) : null,
     );
   }
 }

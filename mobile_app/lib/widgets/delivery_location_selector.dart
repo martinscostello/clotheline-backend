@@ -120,7 +120,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
         'addressLabel': _addressLabel,
         'lat': _customLatLng!.latitude,
         'lng': _customLatLng!.longitude,
-        'city': _lastCity ?? "Benin",
+        'city': _lastCity ?? (_selectedArea?.city) ?? "Abuja", 
         'landmark': _landmarkController.text,
       });
 

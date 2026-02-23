@@ -21,29 +21,19 @@ exports.getAllServices = async (req, res) => {
         const migrateService = (s) => {
             const serviceObj = s.toObject ? s.toObject() : s;
 
-            const processItems = (items, types) => {
+            const processItems = (items) => {
                 if (!items || !Array.isArray(items)) return [];
-                return items.map(item => {
-                    const migrated = { ...item };
-                    // If item has no services but global types exist, migrate
-                    if ((!migrated.services || migrated.services.length === 0) && types && types.length > 0) {
-                        migrated.services = types.map(t => ({
-                            name: t.name,
-                            price: Math.round((item.price || 0) * (t.priceMultiplier || 1.0))
-                        }));
-                    }
-                    return migrated;
-                });
+                return items.map(item => ({ ...item }));
             };
 
             // Migrate Global Items
-            serviceObj.items = processItems(serviceObj.items, serviceObj.serviceTypes);
+            serviceObj.items = processItems(serviceObj.items);
 
             // Migrate Branch Configurations
             if (serviceObj.branchConfig) {
                 serviceObj.branchConfig = serviceObj.branchConfig.map(config => ({
                     ...config,
-                    items: processItems(config.items, config.serviceTypes || serviceObj.serviceTypes)
+                    items: processItems(config.items)
                 }));
             }
 
@@ -83,6 +73,8 @@ exports.getAllServices = async (req, res) => {
                 serviceObj.isLocked = branchConfig.isLocked;
                 serviceObj.lockedLabel = branchConfig.lockedLabel;
                 serviceObj.isActive = branchConfig.isActive;
+                serviceObj.typeLabel = branchConfig.customTypeLabel || s.typeLabel || 'Select Type';
+                serviceObj.subTypeLabel = branchConfig.customSubTypeLabel || s.subTypeLabel || 'Service Type';
                 serviceObj.items = branchConfig.items;
                 // serviceObj.serviceTypes = config.serviceTypes; // Deprecated
                 serviceObj.discountPercentage = config.discountPercentage || 0;
@@ -112,7 +104,8 @@ exports.createService = async (req, res) => {
         const {
             name, icon, color, description, image,
             discountPercentage, discountLabel, order, branchId,
-            fulfillmentMode, requiresTermsAcceptance, termsContent, cleaningLocation
+            fulfillmentMode, requiresTermsAcceptance, termsContent, cleaningLocation,
+            typeLabel, subTypeLabel
         } = req.body;
         const newService = new Service({
             name, icon, color, description,
@@ -124,7 +117,13 @@ exports.createService = async (req, res) => {
             fulfillmentMode: fulfillmentMode || 'logistics',
             requiresTermsAcceptance: requiresTermsAcceptance || false,
             termsContent: termsContent || '',
-            cleaningLocation: cleaningLocation || 'none'
+            cleaningLocation: cleaningLocation || 'none',
+            typeLabel: typeLabel || 'Select Type',
+            subTypeLabel: subTypeLabel || 'Service Type',
+            quoteRequired: req.body.quoteRequired || false,
+            inspectionFee: req.body.inspectionFee || 0,
+            deploymentLocation: req.body.deploymentLocation || null,
+            inspectionFeeZones: req.body.inspectionFeeZones || []
         });
         const service = await newService.save();
         res.json(service);
@@ -178,6 +177,8 @@ exports.updateService = async (req, res) => {
             if (description) service.branchConfig[configIndex].customDescription = description;
             if (discountPercentage !== undefined) service.branchConfig[configIndex].discountPercentage = discountPercentage;
             if (discountLabel !== undefined) service.branchConfig[configIndex].discountLabel = discountLabel;
+            if (req.body.typeLabel !== undefined) service.branchConfig[configIndex].customTypeLabel = req.body.typeLabel;
+            if (req.body.subTypeLabel !== undefined) service.branchConfig[configIndex].customSubTypeLabel = req.body.subTypeLabel;
 
             // Update Service Types for Branch
             if (serviceTypes && Array.isArray(serviceTypes)) {
@@ -186,13 +187,9 @@ exports.updateService = async (req, res) => {
 
             service.branchConfig[configIndex].lastUpdated = Date.now();
 
-
             // 3. Update Items (STRICT INDEPENDENCE)
-            // We now accept the FULL list of items from the frontend and replace the branch's item list.
-            if (items && Array.isArray(items)) {
-                // Map frontend items to Schema structure
-                // We trust the frontend list as the "New Truth" for this branch.
-                service.branchConfig[configIndex].items = items.map(i => ({
+            if (req.body.items && Array.isArray(req.body.items)) {
+                service.branchConfig[configIndex].items = req.body.items.map(i => ({
                     name: i.name,
                     price: i.price,
                     isActive: i.isActive !== undefined ? i.isActive : true,
@@ -202,9 +199,16 @@ exports.updateService = async (req, res) => {
                     }))
                 }));
             }
+        }
 
-        } else {
-            // --- GLOBAL UPDATE ---
+        // --- GLOBAL & SHARED FIELDS (Always Persist to Top Level) ---
+        if (req.body.quoteRequired !== undefined) service.quoteRequired = req.body.quoteRequired;
+        if (req.body.inspectionFee !== undefined) service.inspectionFee = req.body.inspectionFee;
+        if (req.body.deploymentLocation !== undefined) service.deploymentLocation = req.body.deploymentLocation;
+        if (req.body.inspectionFeeZones !== undefined) service.inspectionFeeZones = req.body.inspectionFeeZones;
+
+        if (!branchId) {
+            // --- GLOBAL-ONLY UPDATE ---
             if (name) service.name = name;
             if (icon) service.icon = icon;
             if (color) service.color = color;
@@ -220,6 +224,8 @@ exports.updateService = async (req, res) => {
             if (requiresTermsAcceptance !== undefined) service.requiresTermsAcceptance = requiresTermsAcceptance;
             if (termsContent !== undefined) service.termsContent = termsContent;
             if (cleaningLocation) service.cleaningLocation = cleaningLocation;
+            if (req.body.typeLabel !== undefined) service.typeLabel = req.body.typeLabel;
+            if (req.body.subTypeLabel !== undefined) service.subTypeLabel = req.body.subTypeLabel;
 
             // Handle Items (Global Base Price Update)
             if (items && Array.isArray(items)) {

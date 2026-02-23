@@ -42,7 +42,7 @@ class OrderStatusResolver {
       case OrderStatus.Completed: return "Service Completed";
       case OrderStatus.Cancelled: return "Cancelled";
       case OrderStatus.Refunded: return "Refunded";
-      case OrderStatus.PendingUserConfirmation: return "Awaiting Inspection";
+      case OrderStatus.PendingUserConfirmation: return "INSPECTION OG";
     }
   }
 

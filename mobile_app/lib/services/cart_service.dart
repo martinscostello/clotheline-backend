@@ -248,41 +248,56 @@ class CartService extends ChangeNotifier {
     return discount > baseStoreTotal ? baseStoreTotal : discount;
   }
 
-  // Gross Totals
-  double get serviceGrossTotalAmount => _items.fold(0, (sum, item) {
-     double base = item.item.basePrice * item.serviceType.priceMultiplier * item.quantity;
-     return sum + base;
-  });
+  // Gross Subtotals (Before Store Items)
+  // [NEW] servicePayableSubtotal = Sum of CartItem.totalPrice (respects quoteRequired)
+  double get servicePayableSubtotal => _items.fold(0, (sum, item) => sum + item.totalPrice);
   
-  // storeTotalAmount is defined above at top of class.
-  // We can just rely on that.
+  // [NEW] serviceEstimateSubtotal = Sum of CartItem.fullEstimate (ignores quoteRequired)
+  double get serviceEstimateSubtotal => _items.fold(0, (sum, item) => sum + item.fullEstimate);
   
   // Total of all discounts (Laundry Internal + Store Promo)
-  double get discountAmount => laundryTotalDiscount + storeDiscountAmount; // [Restored]
+  // Laundry discounts are already handled inside CartItem.totalPrice/fullEstimate 
+  // for deployment items, but we keep this for legacy laundry calculation.
+  double get discountAmount => storeDiscountAmount; // [Simplified]
+
+  // Base Subtotal (PAYABLE) = servicePayableSubtotal + storeTotalAmount
+  double get subtotal => servicePayableSubtotal + storeTotalAmount; 
   
-  // Base Subtotal (GROSS) = Gross Service + Gross Store
-  double get subtotal => serviceGrossTotalAmount + storeTotalAmount; 
-  
-  // Net Total
+  // Net Total (PAYABLE)
   double get subtotalAfterDiscount => (subtotal - discountAmount) < 0 ? 0 : (subtotal - discountAmount);
   
-  // Tax Calculations
-  // Tax is usually on NET amount (after discounts)
-  double get taxAmount => (subtotalAfterDiscount * (taxRate / 100)); 
+  // Tax Calculations (PAYABLE)
+  // [RULE] VAT SHOULD NEVER BE ADDED TO INSPECTION FEE.
+  double get taxAmount {
+     if (activeModes.length == 1 && activeModes.contains('deployment')) return 0.0;
+     return (subtotalAfterDiscount * (taxRate / 100));
+  }
   
-  // Final Total
-  double get totalAmount => subtotalAfterDiscount + taxAmount;
-  
-   // Split Tax (Approximate for display)
-   // We use NET proportion
+  // Final Total (Payable Now)
+  double get totalAmount {
+    // VAT SHOULD NEVER BE ADDED TO INSPECTION FEE.
+    if (activeModes.length == 1 && activeModes.contains('deployment')) {
+      return subtotalAfterDiscount; 
+    }
+    return subtotalAfterDiscount + taxAmount;
+  }
+
+  // Split Tax (Approximate for display of PAYABLE tax)
   double get serviceTaxAmount {
     if (subtotalAfterDiscount == 0) return 0.0;
-    // Calculate Service Net Share
-    double serviceNet = serviceGrossTotalAmount - laundryTotalDiscount;
-    if (serviceNet < 0) serviceNet = 0;
+    if (activeModes.length == 1 && activeModes.contains('deployment')) return 0.0; // [CRITICAL] No VAT on Inspection
     
-    return (serviceNet / subtotalAfterDiscount) * taxAmount;
+    // For legacy laundry, we can still use subtotal share logic if needed
+    // Discount is already applied inside servicePayableSubtotal for deployments
+    // but for laundry we might want to subtract laundryTotalDiscount if we were using gross totals.
+    // However, since we refactored to use subtotalShare, this is safer:
+    return (servicePayableSubtotal / subtotal) * taxAmount;
   }
+
+  // Tax on estimate (for display)
+  double get serviceEstimateAmount => serviceEstimateSubtotal; // Alias for readability in UI
+  double get serviceEstimateTaxAmount => serviceEstimateAmount * (taxRate / 100);
+  double get serviceEstimateTotalAmount => serviceEstimateAmount + serviceEstimateTaxAmount;
 
   double get storeTaxAmount {
      if (subtotalAfterDiscount == 0) return 0.0;

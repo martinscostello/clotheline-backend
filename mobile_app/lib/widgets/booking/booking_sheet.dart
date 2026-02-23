@@ -25,7 +25,7 @@ class _BookingSheetState extends State<BookingSheet> {
   final _cartService = CartService(); 
   
   // Selections
-  ServiceItem? _selectedCloth;
+  ServiceItem? _selectedType;
   ServiceOption? _selectedService; // [CHANGED] From ServiceVariant
   int _quantity = 1;
 
@@ -34,9 +34,9 @@ class _BookingSheetState extends State<BookingSheet> {
     super.initState();
     // Default selections
     if (widget.serviceModel.items.isNotEmpty) {
-      _selectedCloth = widget.serviceModel.items.first;
-      if (_selectedCloth!.services.isNotEmpty) {
-        _selectedService = _selectedCloth!.services.first;
+      _selectedType = widget.serviceModel.items.first;
+      if (_selectedType!.services.isNotEmpty) {
+        _selectedService = _selectedType!.services.first;
       }
     }
     
@@ -45,31 +45,42 @@ class _BookingSheetState extends State<BookingSheet> {
   }
 
   void _addToBucket() {
-    if (_selectedCloth != null && _selectedService != null) {
-      final serviceTypeObj = ServiceType(
+    if (_selectedType != null) {
+      // For non-deployment services, require a service selection
+      if (_selectedService == null && widget.serviceModel.fulfillmentMode != 'deployment') {
+        ToastUtils.show(context, "Please select a ${widget.serviceModel.subTypeLabel}", type: ToastType.warning);
+        return;
+      }
+
+      final serviceTypeObj = _selectedService != null ? ServiceType(
         id: _selectedService!.name, 
         name: _selectedService!.name,
-        priceMultiplier: 1.0 // Fixed pricing, so multiplier is effectively 1.0 relative to its own price
-      );
+        priceMultiplier: 1.0
+      ) : null;
       
-      final clothItem = ClothingItem(
-        id: _selectedCloth!.name, 
-        name: _selectedCloth!.name, 
-        basePrice: _selectedService!.price // [CHANGED] Use the service specific price
+      final typeItem = ClothingItem(
+        id: _selectedType!.name, 
+        name: _selectedType!.name, 
+        basePrice: _selectedService?.price ?? 0.0
       );
 
       _cartService.addItem(CartItem(
-        item: clothItem,
+        item: typeItem,
         serviceType: serviceTypeObj,
         quantity: _quantity,
         discountPercentage: widget.serviceModel.discountPercentage,
         fulfillmentMode: widget.serviceModel.fulfillmentMode,
+        quoteRequired: widget.serviceModel.quoteRequired,
+        inspectionFee: widget.serviceModel.inspectionFee,
+        inspectionFeeZones: widget.serviceModel.inspectionFeeZones,
+        deploymentLocation: widget.serviceModel.deploymentLocation,
       ));
       
       setState(() {
         _quantity = 1;
       });
-      ToastUtils.show(context, "Added to bucket", type: ToastType.success);
+      final toastMsg = widget.serviceModel.fulfillmentMode == 'deployment' ? "Added for Inspection" : "Added to bucket";
+      ToastUtils.show(context, toastMsg, type: ToastType.success);
     }
   }
 
@@ -82,7 +93,7 @@ class _BookingSheetState extends State<BookingSheet> {
     );
   }
 
-  void _showClothSelector() {
+  void _showTypeSelector() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1E1E2C) : Colors.white;
     String searchQuery = "";
@@ -122,7 +133,7 @@ class _BookingSheetState extends State<BookingSheet> {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
-                      child: Text("Select Type", style: TextStyle(
+                      child: Text(widget.serviceModel.typeLabel, style: TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : Colors.black
                       )),
@@ -148,7 +159,7 @@ class _BookingSheetState extends State<BookingSheet> {
                                   setModalState(() => searchQuery = val);
                                 },
                                 decoration: InputDecoration(
-                                  hintText: "Search type...",
+                                  hintText: "Search...",
                                   hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
                                   prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black45),
                                   border: InputBorder.none,
@@ -187,22 +198,18 @@ class _BookingSheetState extends State<BookingSheet> {
                             separatorBuilder: (_, __) => Divider(color: isDark ? Colors.white10 : Colors.grey.shade200),
                             itemBuilder: (context, index) {
                               final item = filteredItems[index];
-                              final isSelected = item.name == _selectedCloth?.name;
+                              final isSelected = item.name == _selectedType?.name;
                               
                               return ListTile(
                                 onTap: () {
                                   setState(() {
-                                    _selectedCloth = item;
-                                    if (item.services.isNotEmpty) {
-                                      _selectedService = item.services.first;
-                                    } else {
-                                      _selectedService = null;
-                                    }
+                                    _selectedType = item;
+                                    _selectedService = item.services.isNotEmpty ? item.services.first : null;
                                   });
                                   Navigator.pop(context);
                                 },
                                 title: Text(item.name, style: TextStyle(
-                                  color: isDark ? Colors.white : Colors.black87,
+                                  color: isSelected ? AppTheme.primaryColor : (isDark ? Colors.white : Colors.black87),
                                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
                                 )),
                                 trailing: isSelected ? const Icon(Icons.check_circle, color: AppTheme.primaryColor) : null,
@@ -258,10 +265,10 @@ class _BookingSheetState extends State<BookingSheet> {
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    itemCount: _selectedCloth?.services.length ?? 0,
+                    itemCount: _selectedType?.services.length ?? 0,
                     separatorBuilder: (_, __) => Divider(color: isDark ? Colors.white10 : Colors.grey.shade200),
                     itemBuilder: (context, index) {
-                      final service = _selectedCloth!.services[index];
+                      final service = _selectedType!.services[index];
                       final isSelected = service.name == _selectedService?.name;
                       
                       String priceText = CurrencyFormatter.format(service.price);
@@ -321,8 +328,8 @@ class _BookingSheetState extends State<BookingSheet> {
                if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, -5))
             ]
           ),
-          padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 40),
-          constraints: const BoxConstraints(maxHeight: 750), 
+          padding: const EdgeInsets.only(left: 24, right: 24, top: 12),
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85), 
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,175 +345,262 @@ class _BookingSheetState extends State<BookingSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               
               Text("Book ${widget.serviceModel.name}", style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 25),
+              const SizedBox(height: 15),
 
-              // 1. Select Type
-              if (widget.serviceModel.items.isNotEmpty && _selectedCloth != null) ...[
-                Text("Select Type", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: _showClothSelector,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _selectedCloth?.name ?? "Select Type",
-                          style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
-                        ),
-                        if (_selectedCloth != null)
-                          Text(
-                            "Select",
-                            style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 13),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (_selectedCloth != null && _selectedCloth!.services.isEmpty)
-                   const Padding(
-                     padding: EdgeInsets.only(top: 8, left: 4),
-                     child: Text("No services available for this cloth", style: TextStyle(color: Colors.redAccent, fontSize: 10)),
-                   ),
-                const SizedBox(height: 20),
-              ] else ...[
-                 Center(child: Text("No items available for this service", style: TextStyle(color: secondaryTextColor))),
-                 const SizedBox(height: 20),
-              ],
-
-              // 2. Service Type
-              if (_selectedCloth != null && _selectedCloth!.services.isNotEmpty) ...[
-                Text("Service Type", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: _showServiceTypeSelector,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _selectedService?.name ?? "Select Service",
-                          style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                           _selectedService != null 
-                             ? CurrencyFormatter.format(_selectedService!.price)
-                             : "Select",
-                           style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                 const SizedBox(height: 20),
-              ],
-
-              // 3. Quantity
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Quantity", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white10 : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(15)
-                    ),
-                    child: Row(
-                      children: [
-                        IconButton(icon: Icon(Icons.remove, color: textColor), onPressed: () => setState(() => _quantity = _quantity > 1 ? _quantity - 1 : 1)),
-                        Text("$_quantity", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                        IconButton(icon: Icon(Icons.add, color: textColor), onPressed: () => setState(() => _quantity++)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 30),
-
-              // Add To Bucket Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.shopping_basket_outlined),
-                  label: const Text("ADD TO BUCKET"), 
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
-                    foregroundColor: AppTheme.primaryColor,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    elevation: 0,
-                  ),
-                  onPressed: _addToBucket,
-                ),
-              ),
-
-              // Bucket Preview (Mini Cart)
-              if (cartItems.isNotEmpty) ...[
-                 const SizedBox(height: 30),
-                 Divider(color: secondaryTextColor.withValues(alpha: 0.2)),
-                 const SizedBox(height: 10),
-                  Column(
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildBreakdownRow("Total Items", _cartService.serviceGrossTotalAmount, textColor, isDark),
-                      if (_cartService.laundryTotalDiscount > 0)
-                        _buildBreakdownRow("Discount", -_cartService.laundryTotalDiscount, Colors.greenAccent, isDark),
-                      _buildBreakdownRow("VAT (${_cartService.taxRate}%)", _cartService.serviceTaxAmount, textColor, isDark),
-                      const SizedBox(height: 8),
+                      // 1. Select Type
+                      if (widget.serviceModel.items.isNotEmpty) ...[
+                        Text(widget.serviceModel.typeLabel, style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: _showTypeSelector,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _selectedType?.name ?? widget.serviceModel.typeLabel,
+                                    style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (_selectedType != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8.0),
+                                    child: Text(
+                                      "Select",
+                                      style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 13),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_selectedType != null && _selectedType!.services.isEmpty && widget.serviceModel.fulfillmentMode != 'deployment')
+                           const Padding(
+                             padding: EdgeInsets.only(top: 8, left: 4),
+                             child: Text("No services available for this type", style: TextStyle(color: Colors.redAccent, fontSize: 10)),
+                           ),
+                        const SizedBox(height: 20),
+                      ] else ...[
+                         Center(child: Text("No items available for this service", style: TextStyle(color: secondaryTextColor))),
+                         const SizedBox(height: 20),
+                      ],
+
+                      // 2. Service Type
+                      if (_selectedType != null && _selectedType!.services.isNotEmpty) ...[
+                        Text(widget.serviceModel.subTypeLabel, style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: _showServiceTypeSelector,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _selectedService?.name ?? widget.serviceModel.subTypeLabel,
+                                    style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8.0),
+                                  child: Text(
+                                     _selectedService != null 
+                                       ? CurrencyFormatter.format(_selectedService!.price)
+                                       : "Select",
+                                     style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                         const SizedBox(height: 20),
+                      ],
+
+                      // 3. Quantity
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("Grand Total (est.)", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                          Text(
-                            CurrencyFormatter.format(_cartService.serviceTotalAmount + _cartService.serviceTaxAmount),
-                            style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)
+                          Text("Quantity", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold)),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white10 : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(15)
+                            ),
+                            child: Row(
+                              children: [
+                                IconButton(icon: Icon(Icons.remove, color: textColor), onPressed: () => setState(() => _quantity = _quantity > 1 ? _quantity - 1 : 1)),
+                                Text("$_quantity", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                                IconButton(icon: Icon(Icons.add, color: textColor), onPressed: () => setState(() => _quantity++)),
+                              ],
+                            ),
                           ),
                         ],
                       ),
+
+                      const SizedBox(height: 30),
+
+                      // Add To Bucket Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: Icon(widget.serviceModel.fulfillmentMode == 'deployment' ? Icons.calendar_today_outlined : Icons.shopping_basket_outlined),
+                          label: Text(widget.serviceModel.fulfillmentMode == 'deployment' ? "SCHEDULE INSPECTION" : "ADD TO BUCKET"), 
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                            foregroundColor: AppTheme.primaryColor,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            elevation: 0,
+                          ),
+                          onPressed: _addToBucket,
+                        ),
+                      ),
+
+                      // Bucket Preview (Mini Cart)
+                      if (cartItems.isNotEmpty) ...[
+                         const SizedBox(height: 30),
+                         Divider(color: secondaryTextColor.withValues(alpha: 0.2)),
+                         const SizedBox(height: 10),
+                         Column(
+                           children: [
+                             if (widget.serviceModel.fulfillmentMode == 'deployment' && _cartService.serviceEstimateTotalAmount > 0) ...[
+                                _buildBreakdownRow(
+                                  "Service Subtotal", 
+                                  _cartService.serviceEstimateSubtotal, 
+                                  textColor.withOpacity(0.6), 
+                                  isDark
+                                ),
+                                // Add discount breakdown for estimate
+                                ..._cartService.laundryDiscounts.entries.map((e) => _buildBreakdownRow(e.key, -e.value, Colors.greenAccent, isDark)),
+                                _buildBreakdownRow(
+                                  "Est. VAT (${_cartService.taxRate}%)", 
+                                  _cartService.serviceEstimateTaxAmount, 
+                                  textColor.withOpacity(0.6), 
+                                  isDark
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text("Est. Grand Total", style: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 13)),
+                                    Text(
+                                      CurrencyFormatter.format(_cartService.serviceEstimateTotalAmount),
+                                      style: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 13)
+                                    ),
+                                  ],
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4, bottom: 8),
+                                  child: Text("Payable only after on-site inspection", style: TextStyle(color: Colors.orangeAccent.withOpacity(0.7), fontSize: 10, fontStyle: FontStyle.italic)),
+                                ),
+                                const Divider(thickness: 1),
+                                const SizedBox(height: 8),
+                             ],
+
+                             if (widget.serviceModel.fulfillmentMode == 'deployment')
+                               const Align(
+                                 alignment: Alignment.centerLeft,
+                                 child: Padding(
+                                   padding: EdgeInsets.only(bottom: 8),
+                                   child: Text("PAYABLE NOW", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
+                                 ),
+                               ),
+
+                             _buildBreakdownRow(
+                               widget.serviceModel.fulfillmentMode == 'deployment' ? "Inspection Fee" : "Total Items", 
+                               widget.serviceModel.fulfillmentMode == 'deployment' && _cartService.deliveryLocation == null 
+                                 ? null 
+                                 : _cartService.serviceTotalAmount, 
+                               textColor, 
+                               isDark
+                             ),
+                             
+                             if (widget.serviceModel.fulfillmentMode != 'deployment' && _cartService.laundryTotalDiscount > 0)
+                               _buildBreakdownRow("Discount", -_cartService.laundryTotalDiscount, Colors.greenAccent, isDark),
+                             
+                             if (widget.serviceModel.fulfillmentMode != 'deployment')
+                               _buildBreakdownRow("VAT (${_cartService.taxRate}%)", _cartService.serviceTaxAmount, textColor, isDark),
+                             
+                             const SizedBox(height: 8),
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 Text(
+                                   widget.serviceModel.fulfillmentMode == 'deployment' ? "Total Due Now" : "Grand Total (est.)", 
+                                   style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)
+                                 ),
+                                 Text(
+                                   widget.serviceModel.fulfillmentMode == 'deployment' && _cartService.deliveryLocation == null
+                                     ? "Pending Address"
+                                     : CurrencyFormatter.format(_cartService.totalAmount),
+                                   style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)
+                                 ),
+                               ],
+                             ),
+                           ],
+                         ),
+                      ],
                     ],
                   ),
-                 const SizedBox(height: 15),
-                 
-                 // Proceed Button
-                 SizedBox(
-                   width: double.infinity,
-                   child: ElevatedButton(
-                     style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        shadowColor: AppTheme.primaryColor.withValues(alpha: 0.5),
-                        elevation: 10,
-                      ),
-                     onPressed: _proceedToCheckout,
-                     child: const Text("PROCEED TO CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold)),
-                   ),
-                 ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
+                ),
+              ),
+              
+              const SizedBox(height: 12),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), // Raise it from bottom
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                         backgroundColor: AppTheme.primaryColor,
+                         foregroundColor: Colors.white,
+                         padding: const EdgeInsets.symmetric(vertical: 18),
+                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                         shadowColor: AppTheme.primaryColor.withValues(alpha: 0.5),
+                         elevation: 10,
+                       ),
+                      onPressed: _proceedToCheckout,
+                      child: const Text("PROCEED TO CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                ),
+              ),
 
-  Widget _buildBreakdownRow(String label, double amount, Color color, bool isDark) {
+          ],
+        ),
+      );
+    },
+  );
+}
+
+  Widget _buildBreakdownRow(String label, double? amount, Color color, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -514,13 +608,11 @@ class _BookingSheetState extends State<BookingSheet> {
         children: [
           Text(label, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13)),
           Text(
-            CurrencyFormatter.format(amount),
-            style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w500)
+            amount == null ? "Pending" : CurrencyFormatter.format(amount),
+            style: TextStyle(color: amount == null ? Colors.orangeAccent : color, fontSize: 13, fontWeight: FontWeight.w500)
           ),
         ],
       ),
     );
   }
 }
-
-

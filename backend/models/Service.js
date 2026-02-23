@@ -41,6 +41,14 @@ const ServiceSchema = new mongoose.Schema({
         enum: ['factory', 'onsite', 'none'],
         default: 'none'
     },
+    typeLabel: {
+        type: String,
+        default: 'Select Type'
+    },
+    subTypeLabel: {
+        type: String,
+        default: 'Service Type'
+    },
     quoteRequired: {
         type: Boolean,
         default: false
@@ -49,6 +57,14 @@ const ServiceSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    deploymentLocation: {
+        lat: { type: Number },
+        lng: { type: Number }
+    },
+    inspectionFeeZones: [{
+        radiusKm: { type: Number },
+        fee: { type: Number }
+    }],
     // Global State
     isActive: {
         type: Boolean,
@@ -75,6 +91,8 @@ const ServiceSchema = new mongoose.Schema({
         customName: { type: String }, // If set, overrides global name
         customDescription: { type: String },
         customImage: { type: String }, // [FIX] Added image override
+        customTypeLabel: { type: String },
+        customSubTypeLabel: { type: String },
         discountPercentage: { type: Number }, // Can differ from global
         discountLabel: { type: String },
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../models/service_model.dart';
 import '../../../../services/api_service.dart';
 import '../../../../services/content_service.dart';
@@ -88,13 +89,22 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
   late TextEditingController _bannerController;
   late TextEditingController _discountController;
   late TextEditingController _discountLabelController;
+  late TextEditingController _inspectionFeeController;
+  late TextEditingController _typeLabelController;
+  late TextEditingController _subTypeLabelController;
   
   bool _isLocked = false;
+  bool _quoteRequired = false;
+  double _inspectionFee = 0.0;
+  LatLng? _deploymentLocation;
+  List<InspectionZone> _inspectionZones = [];
+  
   List<ServiceItem> _items = [];
   List<ServiceVariant> _variants = [];
   String _imageUrl = "assets/images/service_laundry.png"; 
   String _color = "0xFF2196F3"; 
   String _icon = "local_laundry_service"; 
+  String _fulfillmentMode = "logistics"; 
   bool _isSaving = false;
 
   @override
@@ -105,14 +115,23 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
     _bannerController = TextEditingController(text: s?.lockedLabel ?? "Coming Soon");
     _discountController = TextEditingController(text: s?.discountPercentage.toString() ?? "0");
     _discountLabelController = TextEditingController(text: s?.discountLabel ?? "");
+    _inspectionFeeController = TextEditingController(text: s?.inspectionFee.toString() ?? "0");
+    _typeLabelController = TextEditingController(text: s?.typeLabel ?? "Select Type");
+    _subTypeLabelController = TextEditingController(text: s?.subTypeLabel ?? "Service Type");
     
     _isLocked = s?.isLocked ?? false;
+    _quoteRequired = s?.quoteRequired ?? false;
+    _inspectionFee = s?.inspectionFee ?? 0.0;
+    _deploymentLocation = s?.deploymentLocation;
+    _inspectionZones = s != null ? List.from(s.inspectionFeeZones) : [];
+    
     _items = s != null ? List.from(s.items) : [];
     _variants = s != null ? List.from(s.serviceTypes) : [];
     if (s != null) {
         _imageUrl = s.image;
         _color = s.color;
         _icon = s.icon;
+        _fulfillmentMode = s.fulfillmentMode;
     }
 
     if (widget.saveTrigger != null) {
@@ -131,6 +150,9 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
     _bannerController.dispose();
     _discountController.dispose();
     _discountLabelController.dispose();
+    _inspectionFeeController.dispose();
+    _typeLabelController.dispose();
+    _subTypeLabelController.dispose();
     super.dispose();
   }
 
@@ -184,8 +206,15 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
       "lockedLabel": _bannerController.text,
       "discountPercentage": double.tryParse(_discountController.text) ?? 0,
       "discountLabel": _discountLabelController.text,
+      "typeLabel": _typeLabelController.text,
+      "subTypeLabel": _subTypeLabelController.text,
+      "fulfillmentMode": _fulfillmentMode,
       "items": _items.map((e) => e.toJson()).toList(),
       "serviceTypes": _variants.map((e) => e.toJson()).toList(),
+      "quoteRequired": _quoteRequired,
+      "inspectionFee": double.tryParse(_inspectionFeeController.text) ?? 0,
+      "deploymentLocation": _deploymentLocation != null ? {"lat": _deploymentLocation!.latitude, "lng": _deploymentLocation!.longitude} : null,
+      "inspectionFeeZones": _inspectionZones.map((z) => z.toJson()).toList(),
     };
     
     if (widget.scopeBranch != null) {
@@ -237,7 +266,7 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF202020),
           title: Text(
-            index == null ? "Add Cloth Type" : "Edit Item", 
+            index == null ? "Add Item Type" : "Edit Item", 
             style: const TextStyle(color: Colors.white)
           ),
           content: SizedBox(
@@ -251,7 +280,7 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                     controller: nameCtrl, 
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
-                      labelText: "Cloth Name (e.g. Shirt)", 
+                      labelText: "Item Name (e.g. Shirt, Rug, Room)", 
                       labelStyle: TextStyle(color: Colors.white54), 
                       enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24))
                     )
@@ -450,6 +479,24 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                           ),
                         ),
                         const SizedBox(height: 15),
+                        DropdownButtonFormField<String>(
+                          value: _fulfillmentMode,
+                          dropdownColor: const Color(0xFF2A2A2A),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            labelText: "Fulfillment Mode",
+                            labelStyle: TextStyle(color: Colors.white54),
+                            border: OutlineInputBorder(),
+                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: "logistics", child: Text("Logistics (Pickup & Delivery)")),
+                            DropdownMenuItem(value: "deployment", child: Text("Deployment (On-site Inspection)")),
+                            DropdownMenuItem(value: "bulky", child: Text("Bulky (Large Item Treatment)")),
+                          ],
+                          onChanged: (val) => setState(() => _fulfillmentMode = val!),
+                        ),
+                        const SizedBox(height: 15),
                          Row(
                           children: [
                             Expanded(
@@ -485,6 +532,153 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                   ),
                 ),
                 
+                GlassContainer(
+                  opacity: 0.1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Custom Field Labels", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 5),
+                        const Text("Change how these appear in the booking sheet", style: TextStyle(color: Colors.white30, fontSize: 11)),
+                        const SizedBox(height: 15),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _typeLabelController,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  labelText: "Type Label (e.g. Select Type)",
+                                  labelStyle: TextStyle(color: Colors.white54),
+                                  border: OutlineInputBorder(),
+                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _subTypeLabelController,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  labelText: "Sub-Type Label (e.g. Service Type)",
+                                  labelStyle: TextStyle(color: Colors.white54),
+                                  border: OutlineInputBorder(),
+                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                GlassContainer(
+                  opacity: 0.1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Deployment & Inspection", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 10),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text("Quote Required", style: TextStyle(color: Colors.white, fontSize: 14)),
+                          subtitle: const Text("Users pay an inspection fee first", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                          value: _quoteRequired,
+                          onChanged: (val) => setState(() => _quoteRequired = val),
+                        ),
+                        if (_quoteRequired) ...[
+                          const SizedBox(height: 10),
+                          TextFormField(
+                            controller: _inspectionFeeController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: const InputDecoration(
+                              labelText: "Base Inspection Fee (₦)",
+                              labelStyle: TextStyle(color: Colors.white54),
+                              border: OutlineInputBorder(),
+                              enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24))
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          const Text("Deployment Origin (Origin Coordinates)", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  initialValue: _deploymentLocation?.latitude.toString() ?? "0.0",
+                                  keyboardType: TextInputType.number,
+                                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                                  decoration: const InputDecoration(labelText: "Latitude", isDense: true),
+                                  onChanged: (val) => _deploymentLocation = LatLng(double.tryParse(val) ?? 0.0, _deploymentLocation?.longitude ?? 0.0),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextFormField(
+                                  initialValue: _deploymentLocation?.longitude.toString() ?? "0.0",
+                                  keyboardType: TextInputType.number,
+                                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                                  decoration: const InputDecoration(labelText: "Longitude", isDense: true),
+                                  onChanged: (val) => _deploymentLocation = LatLng(_deploymentLocation?.latitude ?? 0.0, double.tryParse(val) ?? 0.0),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          const Text("Distance-Based Inspection Zones", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          ..._inspectionZones.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final zone = entry.value;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: zone.radiusKm.toString(),
+                                      keyboardType: TextInputType.number,
+                                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                                      decoration: const InputDecoration(labelText: "Radius (km)", isDense: true),
+                                      onChanged: (val) => _inspectionZones[i] = InspectionZone(radiusKm: double.tryParse(val) ?? zone.radiusKm, fee: zone.fee),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: zone.fee.toString(),
+                                      keyboardType: TextInputType.number,
+                                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                                      decoration: const InputDecoration(labelText: "Fee (₦)", isDense: true),
+                                      onChanged: (val) => _inspectionZones[i] = InspectionZone(radiusKm: zone.radiusKm, fee: double.tryParse(val) ?? zone.fee),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle, color: Colors.white24, size: 20),
+                                    onPressed: () => setState(() => _inspectionZones.removeAt(i)),
+                                  )
+                                ],
+                              ),
+                            );
+                          }),
+                          TextButton.icon(
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text("Add Zone"),
+                            onPressed: () => setState(() => _inspectionZones.add(InspectionZone(radiusKm: 0, fee: 0))),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 
                 if (_variants.isNotEmpty) 
@@ -548,7 +742,7 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(widget.scopeBranch != null ? "Edit Prices (${widget.scopeBranch!.name})" : "Cloth Types & Prices", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(widget.scopeBranch != null ? "Edit Prices (${widget.scopeBranch!.name})" : "Types & Prices", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                     IconButton(
                       icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor), 
                       onPressed: _addItem

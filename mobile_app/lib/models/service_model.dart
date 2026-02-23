@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 
 class ServiceModel {
   final String id;
@@ -21,6 +22,10 @@ class ServiceModel {
   final String cleaningLocation; // [NEW] factory | onsite | none
   final bool quoteRequired; // [NEW]
   final double inspectionFee; // [NEW]
+  final LatLng? deploymentLocation; // [NEW]
+  final List<InspectionZone> inspectionFeeZones; // [NEW]
+  final String typeLabel; // [NEW] e.g. "Select Type", "Select Frequency"
+  final String subTypeLabel; // [NEW] e.g. "Service Type", "Square Meters"
 
   ServiceModel({
     required this.id,
@@ -43,6 +48,10 @@ class ServiceModel {
     this.cleaningLocation = 'none',
     this.quoteRequired = false,
     this.inspectionFee = 0.0,
+    this.deploymentLocation,
+    this.inspectionFeeZones = const [],
+    this.typeLabel = 'Select Type',
+    this.subTypeLabel = 'Service Type',
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
@@ -50,6 +59,11 @@ class ServiceModel {
       if (val is num) return val.toDouble();
       if (val is String) return double.tryParse(val) ?? 0.0;
       return 0.0;
+    }
+
+    LatLng? parseLocation(dynamic loc) {
+      if (loc == null || loc['lat'] == null || loc['lng'] == null) return null;
+      return LatLng(parseDouble(loc['lat']), parseDouble(loc['lng']));
     }
 
     return ServiceModel(
@@ -70,6 +84,10 @@ class ServiceModel {
       cleaningLocation: json['cleaningLocation'] ?? 'none',
       quoteRequired: json['quoteRequired'] ?? false,
       inspectionFee: parseDouble(json['inspectionFee']),
+      deploymentLocation: parseLocation(json['deploymentLocation']),
+      inspectionFeeZones: (json['inspectionFeeZones'] as List?)?.map((z) => InspectionZone.fromJson(z)).toList() ?? [],
+      typeLabel: json['typeLabel'] ?? 'Select Type',
+      subTypeLabel: json['subTypeLabel'] ?? 'Service Type',
       items: (json['items'] as List?)?.map((e) => ServiceItem.fromJson(e)).toList() ?? [],
       serviceTypes: (json['serviceTypes'] as List?)?.map((e) => ServiceVariant.fromJson(e)).toList() ?? [],
       branchPricing: (json['branchPricing'] as List?)?.map((e) => BranchPrice.fromJson(e)).toList() ?? [],
@@ -108,6 +126,10 @@ class ServiceModel {
       'cleaningLocation': cleaningLocation,
       'quoteRequired': quoteRequired,
       'inspectionFee': inspectionFee,
+      'deploymentLocation': deploymentLocation != null ? {'lat': deploymentLocation!.latitude, 'lng': deploymentLocation!.longitude} : null,
+      'inspectionFeeZones': inspectionFeeZones.map((z) => z.toJson()).toList(),
+      'typeLabel': typeLabel,
+      'subTypeLabel': subTypeLabel,
       'items': items.map((e) => e.toJson()).toList(),
       'serviceTypes': serviceTypes.map((e) => e.toJson()).toList(),
       'branchPricing': branchPricing.map((e) => e.toJson()).toList(),
@@ -211,5 +233,24 @@ class BranchPrice {
     'branchId': branchId,
     'isAvailable': isAvailable,
     'price': priceOverride,
+  };
+}
+
+class InspectionZone {
+  final double radiusKm;
+  final double fee;
+
+  InspectionZone({required this.radiusKm, required this.fee});
+
+  factory InspectionZone.fromJson(Map<String, dynamic> json) {
+    return InspectionZone(
+      radiusKm: (json['radiusKm'] as num?)?.toDouble() ?? 0.0,
+      fee: (json['fee'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'radiusKm': radiusKm,
+    'fee': fee,
   };
 }
