@@ -49,13 +49,19 @@ class TermsAcceptanceDialog extends StatelessWidget {
               ),
               const Divider(),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Text(
-                    content,
-                    style: TextStyle(
-                      color: isDark ? Colors.white70 : Colors.black87,
-                      fontSize: 14,
-                      height: 1.5,
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Text(
+                        content,
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black87,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                      ),
                     ),
                   ),
                 ),
