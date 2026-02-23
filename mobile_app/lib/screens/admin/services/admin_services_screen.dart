@@ -217,23 +217,6 @@ class _AdminServicesBodyState extends State<AdminServicesBody> {
                 onPressed: _toggleEditMode,
                 child: Icon(_isEditMode ? Icons.check : Icons.edit, color: Colors.white, size: 20),
               ),
-              const SizedBox(height: 15),
-              FloatingActionButton(
-                heroTag: "addServiceBtn",
-                backgroundColor: AppTheme.primaryColor,
-                child: const Icon(Icons.add, color: Colors.white),
-                onPressed: () async {
-                  final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-                  await Navigator.push(
-                    context, 
-                    MaterialPageRoute(builder: (_) => AdminEditServiceScreen(
-                      service: null, // Create Mode
-                      scopeBranch: branchProvider.selectedBranch
-                    ))
-                  );
-                  _loadData();
-                },
-              ),
             ],
           ),
         ),

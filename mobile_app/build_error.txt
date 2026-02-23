@@ -1,417 +1,168 @@
-Resolving dependencies...
-Downloading packages...
-  _flutterfire_internals 1.3.35 (1.3.66 available)
-  characters 1.4.0 (1.4.1 available)
-  connectivity_plus 5.0.2 (7.0.0 available)
-  connectivity_plus_platform_interface 1.2.4 (2.0.1 available)
-  cross_file 0.3.5+1 (0.3.5+2 available)
-  dbus 0.7.11 (0.7.12 available)
-  dio 5.9.0 (5.9.1 available)
-  ffi 2.1.4 (2.1.5 available)
-  firebase_core 2.32.0 (4.4.0 available)
-  firebase_core_platform_interface 5.4.2 (6.0.2 available)
-  firebase_core_web 2.24.0 (3.4.0 available)
-  firebase_messaging 14.7.10 (16.1.1 available)
-  firebase_messaging_platform_interface 4.5.37 (4.7.6 available)
-  firebase_messaging_web 3.5.18 (4.1.2 available)
-  fl_chart 0.68.0 (1.1.1 available)
-  flutter_launcher_icons 0.13.1 (0.14.4 available)
-  flutter_lints 3.0.2 (6.0.0 available)
-  flutter_local_notifications 17.2.4 (20.0.0 available)
-  flutter_local_notifications_linux 4.0.1 (7.0.0 available)
-  flutter_local_notifications_platform_interface 7.2.0 (10.0.0 available)
-  flutter_map 6.2.1 (8.2.2 available)
-  flutter_riverpod 2.6.1 (3.2.1 available)
-  flutter_secure_storage 9.2.4 (10.0.0 available)
-  flutter_secure_storage_linux 1.2.3 (3.0.0 available)
-  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
-  flutter_secure_storage_platform_interface 1.1.2 (2.0.1 available)
-  flutter_secure_storage_web 1.2.1 (2.1.0 available)
-  flutter_secure_storage_windows 3.1.2 (4.1.0 available)
-  geolocator 11.1.0 (14.0.2 available)
-  geolocator_android 4.6.2 (5.0.2 available)
-  geolocator_web 3.0.0 (4.1.3 available)
-  google_fonts 6.3.3 (8.0.1 available)
-! http 1.6.0 (overridden)
-  image 4.5.4 (4.7.2 available)
-  image_cropper 8.1.0 (11.0.0 available)
-  image_cropper_for_web 6.1.0 (7.0.0 available)
-! image_cropper_platform_interface 7.1.0 (overridden) (8.0.0 available)
-  image_picker_android 0.8.13+10 (0.8.13+13 available)
-  image_picker_ios 0.8.13+3 (0.8.13+6 available)
-! intl 0.19.0 (overridden) (0.20.2 available)
-  js 0.6.7 (0.7.2 available)
-  json_annotation 4.9.0 (4.10.0 available)
-  lints 3.0.0 (6.1.0 available)
-  matcher 0.12.17 (0.12.18 available)
-  material_color_utilities 0.11.1 (0.13.0 available)
-  meta 1.17.0 (1.18.1 available)
-  mgrs_dart 2.0.0 (3.0.0 available)
-  path_provider_foundation 2.5.1 (2.6.0 available)
-  permission_handler 11.4.0 (12.0.1 available)
-  permission_handler_android 12.1.0 (13.0.1 available)
-  proj4dart 2.1.0 (3.0.0 available)
-  riverpod 2.6.1 (3.2.1 available)
-  shared_preferences_android 2.4.18 (2.4.20 available)
-  source_span 1.10.1 (1.10.2 available)
-  test_api 0.7.7 (0.7.9 available)
-  timezone 0.9.4 (0.11.0 available)
-  unicode 0.3.1 (1.1.9 available)
-  video_player_avfoundation 2.8.10 (2.9.1 available)
-  webview_flutter_wkwebview 3.23.5 (3.23.6 available)
-Got dependencies!
-58 packages have newer versions incompatible with dependency constraints.
-Try `flutter pub outdated` for more information.
-lib/screens/admin/users/admin_users_screen.dart:133:39: Error: String starting with " must end with ".
-                         child: Text(\"All\", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))
-                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/users/admin_users_screen.dart:131:54: Error: Can't find ')' to match '('.
-                      const DropdownMenuItem<String?>(
-                                                     ^
-lib/screens/admin/users/admin_users_screen.dart:133:38: Error: Expected an identifier, but got '\'.
-Try inserting an identifier before '\'.
-                         child: Text(\"All\", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))
-                                     ^
-lib/screens/admin/users/admin_users_screen.dart:133:39: Error: Expected ',' before this.
-                         child: Text(\"All\", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))
-                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/users/admin_users_screen.dart:133:37: Error: Too many positional arguments: 1 allowed, but 2 found.
-Try removing the extra positional arguments.
-                         child: Text(\"All\", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))
-                                    ^
-../../../Development/flutter/packages/flutter/lib/src/widgets/text.dart:501:9: Context: Found this candidate, but the arguments don't match.
-  const Text(
-        ^^^^
-lib/screens/admin/users/admin_users_screen.dart:135:23: Error: Expected an identifier, but got '...'.
-Try inserting an identifier before '...'.
-                      ...branchProvider.branches.map((b) => DropdownMenuItem(
-                      ^^^
-lib/screens/admin/users/admin_users_screen.dart:135:26: Error: Expected ',' before this.
-                      ...branchProvider.branches.map((b) => DropdownMenuItem(
-                         ^^^^^^^^^^^^^^
-lib/screens/admin/users/admin_users_screen.dart:135:26: Error: Not a constant expression.
-                      ...branchProvider.branches.map((b) => DropdownMenuItem(
-                         ^^^^^^^^^^^^^^
-lib/screens/admin/users/admin_users_screen.dart:136:32: Error: Not a constant expression.
-                        value: b.id,
-                               ^
-lib/screens/admin/users/admin_users_screen.dart:137:37: Error: Not a constant expression.
-                        child: Text(b.name, style: const TextStyle(color: Colors.white70, fontSize: 12))
-                                    ^
-lib/screens/admin/users/admin_users_screen.dart:135:54: Error: Not a constant expression.
-                      ...branchProvider.branches.map((b) => DropdownMenuItem(
-                                                     ^^^
-lib/screens/admin/users/admin_users_screen.dart:135:50: Error: Method invocation is not a constant expression.
-                      ...branchProvider.branches.map((b) => DropdownMenuItem(
-                                                 ^^^
-lib/screens/admin/users/admin_users_screen.dart:131:54: Error: Too many positional arguments: 0 allowed, but 2 found.
-Try removing the extra positional arguments.
-                      const DropdownMenuItem<String?>(
-                                                     ^
-../../../Development/flutter/packages/flutter/lib/src/material/dropdown.dart:824:9: Context: Found this candidate, but the arguments don't match.
-  const DropdownMenuItem({
-        ^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:143:48: Error: Can't find '}' to match '{'.
-  void _showDeniedDialog(BuildContext context) {
-                                               ^
-lib/screens/admin/cms/admin_cms_screen.dart:21:42: Error: Can't find '}' to match '{'.
-      builder: (context, authService, _) {
-                                         ^
-lib/screens/admin/cms/admin_cms_screen.dart:50:36: Error: Local variable '_checkAndNavigate' can't be referenced before it is declared.
-                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Home Screen", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'home')))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:125:8: Context: This is the declaration of the variable '_checkAndNavigate'.
-  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:57:36: Error: Local variable '_checkAndNavigate' can't be referenced before it is declared.
-                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Ads & Banners", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads')))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:125:8: Context: This is the declaration of the variable '_checkAndNavigate'.
-  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:64:36: Error: Local variable '_checkAndNavigate' can't be referenced before it is declared.
-                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Branding", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding')))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:125:8: Context: This is the declaration of the variable '_checkAndNavigate'.
-  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:72:36: Error: Local variable '_checkAndNavigate' can't be referenced before it is declared.
-                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Promotions", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSPromotionsScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:125:8: Context: This is the declaration of the variable '_checkAndNavigate'.
-  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:84:36: Error: Local variable '_checkAndNavigate' can't be referenced before it is declared.
-                      onTap: () => _checkAndNavigate(context, 'manageOrders', "Orders", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:125:8: Context: This is the declaration of the variable '_checkAndNavigate'.
-  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:93:36: Error: Local variable '_checkAndNavigate' can't be referenced before it is declared.
-                      onTap: () => _checkAndNavigate(context, 'manageServices', "Services", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:125:8: Context: This is the declaration of the variable '_checkAndNavigate'.
-  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:102:36: Error: Local variable '_checkAndNavigate' can't be referenced before it is declared.
-                      onTap: () => _checkAndNavigate(context, 'manageProducts', "Product Categories", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCategoriesScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:125:8: Context: This is the declaration of the variable '_checkAndNavigate'.
-  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:110:36: Error: Local variable '_checkAndNavigate' can't be referenced before it is declared.
-                      onTap: () => _checkAndNavigate(context, 'manageProducts', "Products", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:125:8: Context: This is the declaration of the variable '_checkAndNavigate'.
-  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:118:36: Error: Local variable '_checkAndNavigate' can't be referenced before it is declared.
-                      onTap: () => _checkAndNavigate(context, 'manageProducts', "Reviews", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewModerationScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:125:8: Context: This is the declaration of the variable '_checkAndNavigate'.
-  void _checkAndNavigate(BuildContext context, String permissionKey, String featureName, VoidCallback onGranted) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:138:7: Error: Local variable '_showDeniedDialog' can't be referenced before it is declared.
-      _showDeniedDialog(context);
-      ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:143:8: Context: This is the declaration of the variable '_showDeniedDialog'.
-  void _showDeniedDialog(BuildContext context) {
-       ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:50:36: Error: The method '_checkAndNavigate' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_checkAndNavigate'.
-                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Home Screen", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'home')))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:57:36: Error: The method '_checkAndNavigate' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_checkAndNavigate'.
-                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Ads & Banners", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads')))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:64:36: Error: The method '_checkAndNavigate' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_checkAndNavigate'.
-                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Branding", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding')))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:72:36: Error: The method '_checkAndNavigate' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_checkAndNavigate'.
-                      onTap: () => _checkAndNavigate(context, 'manageCMS', "Promotions", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSPromotionsScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:84:36: Error: The method '_checkAndNavigate' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_checkAndNavigate'.
-                      onTap: () => _checkAndNavigate(context, 'manageOrders', "Orders", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminOrdersScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:93:36: Error: The method '_checkAndNavigate' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_checkAndNavigate'.
-                      onTap: () => _checkAndNavigate(context, 'manageServices', "Services", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:102:36: Error: The method '_checkAndNavigate' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_checkAndNavigate'.
-                      onTap: () => _checkAndNavigate(context, 'manageProducts', "Product Categories", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCategoriesScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:110:36: Error: The method '_checkAndNavigate' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_checkAndNavigate'.
-                      onTap: () => _checkAndNavigate(context, 'manageProducts', "Products", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:118:36: Error: The method '_checkAndNavigate' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_checkAndNavigate'.
-                      onTap: () => _checkAndNavigate(context, 'manageProducts', "Reviews", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewModerationScreen()))),
-                                   ^^^^^^^^^^^^^^^^^
-lib/screens/admin/cms/admin_cms_screen.dart:138:7: Error: The method '_showDeniedDialog' isn't defined for the type 'AdminCMSScreen'.
- - 'AdminCMSScreen' is from 'package:laundry_app/screens/admin/cms/admin_cms_screen.dart' ('lib/screens/admin/cms/admin_cms_screen.dart').
-Try correcting the name to the name of an existing method, or defining a method named '_showDeniedDialog'.
-      _showDeniedDialog(context);
-      ^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:346:69: Error: String starting with " must end with ".
-                        DropdownMenuItem(value: 'all', child: Text(\"All Users\")),
-                                                                    ^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:347:71: Error: String starting with " must end with ".
-                        DropdownMenuItem(value: 'benin', child: Text(\"Users in Benin\")),
-                                                                      ^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:348:71: Error: String starting with " must end with ".
-                        DropdownMenuItem(value: 'abuja', child: Text(\"Users in Abuja\")),
-                                                                      ^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:349:79: Error: String starting with " must end with ".
-                        DropdownMenuItem(value: 'active_orders', child: Text(\"Users with Active Orders\")),
-                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:350:82: Error: String starting with " must end with ".
-                        DropdownMenuItem(value: 'cancelled_orders', child: Text(\"Users with Cancelled Orders\")),
-                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:351:77: Error: String starting with " must end with ".
-                        DropdownMenuItem(value: 'zero_orders', child: Text(\"Users with Zero Orders\")),
-                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:351:75: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'zero_orders', child: Text(\"Users with Zero Orders\")),
-                                                                          ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:351:41: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'zero_orders', child: Text(\"Users with Zero Orders\")),
-                                        ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:350:80: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'cancelled_orders', child: Text(\"Users with Cancelled Orders\")),
-                                                                               ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:350:41: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'cancelled_orders', child: Text(\"Users with Cancelled Orders\")),
-                                        ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:349:77: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'active_orders', child: Text(\"Users with Active Orders\")),
-                                                                            ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:349:41: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'active_orders', child: Text(\"Users with Active Orders\")),
-                                        ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:348:69: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'abuja', child: Text(\"Users in Abuja\")),
-                                                                    ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:348:41: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'abuja', child: Text(\"Users in Abuja\")),
-                                        ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:347:69: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'benin', child: Text(\"Users in Benin\")),
-                                                                    ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:347:41: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'benin', child: Text(\"Users in Benin\")),
-                                        ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:346:67: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'all', child: Text(\"All Users\")),
-                                                                  ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:346:41: Error: Can't find ')' to match '('.
-                        DropdownMenuItem(value: 'all', child: Text(\"All Users\")),
-                                        ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:346:68: Error: Expected an identifier, but got '\'.
-Try inserting an identifier before '\'.
-                        DropdownMenuItem(value: 'all', child: Text(\"All Users\")),
-                                                                   ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:346:69: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'all', child: Text(\"All Users\")),
-                                                                    ^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:347:25: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'benin', child: Text(\"Users in Benin\")),
-                        ^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:347:70: Error: Expected an identifier, but got '\'.
-Try inserting an identifier before '\'.
-                        DropdownMenuItem(value: 'benin', child: Text(\"Users in Benin\")),
-                                                                     ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:347:71: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'benin', child: Text(\"Users in Benin\")),
-                                                                      ^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:348:25: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'abuja', child: Text(\"Users in Abuja\")),
-                        ^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:348:70: Error: Expected an identifier, but got '\'.
-Try inserting an identifier before '\'.
-                        DropdownMenuItem(value: 'abuja', child: Text(\"Users in Abuja\")),
-                                                                     ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:348:71: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'abuja', child: Text(\"Users in Abuja\")),
-                                                                      ^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:349:25: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'active_orders', child: Text(\"Users with Active Orders\")),
-                        ^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:349:78: Error: Expected an identifier, but got '\'.
-Try inserting an identifier before '\'.
-                        DropdownMenuItem(value: 'active_orders', child: Text(\"Users with Active Orders\")),
-                                                                             ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:349:79: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'active_orders', child: Text(\"Users with Active Orders\")),
-                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:350:25: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'cancelled_orders', child: Text(\"Users with Cancelled Orders\")),
-                        ^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:350:81: Error: Expected an identifier, but got '\'.
-Try inserting an identifier before '\'.
-                        DropdownMenuItem(value: 'cancelled_orders', child: Text(\"Users with Cancelled Orders\")),
-                                                                                ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:350:82: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'cancelled_orders', child: Text(\"Users with Cancelled Orders\")),
-                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:351:25: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'zero_orders', child: Text(\"Users with Zero Orders\")),
-                        ^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:351:76: Error: Expected an identifier, but got '\'.
-Try inserting an identifier before '\'.
-                        DropdownMenuItem(value: 'zero_orders', child: Text(\"Users with Zero Orders\")),
-                                                                           ^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:351:77: Error: Expected ',' before this.
-                        DropdownMenuItem(value: 'zero_orders', child: Text(\"Users with Zero Orders\")),
-                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:351:75: Error: Too many positional arguments: 1 allowed, but 2 found.
-Try removing the extra positional arguments.
-                        DropdownMenuItem(value: 'zero_orders', child: Text(\"Users with Zero Orders\")),
-                                                                          ^
-../../../Development/flutter/packages/flutter/lib/src/widgets/text.dart:501:9: Context: Found this candidate, but the arguments don't match.
-  const Text(
-        ^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:350:80: Error: Too many positional arguments: 1 allowed, but 3 found.
-Try removing the extra positional arguments.
-                        DropdownMenuItem(value: 'cancelled_orders', child: Text(\"Users with Cancelled Orders\")),
-                                                                               ^
-../../../Development/flutter/packages/flutter/lib/src/widgets/text.dart:501:9: Context: Found this candidate, but the arguments don't match.
-  const Text(
-        ^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:349:77: Error: Too many positional arguments: 1 allowed, but 3 found.
-Try removing the extra positional arguments.
-                        DropdownMenuItem(value: 'active_orders', child: Text(\"Users with Active Orders\")),
-                                                                            ^
-../../../Development/flutter/packages/flutter/lib/src/widgets/text.dart:501:9: Context: Found this candidate, but the arguments don't match.
-  const Text(
-        ^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:348:69: Error: Too many positional arguments: 1 allowed, but 3 found.
-Try removing the extra positional arguments.
-                        DropdownMenuItem(value: 'abuja', child: Text(\"Users in Abuja\")),
-                                                                    ^
-../../../Development/flutter/packages/flutter/lib/src/widgets/text.dart:501:9: Context: Found this candidate, but the arguments don't match.
-  const Text(
-        ^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:347:69: Error: Too many positional arguments: 1 allowed, but 3 found.
-Try removing the extra positional arguments.
-                        DropdownMenuItem(value: 'benin', child: Text(\"Users in Benin\")),
-                                                                    ^
-../../../Development/flutter/packages/flutter/lib/src/widgets/text.dart:501:9: Context: Found this candidate, but the arguments don't match.
-  const Text(
-        ^^^^
-lib/screens/admin/notifications/admin_notification_dashboard.dart:346:67: Error: Too many positional arguments: 1 allowed, but 3 found.
-Try removing the extra positional arguments.
-                        DropdownMenuItem(value: 'all', child: Text(\"All Users\")),
-                                                                  ^
-../../../Development/flutter/packages/flutter/lib/src/widgets/text.dart:501:9: Context: Found this candidate, but the arguments don't match.
-  const Text(
-        ^^^^
-Target kernel_snapshot_program failed: Exception
-#0      KernelSnapshot.build (package:flutter_tools/src/build_system/targets/common.dart:289:7)
+Compiling lib/main.dart for the Web...                          
+Wasm dry run findings:
+Found incompatibilities with WebAssembly.
+
+package:flutter_secure_storage_web/flutter_secure_storage_web.dart 5:1 - dart:html unsupported (0)
+package:flutter_secure_storage_web/src/subtle.dart 21:1 - dart:html unsupported (0)
+package:geolocator_web/src/html_geolocation_manager.dart 1:1 - dart:html unsupported (0)
+package:geolocator_web/src/html_permissions_manager.dart 1:1 - dart:html unsupported (0)
+package:laundry_app/utils/web_audio_web.dart 1:1 - dart:js unsupported (1)
+package:js/js.dart 10:1 - dart:js unsupported (1)
+package:geolocator_web/src/utils.dart 2:1 - dart:html unsupported (0)
+package:universal_html/src/_sdk/html.dart 32:1 - dart:html unsupported (0)
+package:universal_html/src/_sdk_html_additions.dart 16:1 - dart:html unsupported (0)
+package:flutter_secure_storage_web/flutter_secure_storage_web.dart 6:1 - JS interop library 'dart:js_util' can't be imported when compiling to Wasm. (2)
+package:flutter_secure_storage_web/src/subtle.dart 22:1 - JS interop library 'dart:js_util' can't be imported when compiling to Wasm. (2)
+package:flutter_secure_storage_web/src/subtle.dart 26:1 - JS interop library 'package:js/js.dart' can't be imported when compiling to Wasm. (2)
+file:///Users/directorm/.pub-cache/hosted/pub.dev/image-4.5.4/lib/src/exif/ifd_directory.dart 174:26 - avoid_double_and_int_checks lint violation: Explicit check for double or int. (13)
+file:///Users/directorm/.pub-cache/hosted/pub.dev/image-4.5.4/lib/src/exif/ifd_directory.dart 183:26 - avoid_double_and_int_checks lint violation: Explicit check for double or int. (13)
+
+Consider addressing these issues to enable wasm builds. See docs for more info: https://docs.flutter.dev/platform-integration/web/wasm
+
+Use --no-wasm-dry-run to disable these warnings.
+Target dart2js failed: ProcessException: Process exited abnormally with exit code 1:
+lib/screens/admin/orders/admin_orders_screen.dart:17:13:
+Error: The final variable 'initialTabIndex' must be initialized.
+  final int initialTabIndex;
+            ^^^^^^^^^^^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:18:17:
+Error: The final variable 'fulfillmentMode' must be initialized.
+  final String? fulfillmentMode; // [NEW] logistics | deployment | bulky
+                ^^^^^^^^^^^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:19:3:
+Error: Can't have modifier 'const' here.
+  const AdminOrdersScreen({super.key, this.initialTabIndex = 0, this.fulfillmentMode});
+  ^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:19:87:
+Error: Expected a function body or '=>'.
+  const AdminOrdersScreen({super.key, this.initialTabIndex = 0, this.fulfillmentMode});
+                                                                                      ^
+lib/screens/admin/orders/admin_orders_screen.dart:23:1:
+Error: Expected a declaration, but got '}'.
+}
+^
+lib/screens/user/dashboard_screen.dart:797:32:
+Error: Type 'ServiceModel' not found.
+  void _handleServiceSelection(ServiceModel s, bool isDark) async {
+                               ^^^^^^^^^^^^
+lib/screens/user/dashboard_screen.dart:822:26:
+Error: Type 'ServiceModel' not found.
+  void _openBookingSheet(ServiceModel s) {
+                         ^^^^^^^^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:22:9:
+Error: 'AdminOrdersScreen' isn't a type.
+  State<AdminOrdersScreen> createState() => _AdminOrdersScreenState();
+        ^^^^^^^^^^^^^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:19:9:
+Info: This isn't a type.
+  const AdminOrdersScreen({super.key, this.initialTabIndex = 0, this.fulfillmentMode});
+        ^^^^^^^^^^^^^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:25:45:
+Error: 'AdminOrdersScreen' isn't a type.
+class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTickerProviderStateMixin {
+                                            ^^^^^^^^^^^^^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:19:9:
+Info: This isn't a type.
+  const AdminOrdersScreen({super.key, this.initialTabIndex = 0, this.fulfillmentMode});
+        ^^^^^^^^^^^^^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:17:13:
+Error: Field 'initialTabIndex' should be initialized because its type 'int' doesn't allow null.
+  final int initialTabIndex;
+            ^^^^^^^^^^^^^^^
+lib/screens/user/dashboard_screen.dart:797:32:
+Error: 'ServiceModel' isn't a type.
+  void _handleServiceSelection(ServiceModel s, bool isDark) async {
+                               ^^^^^^^^^^^^
+lib/screens/user/dashboard_screen.dart:822:26:
+Error: 'ServiceModel' isn't a type.
+  void _openBookingSheet(ServiceModel s) {
+                         ^^^^^^^^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:19:28:
+Error: Super-initializer formal parameters can only be used in generative constructors.
+  const AdminOrdersScreen({super.key, this.initialTabIndex = 0, this.fulfillmentMode});
+                           ^^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:19:39:
+Error: Field formal parameters can only be used in a constructor.
+  const AdminOrdersScreen({super.key, this.initialTabIndex = 0, this.fulfillmentMode});
+                                      ^^^^
+lib/screens/admin/orders/admin_orders_screen.dart:19:65:
+Error: Field formal parameters can only be used in a constructor.
+  const AdminOrdersScreen({super.key, this.initialTabIndex = 0, this.fulfillmentMode});
+                                                                ^^^^
+lib/widgets/booking/split_checkout_modal.dart:45:26:
+Error: Member not found: 'split_screen'.
+              Icon(Icons.split_screen, size: 50, color: AppTheme.primaryColor),
+                         ^^^^^^^^^^^^
+lib/screens/admin/pos/admin_pos_screen.dart:397:7:
+Error: Expected ';' after this.
+      },
+      ^
+lib/screens/admin/pos/admin_pos_screen.dart:397:8:
+Error: Expected an identifier, but got ','.
+      },
+       ^
+lib/screens/admin/pos/admin_pos_screen.dart:397:8:
+Error: Unexpected token ';'.
+      },
+       ^
+lib/screens/admin/pos/admin_pos_screen.dart:398:5:
+Error: Expected an identifier, but got ')'.
+    );
+    ^
+lib/screens/admin/pos/admin_pos_screen.dart:397:8:
+Error: Expected ';' after this.
+      },
+       ^
+lib/screens/admin/pos/admin_pos_screen.dart:398:5:
+Error: Unexpected token ';'.
+    );
+    ^
+lib/screens/admin/pos/admin_pos_screen.dart:349:10:
+Error: A non-null value must be returned since the return type 'Widget' doesn't allow null.
+ - 'Widget' is from 'package:flutter/src/widgets/framework.dart' ('../../../Development/flutter/packages/flutter/lib/src/widgets/framework.dart').
+  Widget _buildLaundrySelection() {
+         ^
+Error: Compilation failed.
+  Command: /Users/directorm/Development/flutter/bin/cache/dart-sdk/bin/dart compile js --platform-binaries=/Users/directorm/Development/flutter/bin/cache/flutter_web_sdk/kernel --invoker=flutter_tool -Ddart.vm.product=true -DFLUTTER_VERSION=3.38.5 -DFLUTTER_CHANNEL=stable -DFLUTTER_GIT_URL=https://github.com/flutter/flutter.git -DFLUTTER_FRAMEWORK_REVISION=f6ff1529fd -DFLUTTER_ENGINE_REVISION=1527ae0ec5 -DFLUTTER_DART_VERSION=3.10.4 -DFLUTTER_WEB_USE_SKIA=true -DFLUTTER_WEB_USE_SKWASM=false -DFLUTTER_WEB_CANVASKIT_URL=https://www.gstatic.com/flutter-canvaskit/1527ae0ec577a4ef50e65f6fefcfc1326707d9bf/ --native-null-assertions --no-source-maps -O4 --minify -o /Users/directorm/Anti_Gravity/Clotheline/mobile_app/.dart_tool/flutter_build/2d98e50baed27d373fff685142756410/app.dill --packages=/Users/directorm/Anti_Gravity/Clotheline/mobile_app/.dart_tool/package_config.json --cfe-only /Users/directorm/Anti_Gravity/Clotheline/mobile_app/.dart_tool/flutter_build/2d98e50baed27d373fff685142756410/main.dart
+#0      RunResult.throwException (package:flutter_tools/src/base/process.dart:153:5)
+#1      _DefaultProcessUtils.run (package:flutter_tools/src/base/process.dart:379:19)
 <asynchronous suspension>
-#1      _BuildInstance._invokeInternal (package:flutter_tools/src/build_system/build_system.dart:895:9)
+#2      Dart2JSTarget.build (package:flutter_tools/src/build_system/targets/web.dart:207:5)
 <asynchronous suspension>
-#2      Future.wait.<anonymous closure> (dart:async/future.dart:546:21)
+#3      _BuildInstance._invokeInternal (package:flutter_tools/src/build_system/build_system.dart:895:9)
 <asynchronous suspension>
-#3      _BuildInstance.invokeTarget (package:flutter_tools/src/build_system/build_system.dart:833:32)
+#4      Future.wait.<anonymous closure> (dart:async/future.dart:546:21)
 <asynchronous suspension>
-#4      FlutterBuildSystem.build (package:flutter_tools/src/build_system/build_system.dart:653:16)
+#5      _BuildInstance.invokeTarget (package:flutter_tools/src/build_system/build_system.dart:833:32)
 <asynchronous suspension>
-#5      BundleBuilder.build (package:flutter_tools/src/bundle_builder.dart:78:32)
+#6      Future.wait.<anonymous closure> (dart:async/future.dart:546:21)
 <asynchronous suspension>
-#6      BuildBundleCommand.runCommand (package:flutter_tools/src/commands/build_bundle.dart:144:5)
+#7      _BuildInstance.invokeTarget (package:flutter_tools/src/build_system/build_system.dart:833:32)
 <asynchronous suspension>
-#7      FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1559:27)
+#8      FlutterBuildSystem.build (package:flutter_tools/src/build_system/build_system.dart:653:16)
 <asynchronous suspension>
-#8      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+#9      WebBuilder.buildWeb (package:flutter_tools/src/web/compile.dart:94:34)
 <asynchronous suspension>
-#9      CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+#10     BuildWebCommand.runCommand (package:flutter_tools/src/commands/build_web.dart:296:5)
 <asynchronous suspension>
-#10     FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:487:9)
+#11     FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1559:27)
 <asynchronous suspension>
-#11     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+#12     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
 <asynchronous suspension>
-#12     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:422:5)
+#13     CommandRunner.runCommand (package:args/command_runner.dart:212:13)
 <asynchronous suspension>
-#13     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:104:11)
+#14     FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:487:9)
 <asynchronous suspension>
-#14     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+#15     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
 <asynchronous suspension>
-#15     main (package:flutter_tools/executable.dart:103:3)
+#16     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:422:5)
+<asynchronous suspension>
+#17     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:104:11)
+<asynchronous suspension>
+#18     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#19     main (package:flutter_tools/executable.dart:103:3)
 <asynchronous suspension>
 
-Failed to build bundle.
+Compiling lib/main.dart for the Web...                             27.7s
+Error: Failed to compile application for the Web.
