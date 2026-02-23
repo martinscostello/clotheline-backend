@@ -28,11 +28,13 @@ class ReportProvider extends ChangeNotifier {
   DateTime? _endDate;
   String? _selectedBranchId; // Null = All Branches
   String _businessType = "All"; // All, Laundry, Store
+  String? _fulfillmentMode; // [NEW] logistics | deployment | bulky
   bool _isInvestorMode = false;
 
   String get rangeLabel => _rangeLabel;
   String? get selectedBranchId => _selectedBranchId;
   String get businessType => _businessType;
+  String? get fulfillmentMode => _fulfillmentMode;
   bool get isInvestorMode => _isInvestorMode;
 
   // Constructor
@@ -49,6 +51,12 @@ class ReportProvider extends ChangeNotifier {
 
   void setBusinessType(String type) {
     _businessType = type;
+    notifyListeners();
+    refreshAll();
+  }
+
+  void setFulfillmentMode(String? mode) {
+    _fulfillmentMode = mode;
     notifyListeners();
     refreshAll();
   }
@@ -156,6 +164,7 @@ class ReportProvider extends ChangeNotifier {
     if (_endDate != null) params['endDate'] = _endDate!.toIso8601String();
     if (_selectedBranchId != null) params['branchId'] = _selectedBranchId;
     if (_businessType != "All") params['type'] = _businessType;
+    if (_fulfillmentMode != null) params['fulfillmentMode'] = _fulfillmentMode;
     return params;
   }
   

@@ -1,20 +1,16 @@
 const Order = require('../models/Order');
 
 // GET /analytics/revenue
-// Query Params: range (day, week, month, year), branchId (optional)
+// Query Params: range (day, week, month, year), branchId (optional), fulfillmentMode (optional)
 exports.getRevenueStats = async (req, res) => {
     try {
-        const { range, branchId } = req.query;
+        const { range, branchId, fulfillmentMode } = req.query;
 
         // Date Filter
         const now = new Date();
         let startDate = new Date();
 
-        if (range === 'day') startDate.setDate(now.getDate() - 1); // Last 24h? or Today? Let's say last 7 days for graph usually.
-        // Usually charts show a trend. Let's assume request is for "Trend Data" over X time.
-        // If range='week', show last 7 days.
-        // If range='month', show last 30 days.
-        // If range='year', show last 12 months.
+        if (range === 'day') startDate.setDate(now.getDate() - 1);
 
         let intervalFormat = '%Y-%m-%d';
         if (range === 'year') intervalFormat = '%Y-%m-01';
@@ -34,6 +30,14 @@ exports.getRevenueStats = async (req, res) => {
             matchStage.branchId = new mongoose.Types.ObjectId(branchId);
         }
 
+        if (fulfillmentMode) {
+            if (fulfillmentMode === 'logistics') {
+                matchStage.fulfillmentMode = { $in: ['logistics', 'bulky'] };
+            } else {
+                matchStage.fulfillmentMode = fulfillmentMode;
+            }
+        }
+
         const aggregation = [
             { $match: matchStage },
             {
@@ -43,15 +47,11 @@ exports.getRevenueStats = async (req, res) => {
                     count: { $sum: 1 }
                 }
             },
-            { $sort: { _id: 1 } } // Sort by date ascending
+            { $sort: { _id: 1 } }
         ];
 
         const stats = await Order.aggregate(aggregation);
 
-        // Fill in missing dates? (Optional, Frontend can handle or we do it here)
-        // For MVP, return sparse data.
-
-        // Total Summary
         const totalAggregation = [
             { $match: matchStage },
             { $group: { _id: null, total: { $sum: "$totalAmount" }, count: { $sum: 1 } } }
@@ -72,7 +72,7 @@ exports.getRevenueStats = async (req, res) => {
 // GET /analytics/top-items
 exports.getTopItems = async (req, res) => {
     try {
-        const { limit = 5, branchId } = req.query;
+        const { limit = 5, branchId, fulfillmentMode } = req.query;
 
         const matchStage = {
             status: { $nin: ['Cancelled', 'Refunded'] }
@@ -82,12 +82,20 @@ exports.getTopItems = async (req, res) => {
             matchStage.branchId = new mongoose.Types.ObjectId(branchId);
         }
 
+        if (fulfillmentMode) {
+            if (fulfillmentMode === 'logistics') {
+                matchStage.fulfillmentMode = { $in: ['logistics', 'bulky'] };
+            } else {
+                matchStage.fulfillmentMode = fulfillmentMode;
+            }
+        }
+
         const stats = await Order.aggregate([
             { $match: matchStage },
             { $unwind: "$items" },
             {
                 $group: {
-                    _id: "$items.name", // or itemId if consistent
+                    _id: "$items.name",
                     totalSold: { $sum: "$items.quantity" },
                     totalRevenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
                 }

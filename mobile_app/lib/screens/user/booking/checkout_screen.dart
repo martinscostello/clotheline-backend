@@ -19,8 +19,8 @@ import '../../../widgets/delivery_location_selector.dart';
 import '../../../models/delivery_location_model.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  // Use Singleton instead of passing list
-  const CheckoutScreen({super.key});
+  final String fulfillmentMode;
+  const CheckoutScreen({super.key, this.fulfillmentMode = 'logistics'});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -83,6 +83,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     super.dispose();
   }
 
+
+  bool get _isQuoteRequired {
+    final filtered = _cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).toList();
+    return filtered.any((i) => i.quoteRequired);
+  }
 
   Future<void> _fetchContent() async {
     final content = await _contentService.getAppContent();
@@ -160,11 +165,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
   Widget _buildStageContent(bool isDark, Color textColor) {
     if (_currentStage == 1) {
+      // SPECIAL HANDLING FOR DEPLOYMENT MODE
+      if (widget.fulfillmentMode == 'deployment') {
+        return _buildDeploymentStage(isDark, textColor);
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Before Wash Section
-          _buildSectionHeader("Before Wash", textColor),
+          _buildSectionHeader("Logistics (Pickup & Delivery)", textColor),
           const SizedBox(height: 15),
           _buildOptionTile(
             value: 1,
@@ -351,6 +361,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
   Widget _buildSectionHeader(String title, Color textColor) {
     return Text(title, style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold));
+  }
+
+  Widget _buildDeploymentStage(bool isDark, Color textColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader("Service Location", textColor),
+        const SizedBox(height: 15),
+        const Text(
+          "Please select where the cleaning service will take place. Our specialists will arrive at this location.",
+          style: TextStyle(color: Colors.white54, fontSize: 13),
+        ),
+        const SizedBox(height: 15),
+        _buildAddressInputs(true), // Reuse pickup address logic for service location
+        const SizedBox(height: 30),
+      ],
+    );
   }
 
   Widget _buildOptionTile({
@@ -714,8 +741,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     // Prepare Items
     List<Map<String, dynamic>> items = [];
     
-    // Laundry Items (Always included in Bucket checkout)
-    for (var i in _cartService.items) {
+    // Laundry Items (Filtered by mode)
+    final filteredServiceItems = _cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).toList();
+    for (var i in filteredServiceItems) {
       items.add({
         'itemType': 'Service',
         'itemId': i.item.id,
@@ -726,8 +754,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       });
     }
 
-    // Store Items (Conditional)
-    if (includeStoreItems) {
+    // Store Items (Included only in logistics mode)
+    if (includeStoreItems && widget.fulfillmentMode == 'logistics') {
       for (var i in _cartService.storeItems) {
         items.add({
           'itemType': 'Product',
@@ -755,28 +783,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     }
 
     final orderData = {
-      'scope': scope, // [STRICT SCOPE]
+      'scope': scope, 
       'branchId': selectedBranch?.id,
+      'fulfillmentMode': widget.fulfillmentMode,
       'items': items,
       // 'totalAmount': total, // Backend calculates this now to be secure
       'pickupOption': _beforeWashOption == 1 ? 'Pickup' : 'Dropoff',
       'deliveryOption': _afterWashOption == 1 ? 'Deliver' : 'Pickup',
-      'pickupAddress': _beforeWashOption == 1 ? _pickupSelection?.addressLabel : null,
-      'pickupPhone': _beforeWashOption == 1 ? _pickupPhoneController.text : null,
-      'deliveryAddress': _afterWashOption == 1 ? _deliverySelection?.addressLabel : null,
-      'deliveryPhone': _afterWashOption == 1 ? _deliveryPhoneController.text : null,
-      'pickupLocation': _beforeWashOption == 1 ? _pickupSelection?.toJson() : null, // [New]
-      'deliveryLocation': _afterWashOption == 1 ? _deliverySelection?.toJson() : null, // [New]
-      'pickupCoordinates': _pickupLatLng != null ? {'lat': _pickupLatLng!.latitude, 'lng': _pickupLatLng!.longitude} : null,
+      'pickupAddress': widget.fulfillmentMode == 'deployment' ? _pickupSelection?.addressLabel : (_beforeWashOption == 1 ? _pickupSelection?.addressLabel : null),
+      'pickupPhone': widget.fulfillmentMode == 'deployment' ? _pickupPhoneController.text : (_beforeWashOption == 1 ? _pickupPhoneController.text : null),
+      'deliveryAddress': widget.fulfillmentMode == 'deployment' ? null : (_afterWashOption == 1 ? _deliverySelection?.addressLabel : null),
+      'deliveryPhone': widget.fulfillmentMode == 'deployment' ? null : (_afterWashOption == 1 ? _deliveryPhoneController.text : null),
+      'pickupLocation': widget.fulfillmentMode == 'deployment' ? _pickupSelection?.toJson() : (_beforeWashOption == 1 ? _pickupSelection?.toJson() : null), 
+      'deliveryLocation': widget.fulfillmentMode == 'deployment' ? null : (_afterWashOption == 1 ? _deliverySelection?.toJson() : null), 
+      'pickupCoordinates': widget.fulfillmentMode == 'deployment' ? (_pickupLatLng != null ? {'lat': _pickupLatLng!.latitude, 'lng': _pickupLatLng!.longitude} : null) : (_pickupLatLng != null ? {'lat': _pickupLatLng!.latitude, 'lng': _pickupLatLng!.longitude} : null),
       'deliveryCoordinates': _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
       'pickupFee': _pickupFee,
       'deliveryFee': _deliveryFee,
-      'discountBreakdown': _cartService.laundryDiscounts, // [New]
-      'storeDiscount': _cartService.storeDiscountAmount, // [New]
-      'laundryNotes': _notesController.text.isNotEmpty ? _notesController.text : null, // [NEW]
+      'discountBreakdown': _cartService.laundryDiscounts,
+      'storeDiscount': _cartService.storeDiscountAmount,
+      'laundryNotes': _notesController.text.isNotEmpty ? _notesController.text : null,
+      
+      // [NEW] Service DNA
+      'quoteStatus': _isQuoteRequired ? 'Pending' : 'None',
+      'inspectionFee': _cartService.items
+          .where((i) => i.fulfillmentMode == widget.fulfillmentMode)
+          .fold(0.0, (sum, i) => sum + (i.quoteRequired ? i.inspectionFee : 0.0)),
+
       'guestInfo': {
         'name': auth.currentUser != null ? (auth.currentUser!['name'] ?? 'Guest User') : 'Guest User', 
-        'email': email, // Pass email for Paystack
+        'email': email,
         'phone': _pickupPhoneController.text.isNotEmpty ? _pickupPhoneController.text : _deliveryPhoneController.text
       }
     };
@@ -809,7 +845,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             setState(() => _isSubmitting = false);
             
             if(!mounted) return;
-            _cartService.clearCart(); 
+            // IMPORTANT: Only clear the items we just bought
+            if (widget.fulfillmentMode == 'logistics') {
+               _cartService.clearCart(); 
+            } else {
+               _cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).toList().forEach((i) => _cartService.removeItem(i));
+            }
             
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)), 
@@ -852,17 +893,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
               ),
               onPressed: () {
                 // Validation
-                if (_beforeWashOption == 0 || _afterWashOption == 0) {
-                  ToastUtils.show(context, "Please select both Pickup and Delivery options", type: ToastType.warning);
-                  return;
-                }
-                if (_beforeWashOption == 1 && (_pickupSelection == null || _pickupPhoneController.text.isEmpty)) {
-                  ToastUtils.show(context, "Please provide pickup location and phone", type: ToastType.warning);
-                  return;
-                }
-                if (_afterWashOption == 1 && (_deliverySelection == null || _deliveryPhoneController.text.isEmpty)) {
-                  ToastUtils.show(context, "Please provide delivery location and phone", type: ToastType.warning);
-                  return;
+                if (widget.fulfillmentMode == 'deployment') {
+                  if (_pickupSelection == null || _pickupPhoneController.text.isEmpty) {
+                    ToastUtils.show(context, "Please provide the service location and phone", type: ToastType.warning);
+                    return;
+                  }
+                } else {
+                  if (_beforeWashOption == 0 || _afterWashOption == 0) {
+                    ToastUtils.show(context, "Please select both Pickup and Delivery options", type: ToastType.warning);
+                    return;
+                  }
+                  if (_beforeWashOption == 1 && (_pickupSelection == null || _pickupPhoneController.text.isEmpty)) {
+                    ToastUtils.show(context, "Please provide pickup location and phone", type: ToastType.warning);
+                    return;
+                  }
+                  if (_afterWashOption == 1 && (_deliverySelection == null || _deliveryPhoneController.text.isEmpty)) {
+                    ToastUtils.show(context, "Please provide delivery location and phone", type: ToastType.warning);
+                    return;
+                  }
                 }
                 setState(() => _currentStage = 2);
               },
@@ -885,7 +933,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                   onPressed: _isSubmitting ? null : _submitOrder,
                   child: _isSubmitting 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text("PAY NOW", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text(_isQuoteRequired ? "SUBMIT FOR QUOTE" : "PAY NOW", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 12),

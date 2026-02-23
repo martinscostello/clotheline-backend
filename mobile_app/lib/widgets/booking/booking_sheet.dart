@@ -62,7 +62,8 @@ class _BookingSheetState extends State<BookingSheet> {
         item: clothItem,
         serviceType: serviceTypeObj,
         quantity: _quantity,
-        discountPercentage: widget.serviceModel.discountPercentage, 
+        discountPercentage: widget.serviceModel.discountPercentage,
+        fulfillmentMode: widget.serviceModel.fulfillmentMode,
       ));
       
       setState(() {

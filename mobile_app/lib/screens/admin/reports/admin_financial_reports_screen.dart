@@ -19,7 +19,8 @@ import 'package:printing/printing.dart';
 import '../../../../utils/currency_formatter.dart';
 
 class AdminFinancialReportsScreen extends StatefulWidget {
-  const AdminFinancialReportsScreen({super.key});
+  final String? fulfillmentMode; // [NEW] logistics | deployment | bulky
+  const AdminFinancialReportsScreen({super.key, this.fulfillmentMode});
 
   @override
   State<AdminFinancialReportsScreen> createState() => _AdminFinancialReportsScreenState();
@@ -32,7 +33,8 @@ class _AdminFinancialReportsScreenState extends State<AdminFinancialReportsScree
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
        // Init data
-       Provider.of<ReportProvider>(context, listen: false).refreshAll();
+       final provider = Provider.of<ReportProvider>(context, listen: false);
+       provider.setFulfillmentMode(widget.fulfillmentMode); // This calls refreshAll()
     });
   }
 

@@ -62,6 +62,7 @@ class AdminDashboardContent extends StatefulWidget {
 class _AdminDashboardContentState extends State<AdminDashboardContent> {
   String _timeRange = 'week'; 
   String? _selectedBranchId; // [New]
+  String _operationsMode = 'logistics'; // [NEW] logistics | deployment
   bool _isEditMode = false;
   List<Map<String, dynamic>> _quickActions = [];
 
@@ -128,8 +129,8 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
 
   void _fetchData() {
     final analytics = Provider.of<AnalyticsService>(context, listen: false);
-    analytics.fetchRevenueStats(range: _timeRange, branchId: _selectedBranchId);
-    analytics.fetchTopItems(limit: 5, branchId: _selectedBranchId);
+    analytics.fetchRevenueStats(range: _timeRange, branchId: _selectedBranchId, fulfillmentMode: _operationsMode);
+    analytics.fetchTopItems(limit: 5, branchId: _selectedBranchId, fulfillmentMode: _operationsMode);
   }
   
   void _onBranchChanged(String? newBranchId) {
@@ -155,6 +156,38 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
         title: const Text("Admin Dashboard", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: PopupMenuButton<String>(
+          icon: Icon(
+            _operationsMode == 'logistics' ? Icons.local_shipping : Icons.engineering,
+            color: AppTheme.primaryColor,
+          ),
+          onSelected: (mode) {
+             setState(() => _operationsMode = mode);
+             _fetchData();
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'logistics',
+              child: Row(
+                children: [
+                  Icon(Icons.local_shipping, color: Colors.blueAccent),
+                  SizedBox(width: 10),
+                  Text("Logistics Ops"),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'deployment',
+              child: Row(
+                children: [
+                  Icon(Icons.engineering, color: Colors.tealAccent),
+                  SizedBox(width: 10),
+                  Text("Field Operations"),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
           // Branch Selector (Icon Only)
           Consumer<BranchProvider>(
@@ -247,13 +280,19 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
               Consumer<AuthService>(
                 builder: (context, auth, _) {
                   final name = auth.currentUser?['name']?.split(' ')[0] ?? 'Admin';
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Hello, $name 👋", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                      const Text("Here's what's happening today", style: TextStyle(color: Colors.white54, fontSize: 13)),
-                    ],
-                  );
+                    return Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                       Row(
+                         children: [
+                           Text("Hello, $name 👋", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                           const Spacer(),
+                           _buildModeChip(),
+                         ],
+                       ),
+                       const Text("Here's what's happening today", style: TextStyle(color: Colors.white54, fontSize: 13)),
+                     ],
+                   );
                 }
               ),
               const SizedBox(height: 15),
@@ -546,19 +585,51 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
       onTap: () {
         switch (action['id']) {
           case 'orders':
-            if (_hasPermission("Orders")) Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminOrdersScreen()));
+            if (_hasPermission("Orders")) {
+              Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(
+                builder: (_) => AdminOrdersScreen(fulfillmentMode: _operationsMode)
+              ));
+            }
             break;
           case 'pos':
-            if (_hasPermission("Orders")) Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminPOSScreen()));
+            if (_hasPermission("Orders")) {
+              Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(
+                builder: (_) => AdminPOSScreen(fulfillmentMode: _operationsMode)
+              ));
+            }
             break;
           case 'chat':
             if (_hasPermission("Reports")) Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminChatScreen()));
             break;
           case 'reports':
-            if (_hasPermission("Reports")) Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminFinancialReportsScreen()));
+            if (_hasPermission("Reports")) {
+               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(
+                 builder: (_) => AdminFinancialReportsScreen(fulfillmentMode: _operationsMode)
+               ));
+            }
             break;
         }
       },
+    );
+  }
+
+  Widget _buildModeChip() {
+    final bool isLogistics = _operationsMode == 'logistics';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: (isLogistics ? Colors.blue : Colors.teal).withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: (isLogistics ? Colors.blue : Colors.teal).withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        isLogistics ? "LOGISTICS OPS" : "FIELD OPS",
+        style: TextStyle(
+          color: isLogistics ? Colors.blueAccent : Colors.tealAccent,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 

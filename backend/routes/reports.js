@@ -10,7 +10,7 @@ const mongoose = require('mongoose');
 
 // Helper to build date/branch query
 const buildQuery = (req) => {
-    const { startDate, endDate, branchId, type } = req.query; // type: 'Laundry' | 'Store'
+    const { startDate, endDate, branchId, type, fulfillmentMode } = req.query; // type: 'Laundry' | 'Store'
     let query = {};
 
     if (startDate && endDate) {
@@ -23,9 +23,18 @@ const buildQuery = (req) => {
         query['items.itemType'] = itemType;
     }
 
+    // Fulfillment Mode Filter
+    if (fulfillmentMode) {
+        if (fulfillmentMode === 'logistics') {
+            query.fulfillmentMode = { $in: ['logistics', 'bulky'] };
+        } else {
+            query.fulfillmentMode = fulfillmentMode;
+        }
+    }
+
     // Branch filtering is often collection-specific, so we return the base date query
     // and let specific aggregations handle the lookup/match for branch.
-    return { dateQuery: query, branchId, startDate, endDate };
+    return { dateQuery: query, branchId, startDate, endDate, fulfillmentMode };
 };
 
 // GET /financials

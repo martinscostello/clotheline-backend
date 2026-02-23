@@ -16,7 +16,8 @@ import '../../../widgets/dialogs/guest_login_dialog.dart';
 import '../../../services/auth_service.dart';
 import '../../../../providers/branch_provider.dart';
 import '../settings/support_hub_screen.dart';
-import '../../../../models/branch_model.dart'; // [NEW]
+import '../../../../models/branch_model.dart';
+import '../../../../utils/order_status_resolver.dart'; // [NEW]
 
 class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -79,10 +80,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(order.status).withOpacity(0.1),
+                        color: OrderStatusResolver.getStatusColor(order).withValues(alpha: 0.1),
                         shape: BoxShape.circle
                       ),
-                      child: Icon(_getStatusIcon(order.status), color: _getStatusColor(order.status)),
+                      child: Icon(_getStatusIcon(order.status), color: OrderStatusResolver.getStatusColor(order)),
                     ),
                     const SizedBox(width: 15),
                     Column(
@@ -91,8 +92,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", 
                           style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)
                         ),
-                        Text(order.status.name.toUpperCase(), 
-                          style: TextStyle(color: _getStatusColor(order.status), fontWeight: FontWeight.bold, fontSize: 12)
+                        Text(OrderStatusResolver.getDisplayStatus(order).toUpperCase(), 
+                          style: TextStyle(color: OrderStatusResolver.getStatusColor(order), fontWeight: FontWeight.bold, fontSize: 12)
                         ),
                       ],
                     )
@@ -115,7 +116,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8)
                         ),
                         child: Text("${item.quantity}x", style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
@@ -334,8 +335,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.15),
-        border: Border.all(color: Colors.orange.withOpacity(0.5)),
+        color: Colors.orange.withValues(alpha: 0.15),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -356,7 +357,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(height: 8),
           Text(
             "An additional fee of ${CurrencyFormatter.format(order.feeAdjustment!.amount)} is required for this delivery. Your order is currently paused awaiting your confirmation.",
-            style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 13),
+            style: TextStyle(color: textColor.withValues(alpha: 0.8), fontSize: 13),
           ),
           const SizedBox(height: 15),
           Row(
@@ -472,18 +473,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         Text(value, style: TextStyle(color: color, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, fontSize: 14)),
       ],
     );
-  }
-
-  Color _getStatusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.New: 
-      case OrderStatus.InProgress: return Colors.orange;
-      case OrderStatus.Ready: 
-      case OrderStatus.Completed: return Colors.green;
-      case OrderStatus.Cancelled: return Colors.red;
-      case OrderStatus.Refunded: return Colors.pinkAccent;
-      case OrderStatus.PendingUserConfirmation: return Colors.orange;
-    }
   }
 
   IconData _getStatusIcon(OrderStatus status) {

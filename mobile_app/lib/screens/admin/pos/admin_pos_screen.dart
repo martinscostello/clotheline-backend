@@ -16,7 +16,8 @@ import '../../../widgets/custom_cached_image.dart'; // [NEW]
 import '../../../utils/currency_formatter.dart'; // [NEW]
 
 class AdminPOSScreen extends StatefulWidget {
-  const AdminPOSScreen({super.key});
+  final String? fulfillmentMode; // [NEW] logistics | deployment | bulky
+  const AdminPOSScreen({super.key, this.fulfillmentMode});
 
   @override
   State<AdminPOSScreen> createState() => _AdminPOSScreenState();
@@ -349,11 +350,25 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     return Consumer<LaundryService>(
       builder: (context, laundrySvc, _) {
         if (laundrySvc.services.isEmpty) return const Center(child: CircularProgressIndicator());
+        
+        List<ServiceModel> filteredServices = laundrySvc.services;
+        if (widget.fulfillmentMode != null) {
+          if (widget.fulfillmentMode == 'logistics') {
+            filteredServices = filteredServices.where((s) => s.fulfillmentMode == 'logistics' || s.fulfillmentMode == 'bulky').toList();
+          } else {
+            filteredServices = filteredServices.where((s) => s.fulfillmentMode == widget.fulfillmentMode).toList();
+          }
+        }
+
+        if (filteredServices.isEmpty) {
+          return const Center(child: Text("No services found for this mode", style: TextStyle(color: Colors.white38)));
+        }
+
         return ListView.builder(
           padding: const EdgeInsets.all(20),
-          itemCount: laundrySvc.services.length,
+          itemCount: filteredServices.length,
           itemBuilder: (context, index) {
-            final service = laundrySvc.services[index];
+            final service = filteredServices[index];
             return Padding(
               padding: const EdgeInsets.only(bottom: 15),
               child: GlassContainer(
@@ -660,26 +675,32 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
       padding: const EdgeInsets.all(20),
       child: Consumer<AdminPOSProvider>(
         builder: (context, pos, _) {
+          final isDeployment = widget.fulfillmentMode == 'deployment';
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Step 4: Logistics", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text("Step 4: ${isDeployment ? 'Service Location' : 'Logistics'}", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              const Text("How will the client get their items?", style: TextStyle(color: Colors.white54, fontSize: 13)),
+              Text(isDeployment ? "Where will this service take place?" : "How will the client get their items?", style: const TextStyle(color: Colors.white54, fontSize: 13)),
               const SizedBox(height: 30),
               
-              _buildOptionCard("Store Pickup", Icons.store_mall_directory_outlined, "Client will collect from branch.", pos.deliveryOption == 'Pickup', () => setState(() {
-                pos.deliveryOption = 'Pickup';
-                pos.deliveryFee = 0;
-              })),
-              const SizedBox(height: 20),
-              _buildOptionCard("Home Delivery", Icons.delivery_dining_outlined, "We deliver to client's address.", pos.deliveryOption == 'Deliver', () => setState(() => pos.deliveryOption = 'Deliver')),
-              
-              if (pos.deliveryOption == 'Deliver') ...[
-                const SizedBox(height: 30),
-                _buildTextField("Delivery Address", _addressController, Icons.location_on_outlined),
+              if (isDeployment) ...[
+                _buildTextField("Service Address", _addressController, Icons.location_on_outlined),
                 const SizedBox(height: 20),
-                const Text("Select Delivery Zone", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+              ] else ...[
+                _buildOptionCard("Store Pickup", Icons.store_mall_directory_outlined, "Client will collect from branch.", pos.deliveryOption == 'Pickup', () => setState(() {
+                  pos.deliveryOption = 'Pickup';
+                  pos.deliveryFee = 0;
+                })),
+                const SizedBox(height: 20),
+                _buildOptionCard("Home Delivery", Icons.delivery_dining_outlined, "We deliver to client's address.", pos.deliveryOption == 'Deliver', () => setState(() => pos.deliveryOption = 'Deliver')),
+              ],
+              
+              if (pos.deliveryOption == 'Deliver' || isDeployment) ...[
+                if (!isDeployment) const SizedBox(height: 30),
+                if (!isDeployment) _buildTextField("Delivery Address", _addressController, Icons.location_on_outlined),
+                const SizedBox(height: 20),
+                const Text("Select Service/Delivery Zone", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 10,

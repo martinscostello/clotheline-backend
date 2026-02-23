@@ -23,6 +23,9 @@ import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
 import 'hero_video_player.dart';
 import 'package:video_player/video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../widgets/dialogs/terms_acceptance_dialog.dart';
+import '../../models/service_model.dart';
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onSwitchToStore;
   final ValueNotifier<int>? tabNotifier;
@@ -779,12 +782,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                 return;
               }
 
-               showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => BookingSheet(serviceModel: s),
-              );
+              _handleServiceSelection(s, isDark);
             },
             child: LaundryGlassCard(
               opacity: isDark ? 0.12 : 0.05,
@@ -794,6 +792,40 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
           );
         },
       ),
+    );
+  }
+
+  void _handleServiceSelection(ServiceModel s, bool isDark) async {
+    if (s.requiresTermsAcceptance) {
+      final prefs = await SharedPreferences.getInstance();
+      final hasAccepted = prefs.getBool('accepted_terms_${s.id}') ?? false;
+      
+      if (!hasAccepted && mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => TermsAcceptanceDialog(
+            title: "${s.name} Terms",
+            content: s.termsContent.isNotEmpty ? s.termsContent : "Please accept terms to continue.",
+            onAccept: () async {
+              await prefs.setBool('accepted_terms_${s.id}', true);
+              if (mounted) _openBookingSheet(s);
+            },
+          ),
+        );
+        return;
+      }
+    }
+    
+    _openBookingSheet(s);
+  }
+
+  void _openBookingSheet(ServiceModel s) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BookingSheet(serviceModel: s),
     );
   }
 

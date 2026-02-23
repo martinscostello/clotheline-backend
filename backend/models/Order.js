@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 
 const OrderSchema = new mongoose.Schema({
     branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }, // Required for Multi-Branch
+    fulfillmentMode: {
+        type: String,
+        enum: ['logistics', 'deployment', 'bulky'],
+        default: 'logistics'
+    },
     branchCenterCoordinates: {
         lat: Number,
         lng: Number
@@ -59,6 +64,14 @@ const OrderSchema = new mongoose.Schema({
         default: 'None'
     },
     exceptionNote: String,
+
+    // [NEW] Service DNA
+    quoteStatus: {
+        type: String,
+        enum: ['None', 'Pending', 'Approved', 'Rejected'],
+        default: 'None'
+    },
+    inspectionFee: { type: Number, default: 0 },
 
     // Logistics
     pickupOption: { type: String, enum: ['Pickup', 'Dropoff', 'None'], required: true },

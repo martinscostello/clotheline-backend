@@ -15,6 +15,12 @@ class ServiceModel {
   final double discountPercentage;
   final String discountLabel;
   final int order; // [NEW] Sort order
+  final String fulfillmentMode; // [NEW] logistics | deployment | bulky
+  final bool requiresTermsAcceptance; // [NEW]
+  final String termsContent; // [NEW]
+  final String cleaningLocation; // [NEW] factory | onsite | none
+  final bool quoteRequired; // [NEW]
+  final double inspectionFee; // [NEW]
 
   ServiceModel({
     required this.id,
@@ -31,6 +37,12 @@ class ServiceModel {
     this.items = const [],
     this.serviceTypes = const [],
     this.branchPricing = const [], // [NEW]
+    this.fulfillmentMode = 'logistics',
+    this.requiresTermsAcceptance = false,
+    this.termsContent = '',
+    this.cleaningLocation = 'none',
+    this.quoteRequired = false,
+    this.inspectionFee = 0.0,
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
@@ -52,6 +64,12 @@ class ServiceModel {
       isLocked: json['isLocked'] ?? false,
       lockedLabel: json['lockedLabel'] ?? "Coming Soon",
       order: json['order'] ?? 0,
+      fulfillmentMode: json['fulfillmentMode'] ?? "logistics",
+      requiresTermsAcceptance: json['requiresTermsAcceptance'] ?? false,
+      termsContent: json['termsContent'] ?? '',
+      cleaningLocation: json['cleaningLocation'] ?? 'none',
+      quoteRequired: json['quoteRequired'] ?? false,
+      inspectionFee: parseDouble(json['inspectionFee']),
       items: (json['items'] as List?)?.map((e) => ServiceItem.fromJson(e)).toList() ?? [],
       serviceTypes: (json['serviceTypes'] as List?)?.map((e) => ServiceVariant.fromJson(e)).toList() ?? [],
       branchPricing: (json['branchPricing'] as List?)?.map((e) => BranchPrice.fromJson(e)).toList() ?? [],
@@ -84,6 +102,12 @@ class ServiceModel {
       'isLocked': isLocked,
       'lockedLabel': lockedLabel,
       'order': order,
+      'fulfillmentMode': fulfillmentMode,
+      'requiresTermsAcceptance': requiresTermsAcceptance,
+      'termsContent': termsContent,
+      'cleaningLocation': cleaningLocation,
+      'quoteRequired': quoteRequired,
+      'inspectionFee': inspectionFee,
       'items': items.map((e) => e.toJson()).toList(),
       'serviceTypes': serviceTypes.map((e) => e.toJson()).toList(),
       'branchPricing': branchPricing.map((e) => e.toJson()).toList(),

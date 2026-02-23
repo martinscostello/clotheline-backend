@@ -15,6 +15,8 @@ import '../../../services/notification_service.dart';
 import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
 import '../../../widgets/dialogs/guest_login_dialog.dart';
 import '../../../services/auth_service.dart';
+import '../../../widgets/booking/split_checkout_modal.dart';
+import '../../../utils/order_status_resolver.dart';
 
 class OrdersScreen extends StatefulWidget {
   final int initialIndex;
@@ -209,7 +211,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ),
                             onPressed: () {
                                final auth = context.read<AuthService>();
-                               if (auth.isGuest) {
+                                if (auth.isGuest) {
                                  showDialog(
                                    context: context,
                                    builder: (ctx) => const GuestLoginDialog(
@@ -219,8 +221,28 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                  return;
                                }
 
+                               if (_cartService.hasFulfillmentConflict) {
+                                 showDialog(
+                                   context: context,
+                                   builder: (ctx) => SplitCheckoutModal(
+                                     modes: _cartService.activeModes.toList(),
+                                     onSelectMode: (mode) {
+                                       Navigator.pop(ctx);
+                                       Navigator.of(context).push(MaterialPageRoute(
+                                         builder: (context) => CheckoutScreen(fulfillmentMode: mode)
+                                       ));
+                                     },
+                                   ),
+                                 );
+                                 return;
+                               }
+
                                Navigator.of(context).push(MaterialPageRoute(
-                                 builder: (context) => const CheckoutScreen()
+                                 builder: (context) => CheckoutScreen(
+                                   fulfillmentMode: _cartService.activeModes.isNotEmpty 
+                                       ? _cartService.activeModes.first 
+                                       : 'logistics'
+                                 )
                                ));
                              }, 
                              child: const Text("RESUME CHECKOUT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -337,11 +359,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Order #${order.id.substring(order.id.length - 6).toUpperCase()}", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                          // Badge moved to bottom to prevent overflow
+                          if (order.fulfillmentMode != 'logistics')
+                            _buildModeBadge(order.fulfillmentMode),
                         ],
                       ),
                       const SizedBox(height: 8),
-                       Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                      if (order.fulfillmentMode == 'deployment') ...[
+                        Text("On-site Deployment", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                        if (order.pickupAddress != null)
+                          Text(order.pickupAddress!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: secondaryTextColor, fontSize: 11)),
+                      ] else ...[
+                        Text("${order.items.length} Items • ${CurrencyFormatter.format(order.totalAmount)}", style: TextStyle(color: secondaryTextColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text("${order.pickupOption} / ${order.deliveryOption}", style: TextStyle(color: secondaryTextColor, fontSize: 11)),
+                      ],
                       const SizedBox(height: 5),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -363,7 +393,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     child: const Text("⚠ SPECIAL CARE", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
                                   ),
                                 ),
-                              _buildStatusBadge(order.status),
+                              _buildStatusBadge(order),
                             ],
                           ),
                         ],
@@ -395,20 +425,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildStatusBadge(OrderStatus status) {
-    Color color;
-    switch (status) {
-      case OrderStatus.New: color = Colors.blue; break;
-      case OrderStatus.InProgress: color = Colors.orange; break;
-      case OrderStatus.Ready: color = Colors.cyan; break;
-      case OrderStatus.Completed: color = Colors.green; break;
-      case OrderStatus.Cancelled: color = Colors.red; break;
-      case OrderStatus.Refunded: color = Colors.pinkAccent; break;
-      case OrderStatus.PendingUserConfirmation: color = Colors.orange; break;
-    }
-
-    String label = status.name.toUpperCase();
-    if (status == OrderStatus.PendingUserConfirmation) label = "PENDING CONFIRMATION";
+  Widget _buildStatusBadge(OrderModel order) {
+    final statusLabel = OrderStatusResolver.getDisplayStatus(order);
+    final color = OrderStatusResolver.getStatusColor(order);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -417,7 +436,29 @@ class _OrdersScreenState extends State<OrdersScreen> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+      child: Text(statusLabel.toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildModeBadge(String mode) {
+    Color color = Colors.purple;
+    String label = "MODE";
+    if (mode == 'deployment') {
+      color = Colors.teal;
+      label = "ON-SITE";
+    } else if (mode == 'bulky') {
+      color = Colors.indigo;
+      label = "BULKY";
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(label, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
     );
   }
 }

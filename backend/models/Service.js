@@ -24,6 +24,31 @@ const ServiceSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    fulfillmentMode: {
+        type: String,
+        enum: ['logistics', 'deployment', 'bulky'],
+        default: 'logistics'
+    },
+    requiresTermsAcceptance: {
+        type: Boolean,
+        default: false
+    },
+    termsContent: {
+        type: String
+    },
+    cleaningLocation: {
+        type: String,
+        enum: ['factory', 'onsite', 'none'],
+        default: 'none'
+    },
+    quoteRequired: {
+        type: Boolean,
+        default: false
+    },
+    inspectionFee: {
+        type: Number,
+        default: 0
+    },
     // Global State
     isActive: {
         type: Boolean,

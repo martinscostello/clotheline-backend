@@ -59,6 +59,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             promoCode,
             taxAmount,
             totalAmount,
+            fulfillmentMode,
 
             // [NEW] POS Fields
             isWalkIn,
@@ -128,6 +129,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
         const newOrder = new Order({
             user: userObjectId,
             branchId,
+            fulfillmentMode: fulfillmentMode || 'logistics',
             items: Array.isArray(items) ? items : [],
 
             // Financials

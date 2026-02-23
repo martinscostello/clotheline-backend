@@ -12,12 +12,14 @@ class AnalyticsService extends ChangeNotifier {
   List<dynamic>? get topItems => _topItems;
   bool get isLoading => _isLoading;
 
-  Future<void> fetchRevenueStats({String range = 'week', String? branchId}) async {
+  Future<void> fetchRevenueStats({String range = 'week', String? branchId, String? fulfillmentMode}) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final query = '?range=$range${branchId != null ? '&branchId=$branchId' : ''}';
+      final query = '?range=$range'
+          '${branchId != null ? '&branchId=$branchId' : ''}'
+          '${fulfillmentMode != null ? '&fulfillmentMode=$fulfillmentMode' : ''}';
       final response = await _api.client.get('/analytics/revenue$query');
       if (response.statusCode == 200) {
         _revenueStats = response.data;
@@ -30,10 +32,12 @@ class AnalyticsService extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchTopItems({int limit = 5, String? branchId}) async {
+  Future<void> fetchTopItems({int limit = 5, String? branchId, String? fulfillmentMode}) async {
     // We can load this parallel to revenue if wanted
     try {
-      final query = '?limit=$limit${branchId != null ? '&branchId=$branchId' : ''}';
+      final query = '?limit=$limit'
+          '${branchId != null ? '&branchId=$branchId' : ''}'
+          '${fulfillmentMode != null ? '&fulfillmentMode=$fulfillmentMode' : ''}';
       final response = await _api.client.get('/analytics/top-items$query');
       if (response.statusCode == 200) {
         _topItems = response.data;

@@ -1,6 +1,7 @@
 enum OrderStatus { New, InProgress, Ready, Completed, Cancelled, Refunded, PendingUserConfirmation }
 enum PaymentStatus { Pending, Paid, Refunded }
 enum OrderExceptionStatus { None, Stain, Damage, Delay, MissingItem, Other }
+enum QuoteStatus { None, Pending, Approved, Rejected }
 
 class OrderModel {
   final String id;
@@ -11,6 +12,9 @@ class OrderModel {
   final String? paymentMethod; // [NEW] cash, pos, transfer, pay_on_delivery, paystack
   final OrderExceptionStatus exceptionStatus; // [NEW]
   final String? exceptionNote; // [NEW]
+  final String fulfillmentMode; // [NEW] logistics | deployment | bulky
+  final QuoteStatus quoteStatus; // [NEW]
+  final double inspectionFee; // [NEW]
   
   final String pickupOption; // Pickup, Dropoff
   final String deliveryOption; // Deliver, Pickup
@@ -91,6 +95,9 @@ class OrderModel {
     this.pickupFee = 0,
     this.feeAdjustment,
     this.laundryNotes,
+    this.fulfillmentMode = 'logistics',
+    this.quoteStatus = QuoteStatus.None,
+    this.inspectionFee = 0.0,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -133,6 +140,9 @@ class OrderModel {
       pickupFee: (json['pickupFee'] as num?)?.toDouble() ?? 0.0,
       feeAdjustment: json['feeAdjustment'] != null ? FeeAdjustment.fromJson(json['feeAdjustment']) : null,
       laundryNotes: json['laundryNotes'],
+      fulfillmentMode: json['fulfillmentMode'] ?? 'logistics',
+      quoteStatus: QuoteStatus.values.firstWhere((e) => e.name == (json['quoteStatus'] ?? 'None'), orElse: () => QuoteStatus.None),
+      inspectionFee: (json['inspectionFee'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

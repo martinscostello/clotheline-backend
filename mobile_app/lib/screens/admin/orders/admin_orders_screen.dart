@@ -12,10 +12,12 @@ import '../../../../providers/branch_provider.dart';
 import '../../../../utils/toast_utils.dart'; // Ensure utils imported
 import 'admin_order_detail_screen.dart';
 import '../../../../services/notification_service.dart';
+import '../../../../utils/order_status_resolver.dart';
 
 class AdminOrdersScreen extends StatefulWidget {
   final int initialTabIndex;
-  const AdminOrdersScreen({super.key, this.initialTabIndex = 0});
+  final String? fulfillmentMode; // [NEW] logistics | deployment | bulky
+  const AdminOrdersScreen({super.key, this.initialTabIndex = 0, this.fulfillmentMode});
 
   @override
   State<AdminOrdersScreen> createState() => _AdminOrdersScreenState();
@@ -232,6 +234,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                     return _AdminOrderTabContent(
                       status: status, 
                       selectedBranch: _selectedBranchFilter,
+                      fulfillmentMode: widget.fulfillmentMode,
                       onFetch: _fetchOrders,
                       buildCard: _buildOrderCard,
                     );
@@ -363,7 +366,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                                 ],
                               ),
                             ),
-                            _buildStatusBadge(order.status.name),
+                            _buildStatusBadge(order),
                           ],
                         ),
                         if (order.laundryNotes != null && order.laundryNotes!.isNotEmpty)
@@ -406,17 +409,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    Color color;
-    switch (status) {
-      case 'New': color = Colors.blue; break;
-      case 'InProgress': color = Colors.orange; break;
-      case 'Ready': color = Colors.purple; break;
-      case 'Completed': color = Colors.green; break;
-      case 'Cancelled': color = Colors.red; break;
-      case 'Refunded': color = Colors.pinkAccent; break;
-      default: color = Colors.grey;
-    }
+  Widget _buildStatusBadge(OrderModel order) {
+    final status = OrderStatusResolver.getDisplayStatus(order);
+    final color = OrderStatusResolver.getStatusColor(order);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -438,12 +433,14 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
 class _AdminOrderTabContent extends StatefulWidget {
   final String status;
   final Branch? selectedBranch;
+  final String? fulfillmentMode; // [NEW]
   final Future<void> Function() onFetch;
   final Widget Function(OrderModel) buildCard;
 
   const _AdminOrderTabContent({
     required this.status,
     required this.selectedBranch,
+    this.fulfillmentMode,
     required this.onFetch,
     required this.buildCard,
   });
@@ -470,6 +467,16 @@ class _AdminOrderTabContentState extends State<_AdminOrderTabContent> with Autom
 
         if (widget.selectedBranch != null) {
           orders = orders.where((o) => o.branchId == widget.selectedBranch!.id).toList();
+        }
+
+        if (widget.fulfillmentMode != null) {
+           if (widget.fulfillmentMode == 'logistics') {
+             // Logistics view shows both laundry and bulky by default, OR just logistics?
+             // User said: "Logistics: services in logistics and bulky (factory logistics)"
+             orders = orders.where((o) => o.fulfillmentMode == 'logistics' || o.fulfillmentMode == 'bulky').toList();
+           } else {
+             orders = orders.where((o) => o.fulfillmentMode == widget.fulfillmentMode).toList();
+           }
         }
 
         if (orders.isEmpty) {

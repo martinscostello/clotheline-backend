@@ -173,6 +173,17 @@ class CartService extends ChangeNotifier {
   String? _activeBranchId;
   String? get activeBranchId => _activeBranchId;
 
+  // Fulfillment Modes Check
+  Set<String> get activeModes {
+    final modes = _items.map((item) => item.fulfillmentMode).toSet();
+    if (_storeItems.isNotEmpty) {
+      modes.add('logistics'); // Products always follow logistics mode
+    }
+    return modes;
+  }
+
+  bool get hasFulfillmentConflict => activeModes.length > 1;
+
   // Returns true if valid to switch, false if cart needs clearing confirmation
   bool validateBranch(String newBranchId) {
     if (_activeBranchId == null) return true; // First load

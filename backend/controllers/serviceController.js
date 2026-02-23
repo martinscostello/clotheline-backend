@@ -109,14 +109,22 @@ exports.getAllServices = async (req, res) => {
 
 exports.createService = async (req, res) => {
     try {
-        const { name, icon, color, description, image, discountPercentage, discountLabel, order, branchId } = req.body;
+        const {
+            name, icon, color, description, image,
+            discountPercentage, discountLabel, order, branchId,
+            fulfillmentMode, requiresTermsAcceptance, termsContent, cleaningLocation
+        } = req.body;
         const newService = new Service({
             name, icon, color, description,
             image: image || 'assets/images/service_laundry.png',
             discountPercentage: discountPercentage || 0,
             discountLabel: discountLabel || '',
             order: order || 0,
-            branchId // [NEW]
+            branchId,
+            fulfillmentMode: fulfillmentMode || 'logistics',
+            requiresTermsAcceptance: requiresTermsAcceptance || false,
+            termsContent: termsContent || '',
+            cleaningLocation: cleaningLocation || 'none'
         });
         const service = await newService.save();
         res.json(service);
@@ -132,7 +140,8 @@ exports.updateService = async (req, res) => {
             name, icon, color, description, image,
             discountPercentage, discountLabel, isActive,
             isLocked, lockedLabel, items, serviceTypes,
-            branchId, order // [NEW] Context & Order
+            branchId, order,
+            fulfillmentMode, requiresTermsAcceptance, termsContent, cleaningLocation
         } = req.body;
 
         console.log(`UPDATE SERVICE: ${req.params.id} | Branch: ${branchId || 'Global'}`);
@@ -207,6 +216,10 @@ exports.updateService = async (req, res) => {
             if (isLocked !== undefined) service.isLocked = isLocked;
             if (lockedLabel) service.lockedLabel = lockedLabel;
             if (order !== undefined) service.order = order;
+            if (fulfillmentMode) service.fulfillmentMode = fulfillmentMode;
+            if (requiresTermsAcceptance !== undefined) service.requiresTermsAcceptance = requiresTermsAcceptance;
+            if (termsContent !== undefined) service.termsContent = termsContent;
+            if (cleaningLocation) service.cleaningLocation = cleaningLocation;
 
             // Handle Items (Global Base Price Update)
             if (items && Array.isArray(items)) {
