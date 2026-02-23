@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../models/booking_models.dart';
 import '../models/store_product.dart';
 import 'api_service.dart';
+import 'package:latlong2/latlong.dart';
 
 // Simple Singleton Service for Cart Persistence
 class CartService extends ChangeNotifier {
@@ -173,6 +174,15 @@ class CartService extends ChangeNotifier {
   String? _activeBranchId;
   String? get activeBranchId => _activeBranchId;
 
+  // Global Location Context
+  LatLng? _deliveryLocation;
+  LatLng? get deliveryLocation => _deliveryLocation;
+  
+  void setDeliveryLocation(LatLng? location) {
+    _deliveryLocation = location;
+    notifyListeners();
+  }
+
   // Fulfillment Modes Check
   Set<String> get activeModes {
     final modes = _items.map((item) => item.fulfillmentMode).toSet();
@@ -206,11 +216,10 @@ class CartService extends ChangeNotifier {
          // We need (Base - Total) or manual calc.
          // CartItem.totalPrice = base * (1 - discount/100).
          // So discount = base - totalPrice.
-         
-         double baseTotal = item.item.basePrice * item.serviceType.priceMultiplier * item.quantity;
+         double baseTotal = item.item.basePrice * (item.serviceType?.priceMultiplier ?? 1.0) * item.quantity;
          double itemDiscount = baseTotal * (item.discountPercentage / 100);
          
-         String key = "Discount (${item.serviceType.name})";
+         String key = "Discount (${item.serviceType?.name ?? 'Generic'})";
          discounts[key] = (discounts[key] ?? 0) + itemDiscount;
       }
     }

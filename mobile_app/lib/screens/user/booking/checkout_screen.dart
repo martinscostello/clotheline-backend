@@ -443,9 +443,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 if (isPickup) {
                   _pickupSelection = selection;
                   _pickupLatLng = LatLng(selection.lat, selection.lng);
+                  // Sync with CartService for real-time breakdown updates
+                  _cartService.setDeliveryLocation(_pickupLatLng);
                 } else {
                   _deliverySelection = selection;
                   _deliveryLatLng = LatLng(selection.lat, selection.lng);
+                  // If it's a standard delivery, also sync if pickup isn't set
+                  if (_pickupLatLng == null) {
+                    _cartService.setDeliveryLocation(_deliveryLatLng);
+                  }
                 }
                 
                 // Recalculate Fee
@@ -491,13 +497,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   }
 
   double _calculateInspectionFee(double userLat, double userLng, CartItem item) {
-    if (item.deploymentLocation == null || item.inspectionFeeZones.isEmpty) {
+    if (item.inspectionFeeZones.isEmpty) {
       return item.inspectionFee; 
     }
     
+    // Fallback to branch location if service doesn't have a specific center
+    final branch = Provider.of<BranchProvider>(context, listen: false).selectedBranch;
+    final center = item.deploymentLocation ?? (branch != null ? LatLng(branch.location.lat, branch.location.lng) : const LatLng(6.334986, 5.603753)); // HQ fallback
+    
     const Distance distanceCalc = Distance();
     final userPoint = LatLng(userLat, userLng);
-    final double distanceKm = distanceCalc.as(LengthUnit.Meter, userPoint, item.deploymentLocation!) / 1000;
+    final double distanceKm = distanceCalc.as(LengthUnit.Meter, userPoint, center) / 1000;
     
     final zones = List<InspectionZone>.from(item.inspectionFeeZones);
     zones.sort((a, b) => a.radiusKm.compareTo(b.radiusKm));
@@ -613,7 +623,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(child: Text("${item.quantity}x ${item.item.name} (${item.serviceType.name})", style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12))),
+                  Expanded(child: Text("${item.quantity}x ${item.item.name} (${item.serviceType?.name ?? 'Generic'})", style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12))),
                   Text(CurrencyFormatter.format(item.fullEstimate), style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12)),
                 ],
               ),
@@ -858,7 +868,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         'itemType': 'Service',
         'itemId': i.item.id,
         'name': i.item.name,
-        'serviceType': i.serviceType.name,
+        'serviceType': i.serviceType?.name ?? 'Generic Service',
         'quantity': i.quantity,
         'price': i.totalPrice / i.quantity // Unit price
       });

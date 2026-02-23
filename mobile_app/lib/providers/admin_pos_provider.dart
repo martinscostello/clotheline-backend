@@ -102,7 +102,7 @@ class AdminPOSProvider extends ChangeNotifier {
           'itemType': 'Service',
           'itemId': i.item.id,
           'name': i.item.name,
-          'serviceType': i.serviceType.name,
+          'serviceType': i.serviceType?.name ?? 'Generic Service',
           'quantity': i.quantity,
           'price': i.totalPrice / i.quantity,
         }),

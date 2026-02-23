@@ -50,7 +50,7 @@ class ClothingItem {
 
 class CartItem {
   final ClothingItem item;
-  final ServiceType serviceType;
+  final ServiceType? serviceType;
   final double discountPercentage;
   final String fulfillmentMode;
   final bool quoteRequired; 

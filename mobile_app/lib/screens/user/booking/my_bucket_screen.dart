@@ -43,15 +43,15 @@ class MyBucketScreen extends StatelessWidget {
     final cartService = CartService(); // [Restored]
     
     // [Recalculate for visual consistency with CartService Gross Logic]
-    double grossSubtotal = cart.fold(0, (sum, item) => sum + (item.item.basePrice * item.serviceType.priceMultiplier * item.quantity));
+    double grossSubtotal = cart.fold(0, (sum, item) => sum + (item.item.basePrice * (item.serviceType?.priceMultiplier ?? 1.0) * item.quantity));
     
     // Calculate Discounts locally for the view if needed, or rely on service if cart matches
     Map<String, double> discounts = {};
     for (var item in cart) {
       if (item.discountPercentage > 0) {
-         double base = item.item.basePrice * item.serviceType.priceMultiplier * item.quantity;
+         double base = item.item.basePrice * (item.serviceType?.priceMultiplier ?? 1.0) * item.quantity;
          double d = base * (item.discountPercentage / 100);
-         String key = "Discount (${item.serviceType.name})";
+         String key = "Discount (${item.serviceType?.name ?? 'Generic'})";
          discounts[key] = (discounts[key] ?? 0) + d;
       }
     }
@@ -101,7 +101,7 @@ class MyBucketScreen extends StatelessWidget {
                                 children: [
                                   Text(item.item.name, style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold)),
                                   const SizedBox(height: 4),
-                                  Text(item.serviceType.name, style: TextStyle(color: secondaryTextColor, fontSize: 14)),
+                                  Text(item.serviceType?.name ?? "Regular Service", style: TextStyle(color: secondaryTextColor, fontSize: 14)),
                                 ],
                               ),
                             ),

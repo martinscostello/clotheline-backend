@@ -60,7 +60,7 @@ class ReceiptService {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Expanded(
-                      child: pw.Text(_truncate("${i.item.name} (${i.serviceType.name}) x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
+                      child: pw.Text(_truncate("${i.item.name} (${i.serviceType?.name ?? 'Generic'}) x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
                     ),
                     pw.Text("N${i.totalPrice.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
                   ],
@@ -165,7 +165,7 @@ class ReceiptService {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Expanded(
-                      child: pw.Text(_truncate("${i.item.name} (${i.serviceType.name}) x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
+                      child: pw.Text(_truncate("${i.item.name} (${i.serviceType?.name ?? 'Generic'}) x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
                     ),
                     pw.Text("N${i.totalPrice.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
                   ],
@@ -269,7 +269,7 @@ class ReceiptService {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Expanded(
-                      child: pw.Text(_truncate("${i.item.name} (${i.serviceType.name}) x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
+                      child: pw.Text(_truncate("${i.item.name} (${i.serviceType?.name ?? 'Generic'}) x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
                     ),
                     pw.Text("N${i.totalPrice.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
                   ],

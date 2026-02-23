@@ -1160,7 +1160,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                          return ListTile(
                            dense: true,
                            contentPadding: EdgeInsets.zero,
-                           title: Text("${item.quantity}x ${item.item.name} (${item.serviceType.name})", style: const TextStyle(color: Colors.white)),
+                            title: Text("${item.quantity}x ${item.item.name} (${item.serviceType?.name ?? 'Generic'})", style: const TextStyle(color: Colors.white)),
                            subtitle: Text(CurrencyFormatter.format(item.totalPrice), style: const TextStyle(color: Colors.white54)),
                            trailing: IconButton(
                              icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),

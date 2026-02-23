@@ -163,7 +163,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       // Laundry Items
                       ..._cartService.items.map((item) => _buildBucketItem(
                         title: item.item.name,
-                        subtitle: item.serviceType.name,
+                        subtitle: item.serviceType?.name ?? "Regular Service",
                         quantity: item.quantity,
                         price: item.totalPrice,
                         onDelete: () => _cartService.removeItem(item),
