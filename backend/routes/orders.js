@@ -17,6 +17,7 @@ router.put('/:id/override-fee', auth, admin, orderController.overrideDeliveryFee
 router.put('/:id/confirm-fee', auth, orderController.confirmFeeAdjustment); // New Consent Route
 router.put('/:id/despatch', auth, admin, orderController.despatchOrder);
 router.put('/:id/adjust-pricing', auth, admin, orderController.adjustOrderPricing);
+router.put('/:id/mark-as-paid', auth, admin, orderController.markOrderAsPaid);
 router.put('/:id/convert-to-deployment', auth, admin, orderController.convertOrderToDeployment);
 router.post('/:id/trigger-payment', auth, admin, orderController.triggerPaymentNotification);
 

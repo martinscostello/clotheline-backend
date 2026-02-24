@@ -215,4 +215,22 @@ class OrderService extends ChangeNotifier {
       return false;
     }
   }
+
+  // [NEW] Mark as Paid (Admin)
+  Future<bool> markAsPaid(String id, String method, {String? reference}) async {
+    try {
+      final response = await _apiService.client.put('/orders/$id/mark-as-paid', data: {
+        'method': method,
+        'reference': reference
+      });
+      if (response.statusCode == 200) {
+        await fetchOrders(role: 'admin');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error marking as paid: $e");
+      return false;
+    }
+  }
 }

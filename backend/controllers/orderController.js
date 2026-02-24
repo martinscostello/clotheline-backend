@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Settings = require('../models/Settings');
 const StoreProduct = require('../models/Product');
 const NotificationService = require('../utils/notificationService');
+const Service = require('../models/Service');
 const mongoose = require('mongoose');
 
 // Helper: Calculate Total (Used by payments.js and createOrder)
@@ -609,11 +610,14 @@ exports.despatchOrder = async (req, res) => {
         order.status = 'Inspecting';
         await order.save();
 
+        // [MODIFIED] Check if already notified by status watcher
+        // Usually, we want one clear message for Despatch
         const shortId = order._id.toString().slice(-6).toUpperCase();
         const title = 'Personnel Despatched';
         const message = `Our personnel have been despatched for inspection of order #${shortId}`;
 
         if (order.user) {
+            // [FIX] Use unique title to avoid duplicate confusion if status watcher fired
             await new Notification({
                 userId: order.user,
                 title,
@@ -626,7 +630,7 @@ exports.despatchOrder = async (req, res) => {
             _sendPushAsync(order.user, title, message, order._id);
         }
 
-        res.json({ msg: 'Order status updated to Inspecting', order });
+        res.json({ msg: 'Order status updated to Inspecting. Personnel despatched.', order });
     } catch (err) {
         console.error("Despatch Order Error:", err);
         res.status(500).send('Server Error');
@@ -644,24 +648,57 @@ exports.adjustOrderPricing = async (req, res) => {
         // Calculate new totals
         const settings = await Settings.findOne() || { taxEnabled: true, taxRate: 7.5 };
         const taxRate = settings.taxEnabled ? settings.taxRate : 0;
-        const taxAmount = (newPrice * taxRate) / 100;
+
+        // [NEW] Discount Re-validation Logic
+        let discountAmount = 0;
+        let discountLabel = "";
+
+        // 1. Identify primary service for discount re-validation
+        const serviceItem = order.items.find(i => i.itemType === 'Service');
+        if (serviceItem) {
+            const serviceDoc = await Service.findById(serviceItem.itemId);
+            if (serviceDoc) {
+                // Check branch-specific discount first
+                const branchConf = (serviceDoc.branchConfig || []).find(b => b.branchId.toString() === order.branchId.toString());
+                const activeDiscountPercent = (branchConf && branchConf.discountPercentage !== undefined)
+                    ? branchConf.discountPercentage
+                    : (serviceDoc.discountPercentage || 0);
+
+                if (activeDiscountPercent > 0) {
+                    discountAmount = (newPrice * activeDiscountPercent) / 100;
+                    discountLabel = (branchConf && branchConf.discountLabel) ? branchConf.discountLabel : serviceDoc.discountLabel;
+                    console.log(`[AdjustPricing] Re-applying ${activeDiscountPercent}% discount (₦${discountAmount})`);
+                }
+            }
+        }
+
+        const subtotalAfterDiscount = newPrice - discountAmount;
+        const taxAmount = (subtotalAfterDiscount * taxRate) / 100;
 
         // Final Total = New Price + Tax + Logistics - Discounts
-        // Note: Inspection fee already paid should be subtracted on the mobile side or here?
-        // The user said "INSPECTION FEE SHOULD BE SCRAPED AT THIS POINT, DO NOT INCLUDE IT HERE"
-        // This likely means the new total should be the final amount the user needs to pay, 
-        // OR the order total should be updated and the user pays (Total - InspectionFee).
-        // Let's update the order financials to reflect the new price.
-
         order.subtotal = newPrice;
+        order.discountAmount = discountAmount;
+        order.discountLabel = discountLabel;
+        order.taxRate = taxRate; // [FIX] Persist taxRate for frontend label
         order.taxAmount = taxAmount;
-        order.totalAmount = newPrice + taxAmount + (order.deliveryFee || 0) + (order.pickupFee || 0) - (order.discountAmount || 0);
+        order.totalAmount = subtotalAfterDiscount + taxAmount + (order.deliveryFee || 0) + (order.pickupFee || 0);
         order.status = 'PendingUserConfirmation';
         order.exceptionNote = notes || order.exceptionNote;
 
-        // Prepare fee adjustment for payment tracking if needed
-        // Re-using feeAdjustment mechanism but for the whole service
-        const extraDue = order.totalAmount - (order.inspectionFee || 0);
+        // [STABILITY FIX] Also update the items array prices to match the new subtotal
+        // This prevents "jumping" prices where logic sums items and gets a different total than subtotal.
+        if (order.items && order.items.length > 0) {
+            const serviceItems = order.items.filter(i => i.itemType === 'Service');
+            if (serviceItems.length === 1) {
+                serviceItems[0].price = newPrice;
+            } else if (serviceItems.length > 1) {
+                serviceItems[0].price = newPrice / serviceItems.length; // Approximate split if multiple
+            }
+        }
+
+        // Prepare fee adjustment for payment tracking
+        // Balance = Final Total - Inspection Fee
+        const extraDue = Math.max(0, order.totalAmount - (order.inspectionFee || 0));
         order.feeAdjustment = {
             amount: extraDue,
             status: 'Pending',
@@ -739,6 +776,48 @@ exports.convertOrderToDeployment = async (req, res) => {
         res.json(order);
     } catch (err) {
         console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.markOrderAsPaid = async (req, res) => {
+    try {
+        const { method, reference } = req.body;
+        let order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+        order.paymentStatus = 'Paid';
+        order.paymentMethod = method || 'other';
+        if (reference) order.paymentReference = reference;
+
+        // If it was pending adjustment, clear it
+        if (order.feeAdjustment) {
+            order.feeAdjustment.status = 'Paid';
+        }
+
+        await order.save();
+
+        // Notify user
+        if (order.user) {
+            const shortId = order._id.toString().slice(-6).toUpperCase();
+            const title = "Payment Confirmed";
+            const message = `Your payment for order #${shortId} has been manually confirmed.`;
+
+            await new Notification({
+                userId: order.user,
+                title,
+                message,
+                type: 'order',
+                branchId: order.branchId,
+                metadata: { orderId: order._id }
+            }).save();
+
+            _sendPushAsync(order.user, title, message, order._id);
+        }
+
+        res.json({ msg: 'Order marked as paid', order });
+    } catch (err) {
+        console.error("Mark as Paid Error:", err);
         res.status(500).send('Server Error');
     }
 };

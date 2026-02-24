@@ -137,8 +137,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           Text(CurrencyFormatter.format(item.price * item.quantity), 
                             style: TextStyle(color: textColor, fontWeight: FontWeight.bold)
                           ),
-                          if (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.New)
-                            const Text("(Estimate)", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                          if (order.fulfillmentMode == 'deployment' && (order.status == OrderStatus.New || order.status == OrderStatus.Inspecting))
+                            const Text("(Estimated Value)", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
                           if (order.status == OrderStatus.Completed && item.itemType == 'Product')
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
@@ -182,18 +182,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                     _buildTextRow("Status", order.paymentStatus.name, 
-                      (order.paymentStatus == PaymentStatus.Paid) ? Colors.green : Colors.orange, isBold: true),
-                    const Divider(height: 20),
-                    if (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.New) ...[
-                      const Center(
-                        child: Text("SERVICE ESTIMATE", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2)),
+                    if (order.fulfillmentMode == 'deployment' && (order.status == OrderStatus.New || order.status == OrderStatus.Inspecting || order.status == OrderStatus.PendingUserConfirmation)) ...[
+                      Center(
+                        child: Text(
+                          order.status == OrderStatus.PendingUserConfirmation ? "FINAL QUOTE" : "SERVICE ESTIMATE", 
+                          style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2)
+                        ),
                       ),
+                      const SizedBox(height: 8),
+                      _buildTextRow("Status", "Paid Inspection Fee (${CurrencyFormatter.format(order.inspectionFee)})", Colors.green, isBold: false),
                       const Divider(height: 24),
+                    ] else ...[
+                      _buildTextRow("Status", order.paymentStatus.name, 
+                        (order.paymentStatus == PaymentStatus.Paid) ? Colors.green : Colors.orange, isBold: true),
+                      const Divider(height: 20),
                     ],
-                    _buildSummaryRow(order.fulfillmentMode == 'deployment' ? "Final Service Price" : "Subtotal", order.subtotal, textColor),
+
+                    _buildSummaryRow(order.fulfillmentMode == 'deployment' ? "Service Price" : "Subtotal", order.subtotal, textColor),
                     if (order.taxAmount > 0)
-                      _buildSummaryRow("VAT (${order.taxRate}%)", order.taxAmount, textColor),
+                      _buildSummaryRow("VAT (${order.taxRate.toStringAsFixed(1)}%)", order.taxAmount, textColor),
                     if (order.deliveryFee > 0)
                       _buildSummaryRow("Delivery Fee", order.deliveryFee, textColor),
                     if (order.pickupFee > 0)
@@ -203,19 +210,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     
                     const Divider(height: 24),
                     _buildSummaryRow(
-                      (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.New) ? "Estimated Total" : ((order.fulfillmentMode == 'deployment') ? "Final Total" : "Total"), 
+                      (order.fulfillmentMode == 'deployment' && (order.status == OrderStatus.New || order.status == OrderStatus.Inspecting)) ? "Total Estimate" : ((order.fulfillmentMode == 'deployment') ? "Final Total" : "Total"), 
                       order.totalAmount, 
                       AppTheme.primaryColor, 
                       isBold: true, 
                       isTotal: true
                     ),
-                    if (order.fulfillmentMode == 'deployment' && order.inspectionFee > 0) ...[
+                    if (order.fulfillmentMode == 'deployment' && order.inspectionFee > 0 && order.status == OrderStatus.PendingUserConfirmation) ...[
                       const Divider(height: 30),
                       const Center(
                         child: Text("PAYMENT SUMMARY", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1.0)),
                       ),
                       const SizedBox(height: 12),
-                      _buildSummaryRow("Estimated Total", order.totalAmount, textColor),
+                      _buildSummaryRow("Quote Total", order.totalAmount, textColor),
                       _buildSummaryRow("Inspection Fee (Deposit Paid)", -order.inspectionFee, Colors.green),
                       const Divider(height: 20),
                       _buildSummaryRow(
@@ -230,6 +237,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       const Padding(
                         padding: EdgeInsets.only(top: 8.0),
                         child: Text("(Adjusted after inspection)", style: TextStyle(color: Colors.white54, fontSize: 10, fontStyle: FontStyle.italic)),
+                      ),
+                    if (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.Inspecting)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Center(child: Text("Waiting for on-site inspection", style: TextStyle(color: Colors.orange.withValues(alpha: 0.8), fontSize: 10, fontStyle: FontStyle.italic))),
                       ),
                   ],
                 ),
@@ -259,11 +271,30 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
               const SizedBox(height: 30),
 
+              if (order.status == OrderStatus.Inspecting && order.fulfillmentMode == 'deployment')
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton.icon(
+                      onPressed: null, // Disabled as it's just a status button
+                      icon: const Icon(Icons.search_rounded, color: Colors.white),
+                      label: const Text("WAITING FOR INSPECTION", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.withValues(alpha: 0.6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        disabledBackgroundColor: Colors.orange.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ),
+
               if (order.status != OrderStatus.Cancelled && order.paymentStatus == PaymentStatus.Pending)
                 if (order.fulfillmentMode != 'deployment' || order.status == OrderStatus.PendingUserConfirmation)
                 Column(
                   children: [
-                    if (order.status == OrderStatus.PendingUserConfirmation && order.fulfillmentMode == 'deployment') ...[
+                    if (order.status == OrderStatus.PendingUserConfirmation && order.fulfillmentMode != 'deployment') ...[
                       SizedBox(
                         width: double.infinity,
                         height: 55,
@@ -436,22 +467,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text("Pay ₦${order.feeAdjustment!.amount.toStringAsFixed(0)} Now"),
+                  child: Text("Pay ${CurrencyFormatter.format(order.feeAdjustment!.amount)} Now"),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _confirmPayOnDelivery(order),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orange,
-                    side: const BorderSide(color: Colors.orange),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              if (order.fulfillmentMode != 'deployment') ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _confirmPayOnDelivery(order),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                      side: const BorderSide(color: Colors.orange),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text("Pay on Delivery"),
                   ),
-                  child: const Text("Pay on Delivery"),
                 ),
-              ),
+              ],
             ],
           ),
         ],

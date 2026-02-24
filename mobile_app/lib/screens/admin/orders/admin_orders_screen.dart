@@ -326,7 +326,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
           decoration: BoxDecoration(
             border: isSelected 
                 ? Border.all(color: AppTheme.primaryColor, width: 2) 
-                : (_selectedOrder?.id == order.id && MediaQuery.of(context).size.width >= 600)
+                : (_selectedOrder != null && _selectedOrder?.id == order.id && MediaQuery.of(context).size.width >= 600)
                     ? Border.all(color: AppTheme.secondaryColor.withValues(alpha: 0.5), width: 2)
                     : null,
             borderRadius: BorderRadius.circular(15)

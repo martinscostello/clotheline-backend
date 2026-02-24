@@ -15,6 +15,7 @@ import '../../../../services/whatsapp_service.dart';
 import '../../../../services/receipt_service.dart'; // [NEW]
 import '../../../../providers/branch_provider.dart'; // [NEW]
 import '../../../../models/branch_model.dart'; // [NEW]
+import '../../../../utils/currency_formatter.dart'; // [NEW]
 
 class AdminOrderDetailScreen extends StatelessWidget {
   final OrderModel? order;
@@ -368,6 +369,30 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
       ),
     );
   }
+  Future<void> _markAsPaid() async {
+    final method = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF202020),
+        title: const Text("Confirm Payment", style: TextStyle(color: Colors.white)),
+        content: const Text("Select the payment method used by the customer.", style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, "cash"), child: const Text("CASH")),
+          TextButton(onPressed: () => Navigator.pop(ctx, "transfer"), child: const Text("TRANSFER")),
+          TextButton(onPressed: () => Navigator.pop(ctx, "pos"), child: const Text("POS")),
+        ],
+      ),
+    );
+
+    if (method != null && context.mounted) {
+      final success = await Provider.of<OrderService>(context, listen: false).markAsPaid(_order!.id, method);
+      if (success && context.mounted) {
+        ToastUtils.show(context, "Order marked as paid", type: ToastType.success);
+        _fetchOrder();
+      }
+    }
+  }
+
   Widget _buildInspectionActions() {
     final bool showDespatch = _order!.status == OrderStatus.New;
     final bool showAdjust = _order!.status == OrderStatus.Inspecting || _order!.status == OrderStatus.New;
@@ -721,12 +746,27 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text("Payment Status", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                           Text(_order!.paymentStatus.name.toUpperCase(), 
-                            style: TextStyle(
-                              color: _order!.paymentStatus == PaymentStatus.Paid ? Colors.green : Colors.orange, 
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14
-                            )
+                          Row(
+                            children: [
+                              Text(_order!.paymentStatus.name.toUpperCase(), 
+                                style: TextStyle(
+                                  color: _order!.paymentStatus == PaymentStatus.Paid ? Colors.green : Colors.orange, 
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14
+                                )
+                              ),
+                              if (_order!.paymentStatus == PaymentStatus.Pending)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: _markAsPaid,
+                                    tooltip: "Mark as Paid",
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
                       ),
@@ -741,7 +781,7 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                       if (_order!.pickupFee > 0) _buildSummaryRow("Pickup Fee", _order!.pickupFee),
                       if (_order!.deliveryFee > 0) _buildSummaryRow("Delivery Fee", _order!.deliveryFee),
                       if (_order!.discountAmount > 0) _buildSummaryRow("Discount", -_order!.discountAmount, color: Colors.green),
-                      if (_order!.taxAmount > 0) _buildSummaryRow("VAT (${_order!.taxRate.toStringAsFixed(0)}%)", _order!.taxAmount),
+                      if (_order!.taxAmount > 0) _buildSummaryRow("VAT (${_order!.taxRate.toStringAsFixed(1)}%)", _order!.taxAmount),
                       const Divider(color: Colors.white10, height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -750,7 +790,7 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text("₦${_order!.totalAmount.toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 22, fontWeight: FontWeight.bold)),
+                              Text(CurrencyFormatter.format(_order!.totalAmount), style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 22, fontWeight: FontWeight.bold)),
                               if (_order!.isFeeOverridden)
                                 const Text("(Fee Overridden)", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
                             ],
@@ -770,7 +810,7 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text("Balance Due", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                            Text("₦${(_order!.totalAmount - _order!.inspectionFee).toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                            Text(CurrencyFormatter.format(_order!.totalAmount - _order!.inspectionFee), style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 18, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ],
@@ -969,21 +1009,23 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: color, fontSize: 13)),
-          Text("₦${amount.toStringAsFixed(0)}", style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+          Text(CurrencyFormatter.format(amount), style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
   List<String> _getAvailableStatuses() {
-    final all = ["New", "InProgress", "Ready", "Completed", "Cancelled", "Refunded"];
+    final all = ["New", "Inspecting", "PendingUserConfirmation", "InProgress", "Ready", "Completed", "Cancelled", "Refunded"];
     if (_currentStatus == 'Refunded') return ['Refunded'];
     if (_currentStatus == 'Cancelled') return ['Cancelled'];
     
     // Admins can move forward through the lifecycle or Cancel
     List<String> valid = [_currentStatus, "Cancelled"];
     
-    if (_currentStatus == 'New') valid.add("InProgress");
+    if (_currentStatus == 'New') valid.add("Inspecting");
+    if (_currentStatus == 'Inspecting') valid.add("PendingUserConfirmation");
+    if (_currentStatus == 'PendingUserConfirmation') valid.add("InProgress");
     if (_currentStatus == 'InProgress') valid.add("Ready");
     if (_currentStatus == 'Ready') valid.add("Completed");
     
