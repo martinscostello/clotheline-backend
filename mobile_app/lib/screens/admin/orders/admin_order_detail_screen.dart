@@ -346,6 +346,12 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
   Widget _buildInspectionActions() {
     if (_order!.fulfillmentMode != 'deployment') return const SizedBox.shrink();
     
+    final bool showDespatch = _order!.status == OrderStatus.New;
+    final bool showAdjust = _order!.status == OrderStatus.Inspecting || _order!.status == OrderStatus.New;
+    final bool showNotify = _order!.status == OrderStatus.PendingUserConfirmation;
+
+    if (!showDespatch && !showAdjust && !showNotify) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -353,11 +359,16 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
         const SizedBox(height: 12),
         Row(
           children: [
-             _inspectionBtn("Despatched", Icons.local_shipping, _despatchOrder),
-             const SizedBox(width: 8),
-             _inspectionBtn("Adjust Price", Icons.edit, _showAdjustmentDialog),
-             const SizedBox(width: 8),
-             _inspectionBtn("Make Payment", Icons.payment, _notifyPayment),
+             if (showDespatch)
+                _inspectionBtn("Despatched", Icons.local_shipping, _despatchOrder),
+             if (showDespatch && (showAdjust || showNotify)) const SizedBox(width: 8),
+
+             if (showAdjust)
+                _inspectionBtn("Adjust Price", Icons.edit, _showAdjustmentDialog),
+             if (showAdjust && showNotify) const SizedBox(width: 8),
+
+             if (showNotify)
+                _inspectionBtn("Make Payment", Icons.payment, _notifyPayment),
           ],
         ),
         const SizedBox(height: 25),

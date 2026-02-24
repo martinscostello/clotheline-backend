@@ -200,8 +200,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
                     const Divider(height: 30),
                     _buildSummaryRow(
-                      order.status == OrderStatus.PendingUserConfirmation ? "Balance Due" : "Total", 
-                      order.status == OrderStatus.PendingUserConfirmation 
+                      (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.PendingUserConfirmation) ? "Balance Due" : "Total", 
+                      (order.fulfillmentMode == 'deployment' && (order.status == OrderStatus.PendingUserConfirmation || order.status == OrderStatus.Inspecting))
                         ? (order.totalAmount - order.inspectionFee) 
                         : order.totalAmount, 
                       AppTheme.primaryColor, 
@@ -237,70 +237,95 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const SizedBox(height: 30),
 
               if (order.status != OrderStatus.Cancelled && order.paymentStatus == PaymentStatus.Pending)
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final auth = context.read<AuthService>();
-                      if (auth.isGuest) {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => const GuestLoginDialog(
-                            message: "Please sign in or create an account to pay for this order.",
+                if (order.fulfillmentMode != 'deployment' || order.status == OrderStatus.PendingUserConfirmation)
+                Column(
+                  children: [
+                    if (order.status == OrderStatus.PendingUserConfirmation && order.fulfillmentMode == 'deployment') ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: OutlinedButton(
+                          onPressed: () => _confirmPayOnDelivery(order),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.green),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
-                        );
-                        return;
-                      }
+                          child: const Text("PAY ON DELIVERY", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final auth = context.read<AuthService>();
+                          if (auth.isGuest) {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => const GuestLoginDialog(
+                                message: "Please sign in or create an account to pay for this order.",
+                              ),
+                            );
+                            return;
+                          }
 
-                      // Trigger Payment (Revised Flow)
-                      final paymentService = PaymentService();
-                      final email = order.guestName != null ? "guest@clotheline.com" : "user@clotheline.com"; 
-                      
-                      try {
-                        ToastUtils.show(context, "Initializing Payment...", type: ToastType.info);
-                        
-                        // 1. Initialize (Handle adjustment scope for deployment orders)
-                        final initData = await paymentService.initializePayment({
-                          'orderId': order.id,
-                          'scope': order.fulfillmentMode == 'deployment' ? 'adjustment' : null,
-                          'guestInfo': { 'email': email } 
-                        });
-                        
-                        if (initData != null && context.mounted) {
-                           final url = initData['authorization_url'];
-                           final ref = initData['reference'];
-                           
-                           // 2. Open WebView
-                           await paymentService.openPaymentWebView(context, url, ref);
-                           
-                           // 3. Verify
-                           if (context.mounted) {
-                             ToastUtils.show(context, "Verifying Payment...", type: ToastType.info);
-                             final verifyResult = await paymentService.verifyAndCreateOrder(ref);
-                             
-                             if (verifyResult != null && verifyResult['status'] == 'success') {
-                                 if (context.mounted) {
-                                   ToastUtils.show(context, "Payment Successful!", type: ToastType.success);
-                                   // Refetch orders to update UI
-                                   await Provider.of<OrderService>(context, listen: false).fetchOrders();
-                                   if (context.mounted) Navigator.pop(context); 
+                          // Trigger Payment (Revised Flow)
+                          final paymentService = PaymentService();
+                          final email = order.guestName != null ? "guest@clotheline.com" : "user@clotheline.com"; 
+                          
+                          try {
+                            ToastUtils.show(context, "Initializing Payment...", type: ToastType.info);
+                            
+                            // 1. Initialize (Handle adjustment scope for deployment orders)
+                            final initData = await paymentService.initializePayment({
+                              'orderId': order.id,
+                              'scope': order.fulfillmentMode == 'deployment' ? 'adjustment' : null,
+                              'guestInfo': { 'email': email } 
+                            });
+                            
+                            if (initData != null && context.mounted) {
+                               final url = initData['authorization_url'];
+                               final ref = initData['reference'];
+                               
+                               // 2. Open WebView
+                               await paymentService.openPaymentWebView(context, url, ref);
+                               
+                               // 3. Verify
+                               if (context.mounted) {
+                                 ToastUtils.show(context, "Verifying Payment...", type: ToastType.info);
+                                 final verifyResult = await paymentService.verifyAndCreateOrder(ref);
+                                 
+                                 if (verifyResult != null && verifyResult['status'] == 'success') {
+                                     if (context.mounted) {
+                                       ToastUtils.show(context, "Payment Successful!", type: ToastType.success);
+                                       // Refetch orders to update UI
+                                       await Provider.of<OrderService>(context, listen: false).fetchOrders();
+                                       if (context.mounted) Navigator.pop(context); 
+                                     }
+                                 } else {
+                                     if (context.mounted) ToastUtils.show(context, "Payment Verification Failed", type: ToastType.error);
                                  }
-                             } else {
-                                 if (context.mounted) ToastUtils.show(context, "Payment Verification Failed", type: ToastType.error);
-                             }
-                           }
-                        }
-                      } catch (e) {
-                         if (context.mounted) ToastUtils.show(context, "Payment Error: $e", type: ToastType.error);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[600],
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                               }
+                            }
+                          } catch (e) {
+                             if (context.mounted) ToastUtils.show(context, "Payment Error: $e", type: ToastType.error);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[600],
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: Text(
+                          (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.PendingUserConfirmation) 
+                            ? "PAY BALANCE ONLINE" 
+                            : "PAY NOW", 
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)
+                        ),
+                      ),
                     ),
-                    child: Text(order.status == OrderStatus.PendingUserConfirmation ? "PAY BALANCE" : "PAY NOW", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                  ),
+                  ],
                 ),
 
               if (order.paymentStatus == PaymentStatus.Paid)

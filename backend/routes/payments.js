@@ -261,7 +261,15 @@ router.post('/verify', auth, async (req, res) => {
             const Order = require('../models/Order');
             order = await Order.findById(retryOrderId);
             if (order) {
-                order.paymentStatus = 'Paid';
+                // If it's a deployment order and we're paying the adjustment, it becomes Paid.
+                // Otherwise, it might be a retry of the initial fee.
+                if (metadata.scope === 'adjustment') {
+                    order.paymentStatus = 'Paid';
+                } else if (metadata.fulfillmentMode === 'deployment' && metadata.quoteStatus === 'Pending') {
+                    order.paymentStatus = 'Pending'; // Remains pending for the balance
+                } else {
+                    order.paymentStatus = 'Paid';
+                }
                 order.status = 'New';
                 await order.save();
             }
@@ -270,7 +278,14 @@ router.post('/verify', auth, async (req, res) => {
             try {
                 // Strict: Pass userId explicitly
                 order = await createOrderInternal(metadata, userId);
-                order.paymentStatus = 'Paid';
+
+                // [FIX] For deployment orders with pending quotes, the initial payment is just the inspection fee.
+                // The order should remain in 'Pending' payment status until the balance is paid.
+                if (metadata.fulfillmentMode === 'deployment' && metadata.quoteStatus === 'Pending') {
+                    order.paymentStatus = 'Pending';
+                } else {
+                    order.paymentStatus = 'Paid';
+                }
                 await order.save();
             } catch (e) {
                 console.error("Order Create Failed:", e);

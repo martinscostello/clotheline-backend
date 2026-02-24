@@ -4,13 +4,27 @@ import 'package:flutter/material.dart';
 
 class OrderStatusResolver {
   static String getDisplayStatus(OrderModel order) {
-    if (order.quoteStatus == QuoteStatus.Pending) {
-      return "Pending Quote";
+    // 1. Check for specific inspection-flow statuses first
+    if (order.status == OrderStatus.Inspecting) {
+      return order.fulfillmentMode == 'deployment' ? "Personnel En-Route" : "Inspecting";
     }
+    
+    if (order.status == OrderStatus.PendingUserConfirmation) {
+      if (order.fulfillmentMode == 'deployment') return "Price Adjustment";
+      if (order.fulfillmentMode == 'bulky') return "Weight Verified";
+      return "Awaiting Action";
+    }
+
+    // 2. Then check quote status (initial state)
+    if (order.quoteStatus == QuoteStatus.Pending) {
+      if (order.status == OrderStatus.New) return "Pending Quote";
+    }
+
     if (order.quoteStatus == QuoteStatus.Rejected) {
       return "Quote Rejected";
     }
 
+    // 3. Fallback to standard status mappings
     switch (order.fulfillmentMode) {
       case 'deployment':
         return _getDeploymentStatus(order.status);
