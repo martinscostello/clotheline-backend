@@ -928,10 +928,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       'deliveryLocation': widget.fulfillmentMode == 'deployment' ? null : (_afterWashOption == 1 ? _deliverySelection?.toJson() : null), 
       'pickupCoordinates': widget.fulfillmentMode == 'deployment' ? (_pickupLatLng != null ? {'lat': _pickupLatLng!.latitude, 'lng': _pickupLatLng!.longitude} : null) : (_pickupLatLng != null ? {'lat': _pickupLatLng!.latitude, 'lng': _pickupLatLng!.longitude} : null),
       'deliveryCoordinates': _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
-      'pickupFee': _pickupFee,
-      'deliveryFee': _deliveryFee,
-      'discountBreakdown': _cartService.laundryDiscounts,
-      'storeDiscount': _cartService.storeDiscountAmount,
+      'pickupFee': widget.fulfillmentMode == 'deployment' ? 0.0 : _pickupFee,
+      'deliveryFee': widget.fulfillmentMode == 'deployment' ? 0.0 : _deliveryFee,
+      'discountBreakdown': widget.fulfillmentMode == 'deployment' ? {} : _cartService.laundryDiscounts,
+      'storeDiscount': widget.fulfillmentMode == 'deployment' ? 0.0 : _cartService.storeDiscountAmount,
       'laundryNotes': _notesController.text.isNotEmpty ? _notesController.text : null,
       
       // [NEW] Service DNA

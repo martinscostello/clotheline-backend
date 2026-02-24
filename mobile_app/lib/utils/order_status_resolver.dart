@@ -31,6 +31,7 @@ class OrderStatusResolver {
       case OrderStatus.Cancelled: return "Cancelled";
       case OrderStatus.Refunded: return "Refunded";
       case OrderStatus.PendingUserConfirmation: return "Awaiting Action";
+      case OrderStatus.Inspecting: return "Inspecting";
     }
   }
 
@@ -42,7 +43,8 @@ class OrderStatusResolver {
       case OrderStatus.Completed: return "Service Completed";
       case OrderStatus.Cancelled: return "Cancelled";
       case OrderStatus.Refunded: return "Refunded";
-      case OrderStatus.PendingUserConfirmation: return "INSPECTION OG";
+      case OrderStatus.PendingUserConfirmation: return "Price Adjustment";
+      case OrderStatus.Inspecting: return "Personnel En-Route";
     }
   }
 
@@ -55,6 +57,7 @@ class OrderStatusResolver {
       case OrderStatus.Cancelled: return "Cancelled";
       case OrderStatus.Refunded: return "Refunded";
       case OrderStatus.PendingUserConfirmation: return "Weight Verified";
+      case OrderStatus.Inspecting: return "Inspecting";
     }
   }
 
@@ -70,6 +73,7 @@ class OrderStatusResolver {
       case OrderStatus.Cancelled: return Colors.grey;
       case OrderStatus.Refunded: return Colors.red;
       case OrderStatus.PendingUserConfirmation: return Colors.purpleAccent;
+      case OrderStatus.Inspecting: return Colors.indigoAccent;
     }
   }
 }

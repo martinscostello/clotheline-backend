@@ -533,11 +533,10 @@ class _BookingSheetState extends State<BookingSheet> {
 
                              _buildBreakdownRow(
                                widget.serviceModel.fulfillmentMode == 'deployment' ? "Inspection Fee" : "Total Items", 
-                               widget.serviceModel.fulfillmentMode == 'deployment' && _cartService.deliveryLocation == null 
-                                 ? null 
-                                 : _cartService.serviceTotalAmount, 
+                               _cartService.serviceTotalAmount, 
                                textColor, 
-                               isDark
+                               isDark,
+                               isPending: widget.serviceModel.fulfillmentMode == 'deployment',
                              ),
                              
                              if (widget.serviceModel.fulfillmentMode != 'deployment' && _cartService.laundryTotalDiscount > 0)
@@ -555,7 +554,7 @@ class _BookingSheetState extends State<BookingSheet> {
                                    style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)
                                  ),
                                  Text(
-                                   widget.serviceModel.fulfillmentMode == 'deployment' && _cartService.deliveryLocation == null
+                                   widget.serviceModel.fulfillmentMode == 'deployment'
                                      ? "Pending Address"
                                      : CurrencyFormatter.format(_cartService.totalAmount),
                                    style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)
@@ -600,7 +599,7 @@ class _BookingSheetState extends State<BookingSheet> {
   );
 }
 
-  Widget _buildBreakdownRow(String label, double? amount, Color color, bool isDark) {
+  Widget _buildBreakdownRow(String label, double? amount, Color color, bool isDark, {bool isPending = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -608,8 +607,8 @@ class _BookingSheetState extends State<BookingSheet> {
         children: [
           Text(label, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13)),
           Text(
-            amount == null ? "Pending" : CurrencyFormatter.format(amount),
-            style: TextStyle(color: amount == null ? Colors.orangeAccent : color, fontSize: 13, fontWeight: FontWeight.w500)
+            (amount == null || isPending) ? "Pending Address" : CurrencyFormatter.format(amount),
+            style: TextStyle(color: (amount == null || isPending) ? Colors.orangeAccent : color, fontSize: 13, fontWeight: FontWeight.w500)
           ),
         ],
       ),

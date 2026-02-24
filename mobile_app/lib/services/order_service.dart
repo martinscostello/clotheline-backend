@@ -157,4 +157,47 @@ class OrderService extends ChangeNotifier {
       return false;
     }
   }
+  // [NEW] Despatch Order (Admin)
+  Future<bool> despatchOrder(String id) async {
+    try {
+      final response = await _apiService.client.put('/orders/$id/despatch');
+      if (response.statusCode == 200) {
+        await fetchOrders(role: 'admin');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error despatching order: $e");
+      return false;
+    }
+  }
+
+  // [NEW] Adjust Pricing (Admin)
+  Future<bool> adjustPricing(String id, double newPrice, String? notes) async {
+    try {
+      final response = await _apiService.client.put('/orders/$id/adjust-pricing', data: {
+        'newPrice': newPrice,
+        'notes': notes
+      });
+      if (response.statusCode == 200) {
+        await fetchOrders(role: 'admin');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error adjusting pricing: $e");
+      return false;
+    }
+  }
+
+  // [NEW] Trigger Payment Notification (Admin)
+  Future<bool> triggerPaymentNotification(String id) async {
+    try {
+      final response = await _apiService.client.post('/orders/$id/trigger-payment');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error triggering payment: $e");
+      return false;
+    }
+  }
 }

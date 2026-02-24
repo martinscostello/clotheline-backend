@@ -147,7 +147,7 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
           _heroTagControllers.add(TextEditingController(text: item.tagLine));
           _heroDurationControllers.add(TextEditingController(text: (item.duration / 1000).toStringAsFixed(1)));
         }
-              setState(() {
+        setState(() {
           _content = content;
           _isLoading = false;
         });
@@ -421,10 +421,11 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
     if (_content == null) return const Center(child: Text("Failed to load content", style: TextStyle(color: Colors.white)));
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildBranchSelector(),
         const SizedBox(height: 20),
-        Expanded(child: _buildSectionSpecificContent()),
+        _buildSectionSpecificContent(),
       ],
     );
   }

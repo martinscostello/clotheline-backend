@@ -45,14 +45,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
 
   Future<void> _hydrateAndSync() async {
-    // 1. Load Content Cache
-    await _contentService.loadFromCache().then((c) {
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final branchId = branchProvider.selectedBranch?.id;
+
+    // 1. Load Content Cache (Branch Aware)
+    await _contentService.loadFromCache(branchId: branchId).then((c) {
        if (mounted) setState(() => _appContent = c);
     });
 
     // 2. Load Product Cache (Branch Aware)
-    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-    await _storeService.loadFromCache(branchId: branchProvider.selectedBranch?.id);
+    await _storeService.loadFromCache(branchId: branchId);
 
     if (mounted) {
       setState(() => _isHydrated = true);
@@ -63,13 +65,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
   
   Future<void> _performSilentSync() async {
-     _contentService.fetchFromApi().then((c) {
+     final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+     final branchId = branchProvider.selectedBranch?.id;
+
+     _contentService.fetchFromApi(branchId: branchId).then((c) {
         if (mounted && c != null) setState(() => _appContent = c);
      });
      
      if (mounted) {
-       final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-       _storeService.fetchFromApi(branchId: branchProvider.selectedBranch?.id);
+       _storeService.fetchFromApi(branchId: branchId);
      }
   }
 

@@ -262,6 +262,130 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
       ),
     );
   }
+  Future<void> _despatchOrder() async {
+    if (_order == null) return;
+    setState(() => _isUpdating = true);
+    final success = await Provider.of<OrderService>(context, listen: false).despatchOrder(_order!.id);
+    if (success) await _fetchOrder();
+    setState(() => _isUpdating = false);
+    if (mounted) ToastUtils.show(context, success ? "Personnel Despatched" : "Failed to update", type: success ? ToastType.success : ToastType.error);
+  }
+
+  Future<void> _notifyPayment() async {
+    if (_order == null) return;
+    setState(() => _isUpdating = true);
+    final success = await Provider.of<OrderService>(context, listen: false).triggerPaymentNotification(_order!.id);
+    setState(() => _isUpdating = false);
+    if (mounted) ToastUtils.show(context, success ? "Payment Notification Sent" : "Failed to notify", type: success ? ToastType.success : ToastType.error);
+  }
+
+  Future<void> _showAdjustmentDialog() async {
+    final priceCtrl = TextEditingController(text: _order!.subtotal.toStringAsFixed(0));
+    final noteCtrl = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF202020),
+        title: const Text("Adjust Pricing after Inspection", style: TextStyle(color: Colors.white)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Enter the final service price (excluding inspection fee already paid).", style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 15),
+              TextField(
+                controller: priceCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: "New Service Price",
+                  labelStyle: TextStyle(color: Colors.white54),
+                  prefixText: "₦ ",
+                  prefixStyle: TextStyle(color: Colors.white54),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                ),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: noteCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: "Notes (Updates both User and Admin)",
+                  labelStyle: TextStyle(color: Colors.white54),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(child: const Text("CANCEL"), onPressed: () => Navigator.pop(ctx)),
+          TextButton(
+            child: const Text("UPDATE & NOTIFY", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+            onPressed: () async {
+              final double? price = double.tryParse(priceCtrl.text);
+              if (price == null) {
+                ToastUtils.show(context, "Invalid Amount", type: ToastType.error);
+                return;
+              }
+              Navigator.pop(ctx);
+              setState(() => _isUpdating = true);
+              final success = await Provider.of<OrderService>(context, listen: false)
+                  .adjustPricing(_order!.id, price, noteCtrl.text);
+              if (success) await _fetchOrder();
+              setState(() => _isUpdating = false);
+              if (mounted) ToastUtils.show(context, success ? "Pricing Adjusted" : "Failed to update", type: success ? ToastType.success : ToastType.error);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInspectionActions() {
+    if (_order!.fulfillmentMode != 'deployment') return const SizedBox.shrink();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Inspection Workflow", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+             _inspectionBtn("Despatched", Icons.local_shipping, _despatchOrder),
+             const SizedBox(width: 8),
+             _inspectionBtn("Adjust Price", Icons.edit, _showAdjustmentDialog),
+             const SizedBox(width: 8),
+             _inspectionBtn("Make Payment", Icons.payment, _notifyPayment),
+          ],
+        ),
+        const SizedBox(height: 25),
+      ],
+    );
+  }
+
+  Widget _inspectionBtn(String label, IconData icon, VoidCallback onPressed) {
+    return Expanded(
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white.withValues(alpha: 0.05),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 0,
+        ),
+        onPressed: _isUpdating ? null : onPressed,
+        child: Column(
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -386,6 +510,9 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                 ),
               ),
 
+
+              // [NEW] Inspection Workflow Actions
+              _buildInspectionActions(),
 
               // 2. Customer Info
               Container(

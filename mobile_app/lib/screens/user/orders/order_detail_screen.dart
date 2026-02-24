@@ -183,7 +183,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                      _buildTextRow("Status", order.paymentStatus.name, 
                       (order.paymentStatus == PaymentStatus.Paid) ? Colors.green : Colors.orange, isBold: true),
                     const Divider(height: 20),
-                    _buildSummaryRow("Subtotal", order.subtotal, textColor),
+                    _buildSummaryRow(order.fulfillmentMode == 'deployment' ? "Service Total" : "Subtotal", order.subtotal, textColor),
                     if (order.taxAmount > 0)
                       _buildSummaryRow("VAT (${order.taxRate}%)", order.taxAmount, textColor),
                     if (order.deliveryFee > 0)
@@ -192,8 +192,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       _buildSummaryRow("Pickup Fee", order.pickupFee, textColor),
                     if (order.discountAmount > 0 || order.storeDiscount > 0)
                       _buildSummaryRow("Discount", -(order.discountAmount + order.storeDiscount), Colors.green),
+                    
+                    if (order.fulfillmentMode == 'deployment' && order.inspectionFee > 0) ...[
+                      const Divider(height: 20),
+                      _buildSummaryRow("Inspection Fee Paid", -order.inspectionFee, Colors.green),
+                    ],
+
                     const Divider(height: 30),
-                    _buildSummaryRow("Total", order.totalAmount, AppTheme.primaryColor, isBold: true, isTotal: true),
+                    _buildSummaryRow(
+                      order.status == OrderStatus.PendingUserConfirmation ? "Balance Due" : "Total", 
+                      order.status == OrderStatus.PendingUserConfirmation 
+                        ? (order.totalAmount - order.inspectionFee) 
+                        : order.totalAmount, 
+                      AppTheme.primaryColor, 
+                      isBold: true, 
+                      isTotal: true
+                    ),
                   ],
                 ),
               ),
@@ -246,10 +260,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       try {
                         ToastUtils.show(context, "Initializing Payment...", type: ToastType.info);
                         
-                        // 1. Initialize (Retry Flow with Order ID)
+                        // 1. Initialize (Handle adjustment scope for deployment orders)
                         final initData = await paymentService.initializePayment({
                           'orderId': order.id,
-                          'guestInfo': { 'email': email } // Fallback email logic
+                          'scope': order.fulfillmentMode == 'deployment' ? 'adjustment' : null,
+                          'guestInfo': { 'email': email } 
                         });
                         
                         if (initData != null && context.mounted) {
@@ -267,7 +282,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                              if (verifyResult != null && verifyResult['status'] == 'success') {
                                  if (context.mounted) {
                                    ToastUtils.show(context, "Payment Successful!", type: ToastType.success);
-                                   Navigator.pop(context); // Refresh
+                                   // Refetch orders to update UI
+                                   await Provider.of<OrderService>(context, listen: false).fetchOrders();
+                                   if (context.mounted) Navigator.pop(context); 
                                  }
                              } else {
                                  if (context.mounted) ToastUtils.show(context, "Payment Verification Failed", type: ToastType.error);
@@ -282,7 +299,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       backgroundColor: Colors.green[600],
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text("PAY NOW", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    child: Text(order.status == OrderStatus.PendingUserConfirmation ? "PAY BALANCE" : "PAY NOW", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
 
@@ -484,6 +501,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case OrderStatus.Cancelled: return Icons.cancel;
       case OrderStatus.Refunded: return Icons.money_off; 
       case OrderStatus.PendingUserConfirmation: return Icons.pending_actions;
+      case OrderStatus.Inspecting: return Icons.search;
     }
   }
 }

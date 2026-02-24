@@ -77,6 +77,19 @@ router.post('/initialize', auth, async (req, res) => {
                 return res.status(400).json({ msg: 'No adjustment needed for this order' });
             }
             finalTotal = order.feeAdjustment.amount;
+        } else if (req.body.fulfillmentMode === 'deployment' && req.body.quoteStatus === 'Pending') {
+            // [CRITICAL] Inspection Fee Only. No VAT, No Discounts.
+            finalTotal = Number(req.body.inspectionFee) || 0;
+            if (finalTotal <= 0) {
+                // Fallback to manual sum if field is missing but items have it
+                finalTotal = req.body.items.reduce((sum, i) => sum + (Number(i.inspectionFee) || 0), 0);
+            }
+            // If still zero, use a default safety
+            if (finalTotal <= 0) finalTotal = 10000;
+
+            deliveryFee = 0;
+            pickupFee = 0;
+            totalDiscount = 0;
         } else {
             // Add Logistics Fees for normal orders
             deliveryFee = Number(req.body.deliveryFee) || 0;

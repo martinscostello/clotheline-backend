@@ -15,5 +15,8 @@ router.put('/:id/status', auth, admin, orderController.updateOrderStatus);
 router.put('/:id/exception', auth, admin, orderController.updateOrderException);
 router.put('/:id/override-fee', auth, admin, orderController.overrideDeliveryFee); // New Override Route
 router.put('/:id/confirm-fee', auth, orderController.confirmFeeAdjustment); // New Consent Route
+router.put('/:id/despatch', auth, admin, orderController.despatchOrder);
+router.put('/:id/adjust-pricing', auth, admin, orderController.adjustOrderPricing);
+router.post('/:id/trigger-payment', auth, admin, orderController.triggerPaymentNotification);
 
 module.exports = router;

@@ -347,6 +347,8 @@ exports.updateOrderStatus = async (req, res) => {
                 case 'Completed': return { title: 'Order Delivered', msg: `Your order #${shortId} has been Delivered` };
                 case 'Cancelled': return { title: 'Order Cancelled', msg: `Your order #${shortId} has been Cancelled` };
                 case 'Refunded': return { title: 'Order Refunded', msg: `Your order #${shortId} has been Refunded` };
+                case 'Inspecting': return { title: 'Personnel Despatched', msg: `Our personnel have been despatched for inspection of order #${shortId}` };
+                case 'PendingUserConfirmation': return { title: 'Quote Ready', msg: `A quote has been prepared for order #${shortId}. Please make payment.` };
                 default: return { title: `Order ${s}`, msg: `Your order #${shortId} is now ${s}` };
             }
         };
@@ -596,6 +598,127 @@ exports.confirmFeeAdjustment = async (req, res) => {
         res.status(400).json({ msg: 'Invalid choice' });
     } catch (err) {
         console.error("Confirm Fee Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
+exports.despatchOrder = async (req, res) => {
+    try {
+        let order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+        order.status = 'Inspecting';
+        await order.save();
+
+        const shortId = order._id.toString().slice(-6).toUpperCase();
+        const title = 'Personnel Despatched';
+        const message = `Our personnel have been despatched for inspection of order #${shortId}`;
+
+        if (order.user) {
+            await new Notification({
+                userId: order.user,
+                title,
+                message,
+                type: 'order',
+                branchId: order.branchId,
+                metadata: { orderId: order._id }
+            }).save();
+
+            _sendPushAsync(order.user, title, message, order._id);
+        }
+
+        res.json({ msg: 'Order status updated to Inspecting', order });
+    } catch (err) {
+        console.error("Despatch Order Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.adjustOrderPricing = async (req, res) => {
+    try {
+        const { newPrice, notes } = req.body;
+        if (newPrice === undefined) return res.status(400).json({ msg: 'New price is required' });
+
+        let order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+        // Calculate new totals
+        const settings = await Settings.findOne() || { taxEnabled: true, taxRate: 7.5 };
+        const taxRate = settings.taxEnabled ? settings.taxRate : 0;
+        const taxAmount = (newPrice * taxRate) / 100;
+
+        // Final Total = New Price + Tax + Logistics - Discounts
+        // Note: Inspection fee already paid should be subtracted on the mobile side or here?
+        // The user said "INSPECTION FEE SHOULD BE SCRAPED AT THIS POINT, DO NOT INCLUDE IT HERE"
+        // This likely means the new total should be the final amount the user needs to pay, 
+        // OR the order total should be updated and the user pays (Total - InspectionFee).
+        // Let's update the order financials to reflect the new price.
+
+        order.subtotal = newPrice;
+        order.taxAmount = taxAmount;
+        order.totalAmount = newPrice + taxAmount + (order.deliveryFee || 0) + (order.pickupFee || 0) - (order.discountAmount || 0);
+        order.status = 'PendingUserConfirmation';
+        order.exceptionNote = notes || order.exceptionNote;
+
+        // Prepare fee adjustment for payment tracking if needed
+        // Re-using feeAdjustment mechanism but for the whole service
+        const extraDue = order.totalAmount - (order.inspectionFee || 0);
+        order.feeAdjustment = {
+            amount: extraDue,
+            status: 'Pending',
+            notified: true
+        };
+
+        await order.save();
+
+        const shortId = order._id.toString().slice(-6).toUpperCase();
+        const title = 'Order Pricing Updated';
+        const message = `A new price of ₦${newPrice} has been set for your order #${shortId}. Please review and make payment.`;
+
+        if (order.user) {
+            await new Notification({
+                userId: order.user,
+                title,
+                message,
+                type: 'order',
+                branchId: order.branchId,
+                metadata: { orderId: order._id }
+            }).save();
+
+            _sendPushAsync(order.user, title, message, order._id);
+        }
+
+        res.json({ msg: 'Pricing adjusted and user notified', order });
+    } catch (err) {
+        console.error("Adjust Pricing Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.triggerPaymentNotification = async (req, res) => {
+    try {
+        let order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+        const shortId = order._id.toString().slice(-6).toUpperCase();
+        const title = 'Payment Required';
+        const message = `Please finalize payment for your order #${shortId} to proceed.`;
+
+        if (order.user) {
+            await new Notification({
+                userId: order.user,
+                title,
+                message,
+                type: 'order',
+                branchId: order.branchId,
+                metadata: { orderId: order._id }
+            }).save();
+
+            _sendPushAsync(order.user, title, message, order._id);
+        }
+
+        res.json({ msg: 'Payment notification sent' });
+    } catch (err) {
+        console.error("Trigger Payment Error:", err);
         res.status(500).send('Server Error');
     }
 };

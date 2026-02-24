@@ -1,4 +1,4 @@
-enum OrderStatus { New, InProgress, Ready, Completed, Cancelled, Refunded, PendingUserConfirmation }
+enum OrderStatus { New, InProgress, Ready, Completed, Cancelled, Refunded, PendingUserConfirmation, Inspecting }
 enum PaymentStatus { Pending, Paid, Refunded }
 enum OrderExceptionStatus { None, Stain, Damage, Delay, MissingItem, Other }
 enum QuoteStatus { None, Pending, Approved, Rejected }
