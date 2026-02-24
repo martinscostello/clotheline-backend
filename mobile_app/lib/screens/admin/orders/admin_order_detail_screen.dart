@@ -368,7 +368,7 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
       ),
     );
   }
-
+  Widget _buildInspectionActions() {
     final bool showDespatch = _order!.status == OrderStatus.New;
     final bool showAdjust = _order!.status == OrderStatus.Inspecting || _order!.status == OrderStatus.New;
     final bool showNotify = _order!.status == OrderStatus.PendingUserConfirmation;
