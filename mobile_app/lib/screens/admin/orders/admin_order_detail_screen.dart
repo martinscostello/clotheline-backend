@@ -345,8 +345,14 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
 
   Widget _buildInspectionActions() {
     if (_order!.fulfillmentMode != 'deployment') {
-      // Allow Rescue to Deployment Mode if New/InProgress
-      if (_order!.status == OrderStatus.New || _order!.status == OrderStatus.InProgress) {
+      // [FIX] Only show if it matches cleaning services or could be misconfigured
+      final bool hasCleaningItem = _order!.items.any((item) => 
+        item.name.toLowerCase().contains('clean') || 
+        item.name.toLowerCase().contains('inspection') ||
+        item.name.toLowerCase().contains('deployment')
+      );
+
+      if (hasCleaningItem && (_order!.status == OrderStatus.New || _order!.status == OrderStatus.InProgress)) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -378,10 +384,15 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                  );
                  if (confirm == true) {
                    setState(() => _isUpdating = true);
-                   final success = await Provider.of<OrderService>(context, listen: false).convertToDeployment(_order!.id);
-                   if (success) await _fetchOrder();
-                   setState(() => _isUpdating = false);
-                   if (mounted) ToastUtils.show(context, success ? "Switched to Inspection Mode" : "Failed to switch", type: success ? ToastType.success : ToastType.error);
+                   try {
+                     final success = await Provider.of<OrderService>(context, listen: false).convertToDeployment(_order!.id);
+                     if (success) await _fetchOrder();
+                     if (mounted) ToastUtils.show(context, success ? "Switched to Inspection Mode" : "Failed to switch", type: success ? ToastType.success : ToastType.error);
+                   } catch (e) {
+                     if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+                   } finally {
+                     if (mounted) setState(() => _isUpdating = false);
+                   }
                  }
               },
             ),
