@@ -146,7 +146,7 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
                  _buildRow("Subtotal", subtotal, textColor),
                  const SizedBox(height: 5),
                  // [NEW] Itemized Laundry Discounts
-                 ...cart.laundryDiscounts.entries.map((e) => Padding(
+                 ...cart.serviceDiscounts.entries.map((e) => Padding(
                    padding: const EdgeInsets.only(bottom: 5.0),
                    child: Row(
                      mainAxisAlignment: MainAxisAlignment.spaceBetween,

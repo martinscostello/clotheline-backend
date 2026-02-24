@@ -602,7 +602,7 @@ class _StoreCheckoutScreenState extends State<StoreCheckoutScreen> with SingleTi
       'deliveryLocation': _deliveryOption == 1 ? _deliverySelection?.toJson() : null, // [New]
       'deliveryCoordinates': _deliveryOption == 1 && _deliveryLatLng != null ? {'lat': _deliveryLatLng!.latitude, 'lng': _deliveryLatLng!.longitude} : null,
       'deliveryFee': _deliveryOption == 1 ? _deliveryFee : 0,
-      'discountBreakdown': _cartService.laundryDiscounts, // [New]
+      'discountBreakdown': _cartService.serviceDiscounts, // [New]
       'storeDiscount': _cartService.storeDiscountAmount, // [New]
       'guestInfo': {
          'name': 'Guest User',

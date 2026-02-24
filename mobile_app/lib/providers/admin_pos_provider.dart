@@ -67,7 +67,7 @@ class AdminPOSProvider extends ChangeNotifier {
   }
 
   // Totals
-  double get subtotal => laundryItems.fold(0.0, (sum, i) => sum + i.totalPrice) + 
+  double get subtotal => laundryItems.fold(0.0, (sum, i) => sum + i.checkoutPrice) + 
                          storeItems.fold(0.0, (sum, i) => sum + i.totalPrice);
   
   double get totalAmount => subtotal + deliveryFee;
@@ -119,6 +119,9 @@ class AdminPOSProvider extends ChangeNotifier {
       final orderData = {
         'branchId': selectedBranch!.id,
         'isWalkIn': true,
+        'fulfillmentMode': laundryItems.isNotEmpty ? laundryItems.first.fulfillmentMode : 'logistics',
+        'quoteRequired': laundryItems.any((i) => i.quoteRequired),
+        'inspectionFee': laundryItems.isNotEmpty ? laundryItems.first.inspectionFee : 0, 
         'guestInfo': {
           'name': guestName,
           'phone': guestPhone,

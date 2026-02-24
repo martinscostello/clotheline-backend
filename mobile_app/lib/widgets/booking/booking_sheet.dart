@@ -74,6 +74,8 @@ class _BookingSheetState extends State<BookingSheet> {
         inspectionFee: widget.serviceModel.inspectionFee,
         inspectionFeeZones: widget.serviceModel.inspectionFeeZones,
         deploymentLocation: widget.serviceModel.deploymentLocation,
+        serviceId: widget.serviceModel.id,
+        serviceName: widget.serviceModel.name,
       ));
       
       setState(() {
@@ -318,7 +320,24 @@ class _BookingSheetState extends State<BookingSheet> {
     return ListenableBuilder(
       listenable: _cartService,
       builder: (context, child) {
-        final cartItems = _cartService.items;
+        final cartItems = _cartService.items.where((i) => i.serviceId == widget.serviceModel.id).toList();
+        final bool isDeployment = widget.serviceModel.fulfillmentMode == 'deployment';
+        
+        // Mode-specific totals
+        final double modeGross = cartItems.fold(0.0, (sum, i) => sum + i.baseTotal);
+        final double modeDiscount = cartItems.fold(0.0, (sum, i) => sum + i.discountValue);
+        final double modeNet = modeGross - modeDiscount;
+        final double modeTax = modeNet * (_cartService.taxRate / 100);
+        final double modeGrandTotal = modeNet + modeTax;
+        
+        // Payable Now logic
+        final double modePayableSubtotal = cartItems.fold(0.0, (sum, i) => sum + i.totalPrice);
+        final double modePayableTax = isDeployment ? 0.0 : (modePayableSubtotal - modeDiscount) * (_cartService.taxRate / 100);
+        
+        // [FIX] Don't subtract discount from Inspection Fees
+        final double modePayableTotal = isDeployment 
+            ? modePayableSubtotal + modePayableTax 
+            : (modePayableSubtotal - modeDiscount) + modePayableTax;
 
         return Container(
           decoration: BoxDecoration(
@@ -488,18 +507,20 @@ class _BookingSheetState extends State<BookingSheet> {
                          const SizedBox(height: 10),
                          Column(
                            children: [
-                             if (widget.serviceModel.fulfillmentMode == 'deployment' && _cartService.serviceEstimateTotalAmount > 0) ...[
+                             if (isDeployment && modeGrandTotal > 0) ...[
                                 _buildBreakdownRow(
                                   "Service Subtotal", 
-                                  _cartService.serviceEstimateSubtotal, 
+                                  modeGross, 
                                   textColor.withOpacity(0.6), 
                                   isDark
                                 ),
                                 // Add discount breakdown for estimate
-                                ..._cartService.laundryDiscounts.entries.map((e) => _buildBreakdownRow(e.key, -e.value, Colors.greenAccent, isDark)),
+                                if (modeDiscount > 0)
+                                  _buildBreakdownRow("Discount", -modeDiscount, Colors.greenAccent, isDark),
+                                  
                                 _buildBreakdownRow(
                                   "Est. VAT (${_cartService.taxRate}%)", 
-                                  _cartService.serviceEstimateTaxAmount, 
+                                  modeTax, 
                                   textColor.withOpacity(0.6), 
                                   isDark
                                 ),
@@ -509,7 +530,7 @@ class _BookingSheetState extends State<BookingSheet> {
                                   children: [
                                     Text("Est. Grand Total", style: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 13)),
                                     Text(
-                                      CurrencyFormatter.format(_cartService.serviceEstimateTotalAmount),
+                                      CurrencyFormatter.format(modeGrandTotal),
                                       style: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 13)
                                     ),
                                   ],
@@ -522,7 +543,7 @@ class _BookingSheetState extends State<BookingSheet> {
                                 const SizedBox(height: 8),
                              ],
 
-                             if (widget.serviceModel.fulfillmentMode == 'deployment')
+                             if (isDeployment)
                                const Align(
                                  alignment: Alignment.centerLeft,
                                  child: Padding(
@@ -532,31 +553,31 @@ class _BookingSheetState extends State<BookingSheet> {
                                ),
 
                              _buildBreakdownRow(
-                               widget.serviceModel.fulfillmentMode == 'deployment' ? "Inspection Fee" : "Total Items", 
-                               _cartService.serviceTotalAmount, 
+                               isDeployment ? "Inspection Fee" : "Total Items", 
+                               modePayableSubtotal, 
                                textColor, 
                                isDark,
-                               isPending: widget.serviceModel.fulfillmentMode == 'deployment',
+                               isPending: isDeployment,
                              ),
                              
-                             if (widget.serviceModel.fulfillmentMode != 'deployment' && _cartService.laundryTotalDiscount > 0)
-                               _buildBreakdownRow("Discount", -_cartService.laundryTotalDiscount, Colors.greenAccent, isDark),
+                             if (!isDeployment && modeDiscount > 0)
+                               _buildBreakdownRow("Discount", -modeDiscount, Colors.greenAccent, isDark),
                              
-                             if (widget.serviceModel.fulfillmentMode != 'deployment')
-                               _buildBreakdownRow("VAT (${_cartService.taxRate}%)", _cartService.serviceTaxAmount, textColor, isDark),
+                             if (!isDeployment)
+                               _buildBreakdownRow("VAT (${_cartService.taxRate}%)", modePayableTax, textColor, isDark),
                              
                              const SizedBox(height: 8),
                              Row(
                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                children: [
                                  Text(
-                                   widget.serviceModel.fulfillmentMode == 'deployment' ? "Total Due Now" : "Grand Total (est.)", 
+                                   isDeployment ? "Total Due Now" : "Grand Total", 
                                    style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16)
                                  ),
                                  Text(
-                                   widget.serviceModel.fulfillmentMode == 'deployment'
+                                   (isDeployment && _cartService.deliveryLocation == null)
                                      ? "Pending Address"
-                                     : CurrencyFormatter.format(_cartService.totalAmount),
+                                     : CurrencyFormatter.format(modePayableTotal),
                                    style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 18)
                                  ),
                                ],

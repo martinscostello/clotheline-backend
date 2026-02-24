@@ -25,7 +25,7 @@ class AdminPOSScreen extends StatefulWidget {
 
 class _AdminPOSScreenState extends State<AdminPOSScreen> {
   int _currentStep = 0;
-  String _orderType = 'Laundry'; // Laundry or Store
+  String _orderType = 'Laundry'; // Laundry, Store, or Deployment
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
@@ -285,6 +285,8 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
           _buildTypeCard("Laundry Services", Icons.local_laundry_service_outlined, "Wash, fold, iron, and dry cleaning.", 'Laundry'),
           const SizedBox(height: 20),
           _buildTypeCard("Store Products", Icons.shopping_bag_outlined, "Detergents, additives, and retail items.", 'Store'),
+          const SizedBox(height: 20),
+          _buildTypeCard("Home Cleaning", Icons.cleaning_services_outlined, "On-site deep cleaning and inspections.", 'Deployment'),
         ],
       ),
     );
@@ -331,16 +333,17 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("${_orderType} Selection", style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              TextButton.icon(
-                icon: const Icon(Icons.swap_horiz, size: 16),
-                onPressed: () => setState(() => _orderType = _orderType == 'Laundry' ? 'Store' : 'Laundry'),
-                label: Text("Switch to ${_orderType == 'Laundry' ? 'Store' : 'Laundry'}", style: const TextStyle(fontSize: 12)),
-              ),
+              if (_orderType != 'Deployment') // Hide switch for deployment to keep it isolated
+                TextButton.icon(
+                  icon: const Icon(Icons.swap_horiz, size: 16),
+                  onPressed: () => setState(() => _orderType = _orderType == 'Laundry' ? 'Store' : 'Laundry'),
+                  label: Text("Switch to ${_orderType == 'Laundry' ? 'Store' : 'Laundry'}", style: const TextStyle(fontSize: 12)),
+                ),
             ],
           ),
         ),
         Expanded(
-          child: _orderType == 'Laundry' ? _buildLaundrySelection() : _buildStoreSelection(),
+          child: _orderType == 'Store' ? _buildStoreSelection() : _buildLaundrySelection(),
         ),
       ],
     );
@@ -352,6 +355,14 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
         if (laundrySvc.services.isEmpty) return const Center(child: CircularProgressIndicator());
         
         List<ServiceModel> filteredServices = laundrySvc.services;
+        
+        // POS Internal Isolation
+        if (_orderType == 'Deployment') {
+           filteredServices = filteredServices.where((s) => s.fulfillmentMode == 'deployment').toList();
+        } else if (_orderType == 'Laundry') {
+           filteredServices = filteredServices.where((s) => s.fulfillmentMode == 'logistics' || s.fulfillmentMode == 'bulky').toList();
+        }
+
         if (widget.fulfillmentMode != null) {
           if (widget.fulfillmentMode == 'logistics') {
             filteredServices = filteredServices.where((s) => s.fulfillmentMode == 'logistics' || s.fulfillmentMode == 'bulky').toList();
@@ -525,7 +536,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     );
   }
 
-  void _addLaundryItemDialog(ServiceItem item, ServiceOption option) {
+  void _addLaundryItemDialog(ServiceModel service, ServiceItem item, ServiceOption option) {
     int qty = 1;
     showDialog(
       context: context,
@@ -564,6 +575,11 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   item: ClothingItem(id: item.id ?? '', name: item.name, basePrice: option.price),
                   serviceType: ServiceType(id: option.name, name: option.name, priceMultiplier: 1.0),
                   quantity: qty,
+                  fulfillmentMode: service.fulfillmentMode,
+                  quoteRequired: service.quoteRequired,
+                  inspectionFee: service.inspectionFee,
+                  serviceId: service.id,
+                  serviceName: service.name,
                 ));
                 Navigator.pop(ctx);
               },
@@ -605,7 +621,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   trailing: const Icon(Icons.chevron_right, color: AppTheme.secondaryColor),
                   onTap: () {
                     Navigator.pop(context);
-                    _addLaundryItemDialog(item, option);
+                    _addLaundryItemDialog(service, item, option);
                   },
                 )),
                 const SizedBox(height: 20),
@@ -675,7 +691,9 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
       padding: const EdgeInsets.all(20),
       child: Consumer<AdminPOSProvider>(
         builder: (context, pos, _) {
-          final isDeployment = widget.fulfillmentMode == 'deployment';
+          final isDeployment = widget.fulfillmentMode == 'deployment' || 
+                             _orderType == 'Deployment' ||
+                             (pos.laundryItems.isNotEmpty && pos.laundryItems.any((i) => i.fulfillmentMode == 'deployment'));
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -714,7 +732,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                           decoration: BoxDecoration(
-                            color: selected ? AppTheme.secondaryColor : Colors.white.withOpacity(0.05),
+                            color: selected ? AppTheme.secondaryColor : Colors.white.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: selected ? AppTheme.secondaryColor : Colors.white10),
                           ),
@@ -726,7 +744,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                           ),
                         ),
                       );
-                    }).toList(),
+                    }),
 
                     // Custom Delivery Fee Setup
                     Builder(
@@ -783,7 +801,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   "No Starch", "Heavy Starch", "Hand wash Only", "Fold Only", "Heavy Stains", "Express"
                 ].map((note) => ActionChip(
                   label: Text(note, style: const TextStyle(fontSize: 10)),
-                  backgroundColor: Colors.white.withOpacity(0.05),
+                  backgroundColor: Colors.white.withValues(alpha: 0.05),
                   side: const BorderSide(color: Colors.white10),
                   onPressed: () {
                     final currentText = _notesController.text;
@@ -855,7 +873,11 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                 ),
               ),
               
-              const SizedBox(height: 30),
+              const SizedBox(height: 25),
+              if (widget.fulfillmentMode == 'deployment' || _orderType == 'Deployment') ...[
+                 _buildDeploymentSummary(pos),
+                 const SizedBox(height: 25),
+              ],
               const Text("Payment Method", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(height: 15),
               _buildPaymentGrid(pos),
@@ -889,6 +911,44 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
         Text(label, style: TextStyle(color: isBold ? Colors.white : Colors.white70, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
         Text(value, style: TextStyle(color: isBold ? AppTheme.secondaryColor : Colors.white, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, fontSize: isBold ? 18 : 14)),
       ],
+    );
+  }
+
+  Widget _buildDeploymentSummary(AdminPOSProvider pos) {
+    final estimateGross = pos.laundryItems.fold(0.0, (sum, i) => sum + i.baseTotal);
+    return GlassContainer(
+      opacity: 0.15,
+      border: Border.all(color: AppTheme.secondaryColor.withOpacity(0.3)),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Center(
+            child: Text(
+              "SERVICE ESTIMATE", 
+              style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1.5)
+            ),
+          ),
+          const SizedBox(height: 15),
+          ...pos.laundryItems.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 5),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(item.item.name, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(CurrencyFormatter.format(item.baseTotal), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+              ],
+            ),
+          )),
+          const Divider(color: Colors.white10, height: 20),
+          _buildSummaryRow("Total Estimate", CurrencyFormatter.format(estimateGross), isBold: true),
+          const SizedBox(height: 10),
+          const Text(
+            "* Initial payment covers inspection and logistics only. Final balance depends on onsite assessment.",
+            style: TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1022,6 +1082,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     Navigator.pop(context); // Close loading
 
     if (result['success']) {
+       if (!mounted) return;
        _showSuccessDialog(result['order']);
     } else {
        setState(() => _checkoutError = result['message']);
@@ -1154,9 +1215,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                            padding: EdgeInsets.symmetric(vertical: 8.0),
                            child: Text("Laundry", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
                          ),
-                      ...pos.laundryItems.asMap().entries.map((entry) {
-                         final idx = entry.key;
-                         final item = entry.value;
+                      ...pos.laundryItems.map((item) {
                          return ListTile(
                            dense: true,
                            contentPadding: EdgeInsets.zero,
@@ -1178,9 +1237,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                            padding: EdgeInsets.symmetric(vertical: 8.0),
                            child: Text("Store", style: TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold)),
                          ),
-                      ...pos.storeItems.asMap().entries.map((entry) {
-                         final idx = entry.key;
-                         final item = entry.value;
+                      ...pos.storeItems.map((item) {
                          return ListTile(
                            dense: true,
                            contentPadding: EdgeInsets.zero,

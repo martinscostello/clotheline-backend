@@ -206,18 +206,12 @@ class CartService extends ChangeNotifier {
   Map<String, dynamic>? _appliedPromotion;
   Map<String, dynamic>? get appliedPromotion => _appliedPromotion;
 
-  // Aggregated Laundry Discounts (Internal Service Discounts)
-  Map<String, double> get laundryDiscounts {
+  // Aggregated Service Discounts (Internal Service Discounts)
+  Map<String, double> get serviceDiscounts {
     Map<String, double> discounts = {};
     for (var item in _items) {
       if (item.discountPercentage > 0) {
-         // Calculate discount for this item
-         // Note: totalPrice getter in CartItem ALREADY applies discount. 
-         // We need (Base - Total) or manual calc.
-         // CartItem.totalPrice = base * (1 - discount/100).
-         // So discount = base - totalPrice.
-         double baseTotal = item.item.basePrice * (item.serviceType?.priceMultiplier ?? 1.0) * item.quantity;
-         double itemDiscount = baseTotal * (item.discountPercentage / 100);
+         double itemDiscount = item.baseTotal * (item.discountPercentage / 100);
          
          String key = "Discount (${item.serviceType?.name ?? 'Generic'})";
          discounts[key] = (discounts[key] ?? 0) + itemDiscount;
@@ -226,8 +220,11 @@ class CartService extends ChangeNotifier {
     return discounts;
   }
   
-  double get laundryTotalDiscount => laundryDiscounts.values.fold(0, (sum, v) => sum + v);
+  double get serviceTotalDiscount => serviceDiscounts.values.fold(0, (sum, v) => sum + v);
 
+  // [NEW] Gross Subtotal (Before any discounts)
+  double get serviceGrossSubtotal => _items.fold(0, (sum, item) => sum + item.baseTotal);
+  
   // Store Promo (Applied Code)
   double get storeDiscountAmount {
     if (_appliedPromotion == null) return 0.0;
@@ -246,7 +243,6 @@ class CartService extends ChangeNotifier {
        discount = (baseStoreTotal * value) / 100;
        
        if (value >= 100) {
-          print("Warning: Promo value $value >= 100%. Limiting to 100%.");
           discount = baseStoreTotal;
        }
        if (maxDiscount != null && discount > maxDiscount) {
@@ -258,28 +254,32 @@ class CartService extends ChangeNotifier {
   }
 
   // Gross Subtotals (Before Store Items)
-  // [NEW] servicePayableSubtotal = Sum of CartItem.totalPrice (respects quoteRequired)
+  // [NEW] servicePayableSubtotal = Sum of CartItem.totalPrice 
+  // For Laundry this is Gross. For Deployment this is Inspection Fee.
   double get servicePayableSubtotal => _items.fold(0, (sum, item) => sum + item.totalPrice);
 
   // [NEW] Helper to check if any item is pending a quote
   bool get hasPendingQuote => _items.any((item) => item.quoteRequired && deliveryLocation == null);
   
-  // [NEW] serviceEstimateSubtotal = Sum of CartItem.fullEstimate (ignores quoteRequired)
+  // [NEW] serviceEstimateSubtotal = Sum of CartItem.fullEstimate (Net)
   double get serviceEstimateSubtotal => _items.fold(0, (sum, item) => sum + item.fullEstimate);
   
-  // Total of all discounts (Laundry Internal + Store Promo)
-  // Laundry discounts are already handled inside CartItem.totalPrice/fullEstimate 
-  // for deployment items, but we keep this for legacy laundry calculation.
-  double get discountAmount => storeDiscountAmount; // [Simplified]
+  // Total of all discounts (Service Internal + Store Promo)
+  double get discountAmount => storeDiscountAmount + serviceTotalDiscount; 
 
-  // Base Subtotal (PAYABLE) = servicePayableSubtotal + storeTotalAmount
+  // Base Subtotal (PAYABLE) = Gross Service + Gross Store
   double get subtotal => servicePayableSubtotal + storeTotalAmount; 
   
   // Net Total (PAYABLE)
   double get subtotalAfterDiscount => (subtotal - discountAmount) < 0 ? 0 : (subtotal - discountAmount);
   
   // Tax Calculations (PAYABLE)
+  // [FIX] Don't apply VAT to Inspection Fees (Deployment mode with Pending Quote)
   double get taxAmount {
+     if (activeModes.contains('deployment') && _items.any((i) => i.quoteRequired)) {
+       // Inspection fees are flat (no tax)
+       return 0.0;
+     }
      return (subtotalAfterDiscount * (taxRate / 100));
   }
   
@@ -291,14 +291,20 @@ class CartService extends ChangeNotifier {
   // Split Tax (Approximate for display of PAYABLE tax)
   double get serviceTaxAmount {
     if (subtotalAfterDiscount == 0) return 0.0;
+    if (taxAmount == 0) return 0.0;
     
-    return (servicePayableSubtotal / subtotal) * taxAmount;
+    double serviceNet = servicePayableSubtotal - serviceTotalDiscount;
+    if (serviceNet < 0) serviceNet = 0;
+    
+    return (serviceNet / subtotalAfterDiscount) * taxAmount;
   }
 
   // Tax on estimate (for display)
-  double get serviceEstimateAmount => serviceEstimateSubtotal; // Alias for readability in UI
-  double get serviceEstimateTaxAmount => serviceEstimateAmount * (taxRate / 100);
-  double get serviceEstimateTotalAmount => serviceEstimateAmount + serviceEstimateTaxAmount;
+  // [FIX] Total Estimate = (Gross - Discount) + VAT
+  double get serviceEstimateGross => serviceGrossSubtotal;
+  double get serviceEstimateNet => serviceGrossSubtotal - serviceTotalDiscount;
+  double get serviceEstimateTaxAmount => serviceEstimateNet * (taxRate / 100);
+  double get serviceEstimateTotalAmount => serviceEstimateNet + serviceEstimateTaxAmount;
 
   double get storeTaxAmount {
      if (subtotalAfterDiscount == 0) return 0.0;
