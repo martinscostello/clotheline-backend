@@ -88,14 +88,18 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
   Future<void> _updateStatus(String newStatus) async {
     if (_order == null) return;
     setState(() => _isUpdating = true);
-    final success = await Provider.of<OrderService>(context, listen: false).updateStatus(_order!.id, newStatus);
-    setState(() => _isUpdating = false);
-    
-    if (success) {
-      setState(() => _currentStatus = newStatus);
-      if (mounted) ToastUtils.show(context, "Status updated to $newStatus", type: ToastType.success);
-    } else {
-      if (mounted) ToastUtils.show(context, "Failed to update status", type: ToastType.error);
+    try {
+      final success = await Provider.of<OrderService>(context, listen: false).updateStatus(_order!.id, newStatus);
+      if (success) {
+        setState(() => _currentStatus = newStatus);
+        if (mounted) ToastUtils.show(context, "Status updated to $newStatus", type: ToastType.success);
+      } else {
+        if (mounted) ToastUtils.show(context, "Failed to update status", type: ToastType.error);
+      }
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "Error updating status: $e", type: ToastType.error);
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
     }
   }
 
@@ -181,16 +185,19 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
               onPressed: () async {
                 Navigator.pop(ctx);
                 setState(() => _isUpdating = true);
-                final success = await Provider.of<OrderService>(context, listen: false)
-                    .updateExceptionStatus(_order!.id, selected, noteCtrl.text);
-                
-                if (success) {
-                  // _fetchOrder(); // Service usually refreshes list, but we might need re-fetch single
-                  await _fetchOrder();
+                try {
+                  final success = await Provider.of<OrderService>(context, listen: false)
+                      .updateExceptionStatus(_order!.id, selected, noteCtrl.text);
+                  
+                  if (success) {
+                    await _fetchOrder();
+                  }
+                  if (mounted) ToastUtils.show(context, success ? "Issue Reported" : "Failed to report", type: success ? ToastType.success : ToastType.error);
+                } catch (e) {
+                  if (mounted) ToastUtils.show(context, "Error reporting issue: $e", type: ToastType.error);
+                } finally {
+                  if (mounted) setState(() => _isUpdating = false);
                 }
-                
-                setState(() => _isUpdating = false);
-                if (mounted) ToastUtils.show(context, success ? "Issue Reported" : "Failed to report", type: success ? ToastType.success : ToastType.error);
               },
             ),
           ],
@@ -247,15 +254,19 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
               }
               Navigator.pop(ctx);
               setState(() => _isUpdating = true);
-              final success = await Provider.of<OrderService>(context, listen: false)
-                  .overrideDeliveryFee(_order!.id, newFee);
-              
-              if (success) {
-                await _fetchOrder();
+              try {
+                final success = await Provider.of<OrderService>(context, listen: false)
+                    .overrideDeliveryFee(_order!.id, newFee);
+                
+                if (success) {
+                  await _fetchOrder();
+                }
+                if (mounted) ToastUtils.show(context, success ? "Fee Overridden" : "Failed to override", type: success ? ToastType.success : ToastType.error);
+              } catch (e) {
+                if (mounted) ToastUtils.show(context, "Error overriding fee: $e", type: ToastType.error);
+              } finally {
+                if (mounted) setState(() => _isUpdating = false);
               }
-              
-              setState(() => _isUpdating = false);
-              if (mounted) ToastUtils.show(context, success ? "Fee Overridden" : "Failed to override", type: success ? ToastType.success : ToastType.error);
             },
           ),
         ],
@@ -265,18 +276,28 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
   Future<void> _despatchOrder() async {
     if (_order == null) return;
     setState(() => _isUpdating = true);
-    final success = await Provider.of<OrderService>(context, listen: false).despatchOrder(_order!.id);
-    if (success) await _fetchOrder();
-    setState(() => _isUpdating = false);
-    if (mounted) ToastUtils.show(context, success ? "Personnel Despatched" : "Failed to update", type: success ? ToastType.success : ToastType.error);
+    try {
+      final success = await Provider.of<OrderService>(context, listen: false).despatchOrder(_order!.id);
+      if (success) await _fetchOrder();
+      if (mounted) ToastUtils.show(context, success ? "Personnel Despatched" : "Failed to update", type: success ? ToastType.success : ToastType.error);
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "Error despatching: $e", type: ToastType.error);
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
   }
 
   Future<void> _notifyPayment() async {
     if (_order == null) return;
     setState(() => _isUpdating = true);
-    final success = await Provider.of<OrderService>(context, listen: false).triggerPaymentNotification(_order!.id);
-    setState(() => _isUpdating = false);
-    if (mounted) ToastUtils.show(context, success ? "Payment Notification Sent" : "Failed to notify", type: success ? ToastType.success : ToastType.error);
+    try {
+      final success = await Provider.of<OrderService>(context, listen: false).triggerPaymentNotification(_order!.id);
+      if (mounted) ToastUtils.show(context, success ? "Payment Notification Sent" : "Failed to notify", type: success ? ToastType.success : ToastType.error);
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "Error notifying payment: $e", type: ToastType.error);
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
   }
 
   Future<void> _showAdjustmentDialog() async {
@@ -331,11 +352,16 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
               }
               Navigator.pop(ctx);
               setState(() => _isUpdating = true);
-              final success = await Provider.of<OrderService>(context, listen: false)
-                  .adjustPricing(_order!.id, price, noteCtrl.text);
-              if (success) await _fetchOrder();
-              setState(() => _isUpdating = false);
-              if (mounted) ToastUtils.show(context, success ? "Pricing Adjusted" : "Failed to update", type: success ? ToastType.success : ToastType.error);
+              try {
+                final success = await Provider.of<OrderService>(context, listen: false)
+                    .adjustPricing(_order!.id, price, noteCtrl.text);
+                if (success) await _fetchOrder();
+                if (mounted) ToastUtils.show(context, success ? "Pricing Adjusted" : "Failed to update", type: success ? ToastType.success : ToastType.error);
+              } catch (e) {
+                if (mounted) ToastUtils.show(context, "Error adjusting pricing: $e", type: ToastType.error);
+              } finally {
+                if (mounted) setState(() => _isUpdating = false);
+              }
             },
           ),
         ],

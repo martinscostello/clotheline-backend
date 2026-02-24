@@ -183,7 +183,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                      _buildTextRow("Status", order.paymentStatus.name, 
                       (order.paymentStatus == PaymentStatus.Paid) ? Colors.green : Colors.orange, isBold: true),
                     const Divider(height: 20),
-                    _buildSummaryRow(order.fulfillmentMode == 'deployment' ? "Service Total" : "Subtotal", order.subtotal, textColor),
+                    _buildSummaryRow(order.fulfillmentMode == 'deployment' ? "Final Service Price" : "Subtotal", order.subtotal, textColor),
                     if (order.taxAmount > 0)
                       _buildSummaryRow("VAT (${order.taxRate}%)", order.taxAmount, textColor),
                     if (order.deliveryFee > 0)
@@ -195,19 +195,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     
                     if (order.fulfillmentMode == 'deployment' && order.inspectionFee > 0) ...[
                       const Divider(height: 20),
-                      _buildSummaryRow("Inspection Fee Paid", -order.inspectionFee, Colors.green),
+                      _buildSummaryRow("Inspection Fee (Deposit Paid)", -order.inspectionFee, Colors.green),
                     ],
 
                     const Divider(height: 30),
                     _buildSummaryRow(
-                      (order.fulfillmentMode == 'deployment' && (order.status == OrderStatus.PendingUserConfirmation || order.status == OrderStatus.Inspecting || order.status == OrderStatus.New)) ? "Balance Due (est.)" : "Total", 
-                      (order.fulfillmentMode == 'deployment' && (order.status == OrderStatus.PendingUserConfirmation || order.status == OrderStatus.Inspecting || order.status == OrderStatus.New))
+                      (order.fulfillmentMode == 'deployment') ? "Balance Due" : "Total", 
+                      (order.fulfillmentMode == 'deployment')
                         ? (order.totalAmount - order.inspectionFee) 
                         : order.totalAmount, 
                       AppTheme.primaryColor, 
                       isBold: true, 
                       isTotal: true
                     ),
+                    if (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.PendingUserConfirmation)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8.0),
+                        child: Text("(Adjusted after inspection)", style: TextStyle(color: Colors.white54, fontSize: 10, fontStyle: FontStyle.italic)),
+                      ),
                   ],
                 ),
               ),

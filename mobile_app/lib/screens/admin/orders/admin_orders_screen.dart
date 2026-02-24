@@ -462,7 +462,7 @@ class _AdminOrderTabContentState extends State<_AdminOrderTabContent> with Autom
     return Consumer<OrderService>(
       builder: (context, orderService, _) {
         List<OrderModel> orders = orderService.orders
-            .where((o) => o.status.name == widget.status)
+            .where((o) => o.status.name == widget.status || (widget.status == 'PendingUserConfirmation' && o.status.name == 'Inspecting'))
             .toList();
 
         if (widget.selectedBranch != null) {
