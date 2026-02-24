@@ -279,30 +279,19 @@ class CartService extends ChangeNotifier {
   double get subtotalAfterDiscount => (subtotal - discountAmount) < 0 ? 0 : (subtotal - discountAmount);
   
   // Tax Calculations (PAYABLE)
-  // [RULE] VAT SHOULD NEVER BE ADDED TO INSPECTION FEE.
   double get taxAmount {
-     if (activeModes.length == 1 && activeModes.contains('deployment')) return 0.0;
      return (subtotalAfterDiscount * (taxRate / 100));
   }
   
   // Final Total (Payable Now)
   double get totalAmount {
-    // VAT SHOULD NEVER BE ADDED TO INSPECTION FEE.
-    if (activeModes.length == 1 && activeModes.contains('deployment')) {
-      return subtotalAfterDiscount; 
-    }
     return subtotalAfterDiscount + taxAmount;
   }
 
   // Split Tax (Approximate for display of PAYABLE tax)
   double get serviceTaxAmount {
     if (subtotalAfterDiscount == 0) return 0.0;
-    if (activeModes.length == 1 && activeModes.contains('deployment')) return 0.0; // [CRITICAL] No VAT on Inspection
     
-    // For legacy laundry, we can still use subtotal share logic if needed
-    // Discount is already applied inside servicePayableSubtotal for deployments
-    // but for laundry we might want to subtract laundryTotalDiscount if we were using gross totals.
-    // However, since we refactored to use subtotalShare, this is safer:
     return (servicePayableSubtotal / subtotal) * taxAmount;
   }
 

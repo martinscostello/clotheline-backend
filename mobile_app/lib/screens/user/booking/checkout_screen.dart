@@ -880,7 +880,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         'name': i.item.name,
         'serviceType': i.serviceType?.name ?? 'Generic Service',
         'quantity': i.quantity,
-        'price': i.totalPrice / i.quantity // Unit price
+        'price': i.fullEstimate / i.quantity // Unit price (Always use full estimate for record)
       });
     }
 

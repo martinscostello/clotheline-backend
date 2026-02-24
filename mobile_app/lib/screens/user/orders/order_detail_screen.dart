@@ -137,6 +137,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           Text(CurrencyFormatter.format(item.price * item.quantity), 
                             style: TextStyle(color: textColor, fontWeight: FontWeight.bold)
                           ),
+                          if (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.New)
+                            const Text("(Estimate)", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
                           if (order.status == OrderStatus.Completed && item.itemType == 'Product')
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
@@ -198,16 +200,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       _buildSummaryRow("Inspection Fee (Deposit Paid)", -order.inspectionFee, Colors.green),
                     ],
 
-                    const Divider(height: 30),
                     _buildSummaryRow(
-                      (order.fulfillmentMode == 'deployment') ? "Balance Due" : "Total", 
-                      (order.fulfillmentMode == 'deployment')
-                        ? (order.totalAmount - order.inspectionFee) 
-                        : order.totalAmount, 
+                      (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.New) ? "Estimated Total" : ((order.fulfillmentMode == 'deployment') ? "Final Total" : "Total"), 
+                      order.totalAmount, 
                       AppTheme.primaryColor, 
                       isBold: true, 
                       isTotal: true
                     ),
+                    if (order.fulfillmentMode == 'deployment' && order.inspectionFee > 0) ...[
+                      const SizedBox(height: 12),
+                      _buildSummaryRow("Inspection Fee (Deposit Paid)", -order.inspectionFee, Colors.green),
+                      const Divider(height: 30),
+                      _buildSummaryRow(
+                        "Balance Due", 
+                        (order.totalAmount - order.inspectionFee), 
+                        AppTheme.primaryColor, 
+                        isBold: true, 
+                        isTotal: true
+                      ),
+                    ],
                     if (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.PendingUserConfirmation)
                       const Padding(
                         padding: EdgeInsets.only(top: 8.0),

@@ -71,10 +71,12 @@ class CartItem {
     this.deploymentLocation,
   });
 
-  double get totalPrice {
+  double get checkoutPrice {
      if (quoteRequired) return inspectionFee;
      return fullEstimate;
   }
+
+  double get totalPrice => checkoutPrice; // Backward compatibility
 
   double get fullEstimate {
      double base = item.basePrice * (serviceType?.priceMultiplier ?? 1.0) * quantity;

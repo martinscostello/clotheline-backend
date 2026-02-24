@@ -369,66 +369,6 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
     );
   }
 
-  Widget _buildInspectionActions() {
-    if (_order!.fulfillmentMode != 'deployment') {
-      // [FIX] Only show if it matches cleaning services or could be misconfigured
-      final bool hasCleaningItem = _order!.items.any((item) => 
-        item.name.toLowerCase().contains('clean') || 
-        item.name.toLowerCase().contains('inspection') ||
-        item.name.toLowerCase().contains('deployment')
-      );
-
-      if (hasCleaningItem && (_order!.status == OrderStatus.New || _order!.status == OrderStatus.InProgress)) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Logistics to Inspection", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.swap_horiz, size: 18),
-              label: const Text("Switch to Inspection Mode", style: TextStyle(fontSize: 12)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange.withOpacity(0.15),
-                foregroundColor: Colors.orange,
-                minimumSize: const Size(double.infinity, 45),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                side: const BorderSide(color: Colors.orange),
-                elevation: 0,
-              ),
-              onPressed: _isUpdating ? null : () async {
-                 final confirm = await showDialog<bool>(
-                   context: context,
-                   builder: (ctx) => AlertDialog(
-                     backgroundColor: const Color(0xFF1E1E2C),
-                     title: const Text("Switch Mode?", style: TextStyle(color: Colors.white)),
-                     content: const Text("This will enable inspection features (Despatch, Adjust Price) for this order. Continue?", style: TextStyle(color: Colors.white70)),
-                     actions: [
-                       TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
-                       TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Switch", style: TextStyle(color: Colors.orange))),
-                     ],
-                   )
-                 );
-                 if (confirm == true) {
-                   setState(() => _isUpdating = true);
-                   try {
-                     final success = await Provider.of<OrderService>(context, listen: false).convertToDeployment(_order!.id);
-                     if (success) await _fetchOrder();
-                     if (mounted) ToastUtils.show(context, success ? "Switched to Inspection Mode" : "Failed to switch", type: success ? ToastType.success : ToastType.error);
-                   } catch (e) {
-                     if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
-                   } finally {
-                     if (mounted) setState(() => _isUpdating = false);
-                   }
-                 }
-              },
-            ),
-            const SizedBox(height: 25),
-          ],
-        );
-      }
-      return const SizedBox.shrink();
-    }
-    
     final bool showDespatch = _order!.status == OrderStatus.New;
     final bool showAdjust = _order!.status == OrderStatus.Inspecting || _order!.status == OrderStatus.New;
     final bool showNotify = _order!.status == OrderStatus.PendingUserConfirmation;
@@ -455,6 +395,69 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
           ],
         ),
         const SizedBox(height: 25),
+      ],
+    );
+  }
+
+  Widget _buildRescueTool() {
+    if (_order!.fulfillmentMode == 'deployment' || _order!.status == OrderStatus.Completed || _order!.status == OrderStatus.Cancelled) {
+      return const SizedBox.shrink();
+    }
+
+    final bool hasCleaningItem = _order!.items.any((item) => 
+      item.name.toLowerCase().contains('clean') || 
+      item.name.toLowerCase().contains('inspection') ||
+      item.name.toLowerCase().contains('deep') ||
+      item.name.toLowerCase().contains('pest')
+    );
+
+    if (!hasCleaningItem) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 40, color: Colors.white10),
+        const Text("Rescue Tools (Misconfigured Order)", style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.swap_horiz, size: 18),
+          label: const Text("Switch to Inspection Mode", style: TextStyle(fontSize: 12)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange.withOpacity(0.1),
+            foregroundColor: Colors.orange,
+            minimumSize: const Size(double.infinity, 45),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            side: const BorderSide(color: Colors.orange, width: 0.5),
+            elevation: 0,
+          ),
+          onPressed: _isUpdating ? null : () async {
+             final confirm = await showDialog<bool>(
+               context: context,
+               builder: (ctx) => AlertDialog(
+                 backgroundColor: const Color(0xFF1E1E2C),
+                 title: const Text("Switch Mode?", style: TextStyle(color: Colors.white)),
+                 content: const Text("This will convert this logistics order into a cleaning inspection workflow. Continue?", style: TextStyle(color: Colors.white70)),
+                 actions: [
+                   TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+                   TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Switch", style: TextStyle(color: Colors.orange))),
+                 ],
+               )
+             );
+             if (confirm == true) {
+               setState(() => _isUpdating = true);
+               try {
+                 final success = await Provider.of<OrderService>(context, listen: false).convertToDeployment(_order!.id);
+                 if (success) await _fetchOrder();
+                 if (mounted) ToastUtils.show(context, success ? "Switched to Inspection Mode" : "Failed to switch", type: success ? ToastType.success : ToastType.error);
+               } catch (e) {
+                 if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+               } finally {
+                 if (mounted) setState(() => _isUpdating = false);
+               }
+             }
+          },
+        ),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -607,6 +610,9 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
 
               // [NEW] Inspection Workflow Actions
               _buildInspectionActions(),
+
+              // [NEW] Rescue Tool (Hidden at bottom)
+              _buildRescueTool(),
 
               // 2. Customer Info
               Container(

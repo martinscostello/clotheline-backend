@@ -316,16 +316,18 @@ router.post('/verify', auth, async (req, res) => {
                 await order.save();
             } else {
                 // [CRITICAL FIX] Lock in the Price
-                // Ensure Order Total matches exactly what was paid.
-                const paidAmountNaira = payment.amount / 100;
+                // Ensure Order Total matches exactly what was paid for normal orders.
+                // SKIP for deployment orders as the paid amount is just a deposit (inspection fee).
+                if (order.fulfillmentMode !== 'deployment') {
+                    const paidAmountNaira = payment.amount / 100;
 
-                // Allow small float diff (0.5), otherwise correct it.
-                if (Math.abs(order.totalAmount - paidAmountNaira) > 1.0) {
-                    console.warn(`[PriceCorrection] Order Total (${order.totalAmount}) diverged from Paid Amount (${paidAmountNaira}). Forcing correction.`);
-                    order.totalAmount = paidAmountNaira;
-                    // We could also adjust tax/subtotal proportionally, but ensures Total is paramount.
-                    order.paymentStatus = 'Paid'; // Re-affirm
-                    await order.save();
+                    // Allow small float diff (0.5), otherwise correct it.
+                    if (Math.abs(order.totalAmount - paidAmountNaira) > 1.0) {
+                        console.warn(`[PriceCorrection] Order Total (${order.totalAmount}) diverged from Paid Amount (${paidAmountNaira}). Forcing correction.`);
+                        order.totalAmount = paidAmountNaira;
+                        // We could also adjust tax/subtotal proportionally, but ensures Total is paramount.
+                        await order.save();
+                    }
                 }
             }
         }
