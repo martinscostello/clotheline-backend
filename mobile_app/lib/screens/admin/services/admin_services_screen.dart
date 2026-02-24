@@ -295,8 +295,25 @@ class _AdminServicesBodyState extends State<AdminServicesBody> {
                         decoration: BoxDecoration(color: Colors.blueAccent, borderRadius: BorderRadius.circular(6)), 
                         child: Text(service.lockedLabel, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                       )
-                    else if (service.discountPercentage > 0)
-                      Text("-${service.discountPercentage.toInt()}% OFF", style: const TextStyle(color: Colors.pinkAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    else ...[
+                      if (service.fulfillmentMode == 'deployment')
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.orange.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.orange)),
+                          child: const Text("Deployment Mode", style: TextStyle(color: Colors.orange, fontSize: 8, fontWeight: FontWeight.bold)),
+                        )
+                      else if (service.fulfillmentMode == 'bulky')
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.purple.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.purple)),
+                          child: const Text("Bulky Mode", style: TextStyle(color: Colors.purple, fontSize: 8, fontWeight: FontWeight.bold)),
+                        ),
+                        
+                      if (service.discountPercentage > 0)
+                        Text("-${service.discountPercentage.toInt()}% OFF", style: const TextStyle(color: Colors.pinkAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    ],
                   ],
                 ),
               ),

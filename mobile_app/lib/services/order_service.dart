@@ -200,4 +200,19 @@ class OrderService extends ChangeNotifier {
       return false;
     }
   }
+
+  // [NEW] Convert Order to Deployment (Admin)
+  Future<bool> convertToDeployment(String id) async {
+    try {
+      final response = await _apiService.client.put('/orders/$id/convert-to-deployment');
+      if (response.statusCode == 200) {
+        await fetchOrders(role: 'admin');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error converting order: $e");
+      return false;
+    }
+  }
 }

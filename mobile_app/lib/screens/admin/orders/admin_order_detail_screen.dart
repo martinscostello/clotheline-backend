@@ -344,7 +344,53 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
   }
 
   Widget _buildInspectionActions() {
-    if (_order!.fulfillmentMode != 'deployment') return const SizedBox.shrink();
+    if (_order!.fulfillmentMode != 'deployment') {
+      // Allow Rescue to Deployment Mode if New/InProgress
+      if (_order!.status == OrderStatus.New || _order!.status == OrderStatus.InProgress) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Logistics to Inspection", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.swap_horiz, size: 18),
+              label: const Text("Switch to Inspection Mode", style: TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.withOpacity(0.15),
+                foregroundColor: Colors.orange,
+                minimumSize: const Size(double.infinity, 45),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                side: const BorderSide(color: Colors.orange),
+                elevation: 0,
+              ),
+              onPressed: _isUpdating ? null : () async {
+                 final confirm = await showDialog<bool>(
+                   context: context,
+                   builder: (ctx) => AlertDialog(
+                     backgroundColor: const Color(0xFF1E1E2C),
+                     title: const Text("Switch Mode?", style: TextStyle(color: Colors.white)),
+                     content: const Text("This will enable inspection features (Despatch, Adjust Price) for this order. Continue?", style: TextStyle(color: Colors.white70)),
+                     actions: [
+                       TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+                       TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Switch", style: TextStyle(color: Colors.orange))),
+                     ],
+                   )
+                 );
+                 if (confirm == true) {
+                   setState(() => _isUpdating = true);
+                   final success = await Provider.of<OrderService>(context, listen: false).convertToDeployment(_order!.id);
+                   if (success) await _fetchOrder();
+                   setState(() => _isUpdating = false);
+                   if (mounted) ToastUtils.show(context, success ? "Switched to Inspection Mode" : "Failed to switch", type: success ? ToastType.success : ToastType.error);
+                 }
+              },
+            ),
+            const SizedBox(height: 25),
+          ],
+        );
+      }
+      return const SizedBox.shrink();
+    }
     
     final bool showDespatch = _order!.status == OrderStatus.New;
     final bool showAdjust = _order!.status == OrderStatus.Inspecting || _order!.status == OrderStatus.New;

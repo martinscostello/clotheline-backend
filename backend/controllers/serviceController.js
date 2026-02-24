@@ -352,6 +352,9 @@ exports.seedServices = async () => {
                     color: '0xFFFF6D00',
                     description: 'Professional On-site service',
                     image: 'assets/images/service_house_cleaning.png',
+                    fulfillmentMode: 'deployment',
+                    quoteRequired: true,
+                    inspectionFee: 2000,
                     items: [
                         { name: '1 Bedroom Flat', price: 15000 },
                         { name: '2 Bedroom Flat', price: 25000 },

@@ -722,3 +722,23 @@ exports.triggerPaymentNotification = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+exports.convertOrderToDeployment = async (req, res) => {
+    try {
+        const Order = require('../models/Order');
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+        order.fulfillmentMode = 'deployment';
+        // If it was Paid but now is deployment, it might need to be Pending for balance
+        if (order.paymentStatus === 'Paid') {
+            order.paymentStatus = 'Pending';
+        }
+
+        await order.save();
+        res.json(order);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
