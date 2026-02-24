@@ -119,7 +119,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       children: [
         _buildBucketTab(isDark, textColor, secondaryTextColor),
         _buildOrderList([OrderStatus.New], isDark, textColor, secondaryTextColor), 
-        _buildOrderList([OrderStatus.PendingUserConfirmation], isDark, textColor, secondaryTextColor), 
+        _buildOrderList([OrderStatus.PendingUserConfirmation, OrderStatus.Inspecting], isDark, textColor, secondaryTextColor), 
         _buildOrderList([OrderStatus.InProgress], isDark, textColor, secondaryTextColor),
         _buildOrderList([OrderStatus.Ready], isDark, textColor, secondaryTextColor),
         _buildOrderList([OrderStatus.Completed], isDark, textColor, secondaryTextColor),

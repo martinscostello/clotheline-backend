@@ -731,6 +731,12 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                         ],
                       ),
                       const SizedBox(height: 12),
+                      if (_order!.fulfillmentMode == 'deployment') ...[
+                        const Center(
+                          child: Text("SERVICE ESTIMATE", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0)),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       _buildSummaryRow("Subtotal", _order!.subtotal),
                       if (_order!.pickupFee > 0) _buildSummaryRow("Pickup Fee", _order!.pickupFee),
                       if (_order!.deliveryFee > 0) _buildSummaryRow("Delivery Fee", _order!.deliveryFee),
@@ -751,6 +757,23 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                           ),
                         ],
                       ),
+                      if (_order!.fulfillmentMode == 'deployment' && _order!.inspectionFee > 0) ...[
+                        const Divider(color: Colors.white10, height: 30),
+                        const Center(
+                          child: Text("PAYMENT SUMMARY", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1.0)),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSummaryRow("Estimated Total", _order!.totalAmount),
+                        _buildSummaryRow("Inspection Fee (Deposit)", -_order!.inspectionFee, color: Colors.green),
+                        const Divider(color: Colors.white10, height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Balance Due", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text("₦${(_order!.totalAmount - _order!.inspectionFee).toStringAsFixed(0)}", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ],
                       if (_order!.deliveryOption == 'Deliver') ...[
                         const SizedBox(height: 10),
                         SizedBox(

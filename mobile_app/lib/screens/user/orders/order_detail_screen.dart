@@ -185,6 +185,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                      _buildTextRow("Status", order.paymentStatus.name, 
                       (order.paymentStatus == PaymentStatus.Paid) ? Colors.green : Colors.orange, isBold: true),
                     const Divider(height: 20),
+                    if (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.New) ...[
+                      const Center(
+                        child: Text("SERVICE ESTIMATE", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2)),
+                      ),
+                      const Divider(height: 24),
+                    ],
                     _buildSummaryRow(order.fulfillmentMode == 'deployment' ? "Final Service Price" : "Subtotal", order.subtotal, textColor),
                     if (order.taxAmount > 0)
                       _buildSummaryRow("VAT (${order.taxRate}%)", order.taxAmount, textColor),
@@ -195,11 +201,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     if (order.discountAmount > 0 || order.storeDiscount > 0)
                       _buildSummaryRow("Discount", -(order.discountAmount + order.storeDiscount), Colors.green),
                     
-                    if (order.fulfillmentMode == 'deployment' && order.inspectionFee > 0) ...[
-                      const Divider(height: 20),
-                      _buildSummaryRow("Inspection Fee (Deposit Paid)", -order.inspectionFee, Colors.green),
-                    ],
-
+                    const Divider(height: 24),
                     _buildSummaryRow(
                       (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.New) ? "Estimated Total" : ((order.fulfillmentMode == 'deployment') ? "Final Total" : "Total"), 
                       order.totalAmount, 
@@ -208,9 +210,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       isTotal: true
                     ),
                     if (order.fulfillmentMode == 'deployment' && order.inspectionFee > 0) ...[
-                      const SizedBox(height: 12),
-                      _buildSummaryRow("Inspection Fee (Deposit Paid)", -order.inspectionFee, Colors.green),
                       const Divider(height: 30),
+                      const Center(
+                        child: Text("PAYMENT SUMMARY", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1.0)),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildSummaryRow("Estimated Total", order.totalAmount, textColor),
+                      _buildSummaryRow("Inspection Fee (Deposit Paid)", -order.inspectionFee, Colors.green),
+                      const Divider(height: 20),
                       _buildSummaryRow(
                         "Balance Due", 
                         (order.totalAmount - order.inspectionFee), 

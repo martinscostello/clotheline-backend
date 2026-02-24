@@ -609,34 +609,78 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isQuoteRequiredMode) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("SERVICE ESTIMATE", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
-                Text(CurrencyFormatter.format(_cartService.serviceEstimateTotalAmount), style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
-              ],
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  "SERVICE ESTIMATE", 
+                  style: TextStyle(
+                    color: AppTheme.primaryColor, 
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 12, 
+                    letterSpacing: 1.2
+                  )
+                ),
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
+            
             // Itemized estimate
             ..._cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(child: Text("${item.quantity}x ${item.item.name} (${item.serviceType?.name ?? 'Generic'})", style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12))),
-                  Text(CurrencyFormatter.format(item.fullEstimate), style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "${item.quantity}x ${item.item.name}", 
+                          style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13)
+                        ),
+                        Text(
+                          item.serviceType?.name ?? 'Regular Service', 
+                          style: TextStyle(color: textColor.withOpacity(0.6), fontSize: 11)
+                        ),
+                      ],
+                    )
+                  ),
+                  Text(
+                    CurrencyFormatter.format(item.fullEstimate), 
+                    style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13)
+                  ),
                 ],
               ),
             )),
             
+            const Divider(height: 24),
+
+            // Subtotal row for estimates
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Service Subtotal", style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12)),
+                Text(
+                  CurrencyFormatter.format(_cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).fold(0, (sum, i) => sum + i.fullEstimate)), 
+                  style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12)
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            
             // Itemized Discounts (Estimate based)
             ..._cartService.laundryDiscounts.entries.map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: 4.0),
+              padding: const EdgeInsets.only(bottom: 6.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 11)),
-                  Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
+                  Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 12)),
+                  Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
                 ],
               ),
             )),
@@ -644,15 +688,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("VAT (${_cartService.taxRate}%)", style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 11)),
-                Text(CurrencyFormatter.format(estimateTax), style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 11)),
+                Text("VAT (${_cartService.taxRate}%)", style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12)),
+                Text(CurrencyFormatter.format(estimateTax), style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 12)),
               ],
             ),
-            const SizedBox(height: 4),
-            Text("Payable only AFTER on-site inspection", style: TextStyle(color: isDark ? Colors.orangeAccent.shade100 : Colors.orange.shade800, fontSize: 10, fontStyle: FontStyle.italic)),
-            const SizedBox(height: 16),
-            const Divider(thickness: 1),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Total Estimate", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w900, fontSize: 18)),
+                Text(
+                  CurrencyFormatter.format(_cartService.serviceEstimateTotalAmount), 
+                  style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w900, fontSize: 18)
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Center(child: Text("Payable only AFTER on-site inspection", style: TextStyle(color: isDark ? Colors.orangeAccent.shade100 : Colors.orange.shade800, fontSize: 10, fontStyle: FontStyle.italic))),
+            const SizedBox(height: 20),
+            const Divider(thickness: 1, height: 40),
           ],
 
           if (isQuoteRequiredMode)
