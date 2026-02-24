@@ -29,8 +29,16 @@ class MyBucketScreen extends StatelessWidget {
       return;
     }
 
+    // Determine fulfillment mode (logistics is default, deployment if any item is deployment)
+    String mode = 'logistics';
+    if (cart.any((item) => item.fulfillmentMode == 'deployment')) {
+      mode = 'deployment';
+    } else if (cart.any((item) => item.fulfillmentMode == 'bulky')) {
+      mode = 'bulky';
+    }
+
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => const CheckoutScreen(),
+      builder: (context) => CheckoutScreen(fulfillmentMode: mode),
     ));
   }
 

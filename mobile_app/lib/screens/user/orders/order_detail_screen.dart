@@ -200,8 +200,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
                     const Divider(height: 30),
                     _buildSummaryRow(
-                      (order.fulfillmentMode == 'deployment' && order.status == OrderStatus.PendingUserConfirmation) ? "Balance Due" : "Total", 
-                      (order.fulfillmentMode == 'deployment' && (order.status == OrderStatus.PendingUserConfirmation || order.status == OrderStatus.Inspecting))
+                      (order.fulfillmentMode == 'deployment' && (order.status == OrderStatus.PendingUserConfirmation || order.status == OrderStatus.Inspecting || order.status == OrderStatus.New)) ? "Balance Due (est.)" : "Total", 
+                      (order.fulfillmentMode == 'deployment' && (order.status == OrderStatus.PendingUserConfirmation || order.status == OrderStatus.Inspecting || order.status == OrderStatus.New))
                         ? (order.totalAmount - order.inspectionFee) 
                         : order.totalAmount, 
                       AppTheme.primaryColor, 
