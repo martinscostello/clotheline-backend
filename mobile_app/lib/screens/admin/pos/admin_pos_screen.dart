@@ -293,9 +293,16 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
   }
 
   Widget _buildTypeCard(String title, IconData icon, String subtitle, String type) {
+    final pos = Provider.of<AdminPOSProvider>(context, listen: false);
     bool selected = _orderType == type;
     return GestureDetector(
-      onTap: () => setState(() => _orderType = type),
+      onTap: () {
+        if (_orderType != type) {
+          setState(() => _orderType = type);
+          // [FIX] Clear cart when switching categories to prevent leakage
+          pos.clearAllItems();
+        }
+      },
       child: GlassContainer(
         opacity: selected ? 0.2 : 0.05,
         border: Border.all(color: selected ? AppTheme.secondaryColor : Colors.white10),

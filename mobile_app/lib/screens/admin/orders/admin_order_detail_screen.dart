@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../../services/api_service.dart';
 import '../../../../services/chat_service.dart'; // [FIX] Import ChatService
 
-import 'package:url_launcher/url_launcher.dart';
+
 import '../../../../utils/toast_utils.dart';
 import '../chat/admin_chat_screen.dart'; // [FIX] Import AdminChatScreen
 import '../../../../services/whatsapp_service.dart';
@@ -398,7 +398,8 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
     final bool showAdjust = _order!.status == OrderStatus.Inspecting || _order!.status == OrderStatus.New;
     final bool showNotify = _order!.status == OrderStatus.PendingUserConfirmation;
 
-    if (!showDespatch && !showAdjust && !showNotify) return const SizedBox.shrink();
+    // [FIX] Strict Isolation: Inspection actions ONLY for deployment orders
+    if (_order!.fulfillmentMode != 'deployment' || (!showDespatch && !showAdjust && !showNotify)) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,7 +449,7 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
           icon: const Icon(Icons.swap_horiz, size: 18),
           label: const Text("Switch to Inspection Mode", style: TextStyle(fontSize: 12)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange.withOpacity(0.1),
+          backgroundColor: Colors.orange.withValues(alpha: 0.1),
             foregroundColor: Colors.orange,
             minimumSize: const Size(double.infinity, 45),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

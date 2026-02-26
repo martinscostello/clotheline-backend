@@ -66,6 +66,14 @@ class AdminPOSProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // [NEW] Category Isolation
+  void clearAllItems() {
+    laundryItems.clear();
+    storeItems.clear();
+    deliveryFee = 0;
+    notifyListeners();
+  }
+
   // Totals
   double get subtotal => laundryItems.fold(0.0, (sum, i) => sum + i.checkoutPrice) + 
                          storeItems.fold(0.0, (sum, i) => sum + i.totalPrice);
