@@ -609,10 +609,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         : (subtotal - modeDiscount) * (_cartService.taxRate / 100);
         
     // [FIX] Total Due Now matches subtotal + logistics for Deployment
-    // because subtotal already contains the flat 1,000 inspection fee.
-    double total = (widget.fulfillmentMode == 'deployment')
+    // because subtotal already contains the flat inspection fee.
+    // We isolate the service-level discount (which belongs to the future estimate) from the immediate fee.
+    double total = (widget.fulfillmentMode.toLowerCase() == 'deployment')
         ? subtotal + logistics
-        : (subtotal - modeDiscount) + tax + logistics; 
+        : (subtotal - modeDiscount) + tax + logistics;
+
+    // Safety: Total should never be negative
+    if (total < 0) total = 0;
 
     // [FIX] Total Total Gross estimate for the current mode items
     double estimateGross = modeItems.fold(0.0, (sum, i) => sum + i.baseTotal);

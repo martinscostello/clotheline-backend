@@ -271,12 +271,21 @@ class CartService extends ChangeNotifier {
   double get subtotal => servicePayableSubtotal + storeTotalAmount; 
   
   // Net Total (PAYABLE)
-  double get subtotalAfterDiscount => (subtotal - discountAmount) < 0 ? 0 : (subtotal - discountAmount);
+  // [FIX] Isolate service discounts from inspection fees if mode is deployment
+  double get subtotalAfterDiscount {
+    if (activeModes.contains('deployment') && _items.any((i) => i.quoteRequired)) {
+      // For deployment, service discounts apply to the ESTIMATE, not the inspection fee.
+      // So 'payable' discount is only store discount.
+      double payableD = storeDiscountAmount;
+      return (subtotal - payableD) < 0 ? 0 : (subtotal - payableD);
+    }
+    return (subtotal - discountAmount) < 0 ? 0 : (subtotal - discountAmount);
+  }
   
   // Tax Calculations (PAYABLE)
   // [FIX] Don't apply VAT to Inspection Fees (Deployment mode with Pending Quote)
   double get taxAmount {
-     if (activeModes.contains('deployment') && _items.any((i) => i.quoteRequired)) {
+     if (activeModes.any((m) => m.toLowerCase() == 'deployment') && _items.any((i) => i.quoteRequired)) {
        // Inspection fees are flat (no tax)
        return 0.0;
      }

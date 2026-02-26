@@ -286,7 +286,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
           const SizedBox(height: 20),
           _buildTypeCard("Store Products", Icons.shopping_bag_outlined, "Detergents, additives, and retail items.", 'Store'),
           const SizedBox(height: 20),
-          _buildTypeCard("Home Cleaning", Icons.cleaning_services_outlined, "On-site deep cleaning and inspections.", 'Deployment'),
+          _buildTypeCard("Home Cleaning", Icons.cleaning_services_outlined, "On-site deep cleaning and inspections.", 'deployment'),
         ],
       ),
     );
@@ -340,7 +340,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("${_orderType} Selection", style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              if (_orderType != 'Deployment') // Hide switch for deployment to keep it isolated
+              if (_orderType != 'deployment') // Hide switch for deployment to keep it isolated
                 TextButton.icon(
                   icon: const Icon(Icons.swap_horiz, size: 16),
                   onPressed: () => setState(() => _orderType = _orderType == 'Laundry' ? 'Store' : 'Laundry'),
@@ -364,7 +364,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
         List<ServiceModel> filteredServices = laundrySvc.services;
         
         // POS Internal Isolation
-        if (_orderType == 'Deployment') {
+        if (_orderType == 'deployment') {
            filteredServices = filteredServices.where((s) => s.fulfillmentMode == 'deployment').toList();
         } else if (_orderType == 'Laundry') {
            filteredServices = filteredServices.where((s) => s.fulfillmentMode == 'logistics' || s.fulfillmentMode == 'bulky').toList();
@@ -699,7 +699,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
       child: Consumer<AdminPOSProvider>(
         builder: (context, pos, _) {
           final isDeployment = widget.fulfillmentMode == 'deployment' || 
-                             _orderType == 'Deployment' ||
+                             _orderType == 'deployment' ||
                              (pos.laundryItems.isNotEmpty && pos.laundryItems.any((i) => i.fulfillmentMode == 'deployment'));
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -881,7 +881,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
               ),
               
               const SizedBox(height: 25),
-              if (widget.fulfillmentMode == 'deployment' || _orderType == 'Deployment') ...[
+              if (widget.fulfillmentMode == 'deployment' || _orderType == 'deployment') ...[
                  _buildDeploymentSummary(pos),
                  const SizedBox(height: 25),
               ],
