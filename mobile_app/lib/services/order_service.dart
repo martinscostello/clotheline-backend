@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:laundry_app/services/api_service.dart';
+import 'package:dio/dio.dart';
 import '../models/order_model.dart';
 
 class OrderService extends ChangeNotifier {

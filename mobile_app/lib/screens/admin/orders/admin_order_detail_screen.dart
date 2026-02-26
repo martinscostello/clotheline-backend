@@ -401,6 +401,7 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
     }
   }
 
+  Widget _buildInspectionActions() {
     final bool showAdjust = _order!.status == OrderStatus.Inspecting || 
                            _order!.status == OrderStatus.New || 
                            _order!.status == OrderStatus.PendingUserConfirmation;
@@ -548,11 +549,11 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                     border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.payment, color: Colors.amber),
-                      SizedBox(width: 12),
-                      Expanded(
+                      const Icon(Icons.payment, color: Colors.amber),
+                      const SizedBox(width: 12),
+                      const Expanded(
                         child: Text(
                           "PAYMENT PENDING",
                           style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, letterSpacing: 1.2),

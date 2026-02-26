@@ -28,7 +28,7 @@ class NavScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
-    final bool isTablet = (width >= 600) || kIsWeb; // Galaxy Z Fold 6 Threshold (600px+)
+    final bool isTablet = (width >= 600) || kIsWeb; // Reverted to 600px to ensure Foldables (unfolded) use the Sidebar
 
     if (isTablet) {
       return Scaffold(

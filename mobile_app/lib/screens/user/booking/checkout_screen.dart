@@ -314,13 +314,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           runSpacing: 8,
           children: chips.map((chip) => ActionChip(
             label: Text(chip, style: const TextStyle(fontSize: 12)),
-            backgroundColor: isDark ? Colors.white10 : Colors.grey.shade100,
+            backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
             labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
             padding: EdgeInsets.zero,
+            side: BorderSide.none,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             onPressed: () {
-              String currentText = _notesController.text;
-              if (currentText.length + chip.length + 2 > _notesMaxLength) {
-                ToastUtils.show(context, "Note too long", type: ToastType.warning);
+              final currentText = _notesController.text;
+              if (currentText.length + chip.length + (currentText.isEmpty ? 0 : 2) > _notesMaxLength) {
                 return;
               }
               setState(() {
@@ -335,7 +336,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 _notesController.selection = TextSelection.fromPosition(TextPosition(offset: _notesController.text.length));
               });
             },
-          )),
+          )).toList(),
         ),
         const SizedBox(height: 15),
         Container(
