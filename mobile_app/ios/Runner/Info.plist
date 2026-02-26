@@ -62,6 +62,8 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>whatsapp</string>
+		<string>opay</string>
+		<string>palmpay</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

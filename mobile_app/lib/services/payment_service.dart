@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:dio/dio.dart'; // [FIX] Added import
 import 'api_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PaymentService {
   final ApiService _api = ApiService();
@@ -111,12 +112,22 @@ class _PaymentWebViewState extends State<_PaymentWebView> {
           onNavigationRequest: (NavigationRequest request) {
             // Check for success redirect
             if (request.url.contains('standard.paystack.co/close') || 
-                request.url.contains('paystack.com') && request.url.contains('reference=${widget.reference}')) { // Fallback checks
-               // We can assume completed, but verification is best done by checking backend.
-               // Paystack redirects to callback_url on success.
+                (request.url.contains('paystack.com') && request.url.contains('reference=${widget.reference}'))) { 
                widget.onComplete(true); 
                return NavigationDecision.prevent;
             }
+
+            // [NEW] Deep Linking Support (OPay, PalmPay, WhatsApp, etc)
+            if (!request.url.startsWith('http://') && !request.url.startsWith('https://')) {
+              try {
+                final Uri uri = Uri.parse(request.url);
+                launchUrl(uri, mode: LaunchMode.externalApplication);
+                return NavigationDecision.prevent;
+              } catch (e) {
+                print("Could not launch deep link: ${request.url}");
+              }
+            }
+            
             return NavigationDecision.navigate;
           },
         ),
