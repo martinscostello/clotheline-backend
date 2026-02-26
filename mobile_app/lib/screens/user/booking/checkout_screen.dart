@@ -278,10 +278,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   final int _notesMaxLength = 250;
 
   Widget _buildSpecialCareInstructions(bool isDark, Color textColor) {
-    final List<String> chips = [
-      "Gentle Wash", "No Bleach", "Cold Wash Only", 
-      "Separate Whites", "Hand Wash", "Use Softener"
-    ];
+    final mode = widget.fulfillmentMode.toLowerCase();
+    
+    List<String> chips;
+    String hintText;
+
+    if (mode == 'deployment') {
+      // Home/Office Cleaning
+      chips = [
+        "Focus on Kitchen", "Deep clean bathroom", "Dusting only", 
+        "Vacuum bedroom", "Mop floors", "Clean windows", "Empty all bins"
+      ];
+      hintText = "e.g. Please focus on the kitchen tiles and deep clean the master bathroom.";
+    } else if (mode == 'bulky') {
+      // Rug Cleaning
+      chips = [
+        "Pet stain removal", "Deep vacuum", "Deodorize", 
+        "Fringe cleaning", "Moth treatment", "Gentle wash"
+      ];
+      hintText = "e.g. Please remove the pet stains on the edges and deodorize thoroughly.";
+    } else {
+      // Laundry (Logistics)
+      chips = [
+        "Gentle Wash", "No Bleach", "Cold Wash Only", 
+        "Separate Whites", "Hand Wash", "Use Softener"
+      ];
+      hintText = "e.g. Do not use strong bleach. Hand wash only. Separate whites.";
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,12 +335,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 _notesController.selection = TextSelection.fromPosition(TextPosition(offset: _notesController.text.length));
               });
             },
-          )).toList(),
+          )),
         ),
         const SizedBox(height: 15),
         Container(
           decoration: BoxDecoration(
-            color: isDark ? Colors.white10 : Colors.grey.shade50,
+            color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05), // Subtle bg for light mode
             borderRadius: BorderRadius.circular(15),
             border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
           ),
@@ -330,7 +353,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 style: TextStyle(color: textColor, fontSize: 14),
                 onChanged: (val) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: "e.g. Do not use strong bleach. Hand wash only. Separate whites.",
+                  hintText: hintText,
                   hintStyle: TextStyle(color: isDark ? Colors.white24 : Colors.black26),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(15),
@@ -373,7 +396,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         const SizedBox(height: 15),
         Text(
           "Please select where the cleaning service will take place. Our specialists will arrive at this location.",
-          style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 13),
+          style: TextStyle(color: textColor.withValues(alpha: 0.5), fontSize: 13),
         ),
         const SizedBox(height: 15),
         _buildAddressInputs(true), // Reuse pickup address logic for service location

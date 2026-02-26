@@ -208,7 +208,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       decoration: BoxDecoration(
-                        color: selected ? AppTheme.secondaryColor : Colors.white.withOpacity(0.05),
+                        color: selected ? AppTheme.secondaryColor : Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(15),
                         border: Border.all(color: selected ? AppTheme.secondaryColor : Colors.white10),
                       ),
@@ -450,7 +450,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                       )
                     : null,
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
+                  fillColor: Colors.white.withValues(alpha: 0.05),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                   contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 ),
@@ -484,7 +484,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                               child: Container(
                                 width: double.infinity,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05), 
+                                  color: Colors.white.withValues(alpha: 0.05), 
                                   borderRadius: BorderRadius.circular(10)
                                 ),
                                 child: CustomCachedImage(
@@ -784,6 +784,55 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
               const SizedBox(height: 30),
               const Text("Special Care / Notes", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
+              
+              // [NEW] Dynamic Care Suggestions
+              Consumer<AdminPOSProvider>(
+                builder: (context, pos, _) {
+                  List<String> chips = [];
+                  String hint = "Add special instructions...";
+                  
+                  if (_orderType == 'deployment') {
+                    chips = ["Focus on Kitchen", "Deep clean bathroom", "Dusting only", "Vacuum bedroom", "Mop floors", "Clean windows"];
+                    hint = "e.g. Deep clean the master bathroom...";
+                  } else if (_orderType == 'Laundry') {
+                    chips = ["Gentle Wash", "No Bleach", "Cold Wash Only", "Separate Whites", "Hand Wash", "Use Softener"];
+                    hint = "e.g. Hand wash the silk gown...";
+                  } else if (_orderType == 'Store') {
+                    chips = ["Fragile Item", "Handle with Care", "Keep Upright", "Gift Wrap", "Express Delivery"];
+                    hint = "e.g. Handle the glass bottles with care...";
+                  }
+
+                  if (chips.isEmpty) return const SizedBox.shrink();
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: chips.map((chip) => ActionChip(
+                        label: Text(chip, style: const TextStyle(fontSize: 11)),
+                        backgroundColor: Colors.white.withValues(alpha: 0.05),
+                        labelStyle: const TextStyle(color: AppTheme.secondaryColor),
+                        padding: EdgeInsets.zero,
+                        onPressed: () {
+                          if (_notesController.text.length + chip.length + 2 > 300) return;
+                          setState(() {
+                            if (_notesController.text.isEmpty) {
+                              _notesController.text = chip;
+                            } else if (_notesController.text.endsWith(". ") || _notesController.text.endsWith(" ")) {
+                              _notesController.text += chip;
+                            } else {
+                              _notesController.text += ". $chip";
+                            }
+                            pos.laundryNotes = _notesController.text;
+                          });
+                        },
+                      )).toList(),
+                    ),
+                  );
+                }
+              ),
+
               GlassContainer(
                 opacity: 0.1,
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
@@ -792,10 +841,11 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   maxLines: 2,
                   style: const TextStyle(color: Colors.white),
                   onChanged: (val) => pos.laundryNotes = val,
-                  decoration: const InputDecoration(
-                    icon: Icon(Icons.note_add_outlined, color: AppTheme.secondaryColor, size: 20),
-                    hintText: "Add special instructions...",
-                    hintStyle: TextStyle(color: Colors.white24),
+                  decoration: InputDecoration(
+                    icon: const Icon(Icons.note_add_outlined, color: AppTheme.secondaryColor, size: 20),
+                    hintText: _orderType == 'deployment' ? "e.g. Deep clean the master bathroom..." : 
+                              (_orderType == 'Laundry' ? "e.g. Hand wash the silk gown..." : "Add special instructions..."),
+                    hintStyle: const TextStyle(color: Colors.white24),
                     border: InputBorder.none,
                   ),
                 ),
