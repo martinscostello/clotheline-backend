@@ -621,7 +621,7 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                               },
                               items: _getAvailableStatuses().map((s) => DropdownMenuItem(
                                 value: s,
-                                child: Text(s),
+                                child: Text(_formatStatusName(s)),
                               )).toList(),
                             ),
                             if (_isUpdating) const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
@@ -1016,21 +1016,54 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
     );
   }
 
+  String _formatStatusName(String status) {
+    if (status == 'InProgress') {
+      // Use "Processing" for Laundry/Product modes
+      return _order!.fulfillmentMode == 'deployment' ? 'In Progress' : 'Processing';
+    }
+    if (status == 'PendingUserConfirmation') return 'Awaiting User';
+    
+    // Add spaces to CamelCase for others
+    return status.replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (Match m) => "${m.group(1)} ${m.group(2)}");
+  }
+
   List<String> _getAvailableStatuses() {
-    final all = ["New", "Inspecting", "PendingUserConfirmation", "InProgress", "Ready", "Completed", "Cancelled", "Refunded"];
+    final bool isDeployment = _order!.fulfillmentMode == 'deployment';
+    
+    // 1. Define the logical flow for each mode
+    final List<String> laundryFlow = ["New", "InProgress", "Ready", "Completed"];
+    final List<String> deploymentFlow = ["New", "Inspecting", "PendingUserConfirmation", "InProgress", "Ready", "Completed"];
+    
+    final flow = isDeployment ? deploymentFlow : laundryFlow;
+    
     if (_currentStatus == 'Refunded') return ['Refunded'];
     if (_currentStatus == 'Cancelled') return ['Cancelled'];
     
-    // Admins can move forward through the lifecycle or Cancel
-    List<String> valid = [_currentStatus, "Cancelled"];
+    // 2. Build list of valid transitions
+    // Always include current status, Cancelled, and Refunded (if paid)
+    Set<String> valid = {_currentStatus, "Cancelled"};
+    if (_order!.paymentStatus == PaymentStatus.Paid) valid.add("Refunded");
+
+    // Allow moving to ANY stage in the logical flow that is "forward" or "current"
+    // This gives admins more flexibility to fix mistakes or skip steps if needed
+    int currentIndex = flow.indexOf(_currentStatus);
     
-    if (_currentStatus == 'New') valid.add("Inspecting");
-    if (_currentStatus == 'Inspecting') valid.add("PendingUserConfirmation");
-    if (_currentStatus == 'PendingUserConfirmation') valid.add("InProgress");
-    if (_currentStatus == 'InProgress') valid.add("Ready");
-    if (_currentStatus == 'Ready') valid.add("Completed");
+    if (currentIndex != -1) {
+       // Everything from current index onwards is valid
+       valid.addAll(flow.sublist(currentIndex));
+    } else {
+       // If current status isn't in main flow (e.g. legacy or weird state), allow whole flow
+       valid.addAll(flow);
+    }
     
-    return all.where((s) => valid.contains(s) || s == _currentStatus).toSet().toList();
+    return valid.toList()..sort((a, b) {
+       // Keep the order of the original flow, put Cancelled/Refunded at bottom
+       int idxA = flow.indexOf(a);
+       int idxB = flow.indexOf(b);
+       if (idxA == -1) return 1;
+       if (idxB == -1) return -1;
+       return idxA.compareTo(idxB);
+    });
   }
 
   void _showRefundDialog() {
