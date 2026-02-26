@@ -1020,7 +1020,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         'name': i.item.name,
         'serviceType': i.serviceType?.name ?? 'Generic Service',
         'quantity': i.quantity,
-        'price': i.fullEstimate / i.quantity // Unit price (Always use full estimate for record)
+        'price': i.baseTotal / i.quantity // [FIX] Send original (undiscounted) unit price. Backend handles the discount subtraction from subtotal.
       });
     }
 
@@ -1032,7 +1032,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           'itemId': i.product.id,
           'name': i.product.name + (i.variant != null ? " (${i.variant!.name})" : ""),
           'quantity': i.quantity,
-          'price': i.price
+          'price': i.variant?.originalPrice ?? i.product.originalPrice // [FIX] Send original price for products to match backend discount logic
         });
       }
     }
