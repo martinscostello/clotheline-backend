@@ -73,8 +73,11 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
   }
 
   Future<void> _fetchOrder() async {
+    final orderId = _order?.id ?? widget.orderId;
+    if (orderId == null) return;
+    
     final service = Provider.of<OrderService>(context, listen: false);
-    final fetched = await service.getOrderById(widget.orderId!);
+    final fetched = await service.getOrderById(orderId);
     if (mounted) {
       setState(() {
         _order = fetched;
@@ -394,12 +397,11 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
   }
 
   Widget _buildInspectionActions() {
-    final bool showDespatch = _order!.status == OrderStatus.New;
     final bool showAdjust = _order!.status == OrderStatus.Inspecting || _order!.status == OrderStatus.New;
     final bool showNotify = _order!.status == OrderStatus.PendingUserConfirmation;
 
     // [FIX] Strict Isolation: Inspection actions ONLY for deployment orders
-    if (_order!.fulfillmentMode != 'deployment' || (!showDespatch && !showAdjust && !showNotify)) return const SizedBox.shrink();
+    if (_order!.fulfillmentMode != 'deployment' || (!showAdjust && !showNotify)) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,10 +410,6 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
         const SizedBox(height: 12),
         Row(
           children: [
-             if (showDespatch)
-                _inspectionBtn("Despatched", Icons.local_shipping, _despatchOrder),
-             if (showDespatch && (showAdjust || showNotify)) const SizedBox(width: 8),
-
              if (showAdjust)
                 _inspectionBtn("Adjust Price", Icons.edit, _showAdjustmentDialog),
              if (showAdjust && showNotify) const SizedBox(width: 8),
