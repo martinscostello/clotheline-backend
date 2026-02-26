@@ -173,7 +173,7 @@ class OrderService extends ChangeNotifier {
   }
 
   // [NEW] Adjust Pricing (Admin)
-  Future<bool> adjustPricing(String id, double newPrice, String? notes) async {
+  Future<String?> adjustPricing(String id, double newPrice, String? notes) async {
     try {
       final response = await _apiService.client.put('/orders/$id/adjust-pricing', data: {
         'newPrice': newPrice,
@@ -181,12 +181,15 @@ class OrderService extends ChangeNotifier {
       });
       if (response.statusCode == 200) {
         await fetchOrders(role: 'admin');
-        return true;
+        return null; // Success!
       }
-      return false;
+      return response.data['msg'] ?? "Unexpected response from server";
     } catch (e) {
       debugPrint("Error adjusting pricing: $e");
-      return false;
+      if (e is DioException) {
+        return e.response?.data['msg'] ?? e.message;
+      }
+      return e.toString();
     }
   }
 

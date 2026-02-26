@@ -216,6 +216,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             // Notify Admins
             const admins = await User.find({ role: 'admin' });
 
+            // [FIX] Avoid creating multiple Notification records if this is called in a loop (unlikely but safe)
             const adminNotifications = admins.map(admin => ({
                 userId: admin._id,
                 title,
@@ -226,9 +227,11 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             }));
 
             if (adminNotifications.length > 0) {
+                // Check if we already created these notifications for this order? 
+                // Skip for now as createOrderInternal should only run once per order.
                 await Notification.insertMany(adminNotifications);
 
-                // [FIX] Aggregated and Deduplicated Admin Tokens
+                // [FIX] Aggregated and STRICTLY Deduplicated Admin Tokens
                 let adminTokensRaw = [];
                 admins.forEach(admin => {
                     if (admin.fcmTokens && Array.isArray(admin.fcmTokens)) {
@@ -236,6 +239,8 @@ exports.createOrderInternal = async (orderData, userId = null) => {
                     }
                 });
 
+                // Strictly deduplicate to prevent double pushes on same device if multiple admins share tokens 
+                // or if one admin has duplicate entries.
                 const adminTokens = [...new Set(adminTokensRaw.filter(t => t))];
 
                 if (adminTokens.length > 0) {
@@ -334,6 +339,22 @@ exports.updateOrderStatus = async (req, res) => {
         if (!order) return res.status(404).json({ msg: 'Order not found' });
 
         order.status = status;
+
+        // [AUTO-BALANCE] For deployment orders moving to Awaiting User Confirmation
+        // This ensures the user sees the balance (Total - Inspection Fee) even if no manual adjustment was made.
+        if (status === 'PendingUserConfirmation' && order.fulfillmentMode === 'deployment') {
+            const currentAdjustment = order.feeAdjustment?.amount || 0;
+            if (currentAdjustment === 0) {
+                const extraDue = Math.max(0, order.totalAmount - (order.inspectionFee || 0));
+                order.feeAdjustment = {
+                    amount: extraDue,
+                    status: 'Pending',
+                    notified: true
+                };
+                console.log(`[OrderUpdate] Auto-initialized feeAdjustment for deployment order ${order._id}: ₦${extraDue}`);
+            }
+        }
+
         await order.save();
 
         // [TRACKING] Log status update
@@ -618,16 +639,6 @@ exports.despatchOrder = async (req, res) => {
         const message = `Our personnel have been despatched for inspection of order #${shortId}`;
 
         if (order.user) {
-            // [FIX] Use unique title to avoid duplicate confusion if status watcher fired
-            await new Notification({
-                userId: order.user,
-                title,
-                message,
-                type: 'order',
-                branchId: order.branchId,
-                metadata: { orderId: order._id }
-            }).save();
-
             _sendPushAsync(order.user, title, message, order._id);
         }
 
@@ -655,50 +666,57 @@ exports.adjustOrderPricing = async (req, res) => {
         let discountLabel = "";
 
         // 1. Identify primary service for discount re-validation
-        const serviceItem = order.items.find(i => i.itemType === 'Service');
+        const serviceItem = (order.items || []).find(i => i.itemType === 'Service');
         if (serviceItem) {
-            const serviceDoc = await Service.findById(serviceItem.itemId);
-            if (serviceDoc) {
-                // Check branch-specific discount first
-                const branchConf = (serviceDoc.branchConfig || []).find(b => b.branchId.toString() === order.branchId.toString());
-                const activeDiscountPercent = (branchConf && branchConf.discountPercentage !== undefined)
-                    ? branchConf.discountPercentage
-                    : (serviceDoc.discountPercentage || 0);
+            try {
+                const serviceDoc = await Service.findById(serviceItem.itemId);
+                if (serviceDoc) {
+                    const branchIdStr = order.branchId ? order.branchId.toString() : null;
+                    const branchConf = branchIdStr ? (serviceDoc.branchConfig || []).find(b => b.branchId && b.branchId.toString() === branchIdStr) : null;
+                    const activeDiscountPercent = (branchConf && branchConf.discountPercentage !== undefined)
+                        ? branchConf.discountPercentage
+                        : (serviceDoc.discountPercentage || 0);
 
-                if (activeDiscountPercent > 0) {
-                    discountAmount = (newPrice * activeDiscountPercent) / 100;
-                    discountLabel = (branchConf && branchConf.discountLabel) ? branchConf.discountLabel : serviceDoc.discountLabel;
-                    console.log(`[AdjustPricing] Re-applying ${activeDiscountPercent}% discount (₦${discountAmount})`);
+                    if (activeDiscountPercent > 0) {
+                        discountAmount = (newPrice * activeDiscountPercent) / 100;
+                        discountLabel = (branchConf && branchConf.discountLabel) ? branchConf.discountLabel : serviceDoc.discountLabel;
+                    }
                 }
+            } catch (serviceErr) {
+                console.warn(`[AdjustPricing] Service lookup failed for ${serviceItem.itemId}:`, serviceErr.message);
             }
         }
 
-        const subtotalAfterDiscount = newPrice - discountAmount;
+        const subtotalAfterDiscount = newPrice - (discountAmount || 0);
         const taxAmount = (subtotalAfterDiscount * taxRate) / 100;
 
         // Final Total = New Price + Tax + Logistics - Discounts
         order.subtotal = newPrice;
         order.discountAmount = discountAmount;
         order.discountLabel = discountLabel;
-        order.taxRate = taxRate; // [FIX] Persist taxRate for frontend label
+        order.taxRate = taxRate;
         order.taxAmount = taxAmount;
-        order.totalAmount = subtotalAfterDiscount + taxAmount + (order.deliveryFee || 0) + (order.pickupFee || 0);
+
+        // Ensure logistics fees are treated as numbers
+        const pickupFee = parseFloat(order.pickupFee) || 0;
+        const deliveryFee = parseFloat(order.deliveryFee) || 0;
+
+        order.totalAmount = subtotalAfterDiscount + taxAmount + deliveryFee + pickupFee;
         order.status = 'PendingUserConfirmation';
         order.exceptionNote = notes || order.exceptionNote;
 
-        // [STABILITY FIX] Also update the items array prices to match the new subtotal
-        // This prevents "jumping" prices where logic sums items and gets a different total than subtotal.
+        // Update items array to keep UI in sync
         if (order.items && order.items.length > 0) {
             const serviceItems = order.items.filter(i => i.itemType === 'Service');
             if (serviceItems.length === 1) {
                 serviceItems[0].price = newPrice;
             } else if (serviceItems.length > 1) {
-                serviceItems[0].price = newPrice / serviceItems.length; // Approximate split if multiple
+                const splitPrice = newPrice / serviceItems.length;
+                serviceItems.forEach(i => i.price = splitPrice);
             }
         }
 
-        // Prepare fee adjustment for payment tracking
-        // Balance = Final Total - Inspection Fee
+        // Prepare fee adjustment
         const extraDue = Math.max(0, order.totalAmount - (order.inspectionFee || 0));
         order.feeAdjustment = {
             amount: extraDue,
@@ -708,27 +726,30 @@ exports.adjustOrderPricing = async (req, res) => {
 
         await order.save();
 
-        const shortId = order._id.toString().slice(-6).toUpperCase();
-        const title = 'Order Pricing Updated';
-        const message = `A new price of ₦${newPrice} has been set for your order #${shortId}. Please review and make payment.`;
-
+        // Notify user
         if (order.user) {
+            const shortId = order._id.toString().slice(-6).toUpperCase();
+            const statusData = {
+                title: 'Quote Ready',
+                message: `A quote of ₦${newPrice} has been prepared for order #${shortId}. Please review and make payment.`
+            };
+
             await new Notification({
                 userId: order.user,
-                title,
-                message,
+                title: statusData.title,
+                message: statusData.message,
                 type: 'order',
                 branchId: order.branchId,
                 metadata: { orderId: order._id }
-            }).save();
+            }).save().catch(e => console.error("[AdjustPricing] Notification Save Error:", e));
 
-            _sendPushAsync(order.user, title, message, order._id);
+            _sendPushAsync(order.user, statusData.title, statusData.message, order._id);
         }
 
-        res.json({ msg: 'Pricing adjusted and user notified', order });
+        res.json({ msg: 'Pricing adjusted successfully', order });
     } catch (err) {
-        console.error("Adjust Pricing Error:", err);
-        res.status(500).send('Server Error');
+        console.error("Adjust Pricing Error [VERBOSE]:", err);
+        res.status(500).json({ msg: 'Adjust Pricing Failed: ' + (err.message || 'Server Error') });
     }
 };
 

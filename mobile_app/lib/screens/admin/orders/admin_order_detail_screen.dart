@@ -357,12 +357,17 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
               Navigator.pop(ctx);
               setState(() => _isUpdating = true);
               try {
-                final success = await Provider.of<OrderService>(context, listen: false)
+                final error = await Provider.of<OrderService>(context, listen: false)
                     .adjustPricing(_order!.id, price, noteCtrl.text);
-                if (success) await _fetchOrder();
-                if (mounted) ToastUtils.show(context, success ? "Pricing Adjusted" : "Failed to update", type: success ? ToastType.success : ToastType.error);
+                
+                if (error == null) {
+                  await _fetchOrder();
+                  if (mounted) ToastUtils.show(context, "Pricing Adjusted", type: ToastType.success);
+                } else {
+                  if (mounted) ToastUtils.show(context, "Failed: $error", type: ToastType.error);
+                }
               } catch (e) {
-                if (mounted) ToastUtils.show(context, "Error adjusting pricing: $e", type: ToastType.error);
+                if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
               } finally {
                 if (mounted) setState(() => _isUpdating = false);
               }
@@ -396,8 +401,9 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
     }
   }
 
-  Widget _buildInspectionActions() {
-    final bool showAdjust = _order!.status == OrderStatus.Inspecting || _order!.status == OrderStatus.New;
+    final bool showAdjust = _order!.status == OrderStatus.Inspecting || 
+                           _order!.status == OrderStatus.New || 
+                           _order!.status == OrderStatus.PendingUserConfirmation;
     final bool showNotify = _order!.status == OrderStatus.PendingUserConfirmation;
 
     // [FIX] Strict Isolation: Inspection actions ONLY for deployment orders
@@ -1030,6 +1036,7 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
     
     // 1. Define the logical flow for each mode
     final List<String> laundryFlow = ["New", "InProgress", "Ready", "Completed"];
+    // Ensure PendingUserConfirmation is logically included in the flow
     final List<String> deploymentFlow = ["New", "Inspecting", "PendingUserConfirmation", "InProgress", "Ready", "Completed"];
     
     final flow = isDeployment ? deploymentFlow : laundryFlow;
