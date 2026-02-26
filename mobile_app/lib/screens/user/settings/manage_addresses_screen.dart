@@ -83,12 +83,27 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Label (e.g. Home, Office)", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                        _buildStepIndicator(1, "Name this address"),
+                        const SizedBox(height: 8),
+                        Text("Give this location a recognizable name like 'Home', 'Office' or 'My Store'.", 
+                          style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.grey.shade600)),
+                        const SizedBox(height: 10),
                         TextField(
                           controller: labelController,
-                          decoration: const InputDecoration(hintText: "Enter a label..."),
+                          decoration: InputDecoration(
+                            hintText: "e.g. Home",
+                            prefixIcon: const Icon(Icons.label_outline, size: 20),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            filled: true,
+                            fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                          ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 24),
+                        _buildStepIndicator(2, "Select the location"),
+                        const SizedBox(height: 8),
+                        Text("Search for your street or use the map icon to pick the exact spot on the map.", 
+                          style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.grey.shade600)),
+                        const SizedBox(height: 12),
                         DeliveryLocationSelector(
                           onLocationSelected: (sel) {
                             tempSelection = sel;
@@ -235,6 +250,22 @@ class _ManageAddressesScreenState extends State<ManageAddressesScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStepIndicator(int step, String title) {
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle),
+          child: Text(step.toString(), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+        ),
+        const SizedBox(width: 10),
+        Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 }

@@ -37,9 +37,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
     super.initState();
     _orderService = Provider.of<OrderService>(context, listen: false);
     _fetchOrders();
+    // Initial Chat Fetch
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatService>().fetchMyThreads();
+    });
     // Auto-refresh every 15 seconds
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      if (mounted) _fetchOrders(silent: true);
+      if (mounted) {
+        _fetchOrders(silent: true);
+        context.read<ChatService>().fetchMyThreads();
+      }
     });
   }
 
@@ -82,29 +89,69 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 height: 60, // [FIX] Base height reduced, padding handled by header internally
                 title: Text("My Orders", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18)),
                 actions: [
+                  Consumer<ChatService>(
+                    builder: (context, chat, _) {
+                      final unread = chat.totalUnreadCount;
+                      return Stack(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.forum_outlined, color: textColor, size: 24),
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportTicketsScreen())),
+                          ),
+                          if (unread > 0)
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                                child: Text(unread.toString(), style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                        ],
+                      );
+                    }
+                  ),
                   IconButton(
-                    icon: Icon(Icons.refresh, color: textColor, size: 24), // Slightly smaller for better circle fit
+                    icon: Icon(Icons.refresh, color: textColor, size: 24),
                     padding: EdgeInsets.zero,
                     onPressed: () {
                       _fetchOrders();
+                      context.read<ChatService>().fetchMyThreads();
                     },
                   )
                 ],
-                bottom: TabBar(
-                  isScrollable: true,
-                  indicatorColor: AppTheme.primaryColor,
-                  labelColor: AppTheme.primaryColor,
-                  unselectedLabelColor: isDark ? Colors.white54 : Colors.black45,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  tabs: const [
-                    Tab(text: "My Bucket"),
-                    Tab(text: "New"),
-                    Tab(text: "Pending"),
-                    Tab(text: "In Progress"),
-                    Tab(text: "Ready"),
-                    Tab(text: "Completed"),
-                    Tab(text: "Cancelled"),
-                  ],
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(kTextTabBarHeight),
+                  child: ListenableBuilder(
+                    listenable: Listenable.merge([_orderService, _cartService]),
+                    builder: (context, _) {
+                      final bucketCount = _cartService.items.length + _cartService.storeItems.length;
+                      final newCount = _orderService.orders.where((o) => o.status == OrderStatus.New).length;
+                      final pendingCount = _orderService.orders.where((o) => [OrderStatus.PendingUserConfirmation, OrderStatus.Inspecting].contains(o.status)).length;
+                      final inProgressCount = _orderService.orders.where((o) => o.status == OrderStatus.InProgress).length;
+                      final readyCount = _orderService.orders.where((o) => o.status == OrderStatus.Ready).length;
+                      final completedCount = _orderService.orders.where((o) => o.status == OrderStatus.Completed).length;
+                      final cancelledCount = _orderService.orders.where((o) => [OrderStatus.Cancelled, OrderStatus.Refunded].contains(o.status)).length;
+
+                      return TabBar(
+                        isScrollable: true,
+                        indicatorColor: AppTheme.primaryColor,
+                        labelColor: AppTheme.primaryColor,
+                        unselectedLabelColor: isDark ? Colors.white54 : Colors.black45,
+                        indicatorSize: TabBarIndicatorSize.label,
+                        tabs: [
+                          _buildTab("My Bucket", bucketCount),
+                          _buildTab("New", newCount),
+                          _buildTab("Pending", pendingCount),
+                          _buildTab("In Progress", inProgressCount),
+                          _buildTab("Ready", readyCount),
+                          _buildTab("Completed", completedCount),
+                          _buildTab("Cancelled", cancelledCount),
+                        ],
+                      );
+                    }
+                  ),
                 ),
               ),
             ),
@@ -474,6 +521,32 @@ class _OrdersScreenState extends State<OrdersScreen> {
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(label, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildTab(String label, int count) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label),
+          if (count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.5)),
+              ),
+              child: Text(
+                count.toString(),
+                style: const TextStyle(color: AppTheme.primaryColor, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

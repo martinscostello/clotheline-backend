@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 
 // Helper: Calculate Total (Used by payments.js and createOrder)
 // Supports both Service Items and Store Products
-exports.calculateOrderTotal = async (items) => {
+exports.calculateOrderTotal = async (items, discount = 0) => {
     // 1. Fetch Tax Settings
     const settings = await Settings.findOne() || { taxEnabled: true, taxRate: 7.5 };
     let taxRate = settings.taxEnabled ? settings.taxRate : 0;
@@ -40,11 +40,12 @@ exports.calculateOrderTotal = async (items) => {
         subtotal += (price * quantity);
     });
 
-    // 3. Calculate Tax/Total
-    const taxAmount = (subtotal * taxRate) / 100;
-    const totalAmount = subtotal + taxAmount;
+    // 3. Calculate Tax/Total (Apply Discount BEFORE Tax)
+    const netSubtotal = Math.max(0, subtotal - discount);
+    const taxAmount = (netSubtotal * taxRate) / 100;
+    const totalAmount = netSubtotal + taxAmount;
 
-    console.log(`[PriceDebug] Subtotal: ${subtotal}, TaxRate: ${taxRate}%, TaxAmt: ${taxAmount}, Total: ${totalAmount}. Items: ${items.length}`);
+    console.log(`[PriceDebug] Subtotal: ${subtotal}, Discount: ${discount}, Net: ${netSubtotal}, TaxRate: ${taxRate}%, TaxAmt: ${taxAmount}, Total: ${totalAmount}. Items: ${items.length}`);
     return { subtotal, taxAmount, totalAmount };
 };
 

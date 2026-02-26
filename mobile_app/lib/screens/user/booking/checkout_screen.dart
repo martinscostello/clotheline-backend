@@ -1052,12 +1052,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
        return;
     }
 
+    // [FIX] Logistics fees are zero for deployment orders as per user feedback
+    double logistics = (widget.fulfillmentMode == 'deployment') ? 0.0 : (_pickupFee + _deliveryFee);
+    
+    final modeItems = _cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).toList();
+    double subtotalItems = modeItems.fold(0.0, (sum, i) => sum + i.totalPrice);
+    double modeDiscount = modeItems.fold(0.0, (sum, i) => sum + i.discountValue);
+    double tax = (widget.fulfillmentMode == 'deployment') 
+        ? 0.0 
+        : (subtotalItems - modeDiscount) * (_cartService.taxRate / 100);
+    double calculatedTotal = (widget.fulfillmentMode.toLowerCase() == 'deployment')
+        ? subtotalItems + logistics
+        : (subtotalItems - modeDiscount) + tax + logistics;
+
     final orderData = {
       'scope': scope, 
       'branchId': selectedBranch?.id,
       'fulfillmentMode': widget.fulfillmentMode,
       'items': items,
-      // 'totalAmount': total, // Backend calculates this now to be secure
+      'totalAmount': calculatedTotal, // Backend compares this for divergence
       'pickupOption': _beforeWashOption == 1 ? 'Pickup' : 'Dropoff',
       'deliveryOption': _afterWashOption == 1 ? 'Deliver' : 'Pickup',
       'pickupAddress': widget.fulfillmentMode == 'deployment' ? _pickupSelection?.addressLabel : (_beforeWashOption == 1 ? _pickupSelection?.addressLabel : null),

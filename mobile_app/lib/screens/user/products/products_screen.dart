@@ -173,15 +173,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     else
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        sliver: SliverMasonryGrid.count(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childCount: products.length,
-                          itemBuilder: (context, index) {
-                            final product = products[index];
-                            return _buildTemuCard(context, product, isDark);
-                          },
+                        sliver: SliverGrid(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 0.60, // [STABILITY] Fixed ratio for predictable layout
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final product = products[index];
+                              return _buildTemuCard(context, product, isDark);
+                            },
+                            childCount: products.length,
+                          ),
                         ),
                       ),
                     
@@ -295,9 +300,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       listenable: _storeService,
       builder: (context, _) {
         return Container(
-          // key: _filterKey, // [KEY] Category Filter (Removed)
           height: 50,
-          color: Colors.transparent, // Transparent for Glass effect
+          color: Colors.transparent,
           margin: const EdgeInsets.only(top: 10),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
@@ -307,36 +311,27 @@ class _ProductsScreenState extends State<ProductsScreen> {
               final cat = _storeService.categories[index];
               final isSelected = cat == _selectedCategory;
               return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedCategory = cat;
-                  });
-                },
+                onTap: () => setState(() => _selectedCategory = cat),
                 child: Container(
-                  margin: const EdgeInsets.only(right: 15),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        cat,
-                        style: TextStyle(
-                          color: isSelected ? (isDark ? Colors.white : Colors.red) : (isDark ? Colors.white54 : Colors.black54), // Active is Red (Temu)
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 15,
-                        ),
-                      ),
-                      if (isSelected)
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          height: 3,
-                          width: 20,
-                          decoration: BoxDecoration(
-                            color: Colors.red, // Temu Red underline
-                            borderRadius: BorderRadius.circular(2)
-                          ),
-                        )
-                    ],
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: isSelected 
+                        ? AppTheme.primaryColor.withValues(alpha: isDark ? 0.2 : 0.1) 
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.5) : Colors.transparent,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    cat,
+                    style: TextStyle(
+                      color: isSelected ? AppTheme.primaryColor : (isDark ? Colors.white54 : Colors.black54),
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               );
@@ -387,13 +382,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   children: [
                       Stack(
                         children: [
-                          Container(
-                            constraints: const BoxConstraints(minHeight: 140), // [FIX] Prevents 0-height collapse while loading
-                            width: double.infinity,
-                            child: CustomCachedImage(
-                              imageUrl: product.imagePath,
-                              fit: BoxFit.contain, // [FIX] Restored original so images are not cut off
-                              borderRadius: 0,
+                          AspectRatio(
+                            aspectRatio: 1.0, // [STABILITY] Fixed square aspect ratio prevents layout jumps
+                            child: Container(
+                              width: double.infinity,
+                              color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.grey.shade50,
+                              child: CustomCachedImage(
+                                imageUrl: product.imagePath,
+                                fit: BoxFit.contain, // Fits within the square without stretching
+                                borderRadius: 0,
+                              ),
                             ),
                           ),
                         if (product.badgeText != null)

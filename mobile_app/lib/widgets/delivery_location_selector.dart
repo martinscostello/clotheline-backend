@@ -334,35 +334,25 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // --- Saved Addresses Section (Always Visible) ---
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text("Saved Addresses", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-            if (!_isLoadingSaved && _savedAddresses.length >= 3)
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.edit_note, size: 20, color: AppTheme.primaryColor),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAddressesScreen())).then((_) => _loadSavedAddresses()),
-                tooltip: "Manage Addresses",
-              ),
-          ],
-        ),
+        const Text("Choose from Saved", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
         const SizedBox(height: 8),
         SizedBox(
-          height: 44,
+          height: 40,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
               // 1. Current Saved Addresses
               ..._savedAddresses.map((addr) => Padding(
                 padding: const EdgeInsets.only(right: 8.0),
-                child: ActionChip(
+                child: FilterChip(
                   avatar: const Icon(Icons.bookmark, size: 14, color: AppTheme.primaryColor),
-                  label: Text(addr.label, style: const TextStyle(fontSize: 12)),
-                  onPressed: () => _selectSavedAddress(addr),
+                  label: Text(addr.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                  selected: _source == 'saved' && _addressLabel == addr.addressLabel,
+                  onSelected: (_) => _selectSavedAddress(addr),
                   backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  selectedColor: AppTheme.primaryColor.withValues(alpha: 0.2),
+                  checkmarkColor: AppTheme.primaryColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
                 ),
               )).toList(),
 
@@ -372,16 +362,18 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                   padding: const EdgeInsets.only(right: 8.0),
                   child: ActionChip(
                     avatar: const Icon(Icons.add, size: 14, color: AppTheme.primaryColor),
-                    label: Text(_savedAddresses.isEmpty ? "Add Address" : "", style: const TextStyle(fontSize: 12)),
+                    label: Text(_savedAddresses.isEmpty ? "Manage" : "", style: const TextStyle(fontSize: 12)),
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAddressesScreen())).then((_) => _loadSavedAddresses()),
                     backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
                   ),
                 ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        const Text("Search for Area or Street", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+        const SizedBox(height: 8),
 
         // --- Suggestions List Appearing ABOVE the textfield ---
         if (_suggestions.isNotEmpty)
@@ -440,7 +432,14 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.map, color: AppTheme.primaryColor),
+                icon: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.map_outlined, color: AppTheme.primaryColor, size: 20),
+                ),
                 onPressed: _pickOnMap,
                 tooltip: "Pick on Map",
               )

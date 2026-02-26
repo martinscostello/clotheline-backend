@@ -171,6 +171,10 @@ class ChatService extends ChangeNotifier {
   List<dynamic> _myThreads = [];
   List<dynamic> get myThreads => _myThreads;
 
+  int get totalUnreadCount {
+    return _myThreads.fold(0, (sum, thread) => sum + (thread['unreadCountUser'] as int? ?? 0));
+  }
+
   Future<void> fetchMyThreads() async {
     _isLoading = true;
     notifyListeners();

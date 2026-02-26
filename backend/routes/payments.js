@@ -61,13 +61,20 @@ router.post('/initialize', auth, async (req, res) => {
         }
 
         // 1. Calculate Amount Securely
+        let totalDiscount = 0;
+        if (scope !== 'adjustment' && !(req.body.fulfillmentMode === 'deployment' && req.body.quoteStatus === 'Pending')) {
+            const laundryDiscounts = req.body.discountBreakdown || {};
+            const totalLaundryDiscount = Object.values(laundryDiscounts).reduce((a, b) => a + (Number(b) || 0), 0);
+            const storeDiscountValue = Number(req.body.storeDiscount) || 0;
+            totalDiscount = totalLaundryDiscount + storeDiscountValue;
+        }
+
         const { calculateOrderTotal } = require('../controllers/orderController');
-        const { totalAmount: itemsTotal } = await calculateOrderTotal(calculationItems);
+        const { totalAmount: itemsTotal } = await calculateOrderTotal(calculationItems, totalDiscount);
 
         let finalTotal = itemsTotal;
         let deliveryFee = 0;
         let pickupFee = 0;
-        let totalDiscount = 0;
 
         if (scope === 'adjustment') {
             if (!orderId) return res.status(400).json({ msg: 'orderId is required for adjustments' });
@@ -95,16 +102,16 @@ router.post('/initialize', auth, async (req, res) => {
             deliveryFee = Number(req.body.deliveryFee) || 0;
             pickupFee = Number(req.body.pickupFee) || 0;
 
-            // [FIX] Subtract Discounts
-            const laundryDiscounts = req.body.discountBreakdown || {};
-            const totalLaundryDiscount = Object.values(laundryDiscounts).reduce((a, b) => a + (Number(b) || 0), 0);
-            const storeDiscountValue = Number(req.body.storeDiscount) || 0;
-            totalDiscount = totalLaundryDiscount + storeDiscountValue;
-
-            finalTotal = itemsTotal + deliveryFee + pickupFee - totalDiscount;
+            finalTotal = itemsTotal + deliveryFee + pickupFee;
 
             // [New] Store discount in metadata for persistency
             req.metadata_discount = totalDiscount;
+        }
+
+        // [LOGGING] Verify if frontend and backend totals align
+        const frontendTotal = Number(req.body.totalAmount) || 0;
+        if (frontendTotal > 0 && Math.abs(frontendTotal - finalTotal) > 1.0) {
+            console.warn(`[PriceDivergence] Frontend sent ${frontendTotal}, Backend calculated ${finalTotal}. Divergence: ${Math.abs(frontendTotal - finalTotal)}`);
         }
 
         // Paystack Min Amount is 1 Naira (100 Kobo)
