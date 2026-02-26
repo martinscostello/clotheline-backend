@@ -218,7 +218,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
       body: LiquidBackground(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final bool isTablet = constraints.maxWidth >= 650;
+            final bool isTablet = constraints.maxWidth >= 500; // Sidebar (100) + Content (500) = 600px Screen
             
             Widget listContent = Consumer<OrderService>(
               builder: (context, orderService, child) {
@@ -307,7 +307,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
       onTap: () async {
         if (_isSelectionMode) {
           _toggleSelection(order.id);
-        } else if (MediaQuery.of(context).size.width >= 650) {
+        } else if (MediaQuery.of(context).size.width >= 600) {
           setState(() => _selectedOrder = order);
         } else {
           final result = await Navigator.push(
@@ -326,7 +326,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
           decoration: BoxDecoration(
             border: isSelected 
                 ? Border.all(color: AppTheme.primaryColor, width: 2) 
-                : (_selectedOrder != null && _selectedOrder?.id == order.id && MediaQuery.of(context).size.width >= 650)
+                : (_selectedOrder != null && _selectedOrder?.id == order.id && MediaQuery.of(context).size.width >= 600)
                     ? Border.all(color: AppTheme.secondaryColor.withValues(alpha: 0.5), width: 2)
                     : null,
             borderRadius: BorderRadius.circular(15)
