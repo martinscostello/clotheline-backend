@@ -17,6 +17,8 @@ import '../../../widgets/dialogs/guest_login_dialog.dart';
 import '../../../services/auth_service.dart';
 import '../../../widgets/booking/split_checkout_modal.dart';
 import '../../../utils/order_status_resolver.dart';
+import '../../../services/chat_service.dart';
+import '../chat/support_tickets_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   final int initialIndex;

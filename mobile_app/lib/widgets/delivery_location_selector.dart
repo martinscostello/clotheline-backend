@@ -352,7 +352,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                   backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
                   selectedColor: AppTheme.primaryColor.withValues(alpha: 0.2),
                   checkmarkColor: AppTheme.primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
                 ),
               )).toList(),
 
@@ -365,7 +365,7 @@ class _DeliveryLocationSelectorState extends State<DeliveryLocationSelector> {
                     label: Text(_savedAddresses.isEmpty ? "Manage" : "", style: const TextStyle(fontSize: 12)),
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageAddressesScreen())).then((_) => _loadSavedAddresses()),
                     backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
                   ),
                 ),
             ],
