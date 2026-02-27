@@ -244,6 +244,8 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
     // Crop
     CroppedFile? croppedFile = await ImageCropper().cropImage(
       sourcePath: image.path,
+      compressQuality: 100,
+      compressFormat: ImageCompressFormat.jpg,
       uiSettings: [
         AndroidUiSettings(
             toolbarTitle: 'Crop Image',
@@ -697,7 +699,16 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
                             decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
                             child: Text(item.mediaType == 'video' ? "VIDEO" : "800x600", style: const TextStyle(color: Colors.white, fontSize: 10)),
                           ),
-                        )
+                        ),
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(20)),
+                            child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -919,7 +930,16 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
                         decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
                         child: Text(dimText, style: const TextStyle(color: Colors.white, fontSize: 10)),
                       ),
-                    )
+                    ),
+                   Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(20)),
+                        child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                      ),
+                    ),
                 ],
               ),
             ),
