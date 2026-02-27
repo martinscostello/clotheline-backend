@@ -74,7 +74,6 @@ class CustomCachedImage extends StatelessWidget {
         );
       } else {
         imageWidget = CachedNetworkImage(
-          memCacheWidth: 500, // [PERF FIX] Reduced from 1000 to drastically reduce image decoding overhead during list scrolling 
           imageUrl: finalUrl,
           width: width,
           height: height,
