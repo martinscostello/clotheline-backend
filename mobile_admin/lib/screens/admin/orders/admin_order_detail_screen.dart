@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // [FIX] Required for NumberFormat
 import 'package:clotheline_core/clotheline_core.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
