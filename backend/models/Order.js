@@ -122,6 +122,9 @@ const OrderSchema = new mongoose.Schema({
 
     laundryNotes: { type: String, maxlength: 300 }, // [NEW] Special Care Instructions
 
+    // [NEW] Idempotency
+    originPaymentReference: { type: String, unique: true, sparse: true },
+
     date: { type: Date, default: Date.now }
 }, { timestamps: true });
 

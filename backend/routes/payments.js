@@ -284,7 +284,8 @@ router.post('/verify', auth, async (req, res) => {
             const { createOrderInternal } = require('../controllers/orderController');
             try {
                 // Strict: Pass userId explicitly
-                order = await createOrderInternal(metadata, userId);
+                // Strict: Pass userId explicitly and inject reference for idempotency
+                order = await createOrderInternal({ ...metadata, originPaymentReference: reference }, userId);
 
                 // [FIX] For deployment orders with pending quotes, the initial payment is just the inspection fee.
                 // The order should remain in 'Pending' payment status until the balance is paid.

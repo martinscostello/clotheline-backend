@@ -127,6 +127,7 @@ class LaundryApp extends StatelessWidget {
         }),
         ChangeNotifierProvider(create: (_) {
            final auth = AuthService();
+           auth.appType = 'admin'; // [NEW] Tag tokens from this app as admin
            // We could hydrate simple user profile here if we modified AuthService,
            // but AuthService mostly relies on SecureStorage for tokens.
            // However, we can set the "Memory Cache" for user name/email if we want.
@@ -161,7 +162,6 @@ class LaundryApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DeliveryService()),
         ChangeNotifierProvider(create: (_) => FavoritesService()..loadFavorites()),
         ChangeNotifierProvider(create: (_) => NotificationService()),
-        ChangeNotifierProvider(create: (_) => ChatService()),
         ChangeNotifierProvider(create: (_) => ChatService()),
         ChangeNotifierProvider(create: (_) => AnalyticsService()),
         ChangeNotifierProvider(create: (_) => PromotionService()), // Added

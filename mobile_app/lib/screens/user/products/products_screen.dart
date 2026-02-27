@@ -1,22 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
+import 'package:provider/provider.dart';
 import 'product_detail_screen.dart';
 import 'store_cart_screen.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import '../../../widgets/custom_cached_image.dart'; 
 import '../favorites_screen.dart'; 
-import 'package:clotheline_core/clotheline_core.dart'; // Corrected Path
-import 'package:provider/provider.dart';
-import 'package:clotheline_core/clotheline_core.dart';
+import '../../../widgets/custom_cached_image.dart'; 
+import '../../../widgets/products/SalesBanner.dart';
 import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:clotheline_customer/widgets/glass/LaundryGlassCard.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import '../../../widgets/products/SalesBanner.dart'; // [NEW] 
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -173,20 +165,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     else
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        sliver: SliverGrid(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.60, // [STABILITY] Fixed ratio for predictable layout
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final product = products[index];
-                              return _buildTemuCard(context, product, isDark);
-                            },
-                            childCount: products.length,
-                          ),
+                        sliver: SliverMasonryGrid.count(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          itemBuilder: (context, index) {
+                            final product = products[index];
+                            return _buildTemuCard(context, product, isDark);
+                          },
+                          childCount: products.length,
                         ),
                       ),
                     
@@ -383,13 +370,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       Stack(
                         children: [
                           AspectRatio(
-                            aspectRatio: 1.0, // [STABILITY] Fixed square aspect ratio prevents layout jumps
+                            aspectRatio: 0.85, // [STABILITY] 0.85 ratio better handles wider product shots
                             child: Container(
-                              width: double.infinity,
                               color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.grey.shade50,
                               child: CustomCachedImage(
                                 imageUrl: product.imagePath,
-                                fit: BoxFit.contain, // Fits within the square without stretching
+                                fit: BoxFit.cover, // [FIX] Forces full width visibility
                                 borderRadius: 0,
                               ),
                             ),

@@ -421,30 +421,60 @@ exports.seedUsers = async () => {
 
 exports.updateFcmToken = async (req, res) => {
     try {
-        const { token } = req.body;
+        const { token, appType = 'customer' } = req.body;
         if (!token) return res.status(400).json({ msg: 'Token is required' });
 
         // [SECURITY] Enforce Single-User Token Association
         // Remove this token from ANY other user record to prevent leakage
-        // (Scenario: Admin logs out, User/Guest logs in on same device)
+        // We check both the string format and the object format { token: '...' }
         await User.updateMany(
-            { fcmTokens: token, _id: { $ne: req.user.id } },
-            { $pull: { fcmTokens: token } }
+            {
+                $or: [
+                    { fcmTokens: token },
+                    { "fcmTokens.token": token }
+                ],
+                _id: { $ne: req.user.id }
+            },
+            {
+                $pull: {
+                    fcmTokens: {
+                        $or: [
+                            token,
+                            { token: token }
+                        ]
+                    }
+                }
+            }
         );
 
-        // Add to current user
+        // [DEDUPLICATION] Remove existing versions of this token from the current user as well
+        // to ensure we only have the latest appType association.
         await User.findByIdAndUpdate(
             req.user.id,
-            { $addToSet: { fcmTokens: token } },
+            {
+                $pull: {
+                    fcmTokens: {
+                        $or: [
+                            token,
+                            { token: token }
+                        ]
+                    }
+                }
+            }
+        );
+
+        // Add to current user with appType tagging
+        await User.findByIdAndUpdate(
+            req.user.id,
+            { $addToSet: { fcmTokens: { token, appType, lastUpdated: new Date() } } },
             { new: true }
         );
 
-        // [NEW] Manually subscribe to 'all_users' from the backend, because Firebase Web SDK 
-        // does not natively support client-side topic subscriptions!
+        // [NEW] Manually subscribe to 'all_users' (Topics are shared across appTypes mostly)
         const notificationService = require('../utils/notificationService');
         await notificationService.subscribeToTopic(token, 'all_users');
 
-        res.json({ msg: 'Token updated and deduplicated' });
+        res.json({ msg: `Token updated as ${appType} and deduplicated` });
     } catch (err) {
         console.error("[Auth] Token Update Error:", err.message);
         res.status(500).send('Server Error');

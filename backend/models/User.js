@@ -98,10 +98,8 @@ const UserSchema = new mongoose.Schema({
         manageProductIllusions: { type: Boolean, default: false },
         manageBackup: { type: Boolean, default: false },
     },
-    // Device Tokens for Notifications
-    fcmTokens: [{
-        type: String
-    }],
+    // Device Tokens for Notifications (Supports String or {token, appType})
+    fcmTokens: [mongoose.Schema.Types.Mixed],
     // OTP / Verification
     otp: { type: String },
     otpExpires: { type: Date },

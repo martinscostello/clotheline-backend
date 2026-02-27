@@ -192,11 +192,19 @@ router.post('/send', auth, async (req, res) => {
                     }));
                     await Notification.insertMany(adminNotifications);
 
-                    // Consolidate tokens and fire push
+                    // Consolidate TARGETED tokens and fire push
                     let adminTokensRaw = [];
                     targetAdmins.forEach(adm => {
                         if (adm.fcmTokens && Array.isArray(adm.fcmTokens)) {
-                            adminTokensRaw = adminTokensRaw.concat(adm.fcmTokens);
+                            adm.fcmTokens.forEach(t => {
+                                // Only include tokens tagged as 'admin'
+                                if (typeof t === 'object' && t.appType === 'admin') {
+                                    adminTokensRaw.push(t.token);
+                                } else if (typeof t === 'string' && adm.role === 'admin') {
+                                    // Fallback for legacy admin tokens
+                                    adminTokensRaw.push(t);
+                                }
+                            });
                         }
                     });
                     const adminTokens = [...new Set(adminTokensRaw.filter(t => t))];
@@ -222,12 +230,19 @@ router.post('/send', auth, async (req, res) => {
 
                 const customer = await User.findById(thread.userId).select('fcmTokens');
                 if (customer && customer.fcmTokens && customer.fcmTokens.length > 0) {
-                    await NotificationService.sendPushNotification(
-                        customer.fcmTokens,
-                        "Support Replied",
-                        "You have a new message from Support.",
-                        { threadId: thread._id.toString(), type: 'chat', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
-                    );
+                    // [TARGETED] Only send to 'customer' app tokens
+                    const customerTokens = customer.fcmTokens
+                        .filter(t => (typeof t === 'string') || (t.appType === 'customer'))
+                        .map(t => typeof t === 'string' ? t : t.token);
+
+                    if (customerTokens.length > 0) {
+                        await NotificationService.sendPushNotification(
+                            customerTokens,
+                            "Support Replied",
+                            "You have a new message from Support.",
+                            { threadId: thread._id.toString(), type: 'chat', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
+                        );
+                    }
                 }
             }
         } catch (e) {
@@ -453,16 +468,22 @@ router.post('/admin/transfer/:threadId', auth, admin, async (req, res) => {
 
         if (!thread) return res.status(404).json({ msg: 'Thread not found' });
 
-        // Notify the new admin
+        // Notify the new admin (TARGETED)
         const NotificationService = require('../utils/notificationService');
         if (targetAdmin.fcmTokens && targetAdmin.fcmTokens.length > 0) {
-            const customerName = thread.userId?.name || "a customer";
-            await NotificationService.sendPushNotification(
-                targetAdmin.fcmTokens,
-                "Chat Transferred",
-                `A conversation with ${customerName} was transferred to you.`,
-                { threadId: thread._id.toString(), type: 'chat', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
-            );
+            const adminTokens = targetAdmin.fcmTokens
+                .filter(t => (typeof t === 'object' && t.appType === 'admin') || (typeof t === 'string'))
+                .map(t => typeof t === 'string' ? t : t.token);
+
+            if (adminTokens.length > 0) {
+                const customerName = thread.userId?.name || "a customer";
+                await NotificationService.sendPushNotification(
+                    adminTokens,
+                    "Chat Transferred",
+                    `A conversation with ${customerName} was transferred to you.`,
+                    { threadId: thread._id.toString(), type: 'chat', click_action: 'FLUTTER_NOTIFICATION_CLICK' }
+                );
+            }
         }
 
         res.json(thread);

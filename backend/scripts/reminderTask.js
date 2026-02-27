@@ -43,7 +43,14 @@ const sendReviewReminders = async () => {
                     };
 
                     if (order.user.fcmTokens && order.user.fcmTokens.length > 0) {
-                        await NotificationService.sendPushNotification(order.user.fcmTokens, title, body, data);
+                        // [TARGETED] Only send to 'customer' app tokens
+                        const customerTokens = order.user.fcmTokens
+                            .filter(t => (typeof t === 'string') || (t.appType === 'customer'))
+                            .map(t => typeof t === 'string' ? t : t.token);
+
+                        if (customerTokens.length > 0) {
+                            await NotificationService.sendPushNotification(customerTokens, title, body, data);
+                        }
 
                         // Save to Notification model for in-app history
                         const notification = new Notification({

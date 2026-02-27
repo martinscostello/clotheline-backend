@@ -22,6 +22,9 @@ class AuthService extends ChangeNotifier {
   bool _isGuest = false;
   bool get isGuest => _isGuest;
 
+  // [NEW] Tag for FCM tokens to route push notifications correctly
+  String appType = 'customer'; 
+
   // [BOOTSTRAP] Synchronous Hydration
   void hydrateSimpleProfile(Map<String, dynamic>? profile, String? role, {bool isGuest = false}) {
     _isGuest = isGuest;
@@ -503,9 +506,10 @@ class AuthService extends ChangeNotifier {
           // We use the existing client - the interceptor adds x-auth-token automatically 
           // if we are logged in (Implied since we call this after login)
           await _apiService.client.put('/auth/fcm-token', data: {
-            'token': token
+            'token': token,
+            'appType': appType
           });
-          print("FCM Token Synced: $token");
+          print("FCM Token Synced [$appType]: $token");
        }
     } catch (e) {
       // Create a non-breaking error log

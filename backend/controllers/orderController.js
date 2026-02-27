@@ -90,8 +90,20 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             guestInfo,
 
             // [NEW] Special Care
-            laundryNotes
+            laundryNotes,
+
+            // [NEW] Idempotency
+            originPaymentReference
         } = orderData;
+
+        // [IDEMPOTENCY CHECK]
+        if (originPaymentReference) {
+            const existingOrder = await Order.findOne({ originPaymentReference });
+            if (existingOrder) {
+                console.log(`[OrderIdempotency] Order already exists for reference: ${originPaymentReference}. Returning existing order ${existingOrder._id}`);
+                return existingOrder;
+            }
+        }
 
         // [NEW] Sanitize & Validate Notes (Remove HTML/Excessive Spaces)
         let sanitizedNotes = laundryNotes;
@@ -174,6 +186,9 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             // [NEW] Special Care
             laundryNotes: sanitizedNotes,
 
+            // [NEW] Idempotency
+            originPaymentReference,
+
             createdAt: Date.now()
         });
 
@@ -210,13 +225,13 @@ exports.createOrderInternal = async (orderData, userId = null) => {
                 if (branch) branchName = branch.name;
             }
 
-            const title = "New Order Recieved";
+            const title = "New Order Received"; // [FIXED] Typography
             const message = `(New order from ${branchName} | ${customer ? customer.name : 'Guest'})`;
 
             // Notify Admins
             const admins = await User.find({ role: 'admin' });
 
-            // [FIX] Avoid creating multiple Notification records if this is called in a loop (unlikely but safe)
+            // [FIX] Avoid creating multiple Notification records
             const adminNotifications = admins.map(admin => ({
                 userId: admin._id,
                 title,
@@ -227,20 +242,25 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             }));
 
             if (adminNotifications.length > 0) {
-                // Check if we already created these notifications for this order? 
-                // Skip for now as createOrderInternal should only run once per order.
                 await Notification.insertMany(adminNotifications);
 
-                // [FIX] Aggregated and STRICTLY Deduplicated Admin Tokens
+                // [FIX] Aggregated and TARGETED Admin Tokens
                 let adminTokensRaw = [];
                 admins.forEach(admin => {
                     if (admin.fcmTokens && Array.isArray(admin.fcmTokens)) {
-                        adminTokensRaw = adminTokensRaw.concat(admin.fcmTokens);
+                        admin.fcmTokens.forEach(t => {
+                            // Only include tokens tagged as 'admin'
+                            if (typeof t === 'object' && t.appType === 'admin') {
+                                adminTokensRaw.push(t.token);
+                            } else if (typeof t === 'string' && admin.role === 'admin') {
+                                // Fallback for legacy admin tokens that weren't tagged yet
+                                adminTokensRaw.push(t);
+                            }
+                        });
                     }
                 });
 
-                // Strictly deduplicate to prevent double pushes on same device if multiple admins share tokens 
-                // or if one admin has duplicate entries.
+                // Strictly deduplicate to prevent double pushes on same device
                 const adminTokens = [...new Set(adminTokensRaw.filter(t => t))];
 
                 if (adminTokens.length > 0) {
@@ -391,13 +411,19 @@ exports.updateOrderStatus = async (req, res) => {
 
             const user = await User.findById(order.user);
             if (user && user.fcmTokens && user.fcmTokens.length > 0) {
-                // notificationService handles deduplication internally now
-                await NotificationService.sendPushNotification(
-                    user.fcmTokens,
-                    title,
-                    message,
-                    { orderId: order._id.toString(), type: 'order' }
-                );
+                // [TARGETED] Only send to 'customer' app tokens
+                const customerTokens = user.fcmTokens
+                    .filter(t => (typeof t === 'string') || (t.appType === 'customer'))
+                    .map(t => typeof t === 'string' ? t : t.token);
+
+                if (customerTokens.length > 0) {
+                    await NotificationService.sendPushNotification(
+                        customerTokens,
+                        title,
+                        message,
+                        { orderId: order._id.toString(), type: 'order' }
+                    );
+                }
             }
         }
 
@@ -432,12 +458,19 @@ exports.updateOrderException = async (req, res) => {
 
             const user = await User.findById(order.user);
             if (user && user.fcmTokens && Array.isArray(user.fcmTokens)) {
-                await NotificationService.sendPushNotification(
-                    user.fcmTokens,
-                    title,
-                    message,
-                    { orderId: order._id.toString(), type: 'chat' }
-                );
+                // [TARGETED] Only send to 'customer' app tokens
+                const customerTokens = user.fcmTokens
+                    .filter(t => (typeof t === 'string') || (t.appType === 'customer'))
+                    .map(t => typeof t === 'string' ? t : t.token);
+
+                if (customerTokens.length > 0) {
+                    await NotificationService.sendPushNotification(
+                        customerTokens,
+                        title,
+                        message,
+                        { orderId: order._id.toString(), type: 'chat' }
+                    );
+                }
             }
         }
 
@@ -506,12 +539,19 @@ const _sendPushAsync = async (userId, title, message, orderId) => {
     try {
         const user = await User.findById(userId);
         if (user && user.fcmTokens && Array.isArray(user.fcmTokens)) {
-            await NotificationService.sendPushNotification(
-                user.fcmTokens,
-                title,
-                message,
-                { orderId: orderId.toString(), type: 'order' }
-            );
+            // [TARGETED] Only send to 'customer' app tokens
+            const customerTokens = user.fcmTokens
+                .filter(t => (typeof t === 'string') || (t.appType === 'customer'))
+                .map(t => typeof t === 'string' ? t : t.token);
+
+            if (customerTokens.length > 0) {
+                await NotificationService.sendPushNotification(
+                    customerTokens,
+                    title,
+                    message,
+                    { orderId: orderId.toString(), type: 'order' }
+                );
+            }
         }
     } catch (e) {
         console.error("Push Error:", e);

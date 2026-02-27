@@ -127,7 +127,7 @@ packages:
       path: "../packages/clotheline_core"
       relative: true
     source: path
-    version: "1.0.0"
+    version: "1.5.0+40"
   collection:
     dependency: transitive
     description:
@@ -821,7 +821,7 @@ packages:
       path: "../packages/liquid_glass_ui"
       relative: true
     source: path
-    version: "0.0.1"
+    version: "1.5.0+40"
   lists:
     dependency: transitive
     description:

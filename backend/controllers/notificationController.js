@@ -101,8 +101,11 @@ exports.sendTestNotification = async (req, res) => {
 
         console.log(`[TestNotif] Sending to ${user.email} with tokens:`, user.fcmTokens);
 
+        // [NEW] Map structured tokens to strings for the service
+        const tokensToTest = user.fcmTokens.map(t => typeof t === 'string' ? t : t.token);
+
         await NotificationService.sendPushNotification(
-            user.fcmTokens,
+            tokensToTest,
             "Test Notification",
             "This is a test message to verify push delivery.",
             { type: "test", click_action: "FLUTTER_NOTIFICATION_CLICK" }

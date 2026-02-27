@@ -83,10 +83,13 @@ router.post('/', auth, async (req, res) => {
             // Push to everyone who installed the app, including unverified GUESTS
             await notificationService.sendPushToTopic('all_users', title, message, { type: 'broadcast' });
         } else {
-            // Push only to the specific targeted subset of registered users
+            // Push only to the specific targeted subset of registered users (TARGETED)
             const tokens = recipients.reduce((acc, user) => {
                 if (user.fcmTokens && user.fcmTokens.length > 0) {
-                    acc.push(...user.fcmTokens);
+                    const customerTokens = user.fcmTokens
+                        .filter(t => (typeof t === 'string') || (t.appType === 'customer'))
+                        .map(t => typeof t === 'string' ? t : t.token);
+                    acc.push(...customerTokens);
                 }
                 return acc;
             }, []);

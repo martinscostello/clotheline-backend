@@ -161,7 +161,6 @@ class LaundryApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FavoritesService()..loadFavorites()),
         ChangeNotifierProvider(create: (_) => NotificationService()),
         ChangeNotifierProvider(create: (_) => ChatService()),
-        ChangeNotifierProvider(create: (_) => ChatService()),
         ChangeNotifierProvider(create: (_) => AnalyticsService()),
         ChangeNotifierProvider(create: (_) => PromotionService()), // Added
         ChangeNotifierProvider(create: (_) => ReviewService()), // Added
