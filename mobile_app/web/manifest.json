@@ -1,6 +1,6 @@
 {
-    "name": "laundry_app",
-    "short_name": "laundry_app",
+    "name": "Clotheline",
+    "short_name": "Clotheline",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

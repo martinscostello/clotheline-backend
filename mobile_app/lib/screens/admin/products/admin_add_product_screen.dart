@@ -400,7 +400,13 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
                             border: Border.all(color: item.status == UploadStatus.error ? Colors.red : item.status == UploadStatus.success ? Colors.green.withOpacity(0.5) : Colors.white12),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: item.localFile != null ? Image.file(item.localFile!, fit: BoxFit.cover) : CustomCachedImage(imageUrl: item.serverUrl!, fit: BoxFit.cover, borderRadius: 0),
+                          child: kIsWeb 
+                              ? (item.xFile != null 
+                                  ? Image.network(item.xFile!.path, fit: BoxFit.cover) 
+                                  : CustomCachedImage(imageUrl: item.serverUrl!, fit: BoxFit.cover, borderRadius: 0))
+                              : (item.localFile != null 
+                                  ? Image.file(item.localFile!, fit: BoxFit.cover) 
+                                  : CustomCachedImage(imageUrl: item.serverUrl!, fit: BoxFit.cover, borderRadius: 0)),
                         ),
                         if (item.status == UploadStatus.uploading)
                           Positioned.fill(
