@@ -608,6 +608,7 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
                   
                   // Image/Video & Dimension Tag
                   GestureDetector(
+                    behavior: HitTestBehavior.opaque, // Ensures taps on empty areas are registered
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
@@ -885,12 +886,14 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
           if (item.active) ...[
             const SizedBox(height: 10),
             GestureDetector(
+              behavior: HitTestBehavior.opaque, // Ensures taps on empty areas are registered
               onTap: onImageTap,
               child: Stack(
                 children: [
                   AspectRatio(
                     aspectRatio: aspectRatio,
                     child: Container(
+                      color: Colors.black12, // Provides a hittable surface when empty
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
