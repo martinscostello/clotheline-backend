@@ -205,11 +205,13 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
                             icon: Icons.home_filled,
                             isSelected: isTablet && _navStack.contains('home'),
                             onTap: () {
-                              if (isTablet) {
-                                _selectModule('home');
-                              } else {
-                                _checkAndNavigate(context, 'manageCMS', "Home Screen", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'home'))));
-                              }
+                              _checkAndNavigate(context, 'manageCMS', "Home Screen", () {
+                                if (isTablet) {
+                                  _selectModule('home');
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'home')));
+                                }
+                              });
                             },
                           ),
                           const SizedBox(height: 15),
@@ -219,11 +221,13 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
                             icon: Icons.campaign,
                             isSelected: isTablet && _navStack.contains('ads'),
                             onTap: () {
-                              if (isTablet) {
-                                _selectModule('ads');
-                              } else {
-                                _checkAndNavigate(context, 'manageCMS', "Ads & Banners", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads'))));
-                              }
+                              _checkAndNavigate(context, 'manageCMS', "Ads & Banners", () {
+                                if (isTablet) {
+                                  _selectModule('ads');
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'ads')));
+                                }
+                              });
                             },
                           ),
                           const SizedBox(height: 15),
@@ -233,11 +237,13 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
                             icon: Icons.text_fields,
                             isSelected: isTablet && _navStack.contains('branding'),
                             onTap: () {
-                              if (isTablet) {
-                                _selectModule('branding');
-                              } else {
-                                _checkAndNavigate(context, 'manageCMS', "Branding", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding'))));
-                              }
+                              _checkAndNavigate(context, 'manageCMS', "Branding", () {
+                                if (isTablet) {
+                                  _selectModule('branding');
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSContentScreen(section: 'branding')));
+                                }
+                              });
                             },
                           ),
                           const SizedBox(height: 15),
@@ -248,11 +254,13 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
                             color: Colors.greenAccent,
                             isSelected: isTablet && _navStack.contains('promotions'),
                             onTap: () {
-                              if (isTablet) {
-                                _selectModule('promotions');
-                              } else {
-                                _checkAndNavigate(context, 'manageCMS', "Promotions", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSPromotionsScreen())));
-                              }
+                              _checkAndNavigate(context, 'manageCMS', "Promotions", () {
+                                if (isTablet) {
+                                  _selectModule('promotions');
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCMSPromotionsScreen()));
+                                }
+                              });
                             },
                           ),
                           const SizedBox(height: 30),
@@ -267,11 +275,13 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
                             color: Colors.blueAccent,
                             isSelected: isTablet && _navStack.contains('services'),
                             onTap: () {
-                              if (isTablet) {
-                                _selectModule('services');
-                              } else {
-                                _checkAndNavigate(context, 'manageServices', "Services", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen())));
-                              }
+                              _checkAndNavigate(context, 'manageServices', "Services", () {
+                                if (isTablet) {
+                                  _selectModule('services');
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminServicesScreen()));
+                                }
+                              });
                             },
                           ),
 
@@ -283,11 +293,13 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
                             color: Colors.orangeAccent,
                             isSelected: isTablet && _navStack.contains('product_categories'),
                             onTap: () {
-                              if (isTablet) {
-                                _selectModule('product_categories');
-                              } else {
-                                _checkAndNavigate(context, 'manageProducts', "Product Categories", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCategoriesScreen())));
-                              }
+                              _checkAndNavigate(context, 'manageProducts', "Product Categories", () {
+                                if (isTablet) {
+                                  _selectModule('product_categories');
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminCategoriesScreen()));
+                                }
+                              });
                             },
                           ),
                           const SizedBox(height: 15),
@@ -298,11 +310,13 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
                             color: Colors.purpleAccent,
                             isSelected: isTablet && _navStack.contains('products'),
                             onTap: () {
-                              if (isTablet) {
-                                _selectModule('products');
-                              } else {
-                                _checkAndNavigate(context, 'manageProducts', "Products", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen())));
-                              }
+                              _checkAndNavigate(context, 'manageProducts', "Products", () {
+                                if (isTablet) {
+                                  _selectModule('products');
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminProductsScreen()));
+                                }
+                              });
                             },
                           ),
                           const SizedBox(height: 15),
@@ -313,11 +327,13 @@ class _AdminCMSScreenState extends State<AdminCMSScreen> {
                             color: Colors.yellowAccent,
                             isSelected: isTablet && _navStack.contains('reviews'),
                             onTap: () {
-                              if (isTablet) {
-                                _selectModule('reviews');
-                              } else {
-                                _checkAndNavigate(context, 'manageProducts', "Reviews", () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewModerationScreen())));
-                              }
+                              _checkAndNavigate(context, 'manageProducts', "Reviews", () {
+                                if (isTablet) {
+                                  _selectModule('reviews');
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewModerationScreen()));
+                                }
+                              });
                             },
                           ),
                         ],
