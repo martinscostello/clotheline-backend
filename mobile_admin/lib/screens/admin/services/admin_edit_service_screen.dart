@@ -184,7 +184,8 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
 
       if (croppedFile != null) {
          setState(() => _isSaving = true);
-         String? url = await _contentService.uploadImage(croppedFile.path);
+         final bytes = await croppedFile.readAsBytes();
+         String? url = await _contentService.uploadImage(croppedFile.path, fileBytes: bytes);
          setState(() => _isSaving = false);
          if (url != null) {
            setState(() => _imageUrl = url);

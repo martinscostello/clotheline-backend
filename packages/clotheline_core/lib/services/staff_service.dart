@@ -8,15 +8,20 @@ import 'package:url_launcher/url_launcher.dart';
 class StaffService {
   final ApiService _apiService = ApiService();
 
-  Future<String?> uploadImage(String filePath) async {
+  Future<String?> uploadImage(String filePath, {Uint8List? fileBytes, String? explicitFileName}) async {
     try {
       MultipartFile multipartFile;
-      if (kIsWeb) {
-        final file = File(filePath);
-        final bytes = await file.readAsBytes();
-        multipartFile = MultipartFile.fromBytes(bytes, filename: filePath.split('/').last);
+      String fileName = explicitFileName ?? filePath.split('/').last;
+
+      if (kIsWeb || fileBytes != null) {
+        // [CRITICAL] On Web, we MUST use fileBytes from XFile to avoid File system errors
+        if (fileBytes != null) {
+          multipartFile = MultipartFile.fromBytes(fileBytes, filename: fileName);
+        } else {
+           throw Exception("fileBytes is required for Web Image Uploads");
+        }
       } else {
-        multipartFile = await MultipartFile.fromFile(filePath);
+        multipartFile = await MultipartFile.fromFile(filePath, filename: fileName);
       }
 
       final formData = FormData.fromMap({

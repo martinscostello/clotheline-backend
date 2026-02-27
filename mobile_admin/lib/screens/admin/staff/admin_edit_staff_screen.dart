@@ -144,7 +144,8 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
         else _isUploadingIdCard = true;
       });
       try {
-        final url = await _staffService.uploadImage(image.path);
+        final bytes = await image.readAsBytes();
+        final url = await _staffService.uploadImage(image.path, fileBytes: bytes);
         if (url != null) {
           setState(() {
             if (type == 0) _passportPhoto = url;
