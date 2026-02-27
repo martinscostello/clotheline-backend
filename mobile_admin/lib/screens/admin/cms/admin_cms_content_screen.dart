@@ -237,7 +237,7 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
 
   Future<void> _pickAndUploadImage(Function(String) onUrlReady, {required CropAspectRatioPreset preset}) async {
     final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 100);
     
     if (image == null) return;
 
