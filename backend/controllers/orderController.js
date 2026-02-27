@@ -356,7 +356,22 @@ exports.getUserOrders = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
     try {
-        const orders = await Order.find()
+        let filter = {};
+
+        // [SECURE] Branch RBAC Enforcement
+        if (req.adminUser && !req.adminUser.isMasterAdmin) {
+            if (req.adminUser.assignedBranches && req.adminUser.assignedBranches.length > 0) {
+                // If the user selected "All Branches" on the UI, the frontend sends no query. 
+                // We MUST restrict them strictly to whatever subset they are assigned to.
+                filter.branchId = { $in: req.adminUser.assignedBranches };
+            } else {
+                // Failsafe: Standard admin with ZERO assigned branches gets ZERO orders.
+                // Prevent falling back to pulling everything.
+                return res.json([]);
+            }
+        }
+
+        const orders = await Order.find(filter)
             .sort({ createdAt: -1 })
             .populate('user', 'name email');
         res.json(orders);

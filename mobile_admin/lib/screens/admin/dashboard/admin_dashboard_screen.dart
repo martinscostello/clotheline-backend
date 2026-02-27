@@ -428,6 +428,9 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
     bool allowed = false;
 
     switch (feature) {
+      case 'POS':
+        allowed = permissions['managePOS'] == true;
+        break;
       case 'Orders':
         allowed = permissions['manageOrders'] == true;
         break;
@@ -592,7 +595,7 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
             }
             break;
           case 'pos':
-            if (_hasPermission("Orders")) {
+            if (_hasPermission("POS")) {
               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(
                 builder: (_) => AdminPOSScreen(fulfillmentMode: _operationsMode)
               ));

@@ -91,6 +91,49 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
 
   Future<void> _updateStatus(String newStatus) async {
     if (_order == null) return;
+    
+    // [NEW] Pay On Delivery Intercept
+    if (newStatus == OrderStatus.Completed.name && 
+        _order!.paymentMethod == 'pay_on_delivery' && 
+        _order!.paymentStatus == PaymentStatus.Pending) {
+        
+        final paid = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2C),
+            title: const Text("Payment Confirmation", style: TextStyle(color: Colors.white)),
+            content: Text("Has this order been paid for?\n\nAmount: ₦${NumberFormat("#,##0", "en_US").format(_order!.totalAmount)}", style: const TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text("NO", style: TextStyle(color: Colors.redAccent)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.secondaryColor),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text("YES", style: TextStyle(color: Colors.black)),
+              )
+            ],
+          )
+        );
+
+        if (paid != true) return; // Abort update if not paid
+
+        setState(() => _isUpdating = true);
+        try {
+           final paymentSuccess = await Provider.of<OrderService>(context, listen: false).markAsPaid(_order!.id, 'cash');
+           if (!paymentSuccess) {
+              if (mounted) ToastUtils.show(context, "Failed to mark as paid", type: ToastType.error);
+              return;
+           }
+        } catch (e) {
+           if (mounted) ToastUtils.show(context, "Error updating payment: $e", type: ToastType.error);
+           return;
+        } finally {
+           if (mounted) setState(() => _isUpdating = false);
+        }
+    }
+
     setState(() => _isUpdating = true);
     try {
       final success = await Provider.of<OrderService>(context, listen: false).updateStatus(_order!.id, newStatus);

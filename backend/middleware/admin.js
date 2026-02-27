@@ -15,6 +15,9 @@ module.exports = async function (req, res, next) {
             return res.status(403).json({ msg: 'Access Denied: Admins Only' });
         }
 
+        // [FIX] Attach the full admin user document (crucial for RBAC like assignedBranches)
+        req.adminUser = user;
+
         next();
     } catch (err) {
         console.error(err);

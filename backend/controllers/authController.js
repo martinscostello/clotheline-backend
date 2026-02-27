@@ -308,6 +308,7 @@ exports.verifyToken = async (req, res) => {
                 role: user.role,
                 isMasterAdmin: user.isMasterAdmin || false,
                 permissions: user.permissions || {},
+                assignedBranches: user.assignedBranches || [], // [FIX] Prevent RBAC context drop on app restart
                 preferredBranch: user.preferredBranch,
                 avatarId: user.avatarId // [FIX] Return avatarId
             }
