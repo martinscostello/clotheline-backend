@@ -33,6 +33,19 @@ class AdminProductsScreen extends StatelessWidget {
             Consumer<BranchProvider>(
               builder: (context, branchProvider, _) {
                 if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
+
+                if (branchProvider.isLockedToSingleBranch) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white10,
+                      borderRadius: BorderRadius.circular(20)
+                    ),
+                    child: Text(branchProvider.branches.first.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  );
+                }
+
                 return Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 10),

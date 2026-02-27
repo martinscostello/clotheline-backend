@@ -229,10 +229,59 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             const message = `(New order from ${branchName} | ${customer ? customer.name : 'Guest'})`;
 
             // Notify Admins
-            const admins = await User.find({ role: 'admin' });
+            const allAdmins = await User.find({ role: 'admin' });
+
+            // [NEW] Strict Branch & Preference Filtering
+            const targetAdmins = allAdmins.filter(admin => {
+                const prefs = admin.adminNotificationPreferences || {};
+
+                // 1. App-level toggle for new orders
+                if (prefs.newOrder === false) return false;
+
+                // 2. Quiet Hours (Basic check based on server time)
+                if (prefs.quietHoursEnabled && prefs.quietHoursStart && prefs.quietHoursEnd) {
+                    const now = new Date();
+                    const currentHour = now.getHours();
+                    const currentMin = now.getMinutes();
+                    const currentMins = currentHour * 60 + currentMin;
+
+                    const [sH, sM] = prefs.quietHoursStart.split(':').map(Number);
+                    const [eH, eM] = prefs.quietHoursEnd.split(':').map(Number);
+                    const startMins = sH * 60 + sM;
+                    const endMins = eH * 60 + eM;
+
+                    let inQuietHours = false;
+                    if (startMins < endMins) {
+                        inQuietHours = currentMins >= startMins && currentMins <= endMins;
+                    } else { // Crosses midnight
+                        inQuietHours = currentMins >= startMins || currentMins <= endMins;
+                    }
+                    if (inQuietHours) return false;
+                }
+
+                const isMaster = admin.isMasterAdmin === true;
+                const assigned = admin.assignedBranches || [];
+                const subscribed = prefs.subscribedBranches || [];
+
+                // 3. RBAC Check (Must be assigned to this branch, or be Master)
+                if (!isMaster) {
+                    if (branchId && !assigned.some(b => b.toString() === branchId.toString())) {
+                        return false;
+                    }
+                }
+
+                // 4. Subscription Check (If they explicitly selected branches, filter by that)
+                if (subscribed.length > 0) {
+                    if (branchId && !subscribed.some(b => b.toString() === branchId.toString())) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
 
             // [FIX] Avoid creating multiple Notification records
-            const adminNotifications = admins.map(admin => ({
+            const adminNotifications = targetAdmins.map(admin => ({
                 userId: admin._id,
                 title,
                 message,
@@ -246,7 +295,7 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
                 // [FIX] Aggregated and TARGETED Admin Tokens
                 let adminTokensRaw = [];
-                admins.forEach(admin => {
+                targetAdmins.forEach(admin => {
                     if (admin.fcmTokens && Array.isArray(admin.fcmTokens)) {
                         admin.fcmTokens.forEach(t => {
                             // Only include tokens tagged as 'admin'

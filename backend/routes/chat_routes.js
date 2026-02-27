@@ -159,16 +159,53 @@ router.post('/send', auth, async (req, res) => {
                 if (thread.assignedToAdminId) {
                     // Send ONLY to the assigned admin
                     targetAdmins = await User.find({ _id: thread.assignedToAdminId }).select('_id fcmTokens');
-                } else {
                     // Send to all admins associated with this branch (assignedBranches or subscribedBranches)
-                    targetAdmins = await User.find({
-                        role: 'admin',
-                        $or: [
-                            { assignedBranches: thread.branchId },
-                            { 'adminNotificationPreferences.subscribedBranches': thread.branchId },
-                            { isMasterAdmin: true } // Master admins see everything
-                        ]
-                    }).select('_id fcmTokens');
+                    const allAdmins = await User.find({ role: 'admin' });
+
+                    targetAdmins = allAdmins.filter(admin => {
+                        const prefs = admin.adminNotificationPreferences || {};
+
+                        // 1. App-level toggle for new chat messages
+                        if (prefs.newChat === false) return false;
+
+                        // 2. Quiet Hours Check
+                        if (prefs.quietHoursEnabled && prefs.quietHoursStart && prefs.quietHoursEnd) {
+                            const now = new Date();
+                            const currentMins = now.getHours() * 60 + now.getMinutes();
+                            const [sH, sM] = prefs.quietHoursStart.split(':').map(Number);
+                            const [eH, eM] = prefs.quietHoursEnd.split(':').map(Number);
+                            const startMins = sH * 60 + sM;
+                            const endMins = eH * 60 + eM;
+
+                            let inQuietHours = false;
+                            if (startMins < endMins) {
+                                inQuietHours = currentMins >= startMins && currentMins <= endMins;
+                            } else {
+                                inQuietHours = currentMins >= startMins || currentMins <= endMins;
+                            }
+                            if (inQuietHours) return false;
+                        }
+
+                        const isMaster = admin.isMasterAdmin === true;
+                        const assigned = admin.assignedBranches || [];
+                        const subscribed = prefs.subscribedBranches || [];
+
+                        // 3. RBAC Check
+                        if (!isMaster) {
+                            if (thread.branchId && !assigned.some(b => b.toString() === thread.branchId.toString())) {
+                                return false;
+                            }
+                        }
+
+                        // 4. Subscription Veto
+                        if (subscribed.length > 0) {
+                            if (thread.branchId && !subscribed.some(b => b.toString() === thread.branchId.toString())) {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    });
                 }
 
                 if (targetAdmins.length > 0) {

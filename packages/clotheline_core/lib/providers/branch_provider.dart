@@ -34,7 +34,24 @@ class BranchProvider extends ChangeNotifier {
     _authService = auth;
     notifyListeners();
   }
+  
   bool get isLoading => _isLoading;
+
+  /// Returns true if the user is a restricted admin assigned to exactly 1 branch.
+  /// Used by the UI to disable the Branch Dropdown and force a static view.
+  bool get isLockedToSingleBranch {
+    if (_authService != null && _authService!.currentUser != null) {
+      final user = _authService!.currentUser!;
+      final bool isMaster = user['isMasterAdmin'] == true;
+      final bool isAdmin = user['role'] == 'admin';
+      final List<dynamic>? assigned = user['assignedBranches'];
+
+      if (isAdmin && !isMaster && assigned != null && assigned.length == 1) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   BranchProvider() {
     // defer init to avoid async constructor issues, or rely on bootstrap

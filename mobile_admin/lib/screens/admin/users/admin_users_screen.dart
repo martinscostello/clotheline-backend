@@ -127,6 +127,16 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             Consumer<BranchProvider>(
               builder: (context, branchProvider, _) {
                 if (branchProvider.branches.isEmpty) return const SizedBox.shrink();
+                
+                if (branchProvider.isLockedToSingleBranch) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 15.0),
+                    child: Center(
+                      child: Text(branchProvider.branches.first.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    ),
+                  );
+                }
+
                 return DropdownButtonHideUnderline(
                   child: DropdownButton<String?>(
                     dropdownColor: const Color(0xFF2C2C2E),

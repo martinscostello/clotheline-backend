@@ -136,6 +136,18 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   Widget _buildBranchSelector() {
     return Consumer<BranchProvider>(
       builder: (context, provider, _) {
+        if (provider.isLockedToSingleBranch) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+            ),
+            child: Text(provider.branches.first.name, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+          );
+        }
+
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(

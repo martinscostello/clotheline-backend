@@ -272,6 +272,10 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
   Widget _buildBranchFilterTitle() {
     return Consumer<BranchProvider>(
        builder: (context, provider, _) {
+          if (provider.isLockedToSingleBranch) {
+             return Text(provider.branches.first.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18));
+          }
+
           return DropdownButton<Branch?>(
             value: _selectedBranchFilter,
             dropdownColor: Colors.black87,
