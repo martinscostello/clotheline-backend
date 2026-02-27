@@ -1,17 +1,17 @@
-import 'package:laundry_app/main.dart'; // Access themeNotifier
+import 'package:clotheline_customer/main.dart'; // Access themeNotifier
 import 'package:flutter/material.dart';
-import 'package:laundry_app/theme/app_theme.dart';
-import 'package:laundry_app/screens/auth/login_screen.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_customer/screens/auth/login_screen.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassCard.dart';
 import 'package:provider/provider.dart';
-import '../../../services/auth_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import 'notification_settings_screen.dart';
 import 'faqs_screen.dart'; // Added Import
 import 'feedback_screen.dart'; // Added Import
 import 'about_screen.dart'; // Added Import
 import 'manage_addresses_screen.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
-import 'package:laundry_app/widgets/common/user_avatar.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_customer/widgets/common/user_avatar.dart';
 import 'manage_account_screen.dart';
 import 'support_hub_screen.dart';
 import '../../../widgets/dialogs/guest_login_dialog.dart';

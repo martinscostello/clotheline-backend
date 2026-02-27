@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../../../widgets/glass/LaundryGlassBackground.dart';
 import '../../../widgets/glass/UnifiedGlassHeader.dart';
 import '../../../widgets/glass/GlassContainer.dart';
-import '../../../services/address_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../../../widgets/delivery_location_selector.dart';
-import '../../../data/areas_data.dart';
-import '../../../models/delivery_location_model.dart';
-import '../../../utils/toast_utils.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 
 class ManageAddressesScreen extends StatefulWidget {
   const ManageAddressesScreen({super.key});

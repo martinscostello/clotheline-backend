@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
 import 'package:provider/provider.dart';
-import '../../../services/auth_service.dart';
-import '../../../utils/toast_utils.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 
 class ManagePasswordScreen extends StatefulWidget {
   const ManagePasswordScreen({super.key});

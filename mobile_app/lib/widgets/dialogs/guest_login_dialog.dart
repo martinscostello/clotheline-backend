@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:laundry_app/screens/auth/login_screen.dart';
+import 'package:clotheline_customer/screens/auth/login_screen.dart';
 
 class GuestLoginDialog extends StatelessWidget {
   final String title;

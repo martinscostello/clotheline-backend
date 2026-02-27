@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import '../../../utils/currency_formatter.dart';
-import '../../../services/store_service.dart';
-import '../../../services/cart_service.dart';
-import '../../../models/store_product.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import 'product_detail_screen.dart';
 import 'store_cart_screen.dart';
-import 'package:laundry_app/services/content_service.dart';
-import 'package:laundry_app/models/app_content_model.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../../../widgets/custom_cached_image.dart'; 
 import '../favorites_screen.dart'; 
-import '../../../providers/branch_provider.dart'; // Corrected Path
+import 'package:clotheline_core/clotheline_core.dart'; // Corrected Path
 import 'package:provider/provider.dart';
-import '../../../utils/toast_utils.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
-import 'package:laundry_app/theme/app_theme.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassCard.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../../../widgets/products/SalesBanner.dart'; // [NEW] 
 
 class ProductsScreen extends StatefulWidget {

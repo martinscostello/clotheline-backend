@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../services/notification_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../main_layout.dart'; 
 import '../chat/chat_screen.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
-import '../../../theme/app_theme.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});

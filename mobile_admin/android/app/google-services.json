@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "641268154673",
+    "project_id": "clotheline",
+    "storage_bucket": "clotheline.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:641268154673:android:3cb2f1b4ba7f7a1828f010",
+        "android_client_info": {
+          "package_name": "com.brimarcglobal.clotheline.secure"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhae6n29XabIT2d6AJeBoxKQz5VkMqE8U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

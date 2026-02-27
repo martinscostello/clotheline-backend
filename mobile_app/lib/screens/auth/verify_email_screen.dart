@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
-import 'package:laundry_app/widgets/branding/WashingMachineLogo.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_customer/widgets/branding/WashingMachineLogo.dart';
 import '../user/main_layout.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import '../../utils/toast_utils.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;

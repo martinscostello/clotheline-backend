@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../../models/store_product.dart';
-import '../../../services/cart_service.dart';
-import '../../../utils/currency_formatter.dart';
-import 'package:laundry_app/theme/app_theme.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import 'store_checkout_screen.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/branch_provider.dart';
-import '../../../utils/toast_utils.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
 import '../../../widgets/dialogs/guest_login_dialog.dart';
-import '../../../services/auth_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 
 class StoreCartScreen extends StatelessWidget {
   const StoreCartScreen({super.key});

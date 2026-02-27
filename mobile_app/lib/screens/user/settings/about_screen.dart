@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
 import '../../common/legal_screen.dart';
 
 class AboutScreen extends StatelessWidget {

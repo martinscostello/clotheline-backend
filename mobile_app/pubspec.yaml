@@ -1,7 +1,7 @@
-name: laundry_app
-description: "A new Flutter project for Laundry Business."
+name: clotheline_customer
+description: "Clotheline Customer Application"
 publish_to: 'none'
-version: 1.4.0+39 # Cross-platform version bump
+version: 1.5.0+40
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -17,6 +17,8 @@ dependencies:
   # Internal Packages
   liquid_glass_ui:
     path: ../packages/liquid_glass_ui
+  clotheline_core:
+    path: ../packages/clotheline_core
 
 
   # UI & Animation

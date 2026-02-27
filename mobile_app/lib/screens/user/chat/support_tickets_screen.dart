@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
-import '../../../services/chat_service.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassCard.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import 'package:intl/intl.dart';
 import 'chat_screen.dart';
 

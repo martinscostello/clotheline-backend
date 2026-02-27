@@ -1,0 +1,362 @@
+import 'package:flutter/foundation.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'dart:async';
+
+class ChatService extends ChangeNotifier {
+  final ApiService _apiService = ApiService();
+  
+  Map<String, dynamic>? _currentThread;
+  Map<String, dynamic>? get currentThread => _currentThread;
+
+  List<dynamic> _messages = [];
+  List<dynamic> get messages => _messages;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  bool _isThreadLoading = false;
+  bool get isThreadLoading => _isThreadLoading;
+
+  Timer? _pollTimer;
+  int _pollIntervalSeconds = 5;
+  bool _isAppActive = true;
+  bool _highSpeedPolling = false;
+
+  void setAppState(bool active) {
+    _isAppActive = active;
+    _adjustPollingSpeed();
+  }
+
+  void setHighSpeedPolling(bool highSpeed) {
+    _highSpeedPolling = highSpeed;
+    _adjustPollingSpeed();
+  }
+
+  void _adjustPollingSpeed() {
+    if (!_isAppActive) {
+      _pollIntervalSeconds = 30; // Slow down when backgrounded
+    } else if (_highSpeedPolling) {
+      _pollIntervalSeconds = 2; // Fast when actively in chat
+    } else {
+      _pollIntervalSeconds = 5; // Default active
+    }
+    
+    if (_pollTimer != null && _pollTimer!.isActive) {
+       final branchId = _currentThread?['branchId'];
+       if (branchId != null) startPolling(branchId);
+    }
+  }
+
+  void startPolling(String branchId) {
+    initThread(branchId);
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(Duration(seconds: _pollIntervalSeconds), (_) => _sync());
+  }
+
+  void stopPolling() {
+    _pollTimer?.cancel();
+    _currentThread = null;
+    _messages = [];
+  }
+
+  Future<void> initThread(String branchId) async {
+    _isThreadLoading = true;
+    notifyListeners();
+    try {
+      final response = await _apiService.client.get('/chat', queryParameters: {'branchId': branchId});
+      if (response.statusCode == 200) {
+        _currentThread = response.data;
+        await _fetchMessages();
+      }
+    } catch (e) {
+      print("Thread init error: $e");
+    } finally {
+      _isThreadLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _sync() async {
+    if (_currentThread == null) return;
+    await _fetchMessages();
+  }
+
+  Future<void> _fetchMessages() async {
+    if (_currentThread == null) return;
+    try {
+      final response = await _apiService.client.get('/chat/messages/${_currentThread!['_id']}');
+      if (response.statusCode == 200) {
+        final List<dynamic> newMessages = List<dynamic>.from(response.data);
+        
+        // Merge Logic: Keep local optimistic messages that haven't been confirmed yet
+        // and ignore duplicates from server if we already have them.
+        final List<dynamic> merged = [];
+        
+        // 1. Add all from server
+        merged.addAll(newMessages);
+        
+        // 2. Add local 'sending' or 'failed' messages that aren't in server yet
+        for (var local in _messages) {
+          final isOptimistic = local['_id'].toString().startsWith('temp_');
+          if (isOptimistic && (local['status'] == 'sending' || local['status'] == 'failed')) {
+            final clientMsgId = local['_id'].toString().replaceFirst('temp_', '');
+            // Check if server already has this via clientMessageId
+            final alreadyInServer = newMessages.any((m) => m['clientMessageId'] == clientMsgId);
+            if (!alreadyInServer) {
+              merged.add(local);
+            }
+          }
+        }
+        
+        // Sort by date
+        merged.sort((a, b) {
+          final da = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
+          final db = DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime.now();
+          return da.compareTo(db);
+        });
+
+        _messages = merged;
+        notifyListeners();
+      }
+    } catch (e) {
+      // Silent fail on poll
+    }
+  }
+
+  Future<void> sendMessage(String text, {String? orderId, String? senderType = 'user'}) async {
+    if (_currentThread == null) return;
+    
+    final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+    final optimisticMessage = {
+      '_id': 'temp_$tempId',
+      'threadId': _currentThread!['_id'],
+      'senderType': senderType, 
+      'senderId': 'current_user', 
+      'messageText': text,
+      'orderId': orderId,
+      'createdAt': DateTime.now().toIso8601String(),
+      'status': 'sending' 
+    };
+
+    _messages.add(optimisticMessage);
+    notifyListeners();
+
+    try {
+      final response = await _apiService.client.post('/chat/send', data: {
+        'threadId': _currentThread!['_id'],
+        'messageText': text,
+        'orderId': orderId,
+        'clientMessageId': tempId
+      });
+      
+      if (response.statusCode == 200) {
+         final idx = _messages.indexWhere((m) => m['_id'] == 'temp_$tempId');
+         if (idx != -1) {
+           _messages[idx] = response.data;
+           _messages[idx]['status'] = 'sent';
+         }
+         notifyListeners();
+      }
+    } catch (e) {
+      print("Send error: $e");
+      final idx = _messages.indexWhere((m) => m['_id'] == 'temp_$tempId');
+      if (idx != -1) {
+        _messages[idx]['status'] = 'failed';
+        notifyListeners();
+      }
+      rethrow; // Propagate to UI for feedback
+    }
+  }
+
+  List<dynamic> _myThreads = [];
+  List<dynamic> get myThreads => _myThreads;
+
+  int get totalUnreadCount {
+    return _myThreads.fold(0, (sum, thread) => sum + (thread['unreadCountUser'] as int? ?? 0));
+  }
+
+  Future<void> fetchMyThreads() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await _apiService.client.get('/chat/my-threads');
+      if (response.statusCode == 200) {
+        _myThreads = List<dynamic>.from(response.data);
+      }
+    } catch (e) {
+      print("Fetch my threads error: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> resendMessage(String tempId) async {
+    final idx = _messages.indexWhere((m) => m['_id'] == tempId);
+    if (idx == -1) return;
+
+    final msg = _messages[idx];
+    _messages[idx]['status'] = 'sending';
+    notifyListeners();
+
+    try {
+      final response = await _apiService.client.post('/chat/send', data: {
+        'threadId': _currentThread!['_id'],
+        'messageText': msg['messageText'],
+        'orderId': msg['orderId'],
+        'clientMessageId': tempId.replaceFirst('temp_', '')
+      });
+      
+      if (response.statusCode == 200) {
+         _messages[idx] = response.data;
+         _messages[idx]['status'] = 'sent';
+         notifyListeners();
+      }
+    } catch (e) {
+      _messages[idx]['status'] = 'failed';
+      notifyListeners();
+    }
+  }
+
+  // --- ADMIN METHODS ---
+  List<dynamic> _threads = [];
+  List<dynamic> get threads => _threads;
+
+  Future<void> fetchThreads(String branchId, String status) async {
+    try {
+      final response = await _apiService.client.get('/chat/admin/threads', queryParameters: {
+        'branchId': branchId,
+        'status': status
+      });
+      if (response.statusCode == 200) {
+        _threads = List<dynamic>.from(response.data);
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Fetch threads error: $e");
+    }
+  }
+
+  Future<String?> getAdminThreadForUser(String userId, String branchId) async {
+    try {
+      final response = await _apiService.client.get(
+        '/chat/admin/thread-for-user', 
+        queryParameters: {'userId': userId, 'branchId': branchId}
+      );
+      
+      if (response.statusCode == 200) {
+        return response.data['_id'];
+      }
+      return null;
+    } catch (e) {
+      print("Error getting thread for user: $e");
+      return null;
+    }
+  }
+
+  Future<void> selectThread(String threadId) async {
+    _isThreadLoading = true;
+    notifyListeners();
+    try {
+      _currentThread = _threads.firstWhere((t) => t['_id'] == threadId);
+      await _fetchMessages();
+    } catch (e) {
+       print("Select thread error: $e");
+    } finally {
+      _isThreadLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateThreadStatus(String threadId, String status) async {
+    try {
+      final response = await _apiService.client.put('/chat/admin/status/$threadId', data: {'status': status});
+      if (response.statusCode == 200) {
+        if (_currentThread != null && _currentThread!['_id'] == threadId) {
+          _currentThread!['status'] = status;
+        }
+        final idx = _threads.indexWhere((t) => t['_id'] == threadId);
+        if (idx != -1) _threads[idx]['status'] = status;
+        notifyListeners();
+      }
+    } catch (e) {
+       print("Update status error: $e");
+    }
+  }
+
+  Future<void> sendBroadcast({
+    required String branchId,
+    required String messageText,
+    required String audienceType,
+    List<String>? targetUserIds,
+  }) async {
+    try {
+      final response = await _apiService.client.post('/chat/admin/broadcast', data: {
+        'branchId': branchId,
+        'messageText': messageText,
+        'audienceType': audienceType,
+        'targetUserIds': targetUserIds
+      });
+      if (response.statusCode == 200) {
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Broadcast error: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> deleteThread(String threadId) async {
+    try {
+      final response = await _apiService.client.delete('/chat/admin/thread/$threadId');
+      if (response.statusCode == 200) {
+        _threads.removeWhere((t) => t['_id'] == threadId);
+        if (_currentThread != null && _currentThread!['_id'] == threadId) {
+          _currentThread = null;
+          _messages = [];
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Delete thread error: $e");
+    }
+  }
+
+  Future<void> pickupThread(String threadId) async {
+    try {
+      final response = await _apiService.client.post('/chat/admin/pickup/$threadId');
+      if (response.statusCode == 200) {
+        _currentThread = response.data;
+        final idx = _threads.indexWhere((t) => t['_id'] == threadId);
+        if (idx != -1) _threads[idx] = response.data;
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Pickup thread error: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> transferThread(String threadId, String targetAdminId) async {
+    try {
+      final response = await _apiService.client.post('/chat/admin/transfer/$threadId', data: {
+        'targetAdminId': targetAdminId
+      });
+      if (response.statusCode == 200) {
+        _currentThread = response.data;
+        final idx = _threads.indexWhere((t) => t['_id'] == threadId);
+        if (idx != -1) _threads[idx] = response.data;
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Transfer thread error: $e");
+      rethrow;
+    }
+  }
+  
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+}

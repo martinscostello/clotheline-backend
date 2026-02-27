@@ -1,6 +1,6 @@
 name: liquid_glass_ui
 description: A high-fidelity, reusable Liquid Glass UI package.
-version: 0.0.1
+version: 1.5.0+40
 publish_to: 'none'
 
 environment:

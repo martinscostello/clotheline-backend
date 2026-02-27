@@ -1,6 +1,6 @@
 {
     "buildCommand": "./build_vercel.sh",
-    "outputDirectory": "mobile_app/build/web",
+    "outputDirectory": "mobile_admin/build/web",
     "rewrites": [
         {
             "source": "/(.*)",

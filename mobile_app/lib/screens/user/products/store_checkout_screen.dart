@@ -1,22 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
-import '../../../services/cart_service.dart';
-import '../../../services/content_service.dart';
-// import '../../../models/app_content_model.dart';
-import '../../../services/delivery_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import '../../../utils/currency_formatter.dart';
-import '../../../providers/branch_provider.dart';
-import '../../../services/payment_service.dart';
-import '../../../services/auth_service.dart';
-import '../../../utils/toast_utils.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
-import '../booking/combined_order_summary_screen.dart'; // [Fix] Path adjustment
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
+import '../booking/combined_order_summary_screen.dart'; 
 import '../../../widgets/delivery_location_selector.dart';
-import '../../../models/delivery_location_model.dart';
 
 class StoreCheckoutScreen extends StatefulWidget {
   const StoreCheckoutScreen({super.key});

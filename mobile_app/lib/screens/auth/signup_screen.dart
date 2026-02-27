@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
-import 'package:laundry_app/widgets/branding/WashingMachineLogo.dart';
-import '../../utils/toast_utils.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_customer/widgets/branding/WashingMachineLogo.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import 'verify_email_screen.dart';
 import 'package:provider/provider.dart';
-import '../../providers/branch_provider.dart';
-import '../../models/branch_model.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../../widgets/dialogs/auth_error_dialog.dart';
 // For navigation back
 

@@ -16,7 +16,7 @@ echo "==== Doctor ===="
 flutter doctor -v
 
 echo "==== Building Web App ===="
-cd mobile_app
+cd mobile_admin
 flutter clean
 flutter pub get
 flutter build web --release --base-href "/"
@@ -25,7 +25,7 @@ echo "==== Preparing Output ===="
 cd ..
 rm -rf public
 mkdir -p public
-cp -R mobile_app/build/web/* public/
-cp mobile_app/build/web/.* public/ 2>/dev/null || :
+cp -R mobile_admin/build/web/* public/
+cp mobile_admin/build/web/.* public/ 2>/dev/null || :
 
 echo "==== Build Complete ===="

@@ -1,15 +1,15 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
-import '../../../utils/currency_formatter.dart';
-import '../../../models/booking_models.dart'; // [FIX] Added missing import
-import '../../../services/cart_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart'; // [FIX] Added missing import
+import 'package:clotheline_core/clotheline_core.dart';
 // Will import CheckoutScreen later
 import 'checkout_screen.dart'; 
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
 import '../../../widgets/dialogs/guest_login_dialog.dart';
-import '../../../services/auth_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import 'package:provider/provider.dart';
 
 class MyBucketScreen extends StatelessWidget {

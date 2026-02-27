@@ -1,13 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:laundry_app/theme/app_theme.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
-import 'package:laundry_app/widgets/glass/GlassContainer.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_customer/widgets/glass/GlassContainer.dart';
 import 'package:provider/provider.dart';
-import '../../../services/cart_service.dart'; // From task.md plan
-import '../../../utils/currency_formatter.dart';
-import '../../../providers/branch_provider.dart';
+import 'package:clotheline_core/clotheline_core.dart'; // From task.md plan
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 
 class CombinedOrderSummaryScreen extends StatefulWidget {
   final Map<String, dynamic> logisticsData;

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../services/chat_service.dart';
-import '../../../providers/branch_provider.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
-import 'package:laundry_app/widgets/common/user_avatar.dart';
-import '../../../services/auth_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_customer/widgets/common/user_avatar.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? orderId;

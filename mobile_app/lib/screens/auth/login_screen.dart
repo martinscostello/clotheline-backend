@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import '../user/main_layout.dart';
 import 'package:provider/provider.dart';
 import 'signup_screen.dart';
-import 'package:laundry_app/widgets/branding/WashingMachineLogo.dart';
-import '../../utils/toast_utils.dart';
-import '../user/main_layout.dart';
-import '../admin/admin_main_layout.dart';
+import 'package:clotheline_customer/widgets/branding/WashingMachineLogo.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../common/legal_screen.dart';
 import '../../widgets/dialogs/auth_error_dialog.dart';
 import 'forgot_password_screen.dart';
@@ -39,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!mounted) return;
       if (user['role'] == 'admin') {
-         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminMainLayout()));
+         ToastUtils.show(context, "Please use the Admin App to sign in as an administrator.", type: ToastType.warning);
       } else {
          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainLayout()));
       }
@@ -238,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen> {
                          onPressed: () async {
                             await context.read<AuthService>().continueAsGuest();
                             if (mounted) {
-                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainLayout()));
+                               Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainLayout()));
                             }
                          },
                          child: Text(

@@ -10,7 +10,7 @@ import 'dashboard_screen.dart';
 import 'products/products_screen.dart';
 import 'orders/orders_screen.dart';
 import 'settings/settings_screen.dart';
-import '../../services/push_notification_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;

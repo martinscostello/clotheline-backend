@@ -1,23 +1,23 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:laundry_app/widgets/glass/LaundryGlassCard.dart';
-import 'package:laundry_app/theme/app_theme.dart';
-import '../../../utils/currency_formatter.dart';
-import '../../../services/cart_service.dart';
-import '../../../services/order_service.dart';
-import '../../../models/order_model.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassCard.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../booking/checkout_screen.dart';
 import 'package:intl/intl.dart';
 import 'order_detail_screen.dart';
 import 'package:provider/provider.dart';
-import '../../../services/notification_service.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
 import '../../../widgets/dialogs/guest_login_dialog.dart';
-import '../../../services/auth_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../../../widgets/booking/split_checkout_modal.dart';
 import '../../../utils/order_status_resolver.dart';
-import '../../../services/chat_service.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import '../chat/support_tickets_screen.dart';
 
 class OrdersScreen extends StatefulWidget {

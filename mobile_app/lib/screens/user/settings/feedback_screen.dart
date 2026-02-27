@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
-import '../../../utils/toast_utils.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});

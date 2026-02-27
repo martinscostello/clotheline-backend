@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
 
 class FaqsScreen extends StatelessWidget {
   const FaqsScreen({super.key});

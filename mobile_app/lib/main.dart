@@ -3,33 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Added Import
 import 'package:provider/provider.dart';
 import 'dart:convert'; // Added for jsonDecode
-import 'theme/app_theme.dart';
-import 'screens/auth/login_screen.dart'; 
-import 'screens/auth/onboarding_screen.dart'; // Added Import
-import 'services/laundry_service.dart';
-import 'services/cart_service.dart';
-import 'services/store_service.dart';
-import 'services/order_service.dart';
-import 'services/delivery_service.dart';
-import 'services/auth_service.dart';
-import 'services/favorites_service.dart';
-import 'services/notification_service.dart';
-import 'services/push_notification_service.dart';
-import 'services/chat_service.dart';
-import 'services/navigation_persistence_service.dart';
-import 'services/content_service.dart'; 
-import 'services/analytics_service.dart';
-import 'services/promotion_service.dart'; // Added // Added
-import 'services/review_service.dart';
-import 'providers/branch_provider.dart';
-import 'providers/admin_pos_provider.dart';
-import 'providers/report_provider.dart'; // Added
+import 'package:clotheline_core/clotheline_core.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/onboarding_screen.dart';
 import 'screens/user/main_layout.dart';
-import 'screens/admin/admin_main_layout.dart';
-import 'models/service_model.dart'; // Assuming this import exists for ServiceModel
-import 'models/branch_model.dart';
-import 'widgets/global_error_boundary.dart'; // Added
-import 'services/network_service.dart'; // Added
 
 // Global Theme Notifier
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
@@ -188,15 +165,13 @@ class LaundryApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AnalyticsService()),
         ChangeNotifierProvider(create: (_) => PromotionService()), // Added
         ChangeNotifierProvider(create: (_) => ReviewService()), // Added
-        ChangeNotifierProvider(create: (_) => AdminPOSProvider()),
-        ChangeNotifierProvider(create: (_) => ReportProvider()), // Added
         Provider(create: (_) => ContentService()),
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeNotifier,
         builder: (_, ThemeMode currentMode, __) {
           return MaterialApp(
-            title: 'Laundry Business',
+            title: 'Clotheline',
             navigatorKey: PushNotificationService.navigatorKey, // [NEW]
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
@@ -229,16 +204,8 @@ class LaundryApp extends StatelessWidget {
 
   // ... _determineInitialScreen ...
   Widget _determineInitialScreen(BootstrapData data) {
-    if (data.isLoggedIn) {
-      if (data.userRole == 'admin') {
-        return const AdminMainLayout();
-      } else {
-        return const MainLayout();
-      }
-    }
-    
-    if (data.isGuest) {
-       return const MainLayout();
+    if (data.isLoggedIn || data.isGuest) {
+      return const MainLayout();
     }
 
     if (!data.hasSeenOnboarding) {

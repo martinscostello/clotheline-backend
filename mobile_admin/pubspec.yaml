@@ -1,0 +1,93 @@
+name: clotheline_admin
+description: "Admin app"
+publish_to: 'none'
+version: 1.5.0+40
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  provider: ^6.1.1
+  flutter_riverpod: ^2.4.9
+
+  # Internal Packages
+  liquid_glass_ui:
+    path: ../packages/liquid_glass_ui
+  clotheline_core:
+    path: ../packages/clotheline_core
+
+
+  # UI & Animation
+  google_fonts: ^6.1.0
+  flutter_animate: ^4.5.0
+  fl_chart: ^0.68.0
+  glassmorphism: ^3.0.0
+  flutter_staggered_grid_view: ^0.7.0
+  # For Shaders
+  flutter_shaders: ^0.1.2 
+  flutter_colorpicker: ^1.1.0
+
+  # Networking
+  http: ^1.1.2
+  dio: ^5.4.0
+  flutter_secure_storage: ^9.0.0
+  connectivity_plus: ^7.0.0
+
+  # Extras
+  intl: ^0.19.0
+  cupertino_icons: ^1.0.2
+  image_picker: ^1.0.7
+  image_cropper: ^8.0.2
+  http_parser: ^4.1.2
+  shared_preferences: ^2.3.2
+  flutter_map: ^6.1.0
+  google_maps_flutter: ^2.5.3
+  latlong2: ^0.9.1
+  geolocator: ^11.0.0
+  cached_network_image: ^3.4.1
+  webview_flutter: ^4.9.0
+  signature: ^5.5.0
+  qr_flutter: ^4.1.0
+  url_launcher: ^6.2.2
+  permission_handler: ^11.3.0
+
+  pdf: ^3.10.7
+  printing: ^5.14.2
+  video_player: ^2.9.2
+  flutter_local_notifications: ^20.1.0
+  firebase_core: ^3.4.0
+  firebase_messaging: ^15.0.0
+  video_thumbnail: ^0.5.3
+  path_provider: ^2.1.2
+  universal_html: ^2.3.0
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_icons:
+  android: "launcher_icon"
+  adaptive_icon_background: "assets/images/adaptive_background.png"
+  adaptive_icon_foreground: "assets/images/adaptive_foreground.png"
+  ios: true
+  image_path: "assets/images/final_clean_icon.jpg"
+  remove_alpha_ios: true
+  min_sdk_android: 21 # android min sdk min:16, default 21
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/images/avatars/
+
+dependency_overrides:
+  intl: ^0.19.0
+  http: ^1.1.2
+  image_cropper_platform_interface: 7.1.0

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:laundry_app/services/store_service.dart';
-import 'package:laundry_app/services/favorites_service.dart';
-import 'package:laundry_app/widgets/custom_cached_image.dart';
-import 'package:laundry_app/utils/currency_formatter.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_core/clotheline_core.dart';
+import 'package:clotheline_customer/widgets/custom_cached_image.dart';
+import 'package:clotheline_core/clotheline_core.dart';
 import 'products/product_detail_screen.dart'; // Fix import path
-import 'package:laundry_app/widgets/glass/LaundryGlassBackground.dart';
-import 'package:laundry_app/widgets/glass/UnifiedGlassHeader.dart';
+import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
+import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
