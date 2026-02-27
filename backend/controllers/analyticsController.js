@@ -28,6 +28,14 @@ exports.getRevenueStats = async (req, res) => {
         if (branchId) {
             const mongoose = require('mongoose');
             matchStage.branchId = new mongoose.Types.ObjectId(branchId);
+        } else if (req.adminUser && !req.adminUser.isMasterAdmin) {
+            // [SECURE] Branch RBAC Enforcement for "All Branches"
+            if (req.adminUser.assignedBranches && req.adminUser.assignedBranches.length > 0) {
+                const mongoose = require('mongoose');
+                matchStage.branchId = { $in: req.adminUser.assignedBranches.map(id => new mongoose.Types.ObjectId(id)) };
+            } else {
+                return res.json({ data: [], summary: { total: 0, count: 0 } });
+            }
         }
 
         if (fulfillmentMode) {
@@ -80,6 +88,14 @@ exports.getTopItems = async (req, res) => {
         if (branchId) {
             const mongoose = require('mongoose');
             matchStage.branchId = new mongoose.Types.ObjectId(branchId);
+        } else if (req.adminUser && !req.adminUser.isMasterAdmin) {
+            // [SECURE] Branch RBAC Enforcement for "All Branches"
+            if (req.adminUser.assignedBranches && req.adminUser.assignedBranches.length > 0) {
+                const mongoose = require('mongoose');
+                matchStage.branchId = { $in: req.adminUser.assignedBranches.map(id => new mongoose.Types.ObjectId(id)) };
+            } else {
+                return res.json([]);
+            }
         }
 
         if (fulfillmentMode) {
