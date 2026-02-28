@@ -369,7 +369,7 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (widget.product != null && !widget.isEmbedded)
+            if (widget.product != null)
                Row(
                  mainAxisAlignment: MainAxisAlignment.end,
                  children: [
@@ -534,8 +534,15 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
         TextButton(child: const Text("Delete", style: TextStyle(color: Colors.red)), onPressed: () async {
           Navigator.pop(ctx);
-          await Provider.of<StoreService>(context, listen: false).deleteProduct(widget.product!.id);
-          if (mounted) Navigator.pop(context);
+          bool success = await Provider.of<StoreService>(context, listen: false).deleteProduct(widget.product!.id);
+          if (mounted) {
+             if (success) {
+                if (!widget.isEmbedded) Navigator.pop(context);
+                else ToastUtils.show(context, "Product Deleted", type: ToastType.success);
+             } else {
+                ToastUtils.show(context, "Failed to delete product", type: ToastType.error);
+             }
+          }
         })
       ],
     ));
