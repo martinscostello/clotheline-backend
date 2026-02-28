@@ -158,4 +158,90 @@ class WhatsAppService {
 
     await _launchWhatsApp(phone, message);
   }
+
+  static Future<void> sendTextReceipt({
+    required String phone,
+    required dynamic order,
+    required String branchName,
+  }) async {
+    // resolve data
+    String id = order is Map ? (order['_id'] ?? 'N/A') : order.id;
+    String name = order is Map ? (order['guestInfo']?['name'] ?? 'Guest') : (order.guestName ?? (order.userName ?? 'Customer'));
+    
+    List<CartItem> laundry = [];
+    List<StoreCartItem> store = [];
+    
+    final items = order is Map ? (order['items'] as List? ?? []) : order.items;
+    for (var item in items) {
+      if (item is Map) {
+         if (item['itemType'] == 'Service') {
+            laundry.add(CartItem(
+              item: ClothingItem(id: item['itemId'] ?? '', name: item['name'] ?? '', basePrice: (item['price'] as num?)?.toDouble() ?? 0.0),
+              serviceType: ServiceType(id: item['serviceType'] ?? '', name: item['serviceType'] ?? '', priceMultiplier: 1.0),
+              quantity: item['quantity'] ?? 1,
+            ));
+         } else {
+            store.add(StoreCartItem(
+              product: StoreProduct(id: item['itemId'] ?? '', name: item['name'] ?? '', price: (item['price'] as num?)?.toDouble() ?? 0.0, originalPrice: (item['price'] as num?)?.toDouble() ?? 0.0, description: '', imageUrls: [], category: 'Generic', stockLevel: 0, variants: []),
+              quantity: item['quantity'] ?? 1,
+            ));
+         }
+      } else {
+        if (item.itemType == 'Service') {
+          laundry.add(CartItem(
+            item: ClothingItem(id: item.itemId, name: item.name, basePrice: item.price),
+            serviceType: ServiceType(id: item.serviceType ?? 'Standard', name: item.serviceType ?? 'Standard'),
+            quantity: item.quantity,
+          ));
+        } else {
+          store.add(StoreCartItem(
+            product: StoreProduct(id: item.itemId, name: item.name, price: item.price, originalPrice: item.price, description: '', imageUrls: [], category: 'Generic', stockLevel: 0, variants: []),
+            quantity: item.quantity,
+          ));
+        }
+      }
+    }
+
+    double subtotal = order is Map ? (order['subtotal'] as num?)?.toDouble() ?? 0.0 : order.subtotal;
+    double deliveryFee = order is Map ? (order['deliveryFee'] as num?)?.toDouble() ?? 0.0 : order.deliveryFee;
+    double total = order is Map ? (order['totalAmount'] as num?)?.toDouble() ?? 0.0 : order.totalAmount;
+    String paymentMethod = order is Map ? (order['paymentMethod'] ?? 'cash') : (order.paymentMethod ?? 'cash');
+
+    final String brand = _getBrandedName(branchName);
+    final String shortId = id.length > 6 ? id.substring(id.length - 6).toUpperCase() : id.toUpperCase();
+    
+    String message = "*${brand.toUpperCase()}*\n";
+    message += "Order #: $shortId\n";
+    message += "Customer: $name\n";
+    message += "Date: ${DateTime.now().toString().substring(0, 16)}\n";
+    message += "------------------------\n\n";
+
+    if (laundry.isNotEmpty) {
+      message += "*LAUNDRY SERVICES*\n";
+      for (var i in laundry) {
+        message += "• ${i.item.name} (${i.serviceType?.name ?? 'Generic'}) x${i.quantity}\n";
+        message += "  ${CurrencyFormatter.format(i.totalPrice)}\n";
+      }
+      message += "\n";
+    }
+
+    if (store.isNotEmpty) {
+      message += "*STORE PRODUCTS*\n";
+      for (var i in store) {
+        message += "• ${i.product.name} x${i.quantity}\n";
+        message += "  ${CurrencyFormatter.format(i.totalPrice)}\n";
+      }
+      message += "\n";
+    }
+
+    message += "------------------------\n";
+    message += "Subtotal: ${CurrencyFormatter.format(subtotal)}\n";
+    message += "Delivery Fee: ${CurrencyFormatter.format(deliveryFee)}\n";
+    message += "*TOTAL: ${CurrencyFormatter.format(total)}*\n";
+    message += "------------------------\n";
+    message += "Payment: ${paymentMethod.toUpperCase()}\n\n";
+    message += "Thank you for your patronage!";
+
+    await _launchWhatsApp(phone, message);
+  }
 }

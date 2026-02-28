@@ -119,17 +119,54 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
         ),
         body: LiquidBackground(
           child: SafeArea(
-            child: Column(
-              children: [
-                _buildStepIndicator(),
-                Expanded(
-                  child: _buildCurrentStep(),
-                ),
-                _buildBottomNavigation(),
-              ],
+            child: Consumer<AdminPOSProvider>(
+              builder: (context, pos, _) {
+                return Column(
+                  children: [
+                    if (pos.offlineOrderCount > 0)
+                      _buildOfflineBanner(pos),
+                    _buildStepIndicator(),
+                    Expanded(
+                      child: _buildCurrentStep(),
+                    ),
+                    _buildBottomNavigation(),
+                  ],
+                );
+              }
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildOfflineBanner(AdminPOSProvider pos) {
+    return Container(
+      width: double.infinity,
+      color: Colors.orange.withValues(alpha: 0.9),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              "You have ${pos.offlineOrderCount} offline order(s) waiting to sync.",
+              style: const TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.orange,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: const Size(80, 30),
+            ),
+            onPressed: pos.isSyncing ? null : () => pos.syncOfflineOrders(),
+            child: pos.isSyncing 
+              ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(color: Colors.orange, strokeWidth: 2))
+              : const Text("Sync Now", style: TextStyle(fontSize: 12)),
+          )
+        ],
       ),
     );
   }
@@ -1140,27 +1177,33 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
 
     if (result['success']) {
        if (!mounted) return;
-       _showSuccessDialog(result['order']);
+       _showSuccessDialog(result['order'], result['isOffline'] ?? false);
     } else {
        setState(() => _checkoutError = result['message']);
     }
   }
 
-  void _showSuccessDialog(dynamic order) {
+  void _showSuccessDialog(dynamic order, bool isOffline) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E2C),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Column(
+        title: Column(
           children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 50),
-            SizedBox(height: 10),
-            Text("Order Created!", style: TextStyle(color: Colors.white)),
+            Icon(isOffline ? Icons.cloud_off : Icons.check_circle, color: isOffline ? Colors.orange : Colors.green, size: 50),
+            const SizedBox(height: 10),
+            Text(isOffline ? "Saved Offline" : "Order Created!", style: const TextStyle(color: Colors.white)),
           ],
         ),
-        content: const Text("The walk-in order has been recorded successfully.", textAlign: TextAlign.center, style: TextStyle(color: Colors.white70)),
+        content: Text(
+          isOffline 
+            ? "Your device is offline. The order is securely saved locally and will sync when connection restores." 
+            : "The walk-in order has been recorded successfully.", 
+          textAlign: TextAlign.center, 
+          style: const TextStyle(color: Colors.white70)
+        ),
         actions: [
           Column(
             children: [
@@ -1179,7 +1222,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                   );
                }),
                const SizedBox(height: 10),
-                _buildActionButton("Send Receipt (WhatsApp)", Icons.picture_as_pdf, () {
+                _buildActionButton("Download PDF Receipt", Icons.picture_as_pdf, () {
                    final pos = Provider.of<AdminPOSProvider>(context, listen: false);
                    ReceiptService.shareReceipt(
                      orderNumber: order['_id'] ?? 'N/A',
@@ -1192,12 +1235,29 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                      total: pos.totalAmount,
                      paymentMethod: pos.paymentMethod,
                    );
+                }, color: Colors.blueAccent),
+                const SizedBox(height: 10),
+                _buildActionButton("Send Receipt (WhatsApp)", Icons.message, () {
+                   final pos = Provider.of<AdminPOSProvider>(context, listen: false);
+                   if (pos.guestPhone == null || pos.guestPhone!.isEmpty) {
+                     ToastUtils.show(context, "No guest phone number", type: ToastType.error);
+                     return;
+                   }
+                   WhatsAppService.sendTextReceipt(
+                     phone: pos.guestPhone!,
+                     order: order,
+                     branchName: pos.selectedBranch?.name ?? 'Clotheline',
+                   );
                 }, color: Colors.green),
                 const SizedBox(height: 10),
                 _buildActionButton("Send Update (WhatsApp)", Icons.chat, () {
                    final pos = Provider.of<AdminPOSProvider>(context, listen: false);
+                   if (pos.guestPhone == null || pos.guestPhone!.isEmpty) {
+                     ToastUtils.show(context, "No guest phone number", type: ToastType.error);
+                     return;
+                   }
                    WhatsAppService.sendOrderUpdate(
-                     phone: pos.guestPhone ?? '',
+                     phone: pos.guestPhone!,
                      orderNumber: order['_id'] ?? 'N/A',
                      amount: pos.totalAmount,
                      status: order['status'] ?? 'New',

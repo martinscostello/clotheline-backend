@@ -1,7 +1,7 @@
+import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import 'package:clotheline_core/clotheline_core.dart';
 
 class AdminPOSProvider extends ChangeNotifier {
@@ -25,6 +25,56 @@ class AdminPOSProvider extends ChangeNotifier {
   String? laundryNotes;
   
   bool isSaving = false;
+  
+  // Offline Sync
+  int offlineOrderCount = 0;
+  bool isSyncing = false;
+  
+  AdminPOSProvider() {
+    _loadOfflineCount();
+  }
+
+  Future<void> _loadOfflineCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> queue = prefs.getStringList('offline_orders') ?? [];
+    offlineOrderCount = queue.length;
+    notifyListeners();
+  }
+
+  Future<void> syncOfflineOrders() async {
+    if (isSyncing || offlineOrderCount == 0) return;
+    isSyncing = true;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> queue = prefs.getStringList('offline_orders') ?? [];
+      
+      final api = ApiService();
+      List<String> remainingQueue = [];
+      
+      for (String orderJson in queue) {
+        try {
+          final Map<String, dynamic> data = jsonDecode(orderJson);
+          // Only send the payload to the server
+          final response = await api.client.post('/orders', data: data);
+          if (response.statusCode != 200 && response.statusCode != 201) {
+            remainingQueue.add(orderJson); // keep if failed
+          }
+        } catch (e) {
+          remainingQueue.add(orderJson); // keep if failed
+        }
+      }
+      
+      await prefs.setStringList('offline_orders', remainingQueue);
+      offlineOrderCount = remainingQueue.length;
+    } catch (e) {
+      debugPrint("Offline Sync Error: $e");
+    } finally {
+      isSyncing = false;
+      notifyListeners();
+    }
+  }
 
   void setBranch(Branch branch) {
     selectedBranch = branch;
@@ -148,13 +198,47 @@ class AdminPOSProvider extends ChangeNotifier {
         'laundryNotes': laundryNotes,
       };
 
+      // Offline Check
+      final connectivityResult = await Connectivity().checkConnectivity();
+      bool hasConnection = false;
+      if (connectivityResult is List) {
+         hasConnection = !connectivityResult.contains(ConnectivityResult.none);
+      } else {
+         hasConnection = connectivityResult != ConnectivityResult.none;
+      }
+
+      if (!hasConnection) {
+        // Enqueue Offline
+        final prefs = await SharedPreferences.getInstance();
+        List<String> queue = prefs.getStringList('offline_orders') ?? [];
+        queue.add(jsonEncode(orderData));
+        await prefs.setStringList('offline_orders', queue);
+        offlineOrderCount = queue.length;
+        
+        isSaving = false;
+        notifyListeners();
+        
+        // Return dummy success identifying it was saved offline
+        // Generate a random ID to satisfy ui popup requirements
+        final dummyId = 'OFFLINE_${DateTime.now().millisecondsSinceEpoch}';
+        
+        return {
+          'success': true, 
+          'isOffline': true,
+          'order': {
+             '_id': dummyId,
+             ...orderData
+          }
+        };
+      }
+
       final response = await api.client.post('/orders', data: orderData);
       
       isSaving = false;
       notifyListeners();
       
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return {'success': true, 'order': response.data};
+        return {'success': true, 'isOffline': false, 'order': response.data};
       } else {
         return {'success': false, 'message': response.data['msg'] ?? 'Failed to create order'};
       }

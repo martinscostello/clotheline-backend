@@ -708,8 +708,8 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                                 onPressed: _contactCustomer,
                                 tooltip: "Message User",
                              ),
-                             IconButton(
-                                icon: const Icon(Icons.picture_as_pdf, color: Colors.green),
+                              IconButton(
+                                icon: const Icon(Icons.download, color: Colors.blueAccent),
                                 onPressed: () {
                                   if (_order!.guestPhone != null) {
                                     final branchName = Provider.of<BranchProvider>(context, listen: false)
@@ -722,7 +722,27 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                                     ToastUtils.show(context, "No phone number available", type: ToastType.error);
                                   }
                                 },
-                                tooltip: "Share Receipt (WhatsApp)",
+                                tooltip: "Download PDF Receipt",
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.message, color: Colors.green),
+                                onPressed: () {
+                                  if (_order!.guestPhone != null) {
+                                    final branchName = Provider.of<BranchProvider>(context, listen: false)
+                                        .branches
+                                        .firstWhere((b) => b.id == _order!.branchId, orElse: () => Branch(id: '', name: 'Benin', address: '', phone: '', location: BranchLocation(lat: 0, lng: 0), deliveryZones: []))
+                                        .name;
+                                    
+                                    WhatsAppService.sendTextReceipt(
+                                      phone: _order!.guestPhone!,
+                                      order: _order!,
+                                      branchName: branchName,
+                                    );
+                                  } else {
+                                    ToastUtils.show(context, "No phone number available", type: ToastType.error);
+                                  }
+                                },
+                                tooltip: "Send Receipt (WhatsApp)",
                               ),
                               IconButton(
                                 icon: const Icon(Icons.chat_outlined, color: Colors.green),
@@ -737,7 +757,7 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                                       phone: _order!.guestPhone!,
                                       orderNumber: _order!.id,
                                       amount: _order!.totalAmount,
-                                      status: _order!.status.name,
+                                      status: _currentStatus,
                                       guestName: _order!.guestName ?? _order!.userName,
                                       branchName: branchName,
                                     );
