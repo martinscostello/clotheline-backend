@@ -100,13 +100,14 @@ class _AdminManageAdminsScreenState extends State<AdminManageAdminsScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
-            IconButton(
-              icon: const Icon(Icons.add, color: AppTheme.primaryColor), 
-              onPressed: () {
-                 Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminEditAdminScreen())).then((_) => _fetchAdmins());
-              },
-              tooltip: "Add Admin",
-            ),
+            if (Provider.of<AuthService>(context).currentUser?['isMasterAdmin'] == true)
+              IconButton(
+                icon: const Icon(Icons.add, color: AppTheme.primaryColor), 
+                onPressed: () {
+                   Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminEditAdminScreen())).then((_) => _fetchAdmins());
+                },
+                tooltip: "Add Admin",
+              ),
           ],
         ),
         body: LiquidBackground(
@@ -152,13 +153,14 @@ class _AdminManageAdminsScreenState extends State<AdminManageAdminsScreen> {
                                   if (isMaster)
                                     const Text("Master Admin", style: TextStyle(color: Colors.amber, fontSize: 10, fontStyle: FontStyle.italic))
                                   else if (admin['assignedBranches'] != null && 
-                                           admin['assignedBranches'].length >= Provider.of<BranchProvider>(context, listen: false).branches.length &&
-                                           Provider.of<BranchProvider>(context, listen: false).branches.isNotEmpty)
+                                           Provider.of<BranchProvider>(context, listen: false).branches.isNotEmpty &&
+                                           admin['assignedBranches'].length == Provider.of<BranchProvider>(context, listen: false).branches.length &&
+                                           admin['assignedBranches'].length > 1)
                                     Container(
                                       margin: const EdgeInsets.only(top: 4),
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: Colors.green.withOpacity(0.2),
+                                        color: Colors.green.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(4),
                                         border: Border.all(color: Colors.green, width: 0.5)
                                       ),

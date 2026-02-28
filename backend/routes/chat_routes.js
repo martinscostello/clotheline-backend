@@ -317,7 +317,21 @@ router.get('/admin/threads', auth, async (req, res) => {
         const user = await User.findById(req.user.id);
         if (user.role !== 'admin') return res.status(403).json({ msg: 'Admins only' });
 
-        const query = { branchId, isHiddenFromAdmin: { $ne: true } };
+        const query = { isHiddenFromAdmin: { $ne: true } };
+
+        // If a specific branch is requested, filter by it.
+        if (branchId && branchId !== 'null' && branchId !== 'all') {
+            query.branchId = branchId;
+        } else if (!user.isMasterAdmin) {
+            // [SECURITY] If it's a branch admin asking for "All", they can only see their assigned branches
+            if (user.assignedBranches && user.assignedBranches.length > 0) {
+                query.branchId = { $in: user.assignedBranches };
+            } else {
+                // Fallback: if they have no branches, they see nothing
+                return res.json([]);
+            }
+        }
+
         if (status && status !== 'All') query.status = status.toLowerCase();
 
         const threads = await ChatThread.find(query)

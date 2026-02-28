@@ -347,7 +347,7 @@ exports.getAllUsers = async (req, res) => {
         // [STRICT] Only show real customers/users here. Admins are in the Config section.
         let query = { role: 'user' };
 
-        if (branchId && branchId !== 'null' && branchId !== 'undefined') {
+        if (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') {
             // [SMART FILTER] Allow fallback to city-based filtering for legacy users
             const Branch = require('../models/Branch');
             const branch = await Branch.findById(branchId);

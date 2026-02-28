@@ -669,65 +669,93 @@ class _AdminChatDetailViewState extends State<AdminChatDetailView> {
   }
 
   void _showTransferDialog(BuildContext context, ChatService chatService, String threadId) {
-    // For simplicity, we'll fetch all admins. 
-    // Usually this would be in a provider, but we'll use a simple dialog for now.
-    // In a real implementation, you'd want a list of admins from the AuthService or UserProvider.
-    
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1A1A1A),
-          title: const Text("Transfer Conversation", style: TextStyle(color: Colors.white)),
-          content: const Text("Would you like to transfer this conversation to a Master Admin for further assistance?", style: TextStyle(color: Colors.white70)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-              onPressed: () async {
-                // In this simplified version, we'll look for a master admin on the backend.
-                // The backend transfer route handles finding the target admin if we provide a specific ID,
-                // but for now let's just use a placeholder logic or prompt for an ID.
-                // Let's assume we want to transfer to 'master_admin_id' (to be replaced by real logic)
-                // For now, I'll just show a "Coming Soon" or a simple text field.
-                
-                final TextEditingController adminIdController = TextEditingController();
-                Navigator.pop(context); // Close first dialog
-                
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: const Color(0xFF1A1A1A),
-                    title: const Text("Enter Admin ID", style: TextStyle(color: Colors.white)),
-                    content: TextField(
-                      controller: adminIdController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        hintText: "Admin ID",
-                        hintStyle: TextStyle(color: Colors.white24),
-                      ),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return FutureBuilder<List<dynamic>>(
+              future: Provider.of<AuthService>(context, listen: false).fetchAdmins(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const AlertDialog(
+                    backgroundColor: Color(0xFF1A1A1A),
+                    content: SizedBox(
+                      height: 100,
+                      child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)),
                     ),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-                      ElevatedButton(
-                        onPressed: () async {
-                          if (adminIdController.text.isNotEmpty) {
-                            await chatService.transferThread(threadId, adminIdController.text.trim());
-                            if (mounted) Navigator.pop(context);
-                          }
-                        },
-                        child: const Text("Transfer"),
-                      ),
-                    ],
+                  );
+                }
+
+                final currentAdminId = Provider.of<AuthService>(context, listen: false).currentUser?['id']?.toString();
+                final currentThread = chatService.threads.firstWhere((t) => t['_id'] == threadId, orElse: () => {});
+                final String? threadBranchId = currentThread['branchId'];
+                
+                final allAdmins = snapshot.data!;
+                final masterAdmins = allAdmins.where((a) => a['isMasterAdmin'] == true && a['_id'].toString() != currentAdminId).toList();
+                
+                final branchAdmins = allAdmins.where((a) => 
+                  a['isMasterAdmin'] != true && 
+                  a['_id'].toString() != currentAdminId && 
+                  a['assignedBranches'] != null && 
+                  (a['assignedBranches'] as List).contains(threadBranchId)
+                ).toList();
+
+                return AlertDialog(
+                  backgroundColor: const Color(0xFF1A1A1A),
+                  title: const Text("Transfer Conversation", style: TextStyle(color: Colors.white)),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        if (masterAdmins.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text("Master Admins", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12)),
+                          ),
+                          ...masterAdmins.map((admin) => ListTile(
+                            leading: const CircleAvatar(backgroundColor: Colors.amber, radius: 15, child: Icon(Icons.star, size: 15, color: Colors.white)),
+                            title: Text(admin['name'] ?? 'Unknown', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                            subtitle: const Text("Master Admin", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            onTap: () async {
+                              await chatService.transferThread(threadId, admin['_id'].toString());
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                          )),
+                        ],
+                        if (branchAdmins.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
+                            child: Text("Branch Admins", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                          ),
+                          ...branchAdmins.map((admin) => ListTile(
+                            leading: CircleAvatar(backgroundColor: Colors.white10, radius: 15, child: Text(admin['name'].toString().substring(0, 1), style: const TextStyle(color: Colors.white))),
+                            title: Text(admin['name'] ?? 'Unknown', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                            onTap: () async {
+                              await chatService.transferThread(threadId, admin['_id'].toString());
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                          )),
+                        ],
+                        if (masterAdmins.isEmpty && branchAdmins.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(child: Text("No other admins available.", style: TextStyle(color: Colors.white54))),
+                          )
+                      ],
+                    ),
                   ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Cancel"),
+                    ),
+                  ],
                 );
-              },
-              child: const Text("Transfer"),
-            ),
-          ],
+              }
+            );
+          }
         );
       },
     );

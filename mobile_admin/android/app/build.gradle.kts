@@ -7,6 +7,7 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
+    id("com.google.firebase.appdistribution")
 }
 
 val keystoreProperties = Properties()
@@ -64,6 +65,11 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             ndk {
                 debugSymbolLevel = "FULL" // Restored: Best for Play Console
+            }
+            firebaseAppDistribution {
+                appId = "1:641268154673:android:3cb2f1b4ba7f7a1828f010"
+                artifactType = "AAB"
+                testersFile = "../../testers.txt"
             }
         }
     }

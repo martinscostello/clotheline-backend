@@ -4,6 +4,12 @@ const bcrypt = require('bcryptjs');
 // Create a new Admin
 exports.createAdmin = async (req, res) => {
     try {
+        // [SECURITY] Check that the caller is a Master Admin
+        const caller = await User.findById(req.user.id);
+        if (!caller || caller.role !== 'admin' || !caller.isMasterAdmin) {
+            return res.status(403).json({ msg: 'Forbidden: Only Master Admins can create new administrators.' });
+        }
+
         const { name, email, password, phone, permissions, isMasterAdmin, avatarId } = req.body;
 
         let user = await User.findOne({ email });
