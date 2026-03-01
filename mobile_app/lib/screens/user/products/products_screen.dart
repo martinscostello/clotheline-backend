@@ -113,8 +113,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     // 1. Sales Banner (Bigger)
                     Builder(
                       builder: (context) {
-                        final ads = _appContent?.productAds.where((a) => a.active).toList() ?? [];
-                        if (ads.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                        final ads = _appContent?.productAds ?? [];
+                        if (ads.isEmpty || !ads[0].active || ads[0].imageUrl.isEmpty) {
+                           return const SliverToBoxAdapter(child: SizedBox.shrink());
+                        }
                         
                         return SliverToBoxAdapter(
                           child: Padding(
@@ -122,7 +124,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             child: AspectRatio(
                               aspectRatio: 16/9,
                               child: CustomCachedImage(
-                                imageUrl: ads.first.imageUrl,
+                                imageUrl: ads[0].imageUrl,
                                 fit: BoxFit.cover,
                                 borderRadius: 0,
                               ),
@@ -140,8 +142,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     // 3. Trust/Guarantee Banner
                     Builder(
                       builder: (context) {
-                        final ads = _appContent?.productAds.where((a) => a.active).toList() ?? [];
-                        if (ads.length < 2) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                        final ads = _appContent?.productAds ?? [];
+                        if (ads.length < 2 || !ads[1].active || ads[1].imageUrl.isEmpty) {
+                           return const SliverToBoxAdapter(child: SizedBox.shrink());
+                        }
 
                         return SliverToBoxAdapter(
                           child: Container(

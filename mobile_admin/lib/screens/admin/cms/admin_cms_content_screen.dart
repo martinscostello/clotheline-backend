@@ -82,10 +82,24 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
   String _deliveryIcon = "van"; // [NEW]
   bool _deliveryActive = true; // [NEW]
 
+  bool _isInit = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isInit) {
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      if (branchProvider.isLockedToSingleBranch && branchProvider.assignedBranches.isNotEmpty) {
+        _selectedBranchId = branchProvider.assignedBranches.first;
+      }
+      _fetchContent();
+      _isInit = false;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _fetchContent();
     if (widget.isEmbedded && widget.saveTrigger != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) widget.saveTrigger!.value = _saveContent;
@@ -179,12 +193,14 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
        }
     }
     
-    final cleanCarousel = _content!.heroCarousel.where((i) => i.imageUrl.isNotEmpty).toList();
-    final cleanAds = _content!.productAds.where((i) => i.imageUrl.isNotEmpty).toList();
+    // [FIX] DO NOT strip empty items! Stripping empty items collapses the array 
+    // and shifts images into the wrong placeholders (e.g. Bottom Banner becomes Top Banner).
+    final List<HeroCarouselItem> fullCarousel = _content!.heroCarousel;
+    final List<ProductAd> fullAds = _content!.productAds;
 
     final updateData = {
-      'heroCarousel': cleanCarousel.map((e) => e.toJson()).toList(),
-      'productAds': cleanAds.map((e) => e.toJson()).toList(),
+      'heroCarousel': fullCarousel.map((e) => e.toJson()).toList(),
+      'productAds': fullAds.map((e) => e.toJson()).toList(),
       'brandText': _content!.brandText,
       'contactAddress': _content!.contactAddress,
       'contactPhone': _content!.contactPhone,
@@ -203,8 +219,8 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
       // Save as branch override (Hero Carousel and Product Ads only)
       success = await _contentService.updateBranchContentOverride(
         _selectedBranchId!,
-        heroCarousel: cleanCarousel.map((e) => e.toJson()).toList(),
-        productAds: cleanAds.map((e) => e.toJson()).toList(),
+        heroCarousel: fullCarousel.map((e) => e.toJson()).toList(),
+        productAds: fullAds.map((e) => e.toJson()).toList(),
       );
     } else {
       // Save as global content
@@ -444,6 +460,24 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
   Widget _buildBranchSelector() {
     final branchProvider = Provider.of<BranchProvider>(context);
     final branches = branchProvider.branches;
+
+    // [SECURITY FIX] Lock Branch Admins
+    if (branchProvider.isLockedToSingleBranch) {
+      final myBranch = branches.firstWhere((b) => b.id == _selectedBranchId, orElse: () => branches.first);
+      return GlassContainer(
+        opacity: 0.1,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            const Icon(Icons.account_tree, color: AppTheme.secondaryColor, size: 20),
+            const SizedBox(width: 12),
+            const Text("Editing Mode:", style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const SizedBox(width: 12),
+            Text("Branch: ${myBranch.name} (Locked)", style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      );
+    }
 
     return GlassContainer(
       opacity: 0.1,

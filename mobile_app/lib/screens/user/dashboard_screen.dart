@@ -218,7 +218,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
 
   List<HeroCarouselItem> _getItems() {
     if (_appContent != null && _appContent!.heroCarousel.isNotEmpty) {
-      return _appContent!.heroCarousel;
+      return _appContent!.heroCarousel.where((i) => i.imageUrl.isNotEmpty).toList();
     }
     return [];
   }
