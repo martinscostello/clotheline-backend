@@ -89,8 +89,8 @@ class _AdminCMSContentBodyState extends State<AdminCMSContentBody> {
     super.didChangeDependencies();
     if (_isInit) {
       final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-      if (branchProvider.isLockedToSingleBranch && branchProvider.assignedBranches.isNotEmpty) {
-        _selectedBranchId = branchProvider.assignedBranches.first;
+      if (branchProvider.isLockedToSingleBranch && branchProvider.branches.isNotEmpty) {
+        _selectedBranchId = branchProvider.branches.first.id;
       }
       _fetchContent();
       _isInit = false;
