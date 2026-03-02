@@ -237,4 +237,20 @@ class OrderService extends ChangeNotifier {
       return false;
     }
   }
+
+  // [NEW] Delete Order (Master Admin Only)
+  Future<bool> deleteOrder(String id) async {
+    try {
+      final response = await _apiService.client.delete('/orders/$id');
+      if (response.statusCode == 200) {
+        _orders.removeWhere((o) => o.id == id);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error deleting order: $e");
+      return false;
+    }
+  }
 }

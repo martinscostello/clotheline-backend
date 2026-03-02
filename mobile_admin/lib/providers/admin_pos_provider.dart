@@ -30,8 +30,27 @@ class AdminPOSProvider extends ChangeNotifier {
   int offlineOrderCount = 0;
   bool isSyncing = false;
   
+  // Tax
+  bool _taxEnabled = true;
+  double _taxRate = 7.5;
+  
   AdminPOSProvider() {
     _loadOfflineCount();
+    _fetchSettings();
+  }
+
+  Future<void> _fetchSettings() async {
+    try {
+      final api = ApiService();
+      final response = await api.client.get('/settings');
+      if (response.statusCode == 200 && response.data != null) {
+        _taxEnabled = response.data['taxEnabled'] ?? true;
+        _taxRate = (response.data['taxRate'] ?? 7.5).toDouble();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Error fetching POS settings: $e");
+    }
   }
 
   Future<void> _loadOfflineCount() async {
@@ -128,7 +147,8 @@ class AdminPOSProvider extends ChangeNotifier {
   double get subtotal => laundryItems.fold(0.0, (sum, i) => sum + i.checkoutPrice) + 
                          storeItems.fold(0.0, (sum, i) => sum + i.totalPrice);
   
-  double get totalAmount => subtotal + deliveryFee;
+  double get taxAmount => _taxEnabled ? (subtotal * (_taxRate / 100)) : 0.0;
+  double get totalAmount => subtotal + deliveryFee + taxAmount;
 
   void reset() {
     guestName = null;
@@ -188,6 +208,8 @@ class AdminPOSProvider extends ChangeNotifier {
         'items': itemsData,
         'subtotal': subtotal,
         'deliveryFee': deliveryFee,
+        'taxAmount': taxAmount, // [NEW] Pass tracked tax
+        'taxRate': _taxEnabled ? _taxRate : 0, 
         'totalAmount': totalAmount,
         'paymentMethod': paymentMethod,
         'paymentStatus': paymentMethod == 'pay_on_delivery' ? 'Pending' : 'Paid',

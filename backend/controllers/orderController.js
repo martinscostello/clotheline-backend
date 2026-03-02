@@ -947,3 +947,31 @@ exports.markOrderAsPaid = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+exports.deleteOrder = async (req, res) => {
+    try {
+        // [SECURE] Master Admin Only enforced here (as a failsafe, despite middleware)
+        if (!req.adminUser || !req.adminUser.isMasterAdmin) {
+            return res.status(403).json({ msg: 'Access Denied: Master Admins Only' });
+        }
+
+        const Order = require('../models/Order');
+        const Payment = require('../models/Payment');
+
+        const orderId = req.params.id;
+        const order = await Order.findById(orderId);
+        if (!order) return res.status(404).json({ msg: 'Order not found' });
+
+        // 1. Delete associated payments (financial records)
+        await Payment.deleteMany({ order: orderId });
+
+        // 2. Delete the order itself
+        await Order.findByIdAndDelete(orderId);
+
+        console.log(`[OrderDelete] Master Admin ${req.adminUser._id} securely deleted order ${orderId} and its financial records.`);
+        res.json({ msg: 'Order and associated financial records deleted successfully' });
+    } catch (err) {
+        console.error("Delete Order Error:", err);
+        res.status(500).send('Server Error');
+    }
+};

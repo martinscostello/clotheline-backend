@@ -25,6 +25,8 @@ class AdminOrderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isMasterAdmin = Provider.of<AuthProvider>(context, listen: true).user?.isMasterAdmin ?? false;
+
     return Theme(
       data: AppTheme.darkTheme,
       child: Scaffold(
@@ -33,6 +35,50 @@ class AdminOrderDetailScreen extends StatelessWidget {
           title: Text(order != null ? "Order #${order!.id.substring(order!.id.length - 6).toUpperCase()}" : "Order Details", style: const TextStyle(color: Colors.white)),
           backgroundColor: Colors.transparent,
           leading: const BackButton(color: Colors.white),
+          actions: [
+            if (isMasterAdmin)
+              IconButton(
+                icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                tooltip: "Delete Order Permanently",
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: const Color(0xFF1E1E2C),
+                      title: const Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                          SizedBox(width: 8),
+                          Text("Delete Data?", style: TextStyle(color: Colors.redAccent)),
+                        ],
+                      ),
+                      content: const Text("This action is permanent and will completely erase this order and its financial records.", style: TextStyle(color: Colors.white70)),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL", style: TextStyle(color: Colors.white54))),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true), 
+                          child: const Text("DELETE", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold))
+                        ),
+                      ],
+                    )
+                  );
+                  if (confirm == true && context.mounted) {
+                    final targetId = order?.id ?? orderId;
+                    if (targetId != null) {
+                       final success = await Provider.of<OrderService>(context, listen: false).deleteOrder(targetId);
+                       if (success) {
+                         if (context.mounted) {
+                           ToastUtils.show(context, "Order Deleted Permanently", type: ToastType.success);
+                           Navigator.pop(context); // Go back to Orders List
+                         }
+                       } else {
+                         if (context.mounted) ToastUtils.show(context, "Failed to delete order", type: ToastType.error);
+                       }
+                    }
+                  }
+                },
+              ),
+          ],
         ),
         body: LiquidBackground(
           child: AdminOrderDetailBody(order: order, orderId: orderId),

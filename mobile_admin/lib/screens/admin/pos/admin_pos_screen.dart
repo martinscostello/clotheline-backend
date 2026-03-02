@@ -961,6 +961,10 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                     _buildSummaryRow("Subtotal", CurrencyFormatter.format(pos.subtotal)),
                     const SizedBox(height: 10),
                     _buildSummaryRow("Delivery Fee", CurrencyFormatter.format(pos.deliveryFee)),
+                    if (pos.taxAmount > 0) ...[
+                      const SizedBox(height: 10),
+                      _buildSummaryRow("VAT", CurrencyFormatter.format(pos.taxAmount)),
+                    ],
                     const Divider(color: Colors.white10),
                     _buildSummaryRow("Total Amount", CurrencyFormatter.format(pos.totalAmount), isBold: true),
                   ],

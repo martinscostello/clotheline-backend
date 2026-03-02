@@ -20,5 +20,6 @@ router.put('/:id/adjust-pricing', auth, admin, orderController.adjustOrderPricin
 router.put('/:id/mark-as-paid', auth, admin, orderController.markOrderAsPaid);
 router.put('/:id/convert-to-deployment', auth, admin, orderController.convertOrderToDeployment);
 router.post('/:id/trigger-payment', auth, admin, orderController.triggerPaymentNotification);
+router.delete('/:id', auth, admin, orderController.deleteOrder); // Admin middleware attaches req.adminUser
 
 module.exports = router;
