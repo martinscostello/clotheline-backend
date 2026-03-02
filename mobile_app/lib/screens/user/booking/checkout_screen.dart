@@ -755,17 +755,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             ),
             const SizedBox(height: 6),
             
-            // Itemized Discounts (Estimate based)
-            ...modeDiscounts.entries.map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: 6.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 12)),
-                  Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
-                ],
+            // Unified Discount (Estimate based)
+            if (modeDiscount > 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Discount", style: TextStyle(color: Colors.green, fontSize: 12)),
+                    Text(CurrencyFormatter.format(-modeDiscount), style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                  ],
+                ),
               ),
-            )),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -858,17 +859,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
             ),
             const SizedBox(height: 5),
 
-            // Itemized Discounts
-            ...modeDiscounts.entries.map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: 5.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 13)),
-                  Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                ],
+            // Unified Discount
+            if (modeDiscount > 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 5.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Discount", style: const TextStyle(color: Colors.green, fontSize: 13)),
+                    Text(CurrencyFormatter.format(-modeDiscount), style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
-            )),
 
              // VAT Row
             Row(

@@ -145,17 +145,12 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
               children: [
                  _buildRow("Subtotal", subtotal, textColor),
                  const SizedBox(height: 5),
-                 // [NEW] Itemized Laundry Discounts
-                 ...cart.serviceDiscounts.entries.map((e) => Padding(
-                   padding: const EdgeInsets.only(bottom: 5.0),
-                   child: Row(
-                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                     children: [
-                       Text(e.key, style: const TextStyle(color: Colors.green, fontSize: 13)),
-                       Text("-${CurrencyFormatter.format(e.value)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                     ],
+                 // Unified Discount Row
+                 if (cart.discount > 0)
+                   Padding(
+                     padding: const EdgeInsets.only(bottom: 5.0),
+                     child: _buildRow("Discount", -cart.discount, Colors.green),
                    ),
-                 )).toList(),
                  _buildRow("VAT (${cart.taxRate}%)", tax, textColor),
                  Divider(color: isDark ? Colors.white24 : Colors.black12, height: 20),
                  Row(
