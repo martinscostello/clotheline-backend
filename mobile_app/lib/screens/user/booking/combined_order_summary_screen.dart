@@ -146,10 +146,10 @@ class _CombinedOrderSummaryScreenState extends State<CombinedOrderSummaryScreen>
                  _buildRow("Subtotal", subtotal, textColor),
                  const SizedBox(height: 5),
                  // Unified Discount Row
-                 if (cart.discount > 0)
+                 if (cart.discountAmount > 0)
                    Padding(
                      padding: const EdgeInsets.only(bottom: 5.0),
-                     child: _buildRow("Discount", -cart.discount, Colors.green),
+                     child: _buildRow("Discount", -cart.discountAmount, Colors.green),
                    ),
                  _buildRow("VAT (${cart.taxRate}%)", tax, textColor),
                  Divider(color: isDark ? Colors.white24 : Colors.black12, height: 20),
