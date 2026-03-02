@@ -25,7 +25,7 @@ class AdminOrderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMasterAdmin = Provider.of<AuthProvider>(context, listen: true).user?.isMasterAdmin ?? false;
+    final bool isMasterAdmin = Provider.of<AuthService>(context, listen: true).currentUser?['isMasterAdmin'] == true;
 
     return Theme(
       data: AppTheme.darkTheme,
@@ -998,7 +998,65 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                    ],
                 ],
               ),
+              ),
               
+              if (Provider.of<AuthService>(context, listen: false).currentUser?['isMasterAdmin'] == true) ...[
+                const SizedBox(height: 30),
+                const Divider(color: Colors.redAccent, thickness: 0.5),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.withValues(alpha: 0.1),
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent),
+                    ),
+                    icon: const Icon(Icons.delete_forever),
+                    label: const Text("DELETE ORDER PERMANENTLY", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: const Color(0xFF1E1E2C),
+                          title: const Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+                              SizedBox(width: 8),
+                              Text("Delete Data?", style: TextStyle(color: Colors.redAccent)),
+                            ],
+                          ),
+                          content: const Text("This action is permanent and will completely erase this order and its financial records.", style: TextStyle(color: Colors.white70)),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL", style: TextStyle(color: Colors.white54))),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true), 
+                              child: const Text("DELETE", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold))
+                            ),
+                          ],
+                        )
+                      );
+                      
+                      if (confirm == true && context.mounted) {
+                        final targetId = _order?.id ?? widget.orderId;
+                        if (targetId != null) {
+                           final success = await Provider.of<OrderService>(context, listen: false).deleteOrder(targetId);
+                           if (success) {
+                             if (context.mounted) {
+                               ToastUtils.show(context, "Order Deleted Permanently", type: ToastType.success);
+                               Navigator.pop(context); // Go back to Orders List
+                             }
+                           } else {
+                             if (context.mounted) ToastUtils.show(context, "Failed to delete order", type: ToastType.error);
+                           }
+                        }
+                      }
+                    },
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 50),
             ],
           ),
