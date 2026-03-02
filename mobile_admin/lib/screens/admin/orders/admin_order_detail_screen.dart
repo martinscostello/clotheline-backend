@@ -998,7 +998,6 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                    ],
                 ],
               ),
-              ),
               
               if (Provider.of<AuthService>(context, listen: false).currentUser?['isMasterAdmin'] == true) ...[
                 const SizedBox(height: 30),
