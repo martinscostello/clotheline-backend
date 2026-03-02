@@ -86,6 +86,17 @@ class AuthService extends ChangeNotifier {
       }
 
       final role = await _storage.read(key: 'user_role');
+      
+      // [SECURITY] Enforce App-Specific Role Access on Offline Load
+      if (appType == 'admin' && role != 'admin') {
+         await logout();
+         return false;
+      }
+      if (appType == 'customer' && role == 'admin') {
+         await logout();
+         return false;
+      }
+
       final id = await _storage.read(key: 'user_id');
       final isMasterStr = await _storage.read(key: 'is_master_admin');
       final permissionsStr = await _storage.read(key: 'user_permissions');
@@ -146,6 +157,17 @@ class AuthService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final user = response.data['user'];
+        
+        // [SECURITY] Enforce App-Specific Role Access on Session Resume
+        if (appType == 'admin' && user['role'] != 'admin') {
+          await logout();
+          return false;
+        }
+        if (appType == 'customer' && user['role'] == 'admin') {
+          await logout();
+          return false;
+        }
+
         // Update local storage with fresh data
         await _storage.write(key: 'user_role', value: user['role']?.toString() ?? 'user');
         await _storage.write(key: 'user_id', value: user['id']?.toString() ?? '');
@@ -349,6 +371,14 @@ class AuthService extends ChangeNotifier {
   Future<Map<String, dynamic>> _processAuthResponse(Map<String, dynamic> data) async {
     final token = data['token'];
     final user = data['user'];
+
+    // [SECURITY] Enforce App-Specific Role Access
+    if (appType == 'admin' && user['role'] != 'admin') {
+      throw Exception("Unauthorized: This application is for Administrators only.");
+    }
+    if (appType == 'customer' && user['role'] == 'admin') {
+      throw Exception("Unauthorized: Administrators must use the official Clotheline Admin application.");
+    }
 
     // Store Token securely
     await _storage.write(key: 'auth_token', value: token);

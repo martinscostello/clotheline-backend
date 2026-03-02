@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:641268154673:android:40523c636284412f28f010",
+        "android_client_info": {
+          "package_name": "com.brimarcglobal.clotheline.admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhae6n29XabIT2d6AJeBoxKQz5VkMqE8U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:641268154673:android:3cb2f1b4ba7f7a1828f010",
         "android_client_info": {
           "package_name": "com.brimarcglobal.clotheline.secure"

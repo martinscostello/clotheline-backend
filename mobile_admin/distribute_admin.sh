@@ -5,7 +5,7 @@ set -e
 
 # Configuration
 TESTERS_FILE="testers.txt"
-ANDROID_APP_ID="1:641268154673:android:3cb2f1b4ba7f7a1828f010"
+ANDROID_APP_ID="1:641268154673:android:40523c636284412f28f010"
 IOS_APP_ID="1:641268154673:ios:b9e3504f1680dd2628f010"
 
 # Colors for output
