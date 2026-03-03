@@ -4,16 +4,7 @@ import '../../../providers/admin_pos_provider.dart';
 import 'package:clotheline_core/clotheline_core.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
 import '../../../widgets/glass/GlassContainer.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import '../../../widgets/custom_cached_image.dart'; // [NEW]
-import 'package:clotheline_core/clotheline_core.dart'; // [NEW]
+import '../../../widgets/custom_cached_image.dart';
 
 class AdminPOSScreen extends StatefulWidget {
   final String? fulfillmentMode; // [NEW] logistics | deployment | bulky
@@ -401,57 +392,107 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
       builder: (context, laundrySvc, _) {
         if (laundrySvc.services.isEmpty) return const Center(child: CircularProgressIndicator());
         
-        List<ServiceModel> filteredServices = laundrySvc.services;
+        List<ServiceModel> allServices = laundrySvc.services;
         
-        // POS Internal Isolation
+        // 1. Initial Mode Filtering
         if (_orderType == 'deployment') {
-           filteredServices = filteredServices.where((s) => s.fulfillmentMode == 'deployment').toList();
+           allServices = allServices.where((s) => s.fulfillmentMode == 'deployment').toList();
         } else if (_orderType == 'Laundry') {
-           filteredServices = filteredServices.where((s) => s.fulfillmentMode == 'logistics' || s.fulfillmentMode == 'bulky').toList();
+           allServices = allServices.where((s) => s.fulfillmentMode == 'logistics' || s.fulfillmentMode == 'bulky').toList();
         }
 
         if (widget.fulfillmentMode != null) {
           if (widget.fulfillmentMode == 'logistics') {
-            filteredServices = filteredServices.where((s) => s.fulfillmentMode == 'logistics' || s.fulfillmentMode == 'bulky').toList();
+            allServices = allServices.where((s) => s.fulfillmentMode == 'logistics' || s.fulfillmentMode == 'bulky').toList();
           } else {
-            filteredServices = filteredServices.where((s) => s.fulfillmentMode == widget.fulfillmentMode).toList();
+            allServices = allServices.where((s) => s.fulfillmentMode == widget.fulfillmentMode).toList();
           }
         }
 
-        if (filteredServices.isEmpty) {
-          return const Center(child: Text("No services found for this mode", style: TextStyle(color: Colors.white38)));
-        }
+        // 2. Search Filtering (Service Name OR Item Name)
+        final filteredServices = allServices.where((service) {
+          if (_searchQuery.isEmpty) return true;
+          final query = _searchQuery.toLowerCase();
+          final nameMatch = service.name.toLowerCase().contains(query);
+          final itemsMatch = service.items.any((item) => item.name.toLowerCase().contains(query));
+          return nameMatch || itemsMatch;
+        }).toList();
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(20),
-          itemCount: filteredServices.length,
-          itemBuilder: (context, index) {
-            final service = filteredServices[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 15),
-              child: GlassContainer(
-                opacity: 0.1,
-                padding: EdgeInsets.zero,
-                child: ExpansionTile(
-                  collapsedIconColor: Colors.white54,
-                  iconColor: AppTheme.secondaryColor,
-                  title: Text(service.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  children: service.items.map((item) {
-                    return ListTile(
-                      dense: true,
-                      leading: CustomCachedImage(imageUrl: service.image, width: 24, height: 24, borderRadius: 4),
-                      title: Text(item.name, style: const TextStyle(color: Colors.white70)),
-                      subtitle: Text("Base: ${CurrencyFormatter.format(item.price)}", style: const TextStyle(color: Colors.white24, fontSize: 10)),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.add_circle_outline, color: AppTheme.secondaryColor, size: 20),
-                        onPressed: () => _showLaundryTypePicker(context, service, item),
-                      ),
-                    );
-                  }).toList(),
+        return Column(
+          children: [
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: "Search items (e.g. Shoes, Shirt)...",
+                  hintStyle: const TextStyle(color: Colors.white24),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                  suffixIcon: _searchQuery.isNotEmpty 
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white54),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = "");
+                        },
+                      )
+                    : null,
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 ),
+                onChanged: (val) => setState(() => _searchQuery = val),
               ),
-            );
-          },
+            ),
+
+            Expanded(
+              child: filteredServices.isEmpty
+                ? const Center(child: Text("No matching services found", style: TextStyle(color: Colors.white38)))
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    itemCount: filteredServices.length,
+                    itemBuilder: (context, index) {
+                      final service = filteredServices[index];
+                      
+                      // Filter items within the service if search is active
+                      final filteredItems = service.items.where((item) {
+                        if (_searchQuery.isEmpty) return true;
+                        final query = _searchQuery.toLowerCase();
+                        return item.name.toLowerCase().contains(query) || service.name.toLowerCase().contains(query);
+                      }).toList();
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 15),
+                        child: GlassContainer(
+                          opacity: 0.1,
+                          padding: EdgeInsets.zero,
+                          child: ExpansionTile(
+                            initiallyExpanded: _searchQuery.isNotEmpty,
+                            collapsedIconColor: Colors.white54,
+                            iconColor: AppTheme.secondaryColor,
+                            title: Text(service.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            children: filteredItems.map((item) {
+                              return ListTile(
+                                dense: true,
+                                leading: CustomCachedImage(imageUrl: service.image, width: 24, height: 24, borderRadius: 4),
+                                title: Text(item.name, style: const TextStyle(color: Colors.white70)),
+                                subtitle: Text("Base: ${CurrencyFormatter.format(item.price)}", style: const TextStyle(color: Colors.white24, fontSize: 10)),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.add_circle_outline, color: AppTheme.secondaryColor, size: 20),
+                                  onPressed: () => _showLaundryTypePicker(context, service, item),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+            ),
+          ],
         );
       },
     );
