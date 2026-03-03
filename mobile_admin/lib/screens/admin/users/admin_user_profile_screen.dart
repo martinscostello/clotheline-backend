@@ -28,7 +28,10 @@ class AdminUserProfileScreen extends StatelessWidget {
           leading: const BackButton(color: Colors.white),
         ),
         body: LiquidBackground(
-          child: AdminUserProfileBody(user: user),
+          child: AdminUserProfileBody(
+            user: user,
+            onDeleted: () => Navigator.pop(context),
+          ),
         ),
       ),
     );
@@ -38,8 +41,14 @@ class AdminUserProfileScreen extends StatelessWidget {
 class AdminUserProfileBody extends StatefulWidget {
   final Map<String, dynamic> user;
   final bool isEmbedded;
+  final VoidCallback? onDeleted;
 
-  const AdminUserProfileBody({super.key, required this.user, this.isEmbedded = false});
+  const AdminUserProfileBody({
+    super.key, 
+    required this.user, 
+    this.isEmbedded = false,
+    this.onDeleted,
+  });
 
   @override
   State<AdminUserProfileBody> createState() => _AdminUserProfileBodyState();
@@ -88,7 +97,11 @@ class _AdminUserProfileBodyState extends State<AdminUserProfileBody> {
                if (context.mounted) {
                  if (success) {
                    ToastUtils.show(context, "User deleted successfully", type: ToastType.success);
-                   Navigator.pop(context); // Go back to list
+                   if (widget.onDeleted != null) {
+                     widget.onDeleted!();
+                   } else if (!widget.isEmbedded) {
+                     Navigator.pop(context); // Go back to list
+                   }
                  } else {
                    ToastUtils.show(context, "Delete failed. User may have existing dependencies.", type: ToastType.error);
                  }

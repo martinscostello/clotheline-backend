@@ -276,7 +276,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                               ? const Center(child: Text("Select a user to view profile", style: TextStyle(color: Colors.white24)))
                               : KeyedSubtree(
                                   key: ValueKey(_selectedUser!['_id']),
-                                  child: AdminUserProfileBody(user: _selectedUser!, isEmbedded: true),
+                                  child: AdminUserProfileBody(
+                                    user: _selectedUser!, 
+                                    isEmbedded: true,
+                                    onDeleted: () {
+                                      setState(() => _selectedUser = null);
+                                      _fetchUsers();
+                                    },
+                                  ),
                                 ),
                         ),
                       ],
