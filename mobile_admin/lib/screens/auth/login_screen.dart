@@ -19,7 +19,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = AuthService();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
@@ -31,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final user = await _authService.login(
+      final user = await context.read<AuthService>().login(
         _emailController.text.trim(), 
         _passwordController.text.trim()
       );
@@ -145,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                      ),
                      const SizedBox(height: 24),
                      Text(
-                       "Welcome to Clotheline",
+                       "Clotheline Admin",
                        style: TextStyle(
                          fontSize: 28,
                          fontWeight: FontWeight.bold,
@@ -155,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                      ),
                      const SizedBox(height: 8),
                      Text(
-                       "Sign in to manage your laundry",
+                       "Sign in to the Admin Portal",
                        style: TextStyle(
                          fontSize: 16,
                          color: isDark ? Colors.white70 : const Color(0xFF64748B),
@@ -216,19 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
                      ),
                      const SizedBox(height: 24),
                      
-                     // New here?
-                     Row(
-                       mainAxisAlignment: MainAxisAlignment.center,
-                       children: [
-                         Text("New to Clotheline? ", style: TextStyle(color: isDark ? Colors.white60 : Colors.black54)),
-                         GestureDetector(
-                           onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen()));
-                           },
-                           child: const Text("Create Account", style: TextStyle(color: Color(0xFF4A80F0), fontWeight: FontWeight.bold)),
-                         )
-                       ],
-                     ),
+                     // New here - Removed for admin app
                      
                      if (!widget.hideGuestOption) ...[
                        const SizedBox(height: 16),
