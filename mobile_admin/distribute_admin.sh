@@ -59,7 +59,7 @@ deploy_ios() {
     flutter build ipa --release
     
     echo_info "Distributing iOS IPA to Firebase..."
-    firebase appdistribution:distribute build/ios/ipa/*.ita \
+    firebase appdistribution:distribute build/ios/ipa/*.ipa \
         --app "$IOS_APP_ID" \
         --testers-file "$TESTERS_FILE" \
         --release-notes "$RELEASE_NOTES"
