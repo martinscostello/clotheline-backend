@@ -545,6 +545,76 @@ exports.updateOrderException = async (req, res) => {
     }
 };
 
+// --- Walk-In Users Extraction ---
+exports.getWalkInUsers = async (req, res) => {
+    try {
+        let filter = { isWalkIn: true, guestInfo: { $exists: true, $ne: null } };
+
+        // [SECURE] Branch RBAC Enforcement
+        if (req.adminUser && !req.adminUser.isMasterAdmin) {
+            if (req.adminUser.assignedBranches && req.adminUser.assignedBranches.length > 0) {
+                // Determine filtering approach
+                const qBranch = req.query.branchId;
+                if (qBranch && qBranch !== 'all' && qBranch !== 'null') {
+                    if (!req.adminUser.assignedBranches.includes(qBranch)) {
+                        return res.status(403).json({ msg: 'Not authorized for this branch' });
+                    }
+                    filter.branchId = qBranch;
+                } else {
+                    filter.branchId = { $in: req.adminUser.assignedBranches };
+                }
+            } else {
+                return res.json([]);
+            }
+        } else if (req.query.branchId && req.query.branchId !== 'all' && req.query.branchId !== 'null') {
+            filter.branchId = req.query.branchId;
+        }
+
+        // Aggregate orders to extract unique Walk-In Users by phone number
+        const walkInUsers = await Order.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: "$guestInfo.phone", // Group by phone as unique identifier
+                    name: { $last: "$guestInfo.name" },
+                    phone: { $last: "$guestInfo.phone" },
+                    email: { $last: "$guestInfo.email" },
+                    branchId: { $last: "$branchId" },
+                    lastOrderDate: { $max: "$createdAt" },
+                    totalOrders: { $sum: 1 }
+                }
+            },
+            // Lookup branch details
+            {
+                $lookup: {
+                    from: "branches",
+                    localField: "branchId",
+                    foreignField: "_id",
+                    as: "branchData"
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    name: 1,
+                    phone: { $ifNull: ["$phone", "$_id"] },
+                    email: 1,
+                    branchId: 1,
+                    branchName: { $arrayElemAt: ["$branchData.name", 0] },
+                    lastOrderDate: 1,
+                    totalOrders: 1
+                }
+            },
+            { $sort: { lastOrderDate: -1 } }
+        ]);
+
+        res.json(walkInUsers);
+    } catch (err) {
+        console.error("getWalkInUsers Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
 exports.batchUpdateOrderStatus = async (req, res) => {
     try {
         const { orderIds, status } = req.body;

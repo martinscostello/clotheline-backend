@@ -10,6 +10,7 @@ router.post('/batch-status', auth, admin, orderController.batchUpdateOrderStatus
 router.get('/me', auth, orderController.getUserOrders); // GET user specific orders
 router.get('/', auth, admin, orderController.getAllOrders); // Secure list
 router.get('/user/:userId', auth, orderController.getOrdersByUserId);
+router.get('/admin/walk-in-users', auth, admin, orderController.getWalkInUsers);
 router.get('/:id', auth, orderController.getOrderById);
 router.put('/:id/status', auth, admin, orderController.updateOrderStatus);
 router.put('/:id/exception', auth, admin, orderController.updateOrderException);

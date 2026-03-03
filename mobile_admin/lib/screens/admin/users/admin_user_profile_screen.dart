@@ -143,10 +143,17 @@ class _AdminUserProfileBodyState extends State<AdminUserProfileBody> {
                               onPressed: () async {
                                 final chatService = Provider.of<ChatService>(context, listen: false);
                                 final userId = user['_id'];
-                                final branchId = user['branchId'] ?? "default"; 
+                                
+                                // [BUG FIX] Use preferredBranch, not branchId. 
+                                // If null, we cannot initiate a branch-specific chat.
+                                final branchId = user['preferredBranch']; 
+                                if (branchId == null || branchId.toString().isEmpty) {
+                                   ToastUtils.show(context, "Cannot initiate chat: User has no preferred branch assigned.", type: ToastType.warning);
+                                   return;
+                                }
 
                                 ToastUtils.show(context, "Locating chat...", type: ToastType.info);
-                                final threadId = await chatService.getAdminThreadForUser(userId, branchId);
+                                final threadId = await chatService.getAdminThreadForUser(userId, branchId.toString());
 
                                 if (!context.mounted) return;
 

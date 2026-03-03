@@ -321,10 +321,10 @@ exports.verifyToken = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
     try {
-        // [STRICT] Only Master Admin can delete other users
+        // [STRICT] Master Admin OR Admin with manageUsers permission can delete users
         const requester = await User.findById(req.user.id);
-        if (!requester || !requester.isMasterAdmin) {
-            return res.status(403).json({ msg: 'Action restricted to Master Admin only' });
+        if (!requester || (!requester.isMasterAdmin && (!requester.permissions || !requester.permissions.manageUsers))) {
+            return res.status(403).json({ msg: 'Action restricted to Master Admin or Admins with User Management permissions' });
         }
 
         const user = await User.findById(req.params.userId);

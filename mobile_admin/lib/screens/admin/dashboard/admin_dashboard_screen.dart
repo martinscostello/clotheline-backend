@@ -19,6 +19,7 @@ import '../reports/admin_financial_reports_screen.dart';
 import '../orders/admin_orders_screen.dart'; 
 import '../pos/admin_pos_screen.dart';
 import '../chat/admin_chat_screen.dart';
+import '../users/admin_walkin_users_screen.dart'; // [NEW]
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -69,7 +70,7 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
   final List<Map<String, dynamic>> _defaultActions = [
     {'id': 'pos', 'label': 'POS', 'icon': Icons.point_of_sale, 'color': Colors.greenAccent},
     {'id': 'orders', 'label': 'Orders', 'icon': Icons.list_alt, 'color': Colors.blueAccent},
-    {'id': 'chat', 'label': 'Chat', 'icon': Icons.chat_bubble_outline, 'color': Colors.purpleAccent},
+    {'id': 'walkin', 'label': 'Walk-In Users', 'icon': Icons.directions_walk, 'color': Colors.orangeAccent},
     {'id': 'reports', 'label': 'Reports', 'icon': Icons.bar_chart, 'color': Colors.tealAccent},
   ];
 
@@ -601,8 +602,8 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
               ));
             }
             break;
-          case 'chat':
-            if (_hasPermission("Reports")) Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminChatScreen()));
+          case 'walkin':
+            Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminWalkInUsersScreen()));
             break;
           case 'reports':
             if (_hasPermission("Reports")) {
