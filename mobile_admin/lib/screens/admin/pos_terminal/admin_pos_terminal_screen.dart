@@ -699,7 +699,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                         ),
                         if ((tx['charges'] ?? 0) > 0)
                           Padding(
-                            padding: const EdgeInsets.top(2),
+                            padding: const EdgeInsets.only(top: 2),
                             child: Text(
                               "+${CurrencyFormatter.format((tx['charges']).toDouble())} Fee", 
                               style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.w600)

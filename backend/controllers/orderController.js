@@ -6,7 +6,7 @@ const Settings = require('../models/Settings');
 const StoreProduct = require('../models/Product');
 const NotificationService = require('../utils/notificationService');
 const Service = require('../models/Service');
-const mongoose = require('mongoose');
+
 
 // Helper: Calculate Total (Used by payments.js and createOrder)
 // Supports both Service Items and Store Products
