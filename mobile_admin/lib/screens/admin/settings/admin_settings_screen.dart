@@ -14,6 +14,7 @@ import 'admin_tax_settings_screen.dart';
 import 'admin_notification_settings_screen.dart';
 import '../staff/admin_staff_screen.dart'; // [NEW]
 import '../reports/admin_financial_reports_screen.dart'; // [NEW]
+import 'admin_manage_data_screen.dart'; // [NEW]
 import 'admin_pos_settings_screen.dart'; // [NEW] POS Settings
 import 'package:clotheline_core/clotheline_core.dart';
 
