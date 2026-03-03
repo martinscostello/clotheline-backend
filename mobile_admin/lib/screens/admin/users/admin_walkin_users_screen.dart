@@ -7,6 +7,7 @@ import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
+import 'package:provider/provider.dart';
 
 class AdminWalkInUsersScreen extends StatefulWidget {
   const AdminWalkInUsersScreen({super.key});
@@ -19,6 +20,7 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
   bool _isLoading = true;
   List<dynamic> _walkInUsers = [];
   String? _error;
+  String? _selectedBranchId;
 
   @override
   void initState() {
@@ -34,7 +36,8 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
 
     try {
       final api = ApiService();
-      final response = await api.client.get('/orders/admin/walk-in-users');
+      final branchQuery = _selectedBranchId != null ? '?branchId=$_selectedBranchId' : '';
+      final response = await api.client.get('/orders/admin/walk-in-users$branchQuery');
       
       if (response.statusCode == 200) {
         setState(() {
@@ -147,7 +150,12 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
       ),
       body: LiquidBackground(
         child: SafeArea(
-          child: _buildBody(),
+          child: Column(
+            children: [
+              _buildBranchFilter(),
+              Expanded(child: _buildBody()),
+            ],
+          ),
         ),
       ),
     );
@@ -254,6 +262,45 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
         },
       ),
       ),
+    );
+  }
+
+  Widget _buildBranchFilter() {
+    return Consumer<BranchProvider>(
+      builder: (context, branchProvider, child) {
+        if (branchProvider.isLoading) return const SizedBox();
+        final branches = [
+          Branch(id: null, name: 'All Branches', location: '', contactPhone: ''),
+          ...branchProvider.branches
+        ];
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: GlassContainer(
+            opacity: 0.1,
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String?>(
+                isExpanded: true,
+                value: _selectedBranchId,
+                dropdownColor: const Color(0xFF1E293B),
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                items: branches.map((b) {
+                  return DropdownMenuItem<String?>(
+                    value: b.id,
+                    child: Text(b.name),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  setState(() => _selectedBranchId = val);
+                  _fetchWalkInUsers();
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

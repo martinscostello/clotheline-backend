@@ -20,6 +20,7 @@ import '../orders/admin_orders_screen.dart';
 import '../pos/admin_pos_screen.dart';
 import '../chat/admin_chat_screen.dart';
 import '../users/admin_walkin_users_screen.dart'; // [NEW]
+import '../pos_terminal/admin_pos_terminal_screen.dart'; // [NEW]
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -68,9 +69,10 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
   List<Map<String, dynamic>> _quickActions = [];
 
   final List<Map<String, dynamic>> _defaultActions = [
-    {'id': 'pos', 'label': 'POS', 'icon': Icons.point_of_sale, 'color': Colors.greenAccent},
+    {'id': 'pos', 'label': 'Checkout', 'icon': Icons.shopping_cart_checkout, 'color': Colors.greenAccent},
     {'id': 'orders', 'label': 'Orders', 'icon': Icons.list_alt, 'color': Colors.blueAccent},
     {'id': 'walkin', 'label': 'Walk-In Users', 'icon': Icons.directions_walk, 'color': Colors.orangeAccent},
+    {'id': 'pos_terminal', 'label': 'Terminal', 'icon': Icons.account_balance_wallet, 'color': Colors.purpleAccent},
     {'id': 'reports', 'label': 'Reports', 'icon': Icons.bar_chart, 'color': Colors.tealAccent},
   ];
 
@@ -116,7 +118,7 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
       }
     }
 
-    setState(() => _quickActions = actions.take(4).toList());
+    setState(() => _quickActions = actions.take(5).toList());
   }
 
   Future<void> _savePreferences() async {
@@ -599,6 +601,13 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
             if (_hasPermission("POS")) {
               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(
                 builder: (_) => AdminPOSScreen(fulfillmentMode: _operationsMode)
+              ));
+            }
+            break;
+          case 'pos_terminal':
+            if (_hasPermission("POS")) {
+              Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(
+                builder: (_) => const AdminPosTerminalScreen()
               ));
             }
             break;

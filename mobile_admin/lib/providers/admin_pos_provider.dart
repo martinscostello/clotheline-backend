@@ -23,6 +23,7 @@ class AdminPOSProvider extends ChangeNotifier {
   double deliveryFee = 0;
   String? deliveryAddress;
   String? laundryNotes;
+  double discountAmount = 0.0; // [NEW] POS Discount
   
   bool isSaving = false;
   
@@ -140,12 +141,23 @@ class AdminPOSProvider extends ChangeNotifier {
     laundryItems.clear();
     storeItems.clear();
     deliveryFee = 0;
+    discountAmount = 0.0;
+    notifyListeners();
+  }
+
+  void setDiscount(double amount) {
+    discountAmount = amount;
     notifyListeners();
   }
 
   // Totals
-  double get subtotal => laundryItems.fold(0.0, (sum, i) => sum + i.checkoutPrice) + 
+  double get grossTotal => laundryItems.fold(0.0, (sum, i) => sum + i.checkoutPrice) + 
                          storeItems.fold(0.0, (sum, i) => sum + i.totalPrice);
+                         
+  double get subtotal {
+    double calculated = grossTotal - discountAmount;
+    return calculated > 0 ? calculated : 0.0;
+  }
   
   double get taxAmount => _taxEnabled ? (subtotal * (_taxRate / 100)) : 0.0;
   double get totalAmount => subtotal + deliveryFee + taxAmount;
@@ -161,6 +173,7 @@ class AdminPOSProvider extends ChangeNotifier {
     deliveryFee = 0;
     deliveryAddress = null;
     laundryNotes = null;
+    discountAmount = 0.0;
     isSaving = false;
     notifyListeners();
   }
@@ -209,6 +222,7 @@ class AdminPOSProvider extends ChangeNotifier {
         'subtotal': subtotal,
         'deliveryFee': deliveryFee,
         'taxAmount': taxAmount, // [NEW] Pass tracked tax
+        'discountAmount': discountAmount,
         'taxRate': _taxEnabled ? _taxRate : 0, 
         'totalAmount': totalAmount,
         'paymentMethod': paymentMethod,

@@ -85,6 +85,7 @@ app.use('/api/promotions', require('./routes/promotions'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/data-management', require('./routes/data_management'));
+app.use('/api/pos-transactions', require('./routes/posTransactions')); // [NEW] POS Terminal
 
 // Make uploads folder static with explicit CORS for CanvasKit
 app.use('/uploads', express.static('uploads', {

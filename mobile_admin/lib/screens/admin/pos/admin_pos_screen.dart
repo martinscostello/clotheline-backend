@@ -31,6 +31,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
   final _searchController = TextEditingController(); // [NEW]
+  final _discountController = TextEditingController(); // [NEW] POS Discount
   final _notesController = TextEditingController(); // [NEW]
   String _searchQuery = ""; // [NEW]
 
@@ -62,6 +63,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     _emailController.dispose();
     _addressController.dispose();
     _searchController.dispose();
+    _discountController.dispose();
     _notesController.dispose(); // [NEW]
     super.dispose();
   }
@@ -94,6 +96,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                  _emailController.clear();
                  _addressController.clear();
                  _searchController.clear();
+                 _discountController.clear();
                  _searchQuery = "";
               },
             ),
@@ -958,6 +961,42 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
+                    _buildSummaryRow("Gross Total", CurrencyFormatter.format(pos.grossTotal)),
+                    const SizedBox(height: 10),
+                    
+                    // [NEW] Discount Input
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("Discount", style: TextStyle(color: Colors.white70)),
+                        SizedBox(
+                          width: 100,
+                          height: 35,
+                          child: TextField(
+                            controller: _discountController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold),
+                            decoration: const InputDecoration(
+                              hintText: "0.0",
+                              hintStyle: TextStyle(color: Colors.white24),
+                              border: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                              focusedBorder: UnderlineInputBorder(borderSide: AppTheme.secondaryColor),
+                              contentPadding: EdgeInsets.only(bottom: 8),
+                              prefixText: "₦ ",
+                              prefixStyle: TextStyle(color: Colors.greenAccent),
+                            ),
+                            onChanged: (val) {
+                              final amount = double.tryParse(val) ?? 0.0;
+                              pos.setDiscount(amount);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    
                     _buildSummaryRow("Subtotal", CurrencyFormatter.format(pos.subtotal)),
                     const SizedBox(height: 10),
                     _buildSummaryRow("Delivery Fee", CurrencyFormatter.format(pos.deliveryFee)),

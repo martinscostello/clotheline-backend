@@ -25,6 +25,7 @@ const BranchSchema = new mongoose.Schema({
     // Config
     isActive: { type: Boolean, default: true },
     isDefault: { type: Boolean, default: false }, // Fallback if no branch selected
+    isPosTerminalEnabled: { type: Boolean, default: false }, // [NEW] feature toggle
 
     createdAt: { type: Date, default: Date.now }
 });

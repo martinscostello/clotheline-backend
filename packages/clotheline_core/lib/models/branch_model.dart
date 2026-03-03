@@ -6,6 +6,7 @@ class Branch {
   final BranchLocation location;
   final List<DeliveryZone> deliveryZones;
   final bool isDefault;
+  final bool isPosTerminalEnabled;
 
   Branch({
     required this.id,
@@ -15,6 +16,7 @@ class Branch {
     required this.location,
     required this.deliveryZones,
     this.isDefault = false,
+    this.isPosTerminalEnabled = false,
   });
 
   factory Branch.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class Branch {
       location: BranchLocation.fromJson(json['location']),
       deliveryZones: (json['deliveryZones'] as List).map((z) => DeliveryZone.fromJson(z)).toList(),
       isDefault: json['isDefault'] ?? false,
+      isPosTerminalEnabled: json['isPosTerminalEnabled'] ?? false,
     );
   }
 }
