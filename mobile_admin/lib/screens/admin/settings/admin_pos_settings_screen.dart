@@ -80,42 +80,59 @@ class _AdminPosSettingsScreenState extends State<AdminPosSettingsScreen> {
                         final branch = branchProvider.branches[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 15),
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => AdminBranchPosConfigDetailScreen(branch: branch)),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: GlassContainer(
-                              opacity: 0.1,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                          child: GlassContainer(
+                            opacity: 0.1,
+                            padding: EdgeInsets.zero,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => AdminBranchPosConfigDetailScreen(branch: branch)),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(branch.name, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                              const SizedBox(width: 8),
+                                              const Icon(Icons.settings_outlined, color: Colors.white24, size: 14),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 5),
+                                          Text(
+                                            branch.isPosTerminalEnabled ? "Terminal Active • Tap to configure" : "Terminal Restricted",
+                                            style: TextStyle(
+                                              color: branch.isPosTerminalEnabled ? Colors.greenAccent : Colors.redAccent,
+                                              fontSize: 11
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Row(
                                       children: [
-                                        Text(branch.name, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                                        const SizedBox(height: 5),
-                                        Text(
-                                          branch.isPosTerminalEnabled ? "Terminal Active" : "Terminal Restricted",
-                                          style: TextStyle(
-                                            color: branch.isPosTerminalEnabled ? Colors.greenAccent : Colors.redAccent,
-                                            fontSize: 12
+                                        Transform.scale(
+                                          scale: 0.8,
+                                          child: Switch(
+                                            value: branch.isPosTerminalEnabled,
+                                            activeColor: AppTheme.secondaryColor,
+                                            onChanged: _isLoading ? null : (val) => _togglePosTerminal(branch),
                                           ),
                                         ),
+                                        const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
                                       ],
-                                    ),
-                                  ),
-                                  Switch(
-                                    value: branch.isPosTerminalEnabled,
-                                    activeColor: AppTheme.secondaryColor,
-                                    onChanged: _isLoading ? null : (val) => _togglePosTerminal(branch),
-                                  )
-                                ],
+                                    )
+                                  ],
+                                ),
                               ),
                             ),
                           ),
