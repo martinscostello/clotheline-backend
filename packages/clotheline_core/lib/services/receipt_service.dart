@@ -1,6 +1,7 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../models/order_model.dart';
 import '../models/booking_models.dart';
 import '../models/store_product.dart';
 
@@ -103,7 +104,9 @@ class ReceiptService {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text("Discount (${(discountPercentage ?? 0).toStringAsFixed(0)}%):"),
+                    pw.Text(discountPercentage != null && discountPercentage > 0 
+                      ? "Discount (${discountPercentage.toStringAsFixed(0)}%):"
+                      : "Discount:"),
                     pw.Text("-N${discountAmount.toStringAsFixed(0)}"),
                   ],
                 ),
@@ -417,8 +420,8 @@ class ReceiptService {
       deliveryFee: order is Map ? (order['deliveryFee'] as num?)?.toDouble() ?? 0.0 : order.deliveryFee,
       total: order is Map ? (order['totalAmount'] as num?)?.toDouble() ?? 0.0 : order.totalAmount,
       paymentMethod: order is Map ? (order['paymentMethod'] ?? 'cash') : (order.paymentMethod ?? 'cash'),
-      discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is Map ? null : order.discountAmount),
-      discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : (order is Map ? null : order.discountPercentage),
+      discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is OrderModel ? (order as OrderModel).discountAmount : 0.0),
+      discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : null,
     );
   }
 
@@ -471,8 +474,8 @@ class ReceiptService {
       deliveryFee: order is Map ? (order['deliveryFee'] as num?)?.toDouble() ?? 0.0 : order.deliveryFee,
       total: order is Map ? (order['totalAmount'] as num?)?.toDouble() ?? 0.0 : order.totalAmount,
       paymentMethod: order is Map ? (order['paymentMethod'] ?? 'cash') : (order.paymentMethod ?? 'cash'),
-      discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is Map ? null : order.discountAmount),
-      discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : (order is Map ? null : order.discountPercentage),
+      discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is OrderModel ? (order as OrderModel).discountAmount : 0.0),
+      discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : null,
     );
   }
 
@@ -525,8 +528,8 @@ class ReceiptService {
       deliveryFee: order is Map ? (order['deliveryFee'] as num?)?.toDouble() ?? 0.0 : order.deliveryFee,
       total: order is Map ? (order['totalAmount'] as num?)?.toDouble() ?? 0.0 : order.totalAmount,
       paymentMethod: order is Map ? (order['paymentMethod'] ?? 'cash') : (order.paymentMethod ?? 'cash'),
-      discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is Map ? null : order.discountAmount),
-      discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : (order is Map ? null : order.discountPercentage),
+      discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is OrderModel ? (order as OrderModel).discountAmount : 0.0),
+      discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : null,
     );
   }
 }

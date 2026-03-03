@@ -1,22 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // [FIX] Required for NumberFormat
-import 'package:clotheline_core/clotheline_core.dart';
-import '../../../../widgets/glass/GlassContainer.dart';
-import '../../../../widgets/glass/LiquidBackground.dart';
-import 'package:clotheline_core/clotheline_core.dart';
+import 'package:intl/intl.dart';
 import 'package:clotheline_core/clotheline_core.dart';
 import 'package:provider/provider.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart'; // [FIX] Import ChatService
-
-
-import 'package:clotheline_core/clotheline_core.dart';
-import '../chat/admin_chat_screen.dart'; // [FIX] Import AdminChatScreen
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart'; // [NEW]
-import 'package:clotheline_core/clotheline_core.dart'; // [NEW]
-import 'package:clotheline_core/clotheline_core.dart'; // [NEW]
-import 'package:clotheline_core/clotheline_core.dart'; // [NEW]
+import '../../../../widgets/glass/GlassContainer.dart';
+import '../../../../widgets/glass/LiquidBackground.dart';
+import '../chat/admin_chat_screen.dart';
 
 class AdminOrderDetailScreen extends StatelessWidget {
   final OrderModel? order;
