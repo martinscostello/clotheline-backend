@@ -23,7 +23,7 @@ class AdminPOSProvider extends ChangeNotifier {
   double deliveryFee = 0;
   String? deliveryAddress;
   String? laundryNotes;
-  double discountAmount = 0.0; // [NEW] POS Discount
+  double discountPercentage = 0.0; // [NEW] POS Discount Percentage
   
   bool isSaving = false;
   
@@ -141,12 +141,12 @@ class AdminPOSProvider extends ChangeNotifier {
     laundryItems.clear();
     storeItems.clear();
     deliveryFee = 0;
-    discountAmount = 0.0;
+    discountPercentage = 0.0;
     notifyListeners();
   }
 
-  void setDiscount(double amount) {
-    discountAmount = amount;
+  void setDiscount(double percentage) {
+    discountPercentage = percentage;
     notifyListeners();
   }
 
@@ -154,6 +154,8 @@ class AdminPOSProvider extends ChangeNotifier {
   double get grossTotal => laundryItems.fold(0.0, (sum, i) => sum + i.checkoutPrice) + 
                          storeItems.fold(0.0, (sum, i) => sum + i.totalPrice);
                          
+  double get discountAmount => grossTotal * (discountPercentage / 100);
+
   double get subtotal {
     double calculated = grossTotal - discountAmount;
     return calculated > 0 ? calculated : 0.0;
@@ -173,7 +175,7 @@ class AdminPOSProvider extends ChangeNotifier {
     deliveryFee = 0;
     deliveryAddress = null;
     laundryNotes = null;
-    discountAmount = 0.0;
+    discountPercentage = 0.0;
     isSaving = false;
     notifyListeners();
   }

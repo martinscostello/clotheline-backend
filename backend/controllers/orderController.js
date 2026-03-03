@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
@@ -566,8 +567,12 @@ exports.getWalkInUsers = async (req, res) => {
             } else {
                 return res.json([]);
             }
-        } else if (req.query.branchId && req.query.branchId !== 'all' && req.query.branchId !== 'null') {
-            filter.branchId = req.query.branchId;
+        } else if (req.query.branchId && req.query.branchId !== 'all' && req.query.branchId !== 'null' && req.query.branchId !== '') {
+            try {
+                filter.branchId = new mongoose.Types.ObjectId(req.query.branchId);
+            } catch (e) {
+                console.warn("Invalid branchId in getWalkInUsers:", req.query.branchId);
+            }
         }
 
         // Aggregate orders to extract unique Walk-In Users by phone number

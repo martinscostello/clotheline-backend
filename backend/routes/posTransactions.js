@@ -11,8 +11,8 @@ const validateRequest = (req, res, next) => {
     const { branchId, transactionType, amount } = req.body;
     const errors = [];
     if (!branchId) errors.push({ msg: 'Branch ID is required', param: 'branchId' });
-    if (!['Withdrawal', 'Transfer', 'Deposit', 'Airtime', 'Other'].includes(transactionType)) {
-        errors.push({ msg: 'Transaction Type must be Withdrawal, Transfer, Deposit, Airtime, or Other', param: 'transactionType' });
+    if (!['Withdrawal', 'Transfer', 'Deposit', 'Airtime', 'Electricity', 'Other'].includes(transactionType)) {
+        errors.push({ msg: 'Transaction Type must be Withdrawal, Transfer, Deposit, Airtime, Electricity, or Other', param: 'transactionType' });
     }
     if (amount === undefined || isNaN(amount)) {
         errors.push({ msg: 'Amount is required and must be numeric', param: 'amount' });

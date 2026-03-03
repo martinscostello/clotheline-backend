@@ -978,18 +978,18 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                             textAlign: TextAlign.right,
                             style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold),
                             decoration: const InputDecoration(
-                              hintText: "0.0",
+                              hintText: "10",
                               hintStyle: TextStyle(color: Colors.white24),
                               border: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
                               enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
                               focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.secondaryColor)),
                               contentPadding: EdgeInsets.only(bottom: 8),
-                              prefixText: "₦ ",
-                              prefixStyle: TextStyle(color: Colors.greenAccent),
+                              suffixText: " %",
+                              suffixStyle: TextStyle(color: Colors.greenAccent),
                             ),
                             onChanged: (val) {
-                              final amount = double.tryParse(val) ?? 0.0;
-                              pos.setDiscount(amount);
+                              final percentage = double.tryParse(val) ?? 0.0;
+                              pos.setDiscount(percentage);
                             },
                           ),
                         ),
@@ -998,6 +998,10 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                     const SizedBox(height: 5),
                     
                     _buildSummaryRow("Subtotal", CurrencyFormatter.format(pos.subtotal)),
+                    if (pos.discountPercentage > 0) ...[
+                      const SizedBox(height: 10),
+                      _buildSummaryRow("Discount (${pos.discountPercentage.toStringAsFixed(0)}%)", "- ${CurrencyFormatter.format(pos.discountAmount)}"),
+                    ],
                     const SizedBox(height: 10),
                     _buildSummaryRow("Delivery Fee", CurrencyFormatter.format(pos.deliveryFee)),
                     if (pos.taxAmount > 0) ...[
