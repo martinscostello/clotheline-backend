@@ -104,7 +104,7 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
       }
 
       // 2. Generate CSV String
-      String csvData = ListToCsvConverter().convert(rows);
+      String csvData = csv.encode(rows);
 
       // 3. Save to Temp File
       final directory = await getTemporaryDirectory();
