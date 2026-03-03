@@ -159,7 +159,7 @@ class AdminSettingsContent extends StatelessWidget {
                           }),
                            if (isMaster)
                             _buildSettingTile(Icons.storage, "Manage Data", () {
-                               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminManageDataScreen()));
+                               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => AdminManageDataScreen()));
                             }),
                            if (isMaster)
                             _buildSettingTile(Icons.point_of_sale, "POS Terminal Config", () {

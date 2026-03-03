@@ -982,7 +982,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                               hintStyle: TextStyle(color: Colors.white24),
                               border: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
                               enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                              focusedBorder: UnderlineInputBorder(borderSide: AppTheme.secondaryColor),
+                              focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.secondaryColor)),
                               contentPadding: EdgeInsets.only(bottom: 8),
                               prefixText: "₦ ",
                               prefixStyle: TextStyle(color: Colors.greenAccent),

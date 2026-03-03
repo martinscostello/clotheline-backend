@@ -1,16 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const adminAuth = require('../middleware/adminAuth'); // Ensure admin privileges
-const { check, validationResult } = require('express-validator');
+const adminAuth = require('../middleware/admin'); // Ensure admin privileges
 
 // Import Controller
 const posController = require('../controllers/posTransactionController');
 
 // Helper middleware to validate requests
 const validateRequest = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    const { branchId, transactionType, amount } = req.body;
+    const errors = [];
+    if (!branchId) errors.push({ msg: 'Branch ID is required', param: 'branchId' });
+    if (!['Withdrawal', 'Transfer', 'Deposit', 'Airtime', 'Other'].includes(transactionType)) {
+        errors.push({ msg: 'Transaction Type must be Withdrawal, Transfer, Deposit, Airtime, or Other', param: 'transactionType' });
+    }
+    if (amount === undefined || isNaN(amount)) {
+        errors.push({ msg: 'Amount is required and must be numeric', param: 'amount' });
+    }
+    if (errors.length > 0) return res.status(400).json({ errors });
     next();
 };
 
@@ -29,11 +36,8 @@ router.get('/metrics', [auth, adminAuth], posController.getMetrics);
 // @access  Private (Admin only)
 router.post('/', [
     auth, adminAuth,
-    check('branchId', 'Branch ID is required').not().isEmpty(),
-    check('transactionType', 'Transaction Type must be Withdrawal, Transfer, Deposit, Airtime, or Other')
-        .isIn(['Withdrawal', 'Transfer', 'Deposit', 'Airtime', 'Other']),
-    check('amount', 'Amount is required and must be numeric').isNumeric()
-], validateRequest, posController.createTransaction);
+    validateRequest
+], posController.createTransaction);
 
 // @route   PUT /api/pos-transactions/:id
 // @desc    Update a POS transaction (limited to 24 hours)

@@ -269,9 +269,15 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
     return Consumer<BranchProvider>(
       builder: (context, branchProvider, child) {
         if (branchProvider.isLoading) return const SizedBox();
-        final branches = [
-          Branch(id: null, name: 'All Branches', location: '', contactPhone: ''),
-          ...branchProvider.branches
+        final items = [
+          const DropdownMenuItem<String?>(
+            value: null,
+            child: Text('All Branches'),
+          ),
+          ...branchProvider.branches.map((b) => DropdownMenuItem<String?>(
+            value: b.id,
+            child: Text(b.name),
+          ))
         ];
 
         return Padding(
@@ -286,12 +292,7 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
                 dropdownColor: const Color(0xFF1E293B),
                 icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
                 style: const TextStyle(color: Colors.white, fontSize: 16),
-                items: branches.map((b) {
-                  return DropdownMenuItem<String?>(
-                    value: b.id,
-                    child: Text(b.name),
-                  );
-                }).toList(),
+                items: items,
                 onChanged: (val) {
                   setState(() => _selectedBranchId = val);
                   _fetchWalkInUsers();

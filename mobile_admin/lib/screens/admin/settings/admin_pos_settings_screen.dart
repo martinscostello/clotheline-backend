@@ -26,7 +26,7 @@ class _AdminPosSettingsScreenState extends State<AdminPosSettingsScreen> {
       if (response.statusCode == 200) {
         if (!mounted) return;
         ToastUtils.show(context, "${branch.name} POS Terminal ${newValue ? 'Enabled' : 'Disabled'}", type: ToastType.success);
-        Provider.of<BranchProvider>(context, listen: false).loadBranches(); // Refresh branches
+        Provider.of<BranchProvider>(context, listen: false).fetchBranches(); // Refresh branches
       } else {
         throw Exception("Failed to update branch");
       }
