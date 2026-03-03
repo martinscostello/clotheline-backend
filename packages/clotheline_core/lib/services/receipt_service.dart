@@ -26,6 +26,8 @@ class ReceiptService {
     required double deliveryFee,
     required double total,
     required String paymentMethod,
+    double? discountAmount,
+    double? discountPercentage,
   }) async {
     final pdf = pw.Document();
     final String brand = _getBrandedName(branchName);
@@ -97,6 +99,14 @@ class ReceiptService {
                   pw.Text("N${deliveryFee.toStringAsFixed(0)}"),
                 ],
               ),
+              if (discountAmount != null && discountAmount > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text("Discount (${(discountPercentage ?? 0).toStringAsFixed(0)}%):"),
+                    pw.Text("-N${discountAmount.toStringAsFixed(0)}"),
+                  ],
+                ),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -131,6 +141,8 @@ class ReceiptService {
     required double deliveryFee,
     required double total,
     required String paymentMethod,
+    double? discountAmount,
+    double? discountPercentage,
   }) async {
     final pdf = pw.Document();
     final String brand = _getBrandedName(branchName);
@@ -202,6 +214,14 @@ class ReceiptService {
                   pw.Text("N${deliveryFee.toStringAsFixed(0)}"),
                 ],
               ),
+              if (discountAmount != null && discountAmount > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text("Discount (${(discountPercentage ?? 0).toStringAsFixed(0)}%):"),
+                    pw.Text("-N${discountAmount.toStringAsFixed(0)}"),
+                  ],
+                ),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -235,6 +255,8 @@ class ReceiptService {
     required double deliveryFee,
     required double total,
     required String paymentMethod,
+    double? discountAmount,
+    double? discountPercentage,
   }) async {
     final pdf = pw.Document();
     final String brand = _getBrandedName(branchName);
@@ -306,6 +328,14 @@ class ReceiptService {
                   pw.Text("N${deliveryFee.toStringAsFixed(0)}"),
                 ],
               ),
+              if (discountAmount != null && discountAmount > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text("Discount (${(discountPercentage ?? 0).toStringAsFixed(0)}%):"),
+                    pw.Text("-N${discountAmount.toStringAsFixed(0)}"),
+                  ],
+                ),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -387,6 +417,8 @@ class ReceiptService {
       deliveryFee: order is Map ? (order['deliveryFee'] as num?)?.toDouble() ?? 0.0 : order.deliveryFee,
       total: order is Map ? (order['totalAmount'] as num?)?.toDouble() ?? 0.0 : order.totalAmount,
       paymentMethod: order is Map ? (order['paymentMethod'] ?? 'cash') : (order.paymentMethod ?? 'cash'),
+      discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is Map ? null : order.discountAmount),
+      discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : (order is Map ? null : order.discountPercentage),
     );
   }
 
@@ -439,6 +471,8 @@ class ReceiptService {
       deliveryFee: order is Map ? (order['deliveryFee'] as num?)?.toDouble() ?? 0.0 : order.deliveryFee,
       total: order is Map ? (order['totalAmount'] as num?)?.toDouble() ?? 0.0 : order.totalAmount,
       paymentMethod: order is Map ? (order['paymentMethod'] ?? 'cash') : (order.paymentMethod ?? 'cash'),
+      discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is Map ? null : order.discountAmount),
+      discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : (order is Map ? null : order.discountPercentage),
     );
   }
 
@@ -491,6 +525,8 @@ class ReceiptService {
       deliveryFee: order is Map ? (order['deliveryFee'] as num?)?.toDouble() ?? 0.0 : order.deliveryFee,
       total: order is Map ? (order['totalAmount'] as num?)?.toDouble() ?? 0.0 : order.totalAmount,
       paymentMethod: order is Map ? (order['paymentMethod'] ?? 'cash') : (order.paymentMethod ?? 'cash'),
+      discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is Map ? null : order.discountAmount),
+      discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : (order is Map ? null : order.discountPercentage),
     );
   }
 }

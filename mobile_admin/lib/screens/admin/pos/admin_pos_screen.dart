@@ -1266,6 +1266,8 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                     deliveryFee: pos.deliveryFee,
                     total: pos.totalAmount,
                     paymentMethod: pos.paymentMethod,
+                    discountAmount: pos.discountAmount,
+                    discountPercentage: pos.discountPercentage,
                   );
                }),
                const SizedBox(height: 10),
@@ -1281,6 +1283,8 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                      deliveryFee: pos.deliveryFee,
                      total: pos.totalAmount,
                      paymentMethod: pos.paymentMethod,
+                     discountAmount: pos.discountAmount,
+                     discountPercentage: pos.discountPercentage,
                    );
                 }, color: Colors.blueAccent),
                 const SizedBox(height: 10),
