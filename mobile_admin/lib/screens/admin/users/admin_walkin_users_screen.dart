@@ -104,7 +104,7 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
       }
 
       // 2. Generate CSV String
-      String csvData = const ListToCsvConverter().convert(rows);
+      String csvData = ListToCsvConverter().convert(rows);
 
       // 3. Save to Temp File
       final directory = await getTemporaryDirectory();
@@ -181,9 +181,12 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
       return const Center(child: Text("No Walk-In Users found.", style: TextStyle(color: Colors.white54, fontSize: 16)));
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(15),
-      itemCount: _walkInUsers.length,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: ListView.builder(
+          padding: const EdgeInsets.all(15),
+          itemCount: _walkInUsers.length,
       itemBuilder: (context, index) {
         final user = _walkInUsers[index];
         final String name = user['name'] ?? 'Unknown Guest';
@@ -248,7 +251,9 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
             ),
           ),
         );
-      },
+        },
+      ),
+      ),
     );
   }
 }
