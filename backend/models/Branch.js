@@ -27,6 +27,33 @@ const BranchSchema = new mongoose.Schema({
     isDefault: { type: Boolean, default: false }, // Fallback if no branch selected
     isPosTerminalEnabled: { type: Boolean, default: false }, // [NEW] feature toggle
 
+    // POS Configuration [NEW]
+    posConfig: {
+        terminalDisplayName: { type: String },
+        charges: {
+            withdrawal: { type: Number, default: 0 },
+            transfer: { type: Number, default: 0 },
+            deposit: { type: Number, default: 0 },
+            smartTiersEnabled: { type: Boolean, default: false },
+            smartTiers: [{
+                min: Number,
+                max: Number,
+                charge: Number
+            }]
+        },
+        profitTarget: {
+            enabled: { type: Boolean, default: false },
+            amount: { type: Number, default: 0 }
+        },
+        security: {
+            lockAfter24h: { type: Boolean, default: false },
+            masterAdminOnly: { type: Boolean, default: false },
+            requireReconciliation: { type: Boolean, default: false },
+            requireDeleteConfirmation: { type: Boolean, default: true }
+        },
+        defaultOpeningCash: { type: Number, default: 0 }
+    },
+
     createdAt: { type: Date, default: Date.now }
 });
 

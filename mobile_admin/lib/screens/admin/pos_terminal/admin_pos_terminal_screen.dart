@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:clotheline_core/utils/money_formatter.dart';
 
 class AdminPosTerminalScreen extends StatefulWidget {
   const AdminPosTerminalScreen({super.key});
@@ -50,11 +51,42 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final bp = Provider.of<BranchProvider>(context, listen: false);
-      if (bp.branches.isNotEmpty && bp.branches.first.isPosTerminalEnabled) {
-         _selectedBranchId = bp.branches.first.id;
+      if (bp.branches.isNotEmpty) {
+         final firstActive = bp.branches.firstWhere((b) => b.isPosTerminalEnabled, orElse: () => bp.branches.first);
+         setState(() {
+           _selectedBranchId = firstActive.id;
+           _openingCashCtrl.text = (firstActive.posConfig?.defaultOpeningCash ?? 0).toStringAsFixed(0);
+         });
       }
       _fetchData();
     });
+  }
+
+  void _onAmountChanged(String val) {
+    if (_selectedBranchId == null) return;
+    final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId);
+    final config = branch.posConfig;
+    if (config == null) return;
+
+    double amount = MoneyTextInputFormatter.getNumericValue(val);
+    double suggestedCharge = 0;
+
+    if (config.charges.smartTiersEnabled) {
+      for (var tier in config.charges.smartTiers) {
+        if (amount >= tier.min && amount <= tier.max) {
+          suggestedCharge = tier.charge;
+          break;
+        }
+      }
+    } else {
+      if (_transactionType == 'Withdrawal') suggestedCharge = config.charges.withdrawal;
+      else if (_transactionType == 'Transfer') suggestedCharge = config.charges.transfer;
+      else if (_transactionType == 'Deposit') suggestedCharge = config.charges.deposit;
+    }
+
+    if (suggestedCharge > 0) {
+      _chargesCtrl.text = suggestedCharge.toStringAsFixed(0);
+    }
   }
 
   Future<void> _fetchData() async {
@@ -101,6 +133,14 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       ToastUtils.show(context, "Select a branch first", type: ToastType.warning);
       return;
     }
+    
+    final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId);
+    if (branch.posConfig?.security.requireReconciliation == true && !_showRecon) {
+       ToastUtils.show(context, "Daily reconciliation required before logging", type: ToastType.warning);
+       setState(() => _showRecon = true);
+       return;
+    }
+
     if (_amountCtrl.text.isEmpty) {
       ToastUtils.show(context, "Amount is required", type: ToastType.warning);
       return;
@@ -113,8 +153,8 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       final response = await api.client.post('/pos-transactions', data: {
         'branchId': _selectedBranchId,
         'transactionType': _transactionType,
-        'amount': double.tryParse(_amountCtrl.text) ?? 0,
-        'charges': double.tryParse(_chargesCtrl.text) ?? 0,
+        'amount': MoneyTextInputFormatter.getNumericValue(_amountCtrl.text),
+        'charges': MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text),
         'notes': _notesCtrl.text,
       });
 
@@ -134,10 +174,21 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     }
   }
 
-  Future<void> _deleteTransaction(String id) async {
+  Future<void> _deleteTransaction(dynamic tx) async {
+    final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId);
+    final config = branch.posConfig;
+    
+    if (config?.security.lockAfter24h == true) {
+      final txDate = DateTime.parse(tx['createdAt']);
+      if (DateTime.now().difference(txDate).inHours > 24) {
+        ToastUtils.show(context, "Transaction locked (over 24h old)", type: ToastType.error);
+        return;
+      }
+    }
+
     try {
       final api = ApiService();
-      final res = await api.client.delete('/pos-transactions/$id');
+      final res = await api.client.delete('/pos-transactions/${tx['_id']}');
       if (res.statusCode == 200) {
         ToastUtils.show(context, "Deleted safely", type: ToastType.success);
         _fetchData();
@@ -150,8 +201,8 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   }
   
   void _calculateVariance() {
-      final openingCash = double.tryParse(_openingCashCtrl.text) ?? 0.0;
-      final closingCash = double.tryParse(_closingCashCtrl.text) ?? 0.0;
+      final openingCash = MoneyTextInputFormatter.getNumericValue(_openingCashCtrl.text);
+      final closingCash = MoneyTextInputFormatter.getNumericValue(_closingCashCtrl.text);
       final expectedCash = openingCash + (_metrics['totalDeposits'] ?? 0) - (_metrics['totalWithdrawals'] ?? 0);
       setState(() {
         _reconVariance = closingCash - expectedCash;
@@ -231,6 +282,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildSummaryMetrics(),
+                          _buildDailyProfitProgress(),
                           const SizedBox(height: 24),
                           _buildQuickEntryCard(),
                           const SizedBox(height: 24),
@@ -404,6 +456,53 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     );
   }
 
+  Widget _buildDailyProfitProgress() {
+    if (_selectedBranchId == null) return const SizedBox.shrink();
+    final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId);
+    final config = branch.posConfig;
+    if (config == null || !config.profitTarget.enabled || config.profitTarget.amount <= 0) return const SizedBox.shrink();
+
+    final target = config.profitTarget.amount;
+    final current = (_metrics['totalVolume'] ?? 0).toDouble();
+    final progress = (current / target).clamp(0.0, 1.0);
+    final percentage = (progress * 100).toStringAsFixed(0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text("DAILY PROFIT TARGET", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+            Text("$percentage%", style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Stack(
+          children: [
+            Container(height: 6, decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(3))),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
+              height: 6,
+              width: MediaQuery.of(context).size.width * 0.8 * progress,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF10B981), AppTheme.secondaryColor]),
+                borderRadius: BorderRadius.circular(3),
+                boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 4)]
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        Text(
+          "${CurrencyFormatter.format(current)} of ${CurrencyFormatter.format(target)}",
+          style: const TextStyle(color: Colors.white38, fontSize: 10),
+        ),
+      ],
+    );
+  }
+
   Widget _buildQuickEntryCard() {
     return GlassContainer(
       opacity: 0.1,
@@ -459,16 +558,16 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                     TextField(
                       controller: _amountCtrl,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [MoneyTextInputFormatter()],
+                      onChanged: _onAmountChanged,
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: "0.00", 
+                        hintText: "0", 
                         hintStyle: const TextStyle(color: Colors.white24),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         filled: true,
                         fillColor: Colors.white.withOpacity(0.05),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                        prefixText: "₦ ",
-                        prefixStyle: const TextStyle(color: Colors.white54),
                       ),
                     ),
                   ],
@@ -485,6 +584,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                     TextField(
                       controller: _chargesCtrl,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [MoneyTextInputFormatter()],
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: "0", 
@@ -576,13 +676,14 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         children: [
           Row(
             children: [
-              const Expanded(child: Text("Opening Cash", style: TextStyle(color: Colors.white54))),
+               const Expanded(child: Text("Opening Cash", style: TextStyle(color: Colors.white54))),
               SizedBox(
                 width: 100,
                 height: 30,
                 child: TextField(
                   controller: _openingCashCtrl,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [MoneyTextInputFormatter()],
                   textAlign: TextAlign.right,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(contentPadding: EdgeInsets.zero, isDense: true),
@@ -609,6 +710,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                 child: TextField(
                   controller: _closingCashCtrl,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [MoneyTextInputFormatter()],
                   textAlign: TextAlign.right,
                   style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold),
                   decoration: const InputDecoration(contentPadding: EdgeInsets.zero, isDense: true),
@@ -727,7 +829,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
                                  onPressed: () {
                                    Navigator.pop(ctx);
-                                   _deleteTransaction(tx['_id']);
+                                   _deleteTransaction(tx);
                                  }, 
                                  child: const Text("Delete")
                                ),

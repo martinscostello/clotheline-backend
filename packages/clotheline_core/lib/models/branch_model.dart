@@ -7,6 +7,7 @@ class Branch {
   final List<DeliveryZone> deliveryZones;
   final bool isDefault;
   final bool isPosTerminalEnabled;
+  final PosConfig? posConfig; // [NEW]
 
   Branch({
     required this.id,
@@ -17,6 +18,7 @@ class Branch {
     required this.deliveryZones,
     this.isDefault = false,
     this.isPosTerminalEnabled = false,
+    this.posConfig,
   });
 
   factory Branch.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,112 @@ class Branch {
       deliveryZones: (json['deliveryZones'] as List).map((z) => DeliveryZone.fromJson(z)).toList(),
       isDefault: json['isDefault'] ?? false,
       isPosTerminalEnabled: json['isPosTerminalEnabled'] ?? false,
+      posConfig: json['posConfig'] != null ? PosConfig.fromJson(json['posConfig']) : null,
+    );
+  }
+}
+
+class PosConfig {
+  final String? terminalDisplayName;
+  final PosCharges charges;
+  final PosProfitTarget profitTarget;
+  final PosSecurity security;
+  final double defaultOpeningCash;
+
+  PosConfig({
+    this.terminalDisplayName,
+    required this.charges,
+    required this.profitTarget,
+    required this.security,
+    this.defaultOpeningCash = 0.0,
+  });
+
+  factory PosConfig.fromJson(Map<String, dynamic> json) {
+    return PosConfig(
+      terminalDisplayName: json['terminalDisplayName'],
+      charges: PosCharges.fromJson(json['charges'] ?? {}),
+      profitTarget: PosProfitTarget.fromJson(json['profitTarget'] ?? {}),
+      security: PosSecurity.fromJson(json['security'] ?? {}),
+      defaultOpeningCash: (json['defaultOpeningCash'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class PosCharges {
+  final double withdrawal;
+  final double transfer;
+  final double deposit;
+  final bool smartTiersEnabled;
+  final List<SmartTier> smartTiers;
+
+  PosCharges({
+    this.withdrawal = 0.0,
+    this.transfer = 0.0,
+    this.deposit = 0.0,
+    this.smartTiersEnabled = false,
+    this.smartTiers = const [],
+  });
+
+  factory PosCharges.fromJson(Map<String, dynamic> json) {
+    return PosCharges(
+      withdrawal: (json['withdrawal'] as num?)?.toDouble() ?? 0.0,
+      transfer: (json['transfer'] as num?)?.toDouble() ?? 0.0,
+      deposit: (json['deposit'] as num?)?.toDouble() ?? 0.0,
+      smartTiersEnabled: json['smartTiersEnabled'] ?? false,
+      smartTiers: (json['smartTiers'] as List?)?.map((t) => SmartTier.fromJson(t)).toList() ?? [],
+    );
+  }
+}
+
+class SmartTier {
+  final double min;
+  final double max;
+  final double charge;
+
+  SmartTier({required this.min, required this.max, required this.charge});
+
+  factory SmartTier.fromJson(Map<String, dynamic> json) {
+    return SmartTier(
+      min: (json['min'] as num?)?.toDouble() ?? 0.0,
+      max: (json['max'] as num?)?.toDouble() ?? 0.0,
+      charge: (json['charge'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class PosProfitTarget {
+  final bool enabled;
+  final double amount;
+
+  PosProfitTarget({this.enabled = false, this.amount = 0.0});
+
+  factory PosProfitTarget.fromJson(Map<String, dynamic> json) {
+    return PosProfitTarget(
+      enabled: json['enabled'] ?? false,
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class PosSecurity {
+  final bool lockAfter24h;
+  final bool masterAdminOnly;
+  final bool requireReconciliation;
+  final bool requireDeleteConfirmation;
+
+  PosSecurity({
+    this.lockAfter24h = false,
+    this.masterAdminOnly = false,
+    this.requireReconciliation = false,
+    this.requireDeleteConfirmation = true,
+  });
+
+  factory PosSecurity.fromJson(Map<String, dynamic> json) {
+    return PosSecurity(
+      lockAfter24h: json['lockAfter24h'] ?? false,
+      masterAdminOnly: json['masterAdminOnly'] ?? false,
+      requireReconciliation: json['requireReconciliation'] ?? false,
+      requireDeleteConfirmation: json['requireDeleteConfirmation'] ?? true,
     );
   }
 }

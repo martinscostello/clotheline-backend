@@ -36,6 +36,7 @@ class ReceiptService {
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.roll80,
+        margin: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 20),
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -51,53 +52,71 @@ class ReceiptService {
                 ),
               ),
               pw.SizedBox(height: 10),
-              pw.Text("Order #: ${orderNumber.length > 6 ? orderNumber.substring(orderNumber.length - 6).toUpperCase() : orderNumber.toUpperCase()}"),
-              pw.Text("Customer: $customerName"),
-              pw.Text("Date: ${DateTime.now().toString().substring(0, 16)}"),
-              pw.Text("Type: Walk-in POS"),
+              pw.Text("Order #: ${orderNumber.length > 6 ? orderNumber.substring(orderNumber.length - 6).toUpperCase() : orderNumber.toUpperCase()}", style: const pw.TextStyle(fontSize: 9)),
+              pw.Text("Customer: $customerName", style: const pw.TextStyle(fontSize: 9)),
+              pw.Text("Date: ${DateTime.now().toString().substring(0, 16)}", style: const pw.TextStyle(fontSize: 9)),
+              pw.Text("Type: Walk-in POS", style: const pw.TextStyle(fontSize: 9)),
               pw.Divider(),
               
               if (laundryItems.isNotEmpty) ...[
-                pw.Text("LAUNDRY SERVICES", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                ...laundryItems.map((i) => pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Expanded(
-                      child: pw.Text(_truncate("${i.item.name} (${i.serviceType?.name ?? 'Generic'}) x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
-                    ),
-                    pw.Text("N${i.totalPrice.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
-                  ],
+                pw.Text("LAUNDRY SERVICES", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                pw.SizedBox(height: 4),
+                ...laundryItems.map((i) => pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 2),
+                  child: pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Expanded(
+                        flex: 4,
+                        child: pw.Text(_truncate("${i.item.name} (${i.serviceType?.name ?? 'Generic'}) x${i.quantity}", 35), style: const pw.TextStyle(fontSize: 8.5), overflow: pw.TextOverflow.clip),
+                      ),
+                      pw.SizedBox(width: 5),
+                      pw.Expanded(
+                        flex: 1,
+                        child: pw.Text("N${i.totalPrice.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 8.5), textAlign: pw.TextAlign.right),
+                      ),
+                    ],
+                  ),
                 )),
-                pw.SizedBox(height: 5),
+                pw.SizedBox(height: 8),
               ],
               
               if (storeItems.isNotEmpty) ...[
-                pw.Text("STORE PRODUCTS", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                ...storeItems.map((i) => pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Expanded(
-                      child: pw.Text(_truncate("${i.product.name} x${i.quantity}", 28), style: const pw.TextStyle(fontSize: 9), overflow: pw.TextOverflow.clip),
-                    ),
-                    pw.Text("N${i.totalPrice.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
-                  ],
+                pw.Text("STORE PRODUCTS", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                pw.SizedBox(height: 4),
+                ...storeItems.map((i) => pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 2),
+                  child: pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Expanded(
+                        flex: 4,
+                        child: pw.Text(_truncate("${i.product.name} x${i.quantity}", 35), style: const pw.TextStyle(fontSize: 8.5), overflow: pw.TextOverflow.clip),
+                      ),
+                      pw.SizedBox(width: 5),
+                      pw.Expanded(
+                        flex: 1,
+                        child: pw.Text("N${i.totalPrice.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 8.5), textAlign: pw.TextAlign.right),
+                      ),
+                    ],
+                  ),
                 )),
-                pw.SizedBox(height: 5),
+                pw.SizedBox(height: 8),
               ],
               
-              pw.Divider(),
+              pw.Divider(thickness: 0.5),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text("Subtotal:"),
-                  pw.Text("N${subtotal.toStringAsFixed(0)}"),
+                  pw.Text("Subtotal:", style: const pw.TextStyle(fontSize: 9)),
+                  pw.Text("N${subtotal.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
                 ],
               ),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text("Delivery Fee:"),
-                  pw.Text("N${deliveryFee.toStringAsFixed(0)}"),
+                  pw.Text("Delivery Fee:", style: const pw.TextStyle(fontSize: 9)),
+                  pw.Text("N${deliveryFee.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
                 ],
               ),
               if (discountAmount != null && discountAmount > 0)
@@ -106,20 +125,21 @@ class ReceiptService {
                   children: [
                     pw.Text(discountPercentage != null && discountPercentage > 0 
                       ? "Discount (${discountPercentage.toStringAsFixed(0)}%):"
-                      : "Discount:"),
-                    pw.Text("-N${discountAmount.toStringAsFixed(0)}"),
+                      : "Discount:", style: const pw.TextStyle(fontSize: 9, color: PdfColors.green)),
+                    pw.Text("-N${discountAmount.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9, color: PdfColors.green)),
                   ],
                 ),
+              pw.SizedBox(height: 4),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text("TOTAL:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
-                  pw.Text("N${total.toStringAsFixed(0)}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                  pw.Text("TOTAL:", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                  pw.Text("N${total.toStringAsFixed(0)}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                 ],
               ),
-              pw.Divider(),
-              pw.Text("Payment: ${paymentMethod.toUpperCase()}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 20),
+              pw.Divider(thickness: 0.5),
+              pw.Text("Payment: ${paymentMethod.toUpperCase()}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)),
+              pw.SizedBox(height: 15),
               pw.Center(
                 child: pw.Text("Thank you for your patronage!", style: const pw.TextStyle(fontSize: 8)),
               ),

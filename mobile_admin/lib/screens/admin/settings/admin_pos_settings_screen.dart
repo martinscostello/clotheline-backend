@@ -4,6 +4,8 @@ import 'package:clotheline_admin/widgets/glass/LiquidBackground.dart';
 import 'package:clotheline_admin/widgets/glass/GlassContainer.dart';
 import 'package:clotheline_core/clotheline_core.dart';
 
+import 'admin_branch_pos_config_detail_screen.dart';
+
 class AdminPosSettingsScreen extends StatefulWidget {
   const AdminPosSettingsScreen({super.key});
 
@@ -56,7 +58,7 @@ class _AdminPosSettingsScreenState extends State<AdminPosSettingsScreen> {
               const Padding(
                 padding: EdgeInsets.all(20.0),
                 child: Text(
-                  "Control which branches have access to the physical POS Terminal Smart Ledger. Disabling this hides the POS Terminal dashboard for all staff at that location.",
+                  "Control which branches have access to the physical POS Terminal Smart Ledger. Tap a branch to configure charges, profit targets, and security controls.",
                   style: TextStyle(color: Colors.white54, fontSize: 13),
                 ),
               ),
@@ -78,34 +80,43 @@ class _AdminPosSettingsScreenState extends State<AdminPosSettingsScreen> {
                         final branch = branchProvider.branches[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 15),
-                          child: GlassContainer(
-                            opacity: 0.1,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(branch.name, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                                      const SizedBox(height: 5),
-                                      Text(
-                                        branch.isPosTerminalEnabled ? "Terminal Active" : "Terminal Restricted",
-                                        style: TextStyle(
-                                          color: branch.isPosTerminalEnabled ? Colors.greenAccent : Colors.redAccent,
-                                          fontSize: 12
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => AdminBranchPosConfigDetailScreen(branch: branch)),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: GlassContainer(
+                              opacity: 0.1,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(branch.name, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 5),
+                                        Text(
+                                          branch.isPosTerminalEnabled ? "Terminal Active" : "Terminal Restricted",
+                                          style: TextStyle(
+                                            color: branch.isPosTerminalEnabled ? Colors.greenAccent : Colors.redAccent,
+                                            fontSize: 12
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                Switch(
-                                  value: branch.isPosTerminalEnabled,
-                                  activeColor: AppTheme.secondaryColor,
-                                  onChanged: _isLoading ? null : (val) => _togglePosTerminal(branch),
-                                )
-                              ],
+                                  Switch(
+                                    value: branch.isPosTerminalEnabled,
+                                    activeColor: AppTheme.secondaryColor,
+                                    onChanged: _isLoading ? null : (val) => _togglePosTerminal(branch),
+                                  )
+                                ],
+                              ),
                             ),
                           ),
                         );
