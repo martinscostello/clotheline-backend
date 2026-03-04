@@ -100,11 +100,15 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
     // Use saved order if exists, else default
     if (order.isNotEmpty) {
       for (var id in order) {
-        final def = _defaultActions.firstWhere((a) => a['id'] == id, orElse: () => _defaultActions[0]);
-        actions.add({
-          ...def,
-          'label': labels[id] ?? def['label'],
-        });
+        // [FIX] Only add if ID exists in current default actions (prevents 'ghost' items like Chat)
+        final index = _defaultActions.indexWhere((a) => a['id'] == id);
+        if (index != -1) {
+          final def = _defaultActions[index];
+          actions.add({
+            ...def,
+            'label': labels[id] ?? def['label'],
+          });
+        }
       }
       // Add any new defaults that might not be in saved order
       for (var def in _defaultActions) {
@@ -449,6 +453,9 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
       case 'Reports':
         allowed = permissions['manageFinancials'] == true;
         break;
+      case 'Terminal':
+        allowed = permissions['manageTerminal'] == true;
+        break;
       default:
         allowed = true;
     }
@@ -605,7 +612,7 @@ class _AdminDashboardContentState extends State<AdminDashboardContent> {
             }
             break;
           case 'pos_terminal':
-            if (_hasPermission("POS")) {
+            if (_hasPermission("Terminal")) {
               Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(
                 builder: (_) => const AdminPosTerminalScreen()
               ));

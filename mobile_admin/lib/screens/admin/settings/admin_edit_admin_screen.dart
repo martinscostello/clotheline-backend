@@ -202,6 +202,7 @@ class _AdminEditAdminScreenState extends State<AdminEditAdminScreen> {
                         _buildSwitch("View Dashboard Revenue Chart", 'viewRevenueOverview'),
                         _buildSwitch("Manage Product Ext. Illusions", 'manageProductIllusions'),
                         _buildSwitch("Generate Database Backups", 'manageBackup'),
+                        _buildSwitch("Manage POS Terminal Ledger", 'manageTerminal'),
                       ],
                     ),
                   ),
