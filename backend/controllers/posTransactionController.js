@@ -72,18 +72,12 @@ exports.getMetrics = async (req, res) => {
             filter.branchId = branchId;
         }
 
-        if (startDate && endDate) {
-            filter.createdAt = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate)
-            };
-        }
-
         const transactions = await POSTransaction.find(filter);
 
         let totalTransactions = transactions.length;
         let totalVolume = 0;
         let totalCharges = 0;
+        let totalNetProfit = 0;
 
         let totalDeposits = 0;
         let totalWithdrawals = 0;
@@ -91,6 +85,10 @@ exports.getMetrics = async (req, res) => {
         transactions.forEach(t => {
             totalVolume += t.amount;
             totalCharges += (t.charges || 0);
+
+            if (t.status !== 'unresolved') {
+                totalNetProfit += (t.netProfit || 0);
+            }
 
             if (t.transactionType === 'Deposit') totalDeposits += t.amount;
             if (t.transactionType === 'Withdrawal' || t.transactionType === 'Transfer') totalWithdrawals += t.amount;
@@ -105,7 +103,7 @@ exports.getMetrics = async (req, res) => {
             avgCharge,
             totalDeposits,
             totalWithdrawals,
-            netProfit: totalCharges
+            netProfit: totalNetProfit
         });
     } catch (err) {
         console.error("Error getting POS metrics:", err);
@@ -116,7 +114,7 @@ exports.getMetrics = async (req, res) => {
 // POST /api/pos-transactions
 exports.createTransaction = async (req, res) => {
     try {
-        const { branchId, transactionType, amount, charges, notes } = req.body;
+        const { branchId, transactionType, amount, charges, providerFee, netProfit, status, notes } = req.body;
 
         if (!branchId || !transactionType || !amount) {
             return res.status(400).json({ msg: 'Please enter all required fields' });
@@ -136,6 +134,9 @@ exports.createTransaction = async (req, res) => {
             transactionType,
             amount,
             charges: charges || 0,
+            providerFee: providerFee || 0,
+            netProfit: netProfit || 0,
+            status: status || 'resolved',
             notes,
             enteredBy: req.user.id
         });
@@ -166,11 +167,14 @@ exports.updateTransaction = async (req, res) => {
             return res.status(403).json({ msg: 'Transactions cannot be edited after 24 hours unless Master Admin' });
         }
 
-        const { transactionType, amount, charges, notes } = req.body;
+        const { transactionType, amount, charges, providerFee, netProfit, status, notes } = req.body;
 
         if (transactionType) tx.transactionType = transactionType;
         if (amount !== undefined) tx.amount = amount;
         if (charges !== undefined) tx.charges = charges;
+        if (providerFee !== undefined) tx.providerFee = providerFee;
+        if (netProfit !== undefined) tx.netProfit = netProfit;
+        if (status) tx.status = status;
         if (notes !== undefined) tx.notes = notes;
 
         await tx.save();

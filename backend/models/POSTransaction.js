@@ -9,6 +9,13 @@ const posTransactionSchema = new mongoose.Schema({
     },
     amount: { type: Number, required: true },
     charges: { type: Number, default: 0 },
+    providerFee: { type: Number, default: 0 },
+    netProfit: { type: Number, default: 0 },
+    status: {
+        type: String,
+        enum: ['resolved', 'unresolved'],
+        default: 'resolved'
+    },
     notes: { type: String },
     enteredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 }, { timestamps: true });

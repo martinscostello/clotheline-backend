@@ -50,6 +50,7 @@ export 'widgets/global_error_boundary.dart';
 // Utils
 export 'utils/toast_utils.dart';
 export 'utils/currency_formatter.dart';
+export 'utils/opay_fee_calculator.dart';
 
 // Theme
 export 'theme/app_theme.dart';

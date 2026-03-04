@@ -34,6 +34,7 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
 
   // Smart Tiers
   List<SmartTier> _smartTiers = [];
+  late String _opayTier;
 
   @override
   void initState() {
@@ -55,6 +56,7 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
     _requireDeleteConfirmation = config?.security.requireDeleteConfirmation ?? true;
 
     _smartTiers = List.from(config?.charges.smartTiers ?? []);
+    _opayTier = config?.charges.opayTier ?? 'Regular';
   }
 
   @override
@@ -79,6 +81,7 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
             'withdrawal': MoneyTextInputFormatter.getNumericValue(_withdrawalCtrl.text),
             'transfer': MoneyTextInputFormatter.getNumericValue(_transferCtrl.text),
             'deposit': MoneyTextInputFormatter.getNumericValue(_depositCtrl.text),
+            'opayTier': _opayTier,
             'smartTiersEnabled': _smartTiersEnabled,
             'smartTiers': _smartTiers.map((t) => {'min': t.min, 'max': t.max, 'charge': t.charge}).toList(),
           },
@@ -158,6 +161,10 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
 
                     _buildSectionHeader("Default Opening Cash"),
                     _buildOpeningCashCard(),
+                    const SizedBox(height: 20),
+
+                    _buildSectionHeader("OPay Fee Reference"),
+                    _buildOPayFeeTable(),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -200,6 +207,8 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
           const SizedBox(height: 10),
           _buildMoneyField(_depositCtrl, "Deposit Charge", Icons.arrow_downward),
           const Divider(color: Colors.white10, height: 30),
+          _buildDropdownRow("OPay Fee Tier", _opayTier, ['Platinum', 'Gold', 'Regular'], (val) => setState(() => _opayTier = val!)),
+          const Divider(color: Colors.white10, height: 30),
           _buildToggleRow("Enable Smart Charge Tiers", _smartTiersEnabled, (val) => setState(() => _smartTiersEnabled = val)),
           if (_smartTiersEnabled) ...[
             const SizedBox(height: 15),
@@ -211,6 +220,76 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
               onPressed: () => setState(() => _smartTiers.add(SmartTier(min: 0, max: 0, charge: 0))),
             ),
           ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownRow(String title, String value, List<String> options, Function(String?) onChanged) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: const TextStyle(color: Colors.white, fontSize: 13)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              dropdownColor: const Color(0xFF1E293B),
+              style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 13, fontWeight: FontWeight.bold),
+              items: options.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOPayFeeTable() {
+    return GlassContainer(
+      opacity: 0.05,
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        children: [
+          _buildFeeTableHeader(),
+          const Divider(color: Colors.white10),
+          _buildFeeTableRow("1 - 3,000", "0.43%", "0.45%", "0.5%"),
+          _buildFeeTableRow("3,001 - 4,000", "₦17.00", "₦18.00", "₦20.00"),
+          _buildFeeTableRow("4,001 - 5,000", "₦21.25", "₦22.50", "₦25.00"),
+          _buildFeeTableRow("5,001 - 6,000", "₦25.55", "₦27.00", "₦30.00"),
+          _buildFeeTableRow("20,000+", "₦85.00 (Max)", "₦90.00 (Max)", "₦100.00 (Max)"),
+          const SizedBox(height: 10),
+          const Text(
+            "* System automatically applies these rates based on the selected tier.",
+            style: TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeeTableHeader() {
+    return const Row(
+      children: [
+        Expanded(flex: 2, child: Text("Range", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
+        Expanded(child: Text("Plat", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.center))),
+        Expanded(child: Text("Gold", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.center))),
+        Expanded(child: Text("Reg", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.center))),
+      ],
+    );
+  }
+
+  Widget _buildFeeTableRow(String range, String plat, String gold, String reg) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(flex: 2, child: Text(range, style: const TextStyle(color: Colors.white70, fontSize: 11))),
+          Expanded(child: Text(plat, style: const TextStyle(color: Colors.white38, fontSize: 11, textAlign: TextAlign.center))),
+          Expanded(child: Text(gold, style: const TextStyle(color: Colors.white38, fontSize: 11, textAlign: TextAlign.center))),
+          Expanded(child: Text(reg, style: const TextStyle(color: Colors.white38, fontSize: 11, textAlign: TextAlign.center))),
         ],
       ),
     );

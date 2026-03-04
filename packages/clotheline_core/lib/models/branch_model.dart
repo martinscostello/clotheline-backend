@@ -66,6 +66,7 @@ class PosCharges {
   final double withdrawal;
   final double transfer;
   final double deposit;
+  final String opayTier; // [NEW]
   final bool smartTiersEnabled;
   final List<SmartTier> smartTiers;
 
@@ -73,6 +74,7 @@ class PosCharges {
     this.withdrawal = 0.0,
     this.transfer = 0.0,
     this.deposit = 0.0,
+    this.opayTier = 'Regular',
     this.smartTiersEnabled = false,
     this.smartTiers = const [],
   });
@@ -82,6 +84,7 @@ class PosCharges {
       withdrawal: (json['withdrawal'] as num?)?.toDouble() ?? 0.0,
       transfer: (json['transfer'] as num?)?.toDouble() ?? 0.0,
       deposit: (json['deposit'] as num?)?.toDouble() ?? 0.0,
+      opayTier: json['opayTier'] ?? 'Regular',
       smartTiersEnabled: json['smartTiersEnabled'] ?? false,
       smartTiers: (json['smartTiers'] as List?)?.map((t) => SmartTier.fromJson(t)).toList() ?? [],
     );

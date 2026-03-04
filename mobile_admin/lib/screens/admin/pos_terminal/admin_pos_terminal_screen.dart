@@ -38,6 +38,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   final _chargesCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   String _transactionType = 'Withdrawal';
+  bool _isUnresolved = false; // [NEW]
   bool _isSaving = false;
 
   // Recon
@@ -68,25 +69,31 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     final config = branch.posConfig;
     if (config == null) return;
 
-    double amount = MoneyTextInputFormatter.getNumericValue(val);
-    double suggestedCharge = 0;
+    final amount = MoneyTextInputFormatter.getNumericValue(_amountCtrl.text);
+    if (amount <= 0) return;
 
-    if (config.charges.smartTiersEnabled) {
-      for (var tier in config.charges.smartTiers) {
-        if (amount >= tier.min && amount <= tier.max) {
-          suggestedCharge = tier.charge;
-          break;
-        }
-      }
-    } else {
-      if (_transactionType == 'Withdrawal') suggestedCharge = config.charges.withdrawal;
-      else if (_transactionType == 'Transfer') suggestedCharge = config.charges.transfer;
-      else if (_transactionType == 'Deposit') suggestedCharge = config.charges.deposit;
-    }
+    // OPay specific fee calculation
+    final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
+    _chargesCtrl.text = CurrencyFormatter.format(opayFee).replaceAll('₦', '').trim();
+    
+    // Original logic (if needed, but the instruction implies OPay is primary)
+    // double suggestedCharge = 0;
+    // if (config.charges.smartTiersEnabled) {
+    //   for (var tier in config.charges.smartTiers) {
+    //     if (amount >= tier.min && amount <= tier.max) {
+    //       suggestedCharge = tier.charge;
+    //       break;
+    //     }
+    //   }
+    // } else {
+    //   if (_transactionType == 'Withdrawal') suggestedCharge = config.charges.withdrawal;
+    //   else if (_transactionType == 'Transfer') suggestedCharge = config.charges.transfer;
+    //   else if (_transactionType == 'Deposit') suggestedCharge = config.charges.deposit;
+    // }
 
-    if (suggestedCharge > 0) {
-      _chargesCtrl.text = suggestedCharge.toStringAsFixed(0);
-    }
+    // if (suggestedCharge > 0) {
+    //   _chargesCtrl.text = suggestedCharge.toStringAsFixed(0);
+    // }
   }
 
   Future<void> _fetchData() async {
@@ -145,6 +152,10 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       ToastUtils.show(context, "Amount is required", type: ToastType.warning);
       return;
     }
+    final amount = MoneyTextInputFormatter.getNumericValue(_amountCtrl.text);
+    final charges = MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text);
+    
+    final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
 
     setState(() => _isSaving = true);
     
@@ -153,9 +164,12 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       final response = await api.client.post('/pos-transactions', data: {
         'branchId': _selectedBranchId,
         'transactionType': _transactionType,
-        'amount': MoneyTextInputFormatter.getNumericValue(_amountCtrl.text),
-        'charges': MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text),
-        'notes': _notesCtrl.text,
+        'amount': amount,
+        'charges': charges,
+        'providerFee': opayFee,
+        'netProfit': charges - opayFee,
+        'status': _isUnresolved ? 'unresolved' : 'resolved',
+        'notes': _notesCtrl.text.trim(),
       });
 
       if (response.statusCode == 200) {
@@ -291,7 +305,19 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                           const SizedBox(height: 24),
                           const Divider(color: Colors.white10),
                           const SizedBox(height: 12),
-                          const Text("Recent Transactions", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                          Row(
+                            children: [
+                                const Icon(Icons.account_balance_rounded, color: AppTheme.secondaryColor, size: 28),
+                                const SizedBox(width: 15),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text("POS TERMINAL", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                                    _buildOpayIndicator(),
+                                  ],
+                                ),
+                              ],
+                            ),
                           const SizedBox(height: 16),
                           _buildLedgerTable(),
                           const SizedBox(height: 40),
@@ -601,26 +627,62 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          const Text("NOTES / REFERENCE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _notesCtrl,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: InputDecoration(
-              hintText: "e.g. Paid to John Doe", 
-              hintStyle: const TextStyle(color: Colors.white24),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _notesCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: "Transaction notes (optional)...", 
+                    hintStyle: const TextStyle(color: Colors.white24),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("STATUS", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () => setState(() => _isUnresolved = !_isUnresolved),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _isUnresolved ? Colors.orange.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _isUnresolved ? Colors.orange.withOpacity(0.3) : Colors.green.withOpacity(0.3)),
+                        ),
+                        child: Center(
+                          child: Text(
+                            _isUnresolved ? "UNRESOLVED" : "RESOLVED",
+                            style: TextStyle(
+                              color: _isUnresolved ? Colors.orange : Colors.green,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.secondaryColor,
+                backgroundColor: _isUnresolved ? Colors.orange : AppTheme.secondaryColor,
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -629,7 +691,10 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
               onPressed: _isSaving ? null : _addTransaction,
               child: _isSaving 
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2)) 
-                : const Text("Save Transaction", style: TextStyle(fontWeight: FontWeight.bold)),
+                : Text(
+                  _isUnresolved ? "Log Unresolved" : "Save Log", 
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
+                ),
             ),
           )
         ],
@@ -736,116 +801,170 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   }
 
   Widget _buildLedgerTable() {
-    if (_transactions.isEmpty) return const Center(child: Padding(
-      padding: EdgeInsets.all(40.0),
-      child: Text("No transactions yet.", style: TextStyle(color: Colors.white54)),
-    ));
+    if (_transactions.isEmpty) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(40.0),
+        child: Text("No transactions yet.", style: TextStyle(color: Colors.white54)),
+      ));
+    }
+    
+    return Column(
+      children: [
+        _buildLedgerHeader(),
+        const SizedBox(height: 8),
+        ..._transactions.map((tx) => _buildLedgerRow(tx)).toList(),
+      ],
+    );
+  }
+
+  Widget _buildLedgerHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          const Expanded(flex: 2, child: Text("DATE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
+          const Expanded(flex: 2, child: Text("TYPE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
+          const Expanded(flex: 2, child: Text("AMOUNT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.right))),
+          const Expanded(flex: 2, child: Text("FEES", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.right))),
+          const Expanded(flex: 2, child: Text("PROFIT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.right))),
+          const Expanded(flex: 2, child: Text("STATUS", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.center))),
+          const SizedBox(width: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLedgerRow(Map<String, dynamic> tx) {
+    final date = DateTime.parse(tx['createdAt']).toLocal();
+    final isUnresolved = tx['status'] == 'unresolved';
+    final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId);
     
     return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
+        color: isUnresolved ? Colors.orange.withOpacity(0.05) : Colors.white.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isUnresolved ? Colors.orange.withOpacity(0.2) : Colors.white10),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: ListView.separated(
-          shrinkWrap: true,
-          padding: EdgeInsets.zero,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _transactions.length,
-          separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
-          itemBuilder: (context, index) {
-            final tx = _transactions[index];
-            final bool isDeposit = tx['transactionType'] == 'Deposit';
-            final bool isWithdrawal = tx['transactionType'] == 'Withdrawal';
-            final amountColor = isDeposit ? Colors.greenAccent : (isWithdrawal ? Colors.orangeAccent : Colors.blueAccent);
-            
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(color: amountColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                    child: Icon(
-                      isDeposit ? Icons.arrow_downward : (isWithdrawal ? Icons.arrow_upward : Icons.swap_horiz), 
-                      color: amountColor, 
-                      size: 18
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(tx['transactionType'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                        const SizedBox(height: 2),
-                        Text(
-                          DateFormat('MMM dd, HH:mm').format(DateTime.parse(tx['createdAt']).toLocal()), 
-                          style: const TextStyle(color: Colors.white38, fontSize: 11)
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          CurrencyFormatter.format((tx['amount'] ?? 0).toDouble()), 
-                          style: TextStyle(color: amountColor, fontWeight: FontWeight.bold, fontSize: 14)
-                        ),
-                        if ((tx['charges'] ?? 0) > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              "+${CurrencyFormatter.format((tx['charges']).toDouble())} Fee", 
-                              style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.w600)
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Delete Action
-                  Consumer<AuthService>(
-                    builder: (context, auth, _) {
-                      if (auth.currentUser?['isMasterAdmin'] == true) {
-                        return IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.white24, size: 20),
-                          onPressed: () {
-                           showDialog(context: context, builder: (ctx) => AlertDialog(
-                             backgroundColor: const Color(0xFF1E293B),
-                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                             title: const Text("Delete Transaction?", style: TextStyle(color: Colors.white)),
-                             content: const Text("This action cannot be undone and will affect branch metrics.", style: TextStyle(color: Colors.white70)),
-                             actions: [
-                               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-                               ElevatedButton(
-                                 style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-                                 onPressed: () {
-                                   Navigator.pop(ctx);
-                                   _deleteTransaction(tx);
-                                 }, 
-                                 child: const Text("Delete")
-                               ),
-                             ],
-                           ));
-                          }
-                        );
-                      }
-                      return const SizedBox(width: 12);
-                    }
-                  )
-                ],
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              "${date.day}/${date.month} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}", 
+              style: const TextStyle(color: Colors.white38, fontSize: 10)
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(tx['transactionType'], style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              CurrencyFormatter.format((tx['amount'] ?? 0).toDouble()), 
+              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.right,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              CurrencyFormatter.format((tx['providerFee'] ?? 0).toDouble()), 
+              style: const TextStyle(color: Colors.white38, fontSize: 10),
+              textAlign: TextAlign.right,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              CurrencyFormatter.format((tx['netProfit'] ?? 0).toDouble()), 
+              style: TextStyle(
+                color: isUnresolved ? Colors.white24 : AppTheme.secondaryColor, 
+                fontSize: 11, 
+                fontWeight: FontWeight.bold
               ),
-            );
-          },
-        ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isUnresolved ? Colors.orange.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  isUnresolved ? "PENDING" : "RESOLVED",
+                  style: TextStyle(color: isUnresolved ? Colors.orange : Colors.green, fontSize: 8, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 40,
+            child: isUnresolved 
+              ? IconButton(
+                  icon: const Icon(Icons.check_circle_outline, color: Colors.orange, size: 20),
+                  onPressed: () => _resolveTransaction(tx, branch),
+                  tooltip: "Resolve",
+                )
+              : IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.white24, size: 18),
+                  onPressed: () => _confirmDelete(tx),
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _resolveTransaction(Map<String, dynamic> tx, Branch branch) async {
+    setState(() => _isSaving = true);
+    try {
+      final amount = (tx['amount'] ?? 0).toDouble();
+      final charges = (tx['charges'] ?? 0).toDouble();
+      final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
+
+      final response = await api.client.put('/pos-transactions/${tx['_id']}', data: {
+        'status': 'resolved',
+        'providerFee': opayFee,
+        'netProfit': charges - opayFee,
+      });
+
+      if (response.statusCode == 200) {
+        ToastUtils.show(context, "Transaction Resolved", type: ToastType.success);
+        _fetchData();
+      }
+    } catch (e) {
+      ToastUtils.show(context, "Resolution failed: $e", type: ToastType.error);
+    } finally {
+      setState(() => _isSaving = false);
+    }
+  }
+
+  void _confirmDelete(Map<String, dynamic> tx) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Delete Transaction?", style: TextStyle(color: Colors.white)),
+        content: const Text("This will permanently remove this log and affect branch metrics.", style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deleteTransaction(tx);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

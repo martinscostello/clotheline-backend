@@ -33,8 +33,9 @@ const BranchSchema = new mongoose.Schema({
         charges: {
             withdrawal: { type: Number, default: 0 },
             transfer: { type: Number, default: 0 },
-            deposit: { type: Number, default: 0 },
-            smartTiersEnabled: { type: Boolean, default: false },
+            deliveryDeposit: { type: Number, default: 0 },
+            opayTier: { type: String, enum: ['Platinum', 'Gold', 'Regular'], default: 'Regular' },
+            enableSmartTiers: { type: Boolean, default: false },
             smartTiers: [{
                 min: Number,
                 max: Number,
