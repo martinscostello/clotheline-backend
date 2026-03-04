@@ -274,9 +274,9 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
     return const Row(
       children: [
         Expanded(flex: 2, child: Text("Range", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
-        Expanded(child: Text("Plat", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.center))),
-        Expanded(child: Text("Gold", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.center))),
-        Expanded(child: Text("Reg", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.center))),
+        Expanded(child: Text("Plat", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+        Expanded(child: Text("Gold", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+        Expanded(child: Text("Reg", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
       ],
     );
   }
@@ -287,9 +287,9 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
       child: Row(
         children: [
           Expanded(flex: 2, child: Text(range, style: const TextStyle(color: Colors.white70, fontSize: 11))),
-          Expanded(child: Text(plat, style: const TextStyle(color: Colors.white38, fontSize: 11, textAlign: TextAlign.center))),
-          Expanded(child: Text(gold, style: const TextStyle(color: Colors.white38, fontSize: 11, textAlign: TextAlign.center))),
-          Expanded(child: Text(reg, style: const TextStyle(color: Colors.white38, fontSize: 11, textAlign: TextAlign.center))),
+          Expanded(child: Text(plat, style: const TextStyle(color: Colors.white38, fontSize: 11), textAlign: TextAlign.center)),
+          Expanded(child: Text(gold, style: const TextStyle(color: Colors.white38, fontSize: 11), textAlign: TextAlign.center)),
+          Expanded(child: Text(reg, style: const TextStyle(color: Colors.white38, fontSize: 11), textAlign: TextAlign.center)),
         ],
       ),
     );

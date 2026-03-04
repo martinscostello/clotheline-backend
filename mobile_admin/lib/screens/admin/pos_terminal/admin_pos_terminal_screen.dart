@@ -824,10 +824,10 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         children: [
           const Expanded(flex: 2, child: Text("DATE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
           const Expanded(flex: 2, child: Text("TYPE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
-          const Expanded(flex: 2, child: Text("AMOUNT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.right))),
-          const Expanded(flex: 2, child: Text("FEES", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.right))),
-          const Expanded(flex: 2, child: Text("PROFIT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.right))),
-          const Expanded(flex: 2, child: Text("STATUS", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, textAlign: TextAlign.center))),
+          const Expanded(flex: 2, child: Text("AMOUNT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
+          const Expanded(flex: 2, child: Text("FEES", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
+          const Expanded(flex: 2, child: Text("PROFIT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
+          const Expanded(flex: 2, child: Text("STATUS", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
           const SizedBox(width: 40),
         ],
       ),
@@ -925,6 +925,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   Future<void> _resolveTransaction(Map<String, dynamic> tx, Branch branch) async {
     setState(() => _isSaving = true);
     try {
+      final api = ApiService();
       final amount = (tx['amount'] ?? 0).toDouble();
       final charges = (tx['charges'] ?? 0).toDouble();
       final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
@@ -966,6 +967,19 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
           ),
         ],
       ),
+  Widget _buildOpayIndicator() {
+    if (_selectedBranchId == null) return const SizedBox.shrink();
+    final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId, orElse: () => Provider.of<BranchProvider>(context, listen: false).branches.first);
+    final tier = branch.posConfig?.charges.opayTier ?? 'Regular';
+    
+    return Row(
+      children: [
+        const Text("Provider: ", style: TextStyle(color: Colors.white38, fontSize: 10)),
+        const Text("OPay", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+        const SizedBox(width: 8),
+        const Text("Tier: ", style: TextStyle(color: Colors.white38, fontSize: 10)),
+        Text(tier, style: TextStyle(color: tier == 'Platinum' ? Colors.amberAccent : (tier == 'Gold' ? Colors.orangeAccent : Colors.blueAccent), fontSize: 10, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 }
