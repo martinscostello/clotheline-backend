@@ -145,7 +145,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _fetchAppContent() async {
-    final content = await _contentService.getAppContent();
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final String? branchId = branchProvider.selectedBranchId;
+    final content = await _contentService.getAppContent(branchId: branchId);
     if (mounted) setState(() => _appContent = content);
   }
 
@@ -872,13 +874,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
          children: [
             _DrivingIcon(icon: iconData, color: iconColor), 
             const SizedBox(width: 8),
-            Expanded(child: _parseRichText(da.text))
+            Expanded(child: _parseRichText(da.text, Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black.withOpacity(0.8)))
          ],
        ),
      );
   }
 
-  Widget _parseRichText(String text) {
+  Widget _parseRichText(String text, Color baseColor) {
      List<InlineSpan> spans = [];
      RegExp exp = RegExp(r'\[(.*?)\]');
      Iterable<RegExpMatch> matches = exp.allMatches(text);
@@ -889,16 +891,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
            spans.add(TextSpan(text: text.substring(lastIndex, match.start)));
         }
         spans.add(WidgetSpan(
-          alignment: PlaceholderAlignment.baseline, 
-          baseline: TextBaseline.alphabetic,
+          alignment: PlaceholderAlignment.middle, // [FIX] Better alignment 
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: Colors.green,
-              borderRadius: BorderRadius.circular(3)
+              borderRadius: BorderRadius.circular(4)
             ),
-            child: Text(match.group(1)!, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)), 
+            child: Text(match.group(1)!, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)), 
           )
         ));
         lastIndex = match.end;
@@ -909,7 +910,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
      
      return RichText(
        text: TextSpan(
-         style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black, fontSize: 14),
+         style: TextStyle(color: baseColor, fontSize: 13, height: 1.2), // [FIX] Use passed color
          children: spans
        )
      );
