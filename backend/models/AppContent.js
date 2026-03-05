@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const AppContentSchema = new mongoose.Schema({
     heroCarousel: [{
-        imageUrl: { type: String, required: true },
+        imageUrl: { type: String }, // [FIX] Removed required: true to allow CMS placeholders
         title: String,
         titleColor: { type: String, default: "0xFFFFFFFF" }, // Default white
         tagLine: String,
@@ -18,7 +18,7 @@ const AppContentSchema = new mongoose.Schema({
         ref: 'Service'
     }],
     productAds: [{
-        imageUrl: { type: String, required: true },
+        imageUrl: { type: String }, // [FIX] Removed required: true
         targetScreen: String,
         active: { type: Boolean, default: true }
     }],
@@ -45,7 +45,7 @@ const AppContentSchema = new mongoose.Schema({
     branchOverrides: [{
         branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
         heroCarousel: [{
-            imageUrl: { type: String, required: true },
+            imageUrl: { type: String }, // [FIX] Removed required: true
             title: String,
             titleColor: { type: String, default: "0xFFFFFFFF" },
             tagLine: String,
@@ -57,7 +57,7 @@ const AppContentSchema = new mongoose.Schema({
             active: { type: Boolean, default: true }
         }],
         productAds: [{
-            imageUrl: { type: String, required: true },
+            imageUrl: { type: String }, // [FIX] Removed required: true
             targetScreen: String,
             active: { type: Boolean, default: true }
         }]
