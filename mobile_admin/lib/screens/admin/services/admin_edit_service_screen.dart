@@ -655,6 +655,13 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                           value: _quoteRequired,
                           onChanged: (val) => setState(() => _quoteRequired = val),
                         ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text("Allow Pay on Delivery", style: TextStyle(color: textColor, fontSize: 14)),
+                          subtitle: Text("Enable POD for this service", style: TextStyle(color: labelColor, fontSize: 12)),
+                          value: _allowPOD,
+                          onChanged: (val) => setState(() => _allowPOD = val),
+                        ),
                         if (_quoteRequired) ...[
                           const SizedBox(height: 10),
                           TextFormField(
