@@ -3,21 +3,12 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:clotheline_core/clotheline_core.dart';
 import 'package:clotheline_customer/widgets/booking/booking_sheet.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import 'package:clotheline_customer/screens/user/products/product_detail_screen.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import 'package:provider/provider.dart';
 import 'package:clotheline_customer/screens/user/products/products_screen.dart';
 import 'dart:convert';
 import '../../../widgets/custom_cached_image.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import 'notifications/notifications_screen.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import '../common/branch_selection_screen.dart';
 import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
 import 'package:clotheline_customer/widgets/glass/LaundryGlassCard.dart';
@@ -25,7 +16,6 @@ import 'hero_video_player.dart';
 import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/dialogs/terms_acceptance_dialog.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onSwitchToStore;
   final ValueNotifier<int>? tabNotifier;
@@ -501,45 +491,44 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     final items = _getItems();
     if (items.isEmpty) return const SizedBox.shrink();
 
-    return SizedBox(
-      height: 220,
-      width: double.infinity,
-      child: Stack(
-        children: [
-          PageView.builder(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AspectRatio(
+          aspectRatio: 16 / 9, // Adaptive height based on width
+          child: PageView.builder(
             controller: _pageController,
-            clipBehavior: Clip.none, // Allow shadows to overflow
+            clipBehavior: Clip.none,
             onPageChanged: _onPageChanged,
             itemCount: items.length,
-            allowImplicitScrolling: true, // [FIX] Pre-build and buffer adjacent videos
+            allowImplicitScrolling: true,
             itemBuilder: (context, index) {
               final item = items[index];
               final bool isActive = _currentHeroIndex == index;
               return _buildHeroCard(item, items.length, isActive: isActive);
             },
           ),
-          
-          // Stationary Indicators
-          Positioned(
-            bottom: 24,
-            left: 44, // 20 padding + 24 card padding
-            child: Row(
-              children: List.generate(items.length, (index) {
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  width: _currentHeroIndex == index ? 24 : 8,
-                  height: 8,
-                  margin: const EdgeInsets.only(right: 6),
-                  decoration: BoxDecoration(
-                    color: _currentHeroIndex == index ? Colors.white : Colors.white30,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16), // Gap between cards and indicators
+        // Stationary Indicators (Now below the carousel)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(items.length, (index) {
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: _currentHeroIndex == index ? 24 : 8,
+              height: 8,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: _currentHeroIndex == index 
+                   ? AppTheme.primaryColor 
+                   : (Theme.of(context).brightness == Brightness.dark ? Colors.white24 : Colors.black12),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 
@@ -608,7 +597,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                         )
                       : CustomCachedImage(
                           imageUrl: item.imageUrl,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.fitWidth, // Prevents severe cropping of hero text
                           borderRadius: 0, // shell clips
                         ),
                 ),

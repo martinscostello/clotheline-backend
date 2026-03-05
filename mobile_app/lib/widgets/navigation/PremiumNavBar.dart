@@ -146,16 +146,22 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
 
     return ScaleTransition(
         scale: _navbarScaleAnimation,
-        child: Container(
-          margin: effectiveMargin,
-          child: ClipRRect(
-            borderRadius: effectiveBorderRadius,
-            child: isDark 
-              ? BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: _buildNavBarContent(isDark, effectiveBorderRadius, backgroundColor, activeColor, inactiveColor),
-                )
-              : _buildNavBarContent(isDark, effectiveBorderRadius, backgroundColor, activeColor, inactiveColor),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Container(
+              margin: effectiveMargin,
+              child: ClipRRect(
+                borderRadius: effectiveBorderRadius,
+                child: isDark 
+                  ? BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: _buildNavBarContent(isDark, effectiveBorderRadius, backgroundColor, activeColor, inactiveColor),
+                    )
+                  : _buildNavBarContent(isDark, effectiveBorderRadius, backgroundColor, activeColor, inactiveColor),
+              ),
+            ),
           ),
         ),
     );
