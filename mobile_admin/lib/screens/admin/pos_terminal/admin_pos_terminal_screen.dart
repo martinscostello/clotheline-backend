@@ -92,8 +92,8 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       opayFee = OPayFeeCalculator.calculateFee(terminalAmount, config?.charges.opayTier ?? 'Regular');
     }
 
-    // Add flat transfer fee if enabled, but ONLY if there's a charge (per user requirement to avoid negative profit)
-    if (customerCharge > 0 && (currentType?.hasTransferFlatFee ?? false)) {
+    // Add flat transfer fee if enabled (Always applied if ON, regardless of customer charge)
+    if (currentType?.hasTransferFlatFee ?? false) {
       opayFee += 20.0;
     }
     
@@ -178,7 +178,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       opayFee = OPayFeeCalculator.calculateFee(terminalAmount, branch.posConfig?.charges.opayTier ?? 'Regular');
     }
 
-    if (customerCharge > 0 && (currentType?.hasTransferFlatFee ?? false)) {
+    if (currentType?.hasTransferFlatFee ?? false) {
       opayFee += 20.0;
     }
 
