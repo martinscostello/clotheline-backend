@@ -199,7 +199,16 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     } catch (e) {
       String msg = e.toString();
       if (e is DioException && e.response?.data != null) {
-        msg = e.response?.data['msg'] ?? e.response?.data['message'] ?? msg;
+        final data = e.response?.data;
+        if (data is Map) {
+          if (data['msg'] != null) {
+            msg = data['msg'];
+          } else if (data['errors'] != null && data['errors'] is List) {
+            msg = (data['errors'] as List).map((err) => err['msg'] ?? err.toString()).join(", ");
+          } else if (data['message'] != null) {
+            msg = data['message'];
+          }
+        }
       }
       ToastUtils.show(context, msg, type: ToastType.error);
     } finally {
