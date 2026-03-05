@@ -8,6 +8,7 @@ class Branch {
   final bool isDefault;
   final bool isPosTerminalEnabled;
   final PosConfig? posConfig; // [NEW]
+  final String categorySortOrder;
 
   Branch({
     required this.id,
@@ -19,6 +20,7 @@ class Branch {
     this.isDefault = false,
     this.isPosTerminalEnabled = false,
     this.posConfig,
+    this.categorySortOrder = 'alphabetical',
   });
 
   factory Branch.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class Branch {
       isDefault: json['isDefault'] ?? false,
       isPosTerminalEnabled: json['isPosTerminalEnabled'] ?? false,
       posConfig: json['posConfig'] != null ? PosConfig.fromJson(json['posConfig']) : null,
+      categorySortOrder: json['categorySortOrder'] ?? 'alphabetical',
     );
   }
 }

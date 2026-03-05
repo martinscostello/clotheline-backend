@@ -55,6 +55,11 @@ const BranchSchema = new mongoose.Schema({
         defaultOpeningCash: { type: Number, default: 0 }
     },
 
+    categorySortOrder: {
+        type: String,
+        enum: ['alphabetical', 'newest', 'oldest'],
+        default: 'alphabetical'
+    },
     createdAt: { type: Date, default: Date.now }
 });
 

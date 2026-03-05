@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import '../../../../widgets/glass/GlassContainer.dart';
 import '../../../../widgets/glass/LiquidBackground.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
+final GlobalKey<_AdminCategoriesBodyState> _bodyKey = GlobalKey<_AdminCategoriesBodyState>();
+
 class AdminCategoriesScreen extends StatelessWidget {
   const AdminCategoriesScreen({super.key});
 
@@ -70,10 +68,15 @@ class AdminCategoriesScreen extends StatelessWidget {
               },
             ),
             const SizedBox(width: 10),
+            IconButton(
+              icon: const Icon(Icons.sort_rounded, color: Colors.white),
+              onPressed: () => _bodyKey.currentState?._showFilterOptions(),
+            ),
+            const SizedBox(width: 10),
           ],
         ),
-        body: const LiquidBackground(
-          child: AdminCategoriesBody(),
+        body: LiquidBackground(
+          child: AdminCategoriesBody(key: _bodyKey),
         ),
       ),
     );
@@ -187,6 +190,72 @@ class _AdminCategoriesBodyState extends State<AdminCategoriesBody> {
         ],
       )
     );
+  }
+
+  void _showFilterOptions() {
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final currentSort = branchProvider.selectedBranch?.categorySortOrder ?? 'alphabetical';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E2C),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Filter Categories By", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            _buildSortTile("Alphabetically A-Z", "alphabetical", currentSort, Icons.sort_by_alpha),
+            _buildSortTile("Newest - Oldest", "newest", currentSort, Icons.history),
+            _buildSortTile("Oldest - Newest", "oldest", currentSort, Icons.update),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortTile(String title, String value, String current, IconData icon) {
+    final isSelected = value == current;
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? AppTheme.primaryColor : Colors.white54),
+      title: Text(title, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+      trailing: isSelected ? const Icon(Icons.check_circle, color: AppTheme.primaryColor, size: 20) : null,
+      onTap: () {
+        Navigator.pop(context);
+        if (!isSelected) {
+          _updateSortOrder(value);
+        }
+      },
+    );
+  }
+
+  Future<void> _updateSortOrder(String newOrder) async {
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final branchId = branchProvider.selectedBranch?.id;
+    if (branchId == null) return;
+
+    setState(() => _isLoading = true);
+    
+    try {
+      final api = ApiService();
+      final response = await api.client.put('/branches/$branchId', data: {
+        'categorySortOrder': newOrder,
+      });
+
+      if (response.statusCode == 200) {
+        // Update local state by re-fetching branch or just updating provider
+        await branchProvider.fetchBranches();
+        // Refresh categories
+        await _loadData();
+        ToastUtils.show(context, "Sort order updated", type: ToastType.success);
+      }
+    } catch (e) {
+      ToastUtils.show(context, "Update failed: $e", type: ToastType.error);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override

@@ -112,6 +112,7 @@ router.put('/:id', auth, async (req, res) => {
         if (location) branch.location = location;
         if (deliveryZones) branch.deliveryZones = deliveryZones;
         if (posConfig) branch.posConfig = posConfig;
+        if (req.body.categorySortOrder) branch.categorySortOrder = req.body.categorySortOrder;
 
         // Only Master Admins can toggle POS Terminal
         if (isPosTerminalEnabled !== undefined) {

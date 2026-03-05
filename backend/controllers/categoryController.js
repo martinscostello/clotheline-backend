@@ -16,7 +16,18 @@ exports.getAllCategories = async (req, res) => {
             ];
         }
 
-        const categories = await Category.find(query).sort({ name: 1 });
+        let sortOption = { name: 1 };
+        if (branchId) {
+            const Branch = require('../models/Branch');
+            const branch = await Branch.findById(branchId);
+            if (branch && branch.categorySortOrder) {
+                if (branch.categorySortOrder === 'newest') sortOption = { createdAt: -1 };
+                else if (branch.categorySortOrder === 'oldest') sortOption = { createdAt: 1 };
+                else sortOption = { name: 1 };
+            }
+        }
+
+        const categories = await Category.find(query).sort(sortOption);
         res.json(categories);
     } catch (err) {
         console.error(err.message);
