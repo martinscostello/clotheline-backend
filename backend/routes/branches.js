@@ -100,7 +100,7 @@ router.put('/:id', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Admins only' });
         }
 
-        const { name, address, phone, location, deliveryZones, isPosTerminalEnabled } = req.body;
+        const { name, address, phone, location, deliveryZones, isPosTerminalEnabled, posConfig } = req.body;
 
         // Find and Update
         const branch = await Branch.findById(req.params.id);
@@ -111,6 +111,7 @@ router.put('/:id', auth, async (req, res) => {
         if (phone) branch.phone = phone;
         if (location) branch.location = location;
         if (deliveryZones) branch.deliveryZones = deliveryZones;
+        if (posConfig) branch.posConfig = posConfig;
 
         // Only Master Admins can toggle POS Terminal
         if (isPosTerminalEnabled !== undefined) {

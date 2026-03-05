@@ -47,6 +47,9 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   double _reconVariance = 0.0;
   bool _showRecon = false;
 
+  double _previewOpayFee = 0;
+  double _previewNetProfit = 0;
+
   @override
   void initState() {
     super.initState();
@@ -66,34 +69,18 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   void _onAmountChanged(String val) {
     if (_selectedBranchId == null) return;
     final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId);
-    final config = branch.posConfig;
-    if (config == null) return;
-
     final amount = MoneyTextInputFormatter.getNumericValue(_amountCtrl.text);
-    if (amount <= 0) return;
-
-    // OPay specific fee calculation
-    final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
-    _chargesCtrl.text = CurrencyFormatter.format(opayFee).replaceAll('₦', '').trim();
+    final charges = MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text);
     
-    // Original logic (if needed, but the instruction implies OPay is primary)
-    // double suggestedCharge = 0;
-    // if (config.charges.smartTiersEnabled) {
-    //   for (var tier in config.charges.smartTiers) {
-    //     if (amount >= tier.min && amount <= tier.max) {
-    //       suggestedCharge = tier.charge;
-    //       break;
-    //     }
-    //   }
-    // } else {
-    //   if (_transactionType == 'Withdrawal') suggestedCharge = config.charges.withdrawal;
-    //   else if (_transactionType == 'Transfer') suggestedCharge = config.charges.transfer;
-    //   else if (_transactionType == 'Deposit') suggestedCharge = config.charges.deposit;
-    // }
+    // Auto-calculate OPay fee and refresh preview
+    final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
+    
+    setState(() {
+      _previewOpayFee = opayFee;
+      _previewNetProfit = charges - opayFee;
+    });
 
-    // if (suggestedCharge > 0) {
-    //   _chargesCtrl.text = suggestedCharge.toStringAsFixed(0);
-    // }
+    _calculateVariance();
   }
 
   Future<void> _fetchData() async {
@@ -176,6 +163,10 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         _amountCtrl.clear();
         _chargesCtrl.clear();
         _notesCtrl.clear();
+        setState(() {
+          _previewOpayFee = 0;
+          _previewNetProfit = 0;
+        });
         ToastUtils.show(context, "Transaction logged", type: ToastType.success);
         _fetchData();
       } else {
@@ -215,12 +206,12 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   }
   
   void _calculateVariance() {
-      final openingCash = MoneyTextInputFormatter.getNumericValue(_openingCashCtrl.text);
-      final closingCash = MoneyTextInputFormatter.getNumericValue(_closingCashCtrl.text);
-      final expectedCash = openingCash + (_metrics['totalDeposits'] ?? 0) - (_metrics['totalWithdrawals'] ?? 0);
-      setState(() {
-        _reconVariance = closingCash - expectedCash;
-      });
+    final openingCash = MoneyTextInputFormatter.getNumericValue(_openingCashCtrl.text);
+    final closingCash = MoneyTextInputFormatter.getNumericValue(_closingCashCtrl.text);
+    final expectedCash = openingCash + (_metrics['totalDeposits'] ?? 0) - (_metrics['totalWithdrawals'] ?? 0);
+    setState(() {
+      _reconVariance = closingCash - expectedCash;
+    });
   }
 
   Future<void> _exportData() async {
@@ -474,10 +465,26 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         )),
         const SizedBox(width: 10),
         Expanded(child: _MetricCard(
-          title: "TRANSACTIONS", 
-          valueStr: "${_metrics['totalTransactions'] ?? 0}", 
-          colors: [const Color(0xFFF43F5E), const Color(0xFFFB923C)]
+          title: "OPay FEES", 
+          amount: (_metrics['totalProviderFees'] ?? 0).toDouble(), 
+          colors: [const Color(0xFFF59E0B), const Color(0xFFFBBF24)]
         )),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.1), blurRadius: 10, spreadRadius: 1)
+              ],
+            ),
+            child: _MetricCard(
+              title: "NET PROFIT", 
+              amount: (_metrics['netProfit'] ?? 0).toDouble(), 
+              subtitle: "After OPay Fees",
+              colors: [AppTheme.secondaryColor, const Color(0xFF0EA5E9)]
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -611,6 +618,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                       controller: _chargesCtrl,
                       keyboardType: TextInputType.number,
                       inputFormatters: [MoneyTextInputFormatter()],
+                      onChanged: _onAmountChanged,
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: "0", 
@@ -676,6 +684,22 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 15),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildPreviewItem("OPay Fee", _previewOpayFee, Colors.orangeAccent),
+                _buildPreviewItem("Net Profit", _previewNetProfit, AppTheme.secondaryColor),
+              ],
+            ),
           ),
           const SizedBox(height: 20),
           Align(
@@ -825,6 +849,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
           const Expanded(flex: 2, child: Text("DATE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
           const Expanded(flex: 2, child: Text("TYPE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
           const Expanded(flex: 2, child: Text("AMOUNT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
+          const Expanded(flex: 2, child: Text("CHARGES", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
           const Expanded(flex: 2, child: Text("FEES", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
           const Expanded(flex: 2, child: Text("PROFIT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
           const Expanded(flex: 2, child: Text("STATUS", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
@@ -832,7 +857,6 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         ],
       ),
     );
-  }
 
   Widget _buildLedgerRow(Map<String, dynamic> tx) {
     final date = DateTime.parse(tx['createdAt']).toLocal();
@@ -865,6 +889,14 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
             child: Text(
               CurrencyFormatter.format((tx['amount'] ?? 0).toDouble()), 
               style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.right,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              CurrencyFormatter.format((tx['charges'] ?? 0).toDouble()), 
+              style: const TextStyle(color: Colors.white, fontSize: 11),
               textAlign: TextAlign.right,
             ),
           ),
@@ -970,6 +1002,19 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     );
   }
 
+  Widget _buildPreviewItem(String label, double value, Color color) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 8, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(
+          CurrencyFormatter.format(value),
+          style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w900),
+        ),
+      ],
+    );
+  }
+
   Widget _buildOpayIndicator() {
     if (_selectedBranchId == null) return const SizedBox.shrink();
     final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId, orElse: () => Provider.of<BranchProvider>(context, listen: false).branches.first);
@@ -989,16 +1034,17 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
 
 class _MetricCard extends StatelessWidget {
   final String title;
+  final String? subtitle;
   final double? amount;
   final String? valueStr;
   final List<Color> colors;
 
-  const _MetricCard({required this.title, this.amount, this.valueStr, required this.colors});
+  const _MetricCard({required this.title, this.subtitle, this.amount, this.valueStr, required this.colors});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(16),
@@ -1009,13 +1055,17 @@ class _MetricCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          Text(title, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          if (subtitle != null) ...[
+             const SizedBox(height: 2),
+             Text(subtitle!, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 7, fontWeight: FontWeight.w500)),
+          ],
           const SizedBox(height: 8),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               amount != null ? CurrencyFormatter.format(amount!) : valueStr ?? "0",
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
             ),
           )
         ],

@@ -80,7 +80,7 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
           'charges': {
             'withdrawal': MoneyTextInputFormatter.getNumericValue(_withdrawalCtrl.text),
             'transfer': MoneyTextInputFormatter.getNumericValue(_transferCtrl.text),
-            'deposit': MoneyTextInputFormatter.getNumericValue(_depositCtrl.text),
+            'deliveryDeposit': MoneyTextInputFormatter.getNumericValue(_depositCtrl.text),
             'opayTier': _opayTier,
             'smartTiersEnabled': _smartTiersEnabled,
             'smartTiers': _smartTiers.map((t) => {'min': t.min, 'max': t.max, 'charge': t.charge}).toList(),

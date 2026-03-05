@@ -77,6 +77,7 @@ exports.getMetrics = async (req, res) => {
         let totalTransactions = transactions.length;
         let totalVolume = 0;
         let totalCharges = 0;
+        let totalProviderFees = 0;
         let totalNetProfit = 0;
 
         let totalDeposits = 0;
@@ -85,8 +86,9 @@ exports.getMetrics = async (req, res) => {
         transactions.forEach(t => {
             totalVolume += t.amount;
             totalCharges += (t.charges || 0);
+            totalProviderFees += (t.providerFee || 0);
 
-            if (t.status !== 'unresolved') {
+            if (t.status === 'resolved') {
                 totalNetProfit += (t.netProfit || 0);
             }
 
@@ -100,10 +102,11 @@ exports.getMetrics = async (req, res) => {
             totalTransactions,
             totalVolume,
             totalCharges,
+            totalProviderFees,
+            netProfit: totalNetProfit,
             avgCharge,
             totalDeposits,
-            totalWithdrawals,
-            netProfit: totalNetProfit
+            totalWithdrawals
         });
     } catch (err) {
         console.error("Error getting POS metrics:", err);
