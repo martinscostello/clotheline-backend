@@ -84,16 +84,23 @@ exports.getMetrics = async (req, res) => {
         let totalWithdrawals = 0;
 
         transactions.forEach(t => {
-            totalVolume += t.amount;
-            totalCharges += (t.charges || 0);
-            totalProviderFees += (t.providerFee || 0);
+            const withdrawalAmount = t.withdrawalAmount || t.amount || 0;
+            const customerCharge = t.customerCharge || t.charges || 0;
+            const providerFee = t.providerFee || 0;
+            const terminalAmount = t.terminalAmount || t.amount || 0;
+
+            totalVolume += t.amount; // terminalAmount
+            totalCharges += customerCharge;
+            totalProviderFees += providerFee;
 
             if (t.status === 'resolved') {
-                totalNetProfit += (t.netProfit || 0);
+                totalNetProfit += (customerCharge - providerFee);
             }
 
-            if (t.transactionType === 'Deposit') totalDeposits += t.amount;
-            if (t.transactionType === 'Withdrawal' || t.transactionType === 'Transfer') totalWithdrawals += t.amount;
+            if (t.transactionType === 'Deposit') totalDeposits += terminalAmount;
+            if (t.transactionType === 'Withdrawal' || t.transactionType === 'Transfer') {
+                totalWithdrawals += terminalAmount;
+            }
         });
 
         let avgCharge = totalTransactions > 0 ? (totalCharges / totalTransactions) : 0;
@@ -117,7 +124,18 @@ exports.getMetrics = async (req, res) => {
 // POST /api/pos-transactions
 exports.createTransaction = async (req, res) => {
     try {
-        const { branchId, transactionType, amount, charges, providerFee, netProfit, status, notes } = req.body;
+        const {
+            branchId,
+            transactionType,
+            amount,
+            withdrawalAmount,
+            customerCharge,
+            chargeMode,
+            terminalAmount,
+            providerFee,
+            status,
+            notes
+        } = req.body;
 
         if (!branchId || !transactionType || !amount) {
             return res.status(400).json({ msg: 'Please enter all required fields' });
@@ -132,13 +150,19 @@ exports.createTransaction = async (req, res) => {
             return res.status(400).json({ msg: 'POS Terminal is not enabled for this branch' });
         }
 
+        const calculatedNetProfit = (customerCharge || 0) - (providerFee || 0);
+
         const newTx = new POSTransaction({
             branchId,
             transactionType,
-            amount,
-            charges: charges || 0,
+            amount: terminalAmount || amount, // Legacy fallback
+            charges: customerCharge || 0, // Legacy fallback
+            withdrawalAmount: withdrawalAmount || amount,
+            customerCharge: customerCharge || 0,
+            chargeMode: chargeMode || 'Included',
+            terminalAmount: terminalAmount || amount,
             providerFee: providerFee || 0,
-            netProfit: netProfit || 0,
+            netProfit: calculatedNetProfit,
             status: status || 'resolved',
             notes,
             enteredBy: req.user.id
@@ -170,13 +194,37 @@ exports.updateTransaction = async (req, res) => {
             return res.status(403).json({ msg: 'Transactions cannot be edited after 24 hours unless Master Admin' });
         }
 
-        const { transactionType, amount, charges, providerFee, netProfit, status, notes } = req.body;
+        const {
+            transactionType,
+            amount,
+            withdrawalAmount,
+            customerCharge,
+            chargeMode,
+            terminalAmount,
+            providerFee,
+            status,
+            notes
+        } = req.body;
 
         if (transactionType) tx.transactionType = transactionType;
         if (amount !== undefined) tx.amount = amount;
-        if (charges !== undefined) tx.charges = charges;
+        if (withdrawalAmount !== undefined) tx.withdrawalAmount = withdrawalAmount;
+        if (customerCharge !== undefined) {
+            tx.customerCharge = customerCharge;
+            tx.charges = customerCharge; // Sync legacy
+        }
+        if (chargeMode) tx.chargeMode = chargeMode;
+        if (terminalAmount !== undefined) {
+            tx.terminalAmount = terminalAmount;
+            tx.amount = terminalAmount; // Sync legacy
+        }
         if (providerFee !== undefined) tx.providerFee = providerFee;
-        if (netProfit !== undefined) tx.netProfit = netProfit;
+
+        // Recalculate netProfit if charge or fee changed
+        if (customerCharge !== undefined || providerFee !== undefined) {
+            tx.netProfit = (tx.customerCharge || 0) - (tx.providerFee || 0);
+        }
+
         if (status) tx.status = status;
         if (notes !== undefined) tx.notes = notes;
 

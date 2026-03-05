@@ -4,11 +4,18 @@ const posTransactionSchema = new mongoose.Schema({
     branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
     transactionType: {
         type: String,
-        enum: ['Withdrawal', 'Transfer', 'Deposit', 'Airtime', 'Other'],
+        enum: ['Withdrawal', 'Transfer', 'Deposit', 'Airtime', 'Electricity', 'Other'],
         required: true
     },
-    amount: { type: Number, required: true },
-    charges: { type: Number, default: 0 },
+    amount: { type: Number, required: true }, // Legacy field (terminalAmount)
+    withdrawalAmount: { type: Number, default: 0 },
+    customerCharge: { type: Number, default: 0 },
+    chargeMode: {
+        type: String,
+        enum: ['Included', 'Cash'],
+        default: 'Included'
+    },
+    terminalAmount: { type: Number, default: 0 },
     providerFee: { type: Number, default: 0 },
     netProfit: { type: Number, default: 0 },
     status: {

@@ -38,6 +38,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   final _chargesCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   String _transactionType = 'Withdrawal';
+  String _chargeMode = 'Included in Transaction'; // [NEW]
   bool _isUnresolved = false; // [NEW]
   bool _isSaving = false;
 
@@ -69,15 +70,20 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   void _onAmountChanged(String val) {
     if (_selectedBranchId == null) return;
     final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId);
-    final amount = MoneyTextInputFormatter.getNumericValue(_amountCtrl.text);
-    final charges = MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text);
-    
     // Auto-calculate OPay fee and refresh preview
-    final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
+    final withdrawalAmount = MoneyTextInputFormatter.getNumericValue(_amountCtrl.text);
+    final customerCharge = MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text);
+    
+    double terminalAmount = withdrawalAmount;
+    if (_chargeMode == 'Included in Transaction') {
+      terminalAmount = withdrawalAmount + customerCharge;
+    }
+
+    final opayFee = OPayFeeCalculator.calculateFee(terminalAmount, branch.posConfig?.charges.opayTier ?? 'Regular');
     
     setState(() {
       _previewOpayFee = opayFee;
-      _previewNetProfit = charges - opayFee;
+      _previewNetProfit = customerCharge - opayFee;
     });
 
     _calculateVariance();
@@ -139,10 +145,15 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       ToastUtils.show(context, "Amount is required", type: ToastType.warning);
       return;
     }
-    final amount = MoneyTextInputFormatter.getNumericValue(_amountCtrl.text);
-    final charges = MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text);
+    final withdrawalAmount = MoneyTextInputFormatter.getNumericValue(_amountCtrl.text);
+    final customerCharge = MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text);
     
-    final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
+    double terminalAmount = withdrawalAmount;
+    if (_chargeMode == 'Included in Transaction') {
+      terminalAmount = withdrawalAmount + customerCharge;
+    }
+    
+    final opayFee = OPayFeeCalculator.calculateFee(terminalAmount, branch.posConfig?.charges.opayTier ?? 'Regular');
 
     setState(() => _isSaving = true);
     
@@ -151,10 +162,12 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       final response = await api.client.post('/pos-transactions', data: {
         'branchId': _selectedBranchId,
         'transactionType': _transactionType,
-        'amount': amount,
-        'charges': charges,
+        'amount': terminalAmount, // Legacy compatibility
+        'withdrawalAmount': withdrawalAmount,
+        'customerCharge': customerCharge,
+        'chargeMode': _chargeMode == 'Included in Transaction' ? 'Included' : 'Cash',
+        'terminalAmount': terminalAmount,
         'providerFee': opayFee,
-        'netProfit': charges - opayFee,
         'status': _isUnresolved ? 'unresolved' : 'resolved',
         'notes': _notesCtrl.text.trim(),
       });
@@ -559,6 +572,40 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text("CHARGE MODE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          dropdownColor: const Color(0xFF1E293B),
+                          value: _chargeMode,
+                          style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 11, fontWeight: FontWeight.bold),
+                          items: ['Included in Transaction', 'Collected as Cash'].map((t) => 
+                            DropdownMenuItem(value: t, child: Text(t))
+                          ).toList(),
+                          onChanged: (val) {
+                            setState(() => _chargeMode = val!);
+                            _onAmountChanged("");
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     const Text("TYPE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Container(
@@ -586,7 +633,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("AMOUNT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
+                    const Text("WITHDRAWAL AMOUNT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _amountCtrl,
@@ -612,7 +659,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("FEE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
+                    const Text("CHARGE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _chargesCtrl,
@@ -848,11 +895,11 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         children: [
           const Expanded(flex: 2, child: Text("DATE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
           const Expanded(flex: 2, child: Text("TYPE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
-          const Expanded(flex: 2, child: Text("AMOUNT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
-          const Expanded(flex: 2, child: Text("CHARGES", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
+          const Expanded(flex: 2, child: Text("WITHDRAWAL", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
+          const Expanded(flex: 2, child: Text("CHARGE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
+          const Expanded(flex: 1, child: Text("MODE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
           const Expanded(flex: 2, child: Text("FEES", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
           const Expanded(flex: 2, child: Text("PROFIT", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
-          const Expanded(flex: 2, child: Text("STATUS", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
           const SizedBox(width: 40),
         ],
       ),
@@ -903,7 +950,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
           Expanded(
             flex: 2,
             child: Text(
-              CurrencyFormatter.format((tx['amount'] ?? 0).toDouble()), 
+              CurrencyFormatter.format((tx['withdrawalAmount'] ?? tx['amount'] ?? 0).toDouble()), 
               style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
               textAlign: TextAlign.right,
             ),
@@ -911,9 +958,22 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
           Expanded(
             flex: 2,
             child: Text(
-              CurrencyFormatter.format((tx['charges'] ?? 0).toDouble()), 
+              CurrencyFormatter.format((tx['customerCharge'] ?? tx['charges'] ?? 0).toDouble()), 
               style: const TextStyle(color: Colors.white, fontSize: 11),
               textAlign: TextAlign.right,
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: Tooltip(
+                message: tx['chargeMode'] ?? 'Included',
+                child: Icon(
+                  tx['chargeMode'] == 'Cash' ? Icons.payments_outlined : Icons.account_balance_wallet_outlined,
+                  color: Colors.white38,
+                  size: 14,
+                ),
+              ),
             ),
           ),
           Expanded(
