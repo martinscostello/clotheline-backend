@@ -560,6 +560,9 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   }
 
   Widget _buildQuickEntryCard() {
+    if (_selectedBranchId == null) return const SizedBox.shrink();
+    final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId);
+
     return GlassContainer(
       opacity: 0.1,
       border: Border.all(color: Colors.white10),
