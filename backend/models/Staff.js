@@ -22,7 +22,7 @@ const StaffSchema = new mongoose.Schema({
     position: {
         type: String,
         required: true,
-        enum: ['Manager', 'Supervisor', 'Secretary', 'POS Attendant', 'Laundry Worker', 'Dispatch']
+        enum: ['Manager', 'Supervisor', 'Secretary', 'POS Attendant', 'Laundry Worker', 'Dispatch', 'Cleaner', 'Support Staff', 'Field Staff']
     },
     passportPhoto: { type: String }, // URL/Path to image
     idCardImage: { type: String }, // Staff ID Card image

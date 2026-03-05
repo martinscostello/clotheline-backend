@@ -143,19 +143,29 @@ class WhatsAppService {
     await _launchWhatsApp(phone, message);
   }
 
+  static String getStaffDocumentMessage({
+    required String staffName,
+    required String documentType,
+    required String branchName,
+  }) {
+    final String brand = _getBrandedName(branchName);
+    return "Hello $staffName,\n\n"
+           "Your $documentType from $brand has been generated and is attached below.\n\n"
+           "Please let us know if you have any questions.\n\n"
+           "Thank you!";
+  }
+
   static Future<void> sendStaffDocument({
     required String phone,
     required String staffName,
     required String documentType, // 'Pay Slip', 'ID Card', 'Agreement'
     required String branchName,
   }) async {
-    final String brand = _getBrandedName(branchName);
-    final String message = 
-      "Hello $staffName,\n\n"
-      "Attached is your $documentType from $brand.\n\n"
-      "Please let us know if you have any questions.\n\n"
-      "Thank you!";
-
+    final String message = getStaffDocumentMessage(
+      staffName: staffName,
+      documentType: documentType,
+      branchName: branchName,
+    );
     await _launchWhatsApp(phone, message);
   }
 

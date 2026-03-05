@@ -120,6 +120,7 @@ exports.createService = async (req, res) => {
             cleaningLocation: cleaningLocation || 'none',
             typeLabel: typeLabel || 'Select Type',
             subTypeLabel: subTypeLabel || 'Service Type',
+            allowPOD: req.body.allowPOD || false,
             quoteRequired: req.body.quoteRequired || false,
             inspectionFee: req.body.inspectionFee || 0,
             deploymentLocation: req.body.deploymentLocation || null,
@@ -180,6 +181,7 @@ exports.updateService = async (req, res) => {
             if (discountLabel !== undefined) service.branchConfig[configIndex].discountLabel = discountLabel;
             if (req.body.typeLabel !== undefined) service.branchConfig[configIndex].customTypeLabel = req.body.typeLabel;
             if (req.body.subTypeLabel !== undefined) service.branchConfig[configIndex].customSubTypeLabel = req.body.subTypeLabel;
+            if (req.body.allowPOD !== undefined) service.branchConfig[configIndex].allowPOD = req.body.allowPOD;
 
             // Update Service Types for Branch
             if (serviceTypes && Array.isArray(serviceTypes)) {
@@ -227,6 +229,7 @@ exports.updateService = async (req, res) => {
             if (cleaningLocation) service.cleaningLocation = cleaningLocation;
             if (req.body.typeLabel !== undefined) service.typeLabel = req.body.typeLabel;
             if (req.body.subTypeLabel !== undefined) service.subTypeLabel = req.body.subTypeLabel;
+            if (req.body.allowPOD !== undefined) service.allowPOD = req.body.allowPOD;
 
             // Handle Items (Global Base Price Update)
             if (items && Array.isArray(items)) {

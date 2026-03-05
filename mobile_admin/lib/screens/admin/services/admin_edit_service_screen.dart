@@ -105,6 +105,7 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
   String _color = "0xFF2196F3"; 
   String _icon = "local_laundry_service"; 
   String _fulfillmentMode = "logistics"; 
+  bool _allowPOD = false; // [NEW]
   bool _isSaving = false;
   String _itemSortOrder = "manual"; 
 
@@ -134,6 +135,7 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
         _icon = s.icon;
         _fulfillmentMode = s.fulfillmentMode;
         _itemSortOrder = s.itemSortOrder;
+        _allowPOD = s.allowPOD;
         _applySorting();
     }
 
@@ -220,6 +222,7 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
       "deploymentLocation": _deploymentLocation != null ? {"lat": _deploymentLocation!.latitude, "lng": _deploymentLocation!.longitude} : null,
       "inspectionFeeZones": _inspectionZones.map((z) => z.toJson()).toList(),
       "itemSortOrder": _itemSortOrder,
+      "allowPOD": _allowPOD,
     };
     
     if (widget.scopeBranch != null) {

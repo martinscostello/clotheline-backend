@@ -65,6 +65,10 @@ const ServiceSchema = new mongoose.Schema({
         radiusKm: { type: Number },
         fee: { type: Number }
     }],
+    allowPOD: {
+        type: Boolean,
+        default: false
+    },
     // Global State
     isActive: {
         type: Boolean,
@@ -118,7 +122,8 @@ const ServiceSchema = new mongoose.Schema({
             }]
         }],
 
-        lastUpdated: { type: Date, default: Date.now }
+        lastUpdated: { type: Date, default: Date.now },
+        allowPOD: { type: Boolean, default: false }
     }],
 
     // Legacy / Deprecated (Mapped to branchConfig.isActive in logic if needed)

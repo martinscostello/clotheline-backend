@@ -376,7 +376,7 @@ class _AdminEditStaffScreenState extends State<AdminEditStaffScreen> {
                 _buildInput("Email (Optional)", _emailController, Icons.email),
                 _buildInput("Residential Address", _addressController, Icons.home, maxLines: 2),
                 _buildDropdown("Position", _posController.text, [
-                  'Manager', 'Supervisor', 'Secretary', 'POS Attendant', 'Laundry Worker', 'Dispatch'
+                  'Manager', 'Supervisor', 'Secretary', 'POS Attendant', 'Laundry Worker', 'Dispatch', 'Cleaner', 'Support Staff', 'Field Staff'
                 ], (val) => setState(() => _posController.text = val!)),
                 _buildBranchPicker(),
                 _buildDateListSelector("Employment Date", _employmentDate, (date) => setState(() => _employmentDate = date)),

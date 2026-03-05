@@ -205,6 +205,39 @@ router.post('/initialize', auth, async (req, res) => {
     }
 });
 
+// POST /pod-create
+// Direct Order Creation for Pay on Delivery
+router.post('/pod-create', auth, async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ msg: 'Authentication required' });
+        }
+
+        const { items, scope, branchId, totalAmount, paymentMethod } = req.body;
+
+        if (paymentMethod !== 'pod') {
+            return res.status(400).json({ msg: 'Invalid payment method for this route' });
+        }
+
+        // We use createOrderInternal like the verify route does
+        const { createOrderInternal } = require('../controllers/orderController');
+
+        // Pass the request body as the data for the order
+        // paymentStatus should be 'Pending' for POD orders
+        const order = await createOrderInternal(req.body, req.user.id);
+
+        order.paymentStatus = 'Pending';
+        order.paymentMethod = 'pod';
+        await order.save();
+
+        res.json({ status: 'success', msg: 'POD Order created successfully', order });
+
+    } catch (err) {
+        console.error("POD Create Route Error:", err);
+        res.status(500).json({ msg: err.message || 'Server Error' });
+    }
+});
+
 // POST /verify
 // Verifies & Creates Order
 router.post('/verify', auth, async (req, res) => {

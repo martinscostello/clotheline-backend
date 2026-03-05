@@ -8,7 +8,7 @@ import 'package:clotheline_core/clotheline_core.dart';
 import 'package:clotheline_core/clotheline_core.dart';
 
 class StaffPdfService {
-  static Future<void> generatePaySlip({
+  static Future<Uint8List> generatePaySlip({
     required Staff staff,
     required Branch branch,
     required StaffPayment payment,
@@ -105,11 +105,10 @@ class StaffPdfService {
         },
       ),
     );
-
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+    return pdf.save();
   }
 
-  static Future<void> generateAgreement({
+  static Future<Uint8List> generateAgreement({
     required Staff staff,
     required Branch branch,
     required String signingDate,
@@ -186,10 +185,10 @@ class StaffPdfService {
       ),
     );
 
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+    return pdf.save();
   }
 
-  static Future<void> generateIDCard({
+  static Future<Uint8List> generateIDCard({
     required Staff staff,
     required Branch branch,
   }) async {
@@ -197,7 +196,17 @@ class StaffPdfService {
     final isAbuja = branch.name.toLowerCase().contains('abuja');
     final companyName = isAbuja ? 'Brimarck Cleaning Services' : 'Clotheline Services';
     
-    // ID Card dimensions: approx 85mm x 55mm
+    // Attempt to load photo and logo
+    pw.ImageProvider? passportImage;
+    if (staff.passportPhoto != null) {
+      try {
+        passportImage = await networkImage(staff.passportPhoto!);
+      } catch (e) {
+        print("Error loading passport image for PDF: $e");
+      }
+    }
+
+    // ID Card dimensions: approx 86mm x 54mm (CR80 standard)
     final format = PdfPageFormat(86 * PdfPageFormat.mm, 54 * PdfPageFormat.mm);
 
     pdf.addPage(
@@ -205,53 +214,121 @@ class StaffPdfService {
         pageFormat: format,
         margin: pw.EdgeInsets.zero,
         build: (pw.Context context) {
-          return pw.Container(
-            decoration: pw.BoxDecoration(
-              color: PdfColors.blue900,
-              border: pw.Border.all(color: PdfColors.white, width: 2),
-            ),
-            padding: const pw.EdgeInsets.all(10),
-            child: pw.Row(
-              children: [
-                pw.Column(
-                  mainAxisAlignment: pw.MainAxisAlignment.center,
+          return pw.Stack(
+            children: [
+              // 1. Background Design (Gradient/Pattern)
+              pw.Container(
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.white,
+                ),
+              ),
+              // Blue side bar
+              pw.Positioned(
+                left: 0, top: 0, bottom: 0,
+                width: 25,
+                child: pw.Container(color: PdfColors.blue900),
+              ),
+              // Diagonal accent
+              pw.Positioned(
+                right: -20, top: -20,
+                child: pw.Transform.rotate(
+                  angle: 0.5,
+                  child: pw.Container(width: 80, height: 80, color: PdfColors.blue100),
+                ),
+              ),
+
+              // 2. Content
+              pw.Padding(
+                padding: const pw.EdgeInsets.fromLTRB(35, 12, 12, 12),
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Container(
-                      width: 50,
-                      height: 60,
-                      decoration: pw.BoxDecoration(
-                        color: PdfColors.white,
-                        borderRadius: pw.BorderRadius.circular(5),
+                    // Right Content
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(companyName.toUpperCase(), style: pw.TextStyle(color: PdfColors.blue900, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                          pw.SizedBox(height: 2),
+                          pw.Text("STAFF IDENTIFICATION", style: pw.TextStyle(color: PdfColors.grey700, fontSize: 6, letterSpacing: 1.2)),
+                          pw.SizedBox(height: 10),
+                          
+                          pw.Text(staff.name.toUpperCase(), style: pw.TextStyle(color: PdfColors.black, fontSize: 13, fontWeight: pw.FontWeight.bold)),
+                          pw.Text(staff.position, style: pw.TextStyle(color: PdfColors.blue600, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                          
+                          pw.Spacer(),
+                          
+                          pw.Row(
+                            children: [
+                              pw.Column(
+                                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                children: [
+                                  pw.Text("STAFF ID", style: pw.TextStyle(fontSize: 6, color: PdfColors.grey600)),
+                                  pw.Text(staff.staffId, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                                ]
+                              ),
+                              pw.SizedBox(width: 20),
+                              pw.Column(
+                                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                children: [
+                                  pw.Text("BRANCH", style: pw.TextStyle(fontSize: 6, color: PdfColors.grey600)),
+                                  pw.Text(branch.name.toUpperCase(), style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                                ]
+                              ),
+                            ]
+                          ),
+                          pw.SizedBox(height: 5),
+                          pw.Container(
+                            padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: pw.BoxDecoration(
+                              color: PdfColors.green100,
+                              borderRadius: pw.BorderRadius.circular(2),
+                            ),
+                            child: pw.Text("VERIFIED PERSONNEL", style: pw.TextStyle(color: PdfColors.green900, fontSize: 6, fontWeight: pw.FontWeight.bold)),
+                          ),
+                        ],
                       ),
-                      child: pw.Center(child: pw.Text("PHOTO", style: pw.TextStyle(fontSize: 8, color: PdfColors.grey))),
                     ),
-                    pw.SizedBox(height: 5),
-                    pw.Text("ID: ${staff.staffId}", style: pw.TextStyle(color: PdfColors.white, fontSize: 8, fontWeight: pw.FontWeight.bold)),
+
+                    // Left Image
+                    pw.Column(
+                      children: [
+                        pw.Container(
+                          width: 55,
+                          height: 65,
+                          decoration: pw.BoxDecoration(
+                            border: pw.Border.all(color: PdfColors.blue900, width: 2),
+                            borderRadius: pw.BorderRadius.circular(4),
+                          ),
+                          child: pw.ClipRRect(
+                            horizontalRadius: 2,
+                            verticalRadius: 2,
+                            child: passportImage != null 
+                              ? pw.Image(passportImage, fit: pw.BoxFit.cover)
+                              : pw.Center(child: pw.Text("PHOTO", style: pw.TextStyle(fontSize: 8, color: PdfColors.grey))),
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        if (staff.signature != null)
+                           pw.Text("Signature Attached", style: pw.TextStyle(fontSize: 5, color: PdfColors.grey)),
+                      ],
+                    ),
                   ],
                 ),
-                pw.SizedBox(width: 10),
-                pw.Expanded(
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    mainAxisAlignment: pw.MainAxisAlignment.center,
-                    children: [
-                      pw.Text(companyName, style: pw.TextStyle(color: PdfColors.white, fontSize: 10, fontWeight: pw.FontWeight.bold)),
-                      pw.Divider(color: PdfColors.white, thickness: 1),
-                      pw.Text(staff.name.toUpperCase(), style: pw.TextStyle(color: PdfColors.white, fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                      pw.Text(staff.position, style: pw.TextStyle(color: PdfColors.amber, fontSize: 10)),
-                      pw.Spacer(),
-                      pw.Text("BRANCH: ${branch.name}", style: pw.TextStyle(color: PdfColors.white, fontSize: 8)),
-                      pw.Text("VERIFIED STAFF", style: pw.TextStyle(color: PdfColors.greenAccent, fontSize: 8, fontWeight: pw.FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+              
+              // Bottom colored bar
+              pw.Positioned(
+                bottom: 0, left: 25, right: 0,
+                height: 4,
+                child: pw.Container(color: PdfColors.amber),
+              ),
+            ],
           );
         },
       ),
     );
 
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+    return pdf.save();
   }
 }

@@ -20,7 +20,7 @@ const OrderSchema = new mongoose.Schema({
     isWalkIn: { type: Boolean, default: false }, // [NEW] POS Orders
     paymentMethod: {
         type: String,
-        enum: ['paystack', 'cash', 'transfer', 'pos', 'pay_on_delivery', 'other'],
+        enum: ['paystack', 'cash', 'transfer', 'pos', 'pay_on_delivery', 'pod', 'other'],
         default: 'paystack'
     },
     createdByAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // [NEW] Staff Tracking

@@ -47,6 +47,24 @@ class PaymentService {
     }
   }
 
+  // 3. Create POD Order (Direct)
+  Future<Map<String, dynamic>?> createPODOrder(Map<String, dynamic> orderData) async {
+    try {
+      final response = await _api.client.post('/payments/pod-create', data: orderData);
+      if (response.data['status'] == 'success') {
+         return response.data;
+      }
+      return null;
+    } catch (e) {
+      if (e is DioException) {
+         final msg = e.response?.data is Map ? e.response?.data['msg'] : null;
+         if (msg != null) throw msg;
+      }
+      print("POD Create Error: $e");
+      throw e.toString();
+    }
+  }
+
   // Helper: Open WebView
   Future<bool> openPaymentWebView(BuildContext context, String url, String reference) async {
     bool isCompleted = false;

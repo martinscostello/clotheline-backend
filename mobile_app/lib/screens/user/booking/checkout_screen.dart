@@ -50,6 +50,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   LatLng? _deliveryLatLng;
   double _pickupFee = 0.0;
   double _deliveryFee = 0.0;
+  String _paymentMethod = 'paystack'; // 'paystack' or 'pod'
 
   // Animation
   late AnimationController _breathingController;
@@ -89,6 +90,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
   bool get _isQuoteRequired {
     final filtered = _cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).toList();
     return filtered.any((i) => i.quoteRequired);
+  }
+
+  bool get _isPODEligible {
+    final filtered = _cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).toList();
+    // For now, if ANY service in the cart for this mode doesn't allow POD, the whole order isn't eligible?
+    // Or if ALL allow? Usually it's if all allow or just checking the services. 
+    // The user said: "the option should be togglable in the manage service categories ... this means we can turn on the 'Pay on delivery' button for individual services we chose at will"
+    // So if I have a cart with Service A (POD on) and Service B (POD off), I should probably disable POD for the whole cart to avoid confusion.
+    if (filtered.isEmpty) return false;
+    return filtered.every((i) => i.allowPOD);
   }
 
   Future<void> _fetchContent() async {
@@ -1119,6 +1130,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           .where((i) => i.fulfillmentMode == widget.fulfillmentMode)
           .fold(0.0, (sum, i) => sum + (i.quoteRequired ? i.inspectionFee : 0.0)),
 
+      'paymentMethod': _paymentMethod,
       'guestInfo': {
         'name': auth.currentUser != null ? (auth.currentUser!['name'] ?? 'Guest User') : 'Guest User', 
         'email': email,
@@ -1127,6 +1139,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     };
 
     try {
+      if (_paymentMethod == 'pod') {
+         if(mounted) ToastUtils.show(context, "Placing Order...", type: ToastType.info);
+         final result = await _paymentService.createPODOrder(orderData);
+         if (result != null && result['status'] == 'success') {
+            setState(() => _isSubmitting = false);
+            if(!mounted) return;
+            if (widget.fulfillmentMode == 'logistics') {
+               _cartService.clearCart(); 
+            } else {
+               _cartService.items.where((i) => i.fulfillmentMode == widget.fulfillmentMode).toList().forEach((i) => _cartService.removeItem(i));
+            }
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const MainLayout(initialIndex: 2)), 
+              (route) => false
+            );
+            ToastUtils.show(context, "Order Placed Successfully! (POD)", type: ToastType.success);
+            return;
+         } else {
+            throw Exception("Failed to place POD order");
+         }
+      }
+
       if(mounted) ToastUtils.show(context, "Initializing Payment...", type: ToastType.info);
 
       // 1. Initialize Payment (Get URL & Ref)
@@ -1239,12 +1273,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
                   ),
-                  onPressed: _isSubmitting ? null : _submitOrder,
-                  child: _isSubmitting 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(_isQuoteRequired ? "PAY INSPECTION FEE" : "PAY NOW", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text(_isQuoteRequired ? "PAY INSPECTION FEE" : (_paymentMethod == 'pod' ? "CONFIRM ORDER (POD)" : "PAY NOW"), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
+              if (_isPODEligible && !_isQuoteRequired) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: _paymentMethod == 'pod' 
+                    ? OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: AppTheme.primaryColor),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        icon: const Icon(Icons.payment, color: AppTheme.primaryColor),
+                        label: const Text("Switch to Pay Online", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                        onPressed: () => setState(() => _paymentMethod = 'paystack'),
+                      )
+                    : OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: Colors.green),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        icon: const Icon(Icons.delivery_dining, color: Colors.green),
+                        label: const Text("Pay on Delivery", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+                        onPressed: () => setState(() => _paymentMethod = 'pod'),
+                      ),
+                ),
+              ],
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,

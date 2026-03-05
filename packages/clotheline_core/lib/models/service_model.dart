@@ -27,6 +27,7 @@ class ServiceModel {
   final String typeLabel; // [NEW] e.g. "Select Type", "Select Frequency"
   final String subTypeLabel; // [NEW] e.g. "Service Type", "Square Meters"
   final String itemSortOrder; // [NEW] alphabetical | newest | oldest | manual
+  final bool allowPOD; // [NEW] Pay on Delivery toggle
 
   ServiceModel({
     required this.id,
@@ -54,6 +55,7 @@ class ServiceModel {
     this.typeLabel = 'Select Type',
     this.subTypeLabel = 'Service Type',
     this.itemSortOrder = 'alphabetical',
+    this.allowPOD = false,
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
@@ -91,6 +93,7 @@ class ServiceModel {
       typeLabel: json['typeLabel'] ?? 'Select Type',
       subTypeLabel: json['subTypeLabel'] ?? 'Service Type',
       itemSortOrder: json['itemSortOrder'] ?? 'alphabetical',
+      allowPOD: json['allowPOD'] ?? false,
       items: (json['items'] as List?)?.map((e) => ServiceItem.fromJson(e)).toList() ?? [],
       serviceTypes: (json['serviceTypes'] as List?)?.map((e) => ServiceVariant.fromJson(e)).toList() ?? [],
       branchPricing: (json['branchPricing'] as List?)?.map((e) => BranchPrice.fromJson(e)).toList() ?? [],
@@ -134,6 +137,7 @@ class ServiceModel {
       'typeLabel': typeLabel,
       'subTypeLabel': subTypeLabel,
       'itemSortOrder': itemSortOrder,
+      'allowPOD': allowPOD,
       'items': items.map((e) => e.toJson()).toList(),
       'serviceTypes': serviceTypes.map((e) => e.toJson()).toList(),
       'branchPricing': branchPricing.map((e) => e.toJson()).toList(),

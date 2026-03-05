@@ -1,5 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -360,82 +364,98 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
 
         return Center(
           child: Container(
-            width: 300,
-            height: 180,
+            width: 320,
+            height: 200,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1A237E), Color(0xFF0D47A1)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: Colors.white,
               boxShadow: [
-                BoxShadow(color: Colors.black45, blurRadius: 10, offset: const Offset(0, 5))
+                BoxShadow(color: Colors.black45, blurRadius: 15, offset: const Offset(0, 8))
               ],
-              border: Border.all(color: Colors.white10)
             ),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -20, top: -20,
-                  child: Opacity(opacity: 0.1, child: const Icon(Icons.badge, size: 150, color: Colors.white))
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      _buildIDCardPhoto(staff),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Stack(
+                children: [
+                  // Blue Side Bar
+                  Positioned(
+                    left: 0, top: 0, bottom: 0,
+                    width: 30,
+                    child: Container(color: const Color(0xFF1A237E)),
+                  ),
+                  // Background Accent
+                  Positioned(
+                    right: -30, top: -30,
+                    child: Transform.rotate(
+                      angle: 0.5,
+                      child: Container(width: 120, height: 120, color: Colors.blue.withValues(alpha: 0.1)),
+                    ),
+                  ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(45, 20, 20, 20),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(companyName.toUpperCase(), style: const TextStyle(color: Color(0xFF1A237E), fontSize: 13, fontWeight: FontWeight.bold)),
+                              const Text("STAFF IDENTIFICATION", style: TextStyle(color: Colors.black38, fontSize: 8, letterSpacing: 1.5)),
+                              const SizedBox(height: 15),
+                              Text(staff.name.toUpperCase(), style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+                              Text(staff.position, style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const Spacer(),
+                              Row(
+                                children: [
+                                  _buildPreviewInfoLabel("STAFF ID", staff.staffId),
+                                  const SizedBox(width: 20),
+                                  _buildPreviewInfoLabel("BRANCH", branchName.toUpperCase()),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text("VERIFIED PERSONNEL", style: TextStyle(color: Colors.green, fontSize: 8, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Profile Photo
+                        Column(
                           children: [
-                            Text(staff.name.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
-                            Text(staff.position, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12, fontWeight: FontWeight.w500)),
-                          const Spacer(),
-                            _buildIDCardInfo("BRANCH", branchName),
-                            _buildIDCardInfo("STAFF ID", staff.staffId),
+                            Container(
+                              width: 80,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: const Color(0xFF1A237E), width: 2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: staff.passportPhoto != null 
+                                  ? CustomCachedImage(imageUrl: staff.passportPhoto!, fit: BoxFit.cover)
+                                  : const Icon(Icons.person, size: 40, color: Colors.black12),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (staff.idCardImage != null)
-                             GestureDetector(
-                               onTap: () => showDialog(
-                                 context: context,
-                                 builder: (_) => InteractiveViewer(child: Dialog(backgroundColor: Colors.transparent, child: CustomCachedImage(imageUrl: staff.idCardImage!)))
-                               ),
-                               child: Container(
-                                 width: 50, height: 35,
-                                 decoration: BoxDecoration(
-                                   borderRadius: BorderRadius.circular(5),
-                                   boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]
-                                 ),
-                                 child: ClipRRect(
-                                   borderRadius: BorderRadius.circular(5),
-                                   child: CustomCachedImage(imageUrl: staff.idCardImage!, fit: BoxFit.cover),
-                                 ),
-                               ),
-                             )
-                          else
-                             QrImageView(
-                               data: staff.staffId,
-                               version: QrVersions.auto,
-                               size: 50.0,
-                               eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.white),
-                               dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.white),
-                             ),
-                          const SizedBox(height: 5),
-                          const Text("VERIFIED", style: TextStyle(color: Colors.greenAccent, fontSize: 6, fontWeight: FontWeight.bold)),
-                        ],
-                      )
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  // Bottom Bar
+                  Positioned(
+                    bottom: 0, left: 30, right: 0,
+                    height: 5,
+                    child: Container(color: Colors.amber),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -469,16 +489,48 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       final branchProvider = Provider.of<BranchProvider>(context, listen: false);
       final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
       
-      await WhatsAppService.sendStaffDocument(
-        phone: staff.phone,
+      // 1. Generate PDF according to type
+      Uint8List pdfBytes;
+      if (type == "ID Card") {
+        pdfBytes = await StaffPdfService.generateIDCard(staff: staff, branch: branch);
+      } else if (type == "Agreement") {
+        pdfBytes = await StaffPdfService.generateAgreement(
+          staff: staff, 
+          branch: branch, 
+          signingDate: DateFormat('dd MMMM yyyy').format(DateTime.now())
+        );
+      } else if (type == "Pay Slip" && staff.paymentHistory.isNotEmpty) {
+        pdfBytes = await StaffPdfService.generatePaySlip(
+          staff: staff, 
+          branch: branch, 
+          payment: staff.paymentHistory.last
+        );
+      } else {
+        ToastUtils.show(context, "Cannot generate $type", type: ToastType.warning);
+        return;
+      }
+      
+      // 2. Save to Temp File
+      final tempDir = await getTemporaryDirectory();
+      final String safeName = staff.name.replaceAll(RegExp(r'[^\w\s]+'), '').replaceAll(' ', '_');
+      final String fileName = "${safeName}_${type.replaceAll(' ', '_')}.pdf";
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(pdfBytes);
+      
+      // 3. Prepare Message
+      final String message = WhatsAppService.getStaffDocumentMessage(
         staffName: staff.name,
         documentType: type,
         branchName: branch.name,
       );
       
-      if (mounted) ToastUtils.show(context, "$type sent via WhatsApp!", type: ToastType.success);
+      // 4. Share via XFile
+      final xFile = XFile(file.path, mimeType: 'application/pdf');
+      await Share.shareXFiles([xFile], text: message);
+      
+      if (mounted) ToastUtils.show(context, "Ready to share via WhatsApp!", type: ToastType.success);
     } catch (e) {
-      if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+      if (mounted) ToastUtils.show(context, "Sharing Error: $e", type: ToastType.error);
     }
   }
 
@@ -959,19 +1011,54 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     }
   }
 
+  Widget _buildPreviewInfoLabel(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.black38, fontSize: 7, fontWeight: FontWeight.bold)),
+        Text(value, style: const TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
   Future<void> _toggleSuspension(Staff staff) async {
     try {
-      final newStatus = !staff.isSuspended;
-      await _staffService.updateStaff(staff.id, {
-        'isSuspended': newStatus,
-        'status': newStatus ? 'Suspended' : 'Active'
-      });
-      if (mounted) _fetchStaff();
+      if (staff.isSuspended) {
+        await _staffService.unsuspendStaff(staff.id);
+      } else {
+        await _staffService.suspendStaff(staff.id);
+      }
+      _fetchStaff();
     } catch (e) {
-      if (mounted) ToastUtils.show(context, "Status error: $e", type: ToastType.error);
+      ToastUtils.show(context, "Error: $e", type: ToastType.error);
     }
   }
 
+  Future<void> _generateIDCardPDF(Staff staff) async {
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+    final pdfBytes = await StaffPdfService.generateIDCard(staff: staff, branch: branch);
+    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdfBytes);
+  }
+
+  Future<void> _generatePaySlip(Staff staff, StaffPayment payment) async {
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+    final pdfBytes = await StaffPdfService.generatePaySlip(staff: staff, branch: branch, payment: payment);
+    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdfBytes);
+  }
+
+  Future<void> _generateAgreement(Staff staff) async {
+    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+    final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+    final pdfBytes = await StaffPdfService.generateAgreement(
+      staff: staff, 
+      branch: branch, 
+      signingDate: DateFormat('dd MMMM yyyy').format(DateTime.now())
+    );
+    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdfBytes);
+  }
+  
   Future<void> _removeWarning(Staff staff, String warningId) async {
     final confirm = await showDialog<bool>(
       context: context,
