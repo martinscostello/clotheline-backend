@@ -987,14 +987,25 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(tx['transactionType'], style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
-                if (tx['notes'] != null && tx['notes'].toString().isNotEmpty) ...[
+                Text(tx['transactionType'], style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                if (tx['enteredBy'] != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    tx['notes'], 
-                    style: const TextStyle(color: Colors.white24, fontSize: 8),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    "By: ${tx['enteredBy']['name']}", 
+                    style: const TextStyle(color: Colors.white38, fontSize: 8, fontWeight: FontWeight.bold),
+                  ),
+                ],
+                if (tx['notes'] != null && tx['notes'].toString().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(4)),
+                    child: Text(
+                      tx['notes'], 
+                      style: const TextStyle(color: Colors.white70, fontSize: 9),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ],

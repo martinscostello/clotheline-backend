@@ -823,16 +823,24 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                       padding: const EdgeInsets.only(bottom: 15),
                       child: InkWell(
                         onTap: _showSortOptions,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.sort, color: AppTheme.primaryColor, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              "Sort: ${_itemSortOrder == 'alphabetical' ? 'A-Z' : _itemSortOrder == 'newest' ? 'Newest' : _itemSortOrder == 'oldest' ? 'Oldest' : 'Manual'}",
-                              style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12, fontWeight: FontWeight.w600),
-                            ),
-                          ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.sort_rounded, color: AppTheme.primaryColor, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Sort: ${_itemSortOrder == 'alphabetical' ? 'A-Z' : _itemSortOrder == 'newest' ? 'Newest' : _itemSortOrder == 'oldest' ? 'Oldest' : 'Manual'}",
+                                style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
