@@ -76,6 +76,7 @@ exports.getAllServices = async (req, res) => {
                 serviceObj.typeLabel = branchConfig.customTypeLabel || s.typeLabel || 'Select Type';
                 serviceObj.subTypeLabel = branchConfig.customSubTypeLabel || s.subTypeLabel || 'Service Type';
                 serviceObj.items = branchConfig.items;
+                serviceObj.allowPOD = branchConfig.allowPOD !== undefined ? branchConfig.allowPOD : (s.allowPOD || false);
                 // serviceObj.serviceTypes = config.serviceTypes; // Deprecated
                 serviceObj.discountPercentage = config.discountPercentage || 0;
                 serviceObj.discountLabel = config.discountLabel || "";

@@ -227,7 +227,8 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             }
 
             const title = "New Order Received"; // [FIXED] Typography
-            const message = `(New order from ${branchName} | ${customer ? customer.name : 'Guest'})`;
+            const isPOD = paymentMethod === 'pod' || (newOrder.paymentMethod === 'pod');
+            const message = `(New ${isPOD ? 'POD ' : ''}order from ${branchName} | ${customer ? customer.name : 'Guest'})`;
 
             // Notify Admins
             const allAdmins = await User.find({ role: 'admin' });
