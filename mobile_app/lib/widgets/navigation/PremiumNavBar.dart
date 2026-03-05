@@ -149,7 +149,7 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
+            constraints: const BoxConstraints(maxWidth: 360), // [FIX] Fixed mobile-size width
             child: Container(
               margin: effectiveMargin,
               child: ClipRRect(
@@ -204,7 +204,7 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
                     duration: const Duration(milliseconds: 200),
                     opacity: isSelected ? 1.0 : 0.0,
                     child: Container(
-                      width: 70,
+                      width: 90, // [FIX] EXACTLY 360 / 4 for perfect alignment with edges
                       height: 62,
                       decoration: BoxDecoration(
                         color: isDark 
