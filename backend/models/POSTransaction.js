@@ -11,7 +11,6 @@ const posTransactionSchema = new mongoose.Schema({
     customerCharge: { type: Number, default: 0 },
     chargeMode: {
         type: String,
-        enum: ['Included', 'Cash'],
         default: 'Included'
     },
     terminalAmount: { type: Number, default: 0 },

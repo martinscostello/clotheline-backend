@@ -39,7 +39,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   final _chargesCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   String _transactionType = 'Withdrawal';
-  String _chargeMode = 'Included in Transaction'; // [NEW]
+  String _chargeMode = 'Included In Transaction'; // [NEW]
   bool _isUnresolved = false; // [NEW]
   bool _isSaving = false;
 
@@ -83,7 +83,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     );
 
     double terminalAmount = withdrawalAmount;
-    if (_chargeMode == 'Included in Transaction') {
+    if (_chargeMode.toLowerCase().contains('included')) {
       terminalAmount = withdrawalAmount + customerCharge;
     }
 
@@ -160,7 +160,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     final customerCharge = MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text);
     
     double terminalAmount = withdrawalAmount;
-    if (_chargeMode == 'Included in Transaction') {
+    if (_chargeMode.toLowerCase().contains('included')) {
       terminalAmount = withdrawalAmount + customerCharge;
     }
     
@@ -176,7 +176,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         'amount': terminalAmount, // Legacy compatibility
         'withdrawalAmount': withdrawalAmount,
         'customerCharge': customerCharge,
-        'chargeMode': _chargeMode == 'Included in Transaction' ? 'Included' : 'Cash',
+        'chargeMode': _chargeMode.toLowerCase().contains('included') ? 'Included' : 'Cash',
         'terminalAmount': terminalAmount,
         'providerFee': opayFee,
         'status': _isUnresolved ? 'unresolved' : 'resolved',
@@ -601,7 +601,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                           dropdownColor: const Color(0xFF1E293B),
                           value: _chargeMode,
                           style: const TextStyle(color: AppTheme.secondaryColor, fontSize: 11, fontWeight: FontWeight.bold),
-                          items: ['Included in Transaction', 'Collected as Cash'].map((t) => 
+                          items: ['Included In Transaction', 'Collected as Cash'].map((t) => 
                             DropdownMenuItem(value: t, child: Text(t))
                           ).toList(),
                           onChanged: (val) {

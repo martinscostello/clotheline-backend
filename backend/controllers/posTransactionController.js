@@ -137,6 +137,8 @@ exports.createTransaction = async (req, res) => {
             notes
         } = req.body;
 
+        console.log("Create POS Transaction Request Body:", JSON.stringify(req.body, null, 2));
+
         if (!branchId || !transactionType || (amount === undefined && terminalAmount === undefined)) {
             return res.status(400).json({ msg: 'Please enter all required fields' });
         }
