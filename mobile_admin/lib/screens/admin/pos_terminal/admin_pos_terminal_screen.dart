@@ -88,12 +88,12 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     }
 
     double opayFee = 0;
-    if (currentType?.hasProviderFee ?? true) {
+    if (customerCharge > 0 && (currentType?.hasProviderFee ?? true)) {
       opayFee = OPayFeeCalculator.calculateFee(terminalAmount, config?.charges.opayTier ?? 'Regular');
     }
 
-    // Add flat transfer fee if enabled
-    if (currentType?.hasTransferFlatFee ?? false) {
+    // Add flat transfer fee if enabled, but ONLY if there's a charge (per user requirement to avoid negative profit)
+    if (customerCharge > 0 && (currentType?.hasTransferFlatFee ?? false)) {
       opayFee += 20.0;
     }
     
@@ -174,11 +174,11 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     );
 
     double opayFee = 0;
-    if (currentType?.hasProviderFee ?? true) {
+    if (customerCharge > 0 && (currentType?.hasProviderFee ?? true)) {
       opayFee = OPayFeeCalculator.calculateFee(terminalAmount, branch.posConfig?.charges.opayTier ?? 'Regular');
     }
 
-    if (currentType?.hasTransferFlatFee ?? false) {
+    if (customerCharge > 0 && (currentType?.hasTransferFlatFee ?? false)) {
       opayFee += 20.0;
     }
 
