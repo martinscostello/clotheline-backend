@@ -168,8 +168,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     if (_chargeMode.toLowerCase().contains('included')) {
       terminalAmount = withdrawalAmount + customerCharge;
     }
-    
-    final currentType = config?.transactionTypes.firstWhere(
+    final currentType = branch.posConfig?.transactionTypes.firstWhere(
       (t) => t.name == _transactionType, 
       orElse: () => PosTransactionType(name: _transactionType, hasProviderFee: true, hasCustomerCharge: true)
     );
