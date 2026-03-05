@@ -883,7 +883,22 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
           ),
           Expanded(
             flex: 2,
-            child: Text(tx['transactionType'], style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(tx['transactionType'], style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                if (tx['notes'] != null && tx['notes'].toString().isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    tx['notes'], 
+                    style: const TextStyle(color: Colors.white24, fontSize: 8),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
           ),
           Expanded(
             flex: 2,
