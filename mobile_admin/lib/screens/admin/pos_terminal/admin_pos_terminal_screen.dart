@@ -1082,8 +1082,8 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     setState(() => _isSaving = true);
     try {
       final api = ApiService();
-      final amount = (tx['amount'] ?? 0).toDouble();
-      final charges = (tx['charges'] ?? 0).toDouble();
+      final amount = (tx['terminalAmount'] ?? tx['amount'] ?? 0).toDouble();
+      final charges = (tx['customerCharge'] ?? tx['charges'] ?? 0).toDouble();
       final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
 
       final response = await api.client.put('/pos-transactions/${tx['_id']}', data: {

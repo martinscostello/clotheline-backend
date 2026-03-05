@@ -137,7 +137,7 @@ exports.createTransaction = async (req, res) => {
             notes
         } = req.body;
 
-        if (!branchId || !transactionType || !amount) {
+        if (!branchId || !transactionType || (amount === undefined && terminalAmount === undefined)) {
             return res.status(400).json({ msg: 'Please enter all required fields' });
         }
 

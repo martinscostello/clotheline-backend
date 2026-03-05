@@ -19,8 +19,8 @@ const posTransactionSchema = new mongoose.Schema({
     netProfit: { type: Number, default: 0 },
     status: {
         type: String,
-        enum: ['resolved', 'unresolved'],
-        default: 'resolved'
+        enum: ['pending', 'resolved', 'unresolved', 'cancelled'],
+        default: 'pending'
     },
     notes: { type: String },
     enteredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
