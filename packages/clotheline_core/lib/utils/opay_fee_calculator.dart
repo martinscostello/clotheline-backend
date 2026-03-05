@@ -8,7 +8,7 @@ class OPayFeeCalculator {
       OPayTierRange(min: 6001, max: 7000, fixed: 29.75),
       OPayTierRange(min: 7001, max: 8000, fixed: 34.00),
       OPayTierRange(min: 8001, max: 9000, fixed: 38.25),
-      OPayTierRange(min: 9001, max: 10000, fixed: 42.225), // Rounded for double
+      OPayTierRange(min: 9001, max: 10000, fixed: 42.25),
       OPayTierRange(min: 10001, max: 11000, fixed: 46.75),
       OPayTierRange(min: 11001, max: 12000, fixed: 51.00),
       OPayTierRange(min: 12001, max: 13000, fixed: 55.25),
