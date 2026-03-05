@@ -35,6 +35,9 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
   // Smart Tiers
   List<SmartTier> _smartTiers = [];
   late String _opayTier;
+  
+  // Transaction Types [NEW]
+  List<PosTransactionType> _transactionTypes = [];
 
   @override
   void initState() {
@@ -57,6 +60,18 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
 
     _smartTiers = List.from(config?.charges.smartTiers ?? []);
     _opayTier = config?.charges.opayTier ?? 'Regular';
+    _transactionTypes = List.from(config?.transactionTypes ?? []);
+    
+    // Seed defaults if empty
+    if (_transactionTypes.isEmpty) {
+      _transactionTypes = [
+        PosTransactionType(name: 'Withdrawal', hasProviderFee: true, hasCustomerCharge: true),
+        PosTransactionType(name: 'Transfer', hasProviderFee: true, hasCustomerCharge: true),
+        PosTransactionType(name: 'Deposit', hasProviderFee: true, hasCustomerCharge: true),
+        PosTransactionType(name: 'Airtime', hasProviderFee: false, hasCustomerCharge: true),
+        PosTransactionType(name: 'Electricity', hasProviderFee: false, hasCustomerCharge: true),
+      ];
+    }
   }
 
   @override
@@ -96,6 +111,7 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
             'requireDeleteConfirmation': _requireDeleteConfirmation,
           },
           'defaultOpeningCash': MoneyTextInputFormatter.getNumericValue(_openingCashCtrl.text),
+          'transactionTypes': _transactionTypes.map((t) => t.toJson()).toList(),
         }
       };
 
@@ -165,6 +181,10 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
 
                     _buildSectionHeader("OPay Fee Reference"),
                     _buildOPayFeeTable(),
+                    const SizedBox(height: 20),
+
+                    _buildSectionHeader("Transaction Types"),
+                    _buildTransactionTypesCard(),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -445,5 +465,101 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
         ],
       ),
     );
+  }
+
+  Widget _buildTransactionTypesCard() {
+    return GlassContainer(
+      opacity: 0.05,
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        children: [
+          ..._transactionTypes.asMap().entries.map((entry) => _buildTypeEntryRow(entry.key, entry.value)),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            icon: const Icon(Icons.add, size: 16, color: AppTheme.secondaryColor),
+            label: const Text("Add New Type", style: TextStyle(color: AppTheme.secondaryColor, fontSize: 13, fontWeight: FontWeight.bold)),
+            onPressed: () {
+              setState(() {
+                _transactionTypes.add(PosTransactionType(name: "New Type", hasProviderFee: true, hasCustomerCharge: true));
+              });
+            },
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeEntryRow(int index, PosTransactionType type) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: TextEditingController(text: type.name)..selection = TextSelection.collapsed(offset: type.name.length),
+                  onChanged: (val) => _updateType(index, name: val),
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                  decoration: const InputDecoration(
+                    hintText: "Type Name (e.g. Data Bundle)",
+                    hintStyle: TextStyle(color: Colors.white24, fontSize: 12),
+                    isDense: true,
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.white24, size: 18),
+                onPressed: () => setState(() => _transactionTypes.removeAt(index)),
+              )
+            ],
+          ),
+          const Divider(color: Colors.white10),
+          _buildSmallToggleRow("Customer Charge Enabled", type.hasCustomerCharge, (val) => _updateType(index, hasCustomerCharge: val)),
+          _buildSmallToggleRow("OPay Provider Fee Applies", type.hasProviderFee, (val) => _updateType(index, hasProviderFee: val)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallToggleRow(String title, bool value, Function(bool) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          SizedBox(
+            height: 30,
+            child: Transform.scale(
+              scale: 0.7,
+              child: Switch(
+                value: value,
+                activeColor: AppTheme.secondaryColor,
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _updateType(int index, {String? name, bool? hasProviderFee, bool? hasCustomerCharge}) {
+    setState(() {
+      final old = _transactionTypes[index];
+      _transactionTypes[index] = PosTransactionType(
+        name: name ?? old.name,
+        hasProviderFee: hasProviderFee ?? old.hasProviderFee,
+        hasCustomerCharge: hasCustomerCharge ?? old.hasCustomerCharge,
+      );
+    });
   }
 }

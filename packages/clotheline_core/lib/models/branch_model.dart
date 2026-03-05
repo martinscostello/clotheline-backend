@@ -52,6 +52,7 @@ class PosConfig {
     required this.profitTarget,
     required this.security,
     this.defaultOpeningCash = 0.0,
+    this.transactionTypes = const [],
   });
 
   factory PosConfig.fromJson(Map<String, dynamic> json) {
@@ -61,8 +62,37 @@ class PosConfig {
       profitTarget: PosProfitTarget.fromJson(json['profitTarget'] ?? {}),
       security: PosSecurity.fromJson(json['security'] ?? {}),
       defaultOpeningCash: (json['defaultOpeningCash'] as num?)?.toDouble() ?? 0.0,
+      transactionTypes: (json['transactionTypes'] as List?)?.map((t) => PosTransactionType.fromJson(t)).toList() ?? [],
     );
   }
+
+  final List<PosTransactionType> transactionTypes;
+}
+
+class PosTransactionType {
+  final String name;
+  final bool hasProviderFee;
+  final bool hasCustomerCharge;
+
+  PosTransactionType({
+    required this.name,
+    this.hasProviderFee = true,
+    this.hasCustomerCharge = true,
+  });
+
+  factory PosTransactionType.fromJson(Map<String, dynamic> json) {
+    return PosTransactionType(
+      name: json['name'] ?? "",
+      hasProviderFee: json['hasProviderFee'] ?? true,
+      hasCustomerCharge: json['hasCustomerCharge'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'hasProviderFee': hasProviderFee,
+    'hasCustomerCharge': hasCustomerCharge,
+  };
 }
 
 class PosCharges {

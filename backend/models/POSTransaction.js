@@ -4,7 +4,6 @@ const posTransactionSchema = new mongoose.Schema({
     branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
     transactionType: {
         type: String,
-        enum: ['Withdrawal', 'Transfer', 'Deposit', 'Airtime', 'Electricity', 'Other'],
         required: true
     },
     amount: { type: Number, required: true }, // Legacy field (terminalAmount)

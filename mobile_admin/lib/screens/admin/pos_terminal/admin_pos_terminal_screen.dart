@@ -74,16 +74,26 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     final withdrawalAmount = MoneyTextInputFormatter.getNumericValue(_amountCtrl.text);
     final customerCharge = MoneyTextInputFormatter.getNumericValue(_chargesCtrl.text);
     
+    // Check if current type allows provider fee
+    final config = branch.posConfig;
+    final currentType = config?.transactionTypes.firstWhere(
+      (t) => t.name == _transactionType, 
+      orElse: () => PosTransactionType(name: _transactionType, hasProviderFee: true, hasCustomerCharge: true)
+    );
+
     double terminalAmount = withdrawalAmount;
     if (_chargeMode == 'Included in Transaction') {
       terminalAmount = withdrawalAmount + customerCharge;
     }
 
-    final opayFee = OPayFeeCalculator.calculateFee(terminalAmount, branch.posConfig?.charges.opayTier ?? 'Regular');
+    double opayFee = 0;
+    if (currentType?.hasProviderFee ?? true) {
+      opayFee = OPayFeeCalculator.calculateFee(terminalAmount, config?.charges.opayTier ?? 'Regular');
+    }
     
     setState(() {
       _previewOpayFee = opayFee;
-      _previewNetProfit = customerCharge - opayFee;
+      _previewNetProfit = (currentType?.hasCustomerCharge ?? true) ? (customerCharge - opayFee) : -opayFee;
     });
 
     _calculateVariance();
@@ -617,10 +627,23 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                           dropdownColor: const Color(0xFF1E293B),
                           value: _transactionType,
                           style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                          items: ['Withdrawal', 'Transfer', 'Deposit', 'Airtime', 'Electricity', 'Other'].map((t) => 
-                            DropdownMenuItem(value: t, child: Text(t))
-                          ).toList(),
-                          onChanged: (val) => setState(() => _transactionType = val!),
+                          items: (branch.posConfig?.transactionTypes.isNotEmpty ?? false)
+                            ? branch.posConfig!.transactionTypes.map((t) => 
+                                DropdownMenuItem(value: t.name, child: Text(t.name))
+                              ).toList()
+                            : ['Withdrawal', 'Transfer', 'Deposit', 'Airtime', 'Electricity', 'Other'].map((t) => 
+                                DropdownMenuItem(value: t, child: Text(t))
+                              ).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              _transactionType = val!;
+                              final typeConfig = branch.posConfig?.transactionTypes.firstWhere((t) => t.name == val, orElse: () => PosTransactionType(name: val, hasCustomerCharge: true));
+                              if (!(typeConfig?.hasCustomerCharge ?? true)) {
+                                _chargesCtrl.text = "0";
+                              }
+                            });
+                            _onAmountChanged("");
+                          },
                         ),
                       ),
                     ),
@@ -654,30 +677,52 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                flex: 1,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("CHARGE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _chargesCtrl,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [MoneyTextInputFormatter()],
-                      onChanged: _onAmountChanged,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: "0", 
-                        hintStyle: const TextStyle(color: Colors.white24),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.05),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                      ),
+              Builder(
+                builder: (context) {
+                  final typeConfig = branch.posConfig?.transactionTypes.firstWhere(
+                    (t) => t.name == _transactionType, 
+                    orElse: () => PosTransactionType(name: _transactionType, hasCustomerCharge: true)
+                  );
+                  final isChargeEnabled = typeConfig?.hasCustomerCharge ?? true;
+
+                  return Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "CHARGE", 
+                          style: TextStyle(
+                            color: isChargeEnabled ? Colors.white54 : Colors.white12, 
+                            fontSize: 10, 
+                            fontWeight: FontWeight.bold
+                          )
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _chargesCtrl,
+                          enabled: isChargeEnabled,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [MoneyTextInputFormatter()],
+                          onChanged: _onAmountChanged,
+                          style: TextStyle(
+                            color: isChargeEnabled ? Colors.white : Colors.white24, 
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 14
+                          ),
+                          decoration: InputDecoration(
+                            hintText: "0", 
+                            hintStyle: const TextStyle(color: Colors.white24),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            filled: true,
+                            fillColor: isChargeEnabled ? Colors.white.withOpacity(0.05) : Colors.black26,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ],
           ),

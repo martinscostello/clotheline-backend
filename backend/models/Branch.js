@@ -52,7 +52,21 @@ const BranchSchema = new mongoose.Schema({
             requireReconciliation: { type: Boolean, default: false },
             requireDeleteConfirmation: { type: Boolean, default: true }
         },
-        defaultOpeningCash: { type: Number, default: 0 }
+        defaultOpeningCash: { type: Number, default: 0 },
+        transactionTypes: {
+            type: [{
+                name: { type: String, required: true },
+                hasProviderFee: { type: Boolean, default: true },
+                hasCustomerCharge: { type: Boolean, default: true }
+            }],
+            default: [
+                { name: 'Withdrawal', hasProviderFee: true, hasCustomerCharge: true },
+                { name: 'Transfer', hasProviderFee: true, hasCustomerCharge: true },
+                { name: 'Deposit', hasProviderFee: true, hasCustomerCharge: true },
+                { name: 'Airtime', hasProviderFee: false, hasCustomerCharge: true },
+                { name: 'Electricity', hasProviderFee: false, hasCustomerCharge: true }
+            ]
+        }
     },
 
     categorySortOrder: {
