@@ -196,7 +196,11 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         throw Exception(response.data['msg'] ?? "Save failed");
       }
     } catch (e) {
-      ToastUtils.show(context, e.toString(), type: ToastType.error);
+      String msg = e.toString();
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['msg'] ?? e.response?.data['message'] ?? msg;
+      }
+      ToastUtils.show(context, msg, type: ToastType.error);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

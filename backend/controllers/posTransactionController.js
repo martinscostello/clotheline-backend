@@ -174,7 +174,11 @@ exports.createTransaction = async (req, res) => {
         res.json(populatedTx);
     } catch (err) {
         console.error("Error creating POS transaction:", err);
-        res.status(500).send('Server Error');
+        if (err.name === 'ValidationError') {
+            const messages = Object.values(err.errors).map(val => val.message);
+            return res.status(400).json({ msg: messages.join(', '), error: err.errors });
+        }
+        res.status(500).json({ msg: 'Server Error', error: err.message });
     }
 };
 
