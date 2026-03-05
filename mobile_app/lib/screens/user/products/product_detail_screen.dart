@@ -1,25 +1,14 @@
+import 'package:clotheline_core/clotheline_core.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Added
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart'; 
-import 'package:clotheline_core/clotheline_core.dart'; // [NEW]
-import 'package:clotheline_core/clotheline_core.dart'; // [NEW]
-import 'package:clotheline_core/clotheline_core.dart'; 
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
+import 'package:provider/provider.dart';
 import 'submit_review_screen.dart';
 import '../../../utils/add_to_cart_animation.dart';
 import 'store_cart_screen.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import '../../../widgets/fullscreen_gallery.dart';
 import '../../../widgets/custom_cached_image.dart';
 import 'package:clotheline_customer/widgets/glass/LaundryGlassBackground.dart';
 import 'package:clotheline_customer/widgets/glass/UnifiedGlassHeader.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import '../../../widgets/products/SalesBanner.dart'; // [NEW] 
+import '../../../widgets/products/SalesBanner.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final StoreProduct product;
@@ -146,7 +135,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _fetchAppContent() async {
     final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-    final String? branchId = branchProvider.selectedBranchId;
+    final String? branchId = branchProvider.selectedBranch?.id;
     final content = await _contentService.getAppContent(branchId: branchId);
     if (mounted) setState(() => _appContent = content);
   }
