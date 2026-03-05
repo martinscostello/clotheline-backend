@@ -857,6 +857,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         ],
       ),
     );
+  }
 
   Widget _buildLedgerRow(Map<String, dynamic> tx) {
     final date = DateTime.parse(tx['createdAt']).toLocal();
