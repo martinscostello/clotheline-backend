@@ -65,11 +65,12 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
     // Seed defaults if empty
     if (_transactionTypes.isEmpty) {
       _transactionTypes = [
-        PosTransactionType(name: 'Withdrawal', hasProviderFee: true, hasCustomerCharge: true),
-        PosTransactionType(name: 'Transfer', hasProviderFee: true, hasCustomerCharge: true),
-        PosTransactionType(name: 'Deposit', hasProviderFee: true, hasCustomerCharge: true),
-        PosTransactionType(name: 'Airtime', hasProviderFee: false, hasCustomerCharge: true),
-        PosTransactionType(name: 'Electricity', hasProviderFee: false, hasCustomerCharge: true),
+        PosTransactionType(name: 'Withdrawal', hasProviderFee: true, hasCustomerCharge: true, hasTransferFlatFee: false),
+        PosTransactionType(name: 'Transfer', hasProviderFee: true, hasCustomerCharge: true, hasTransferFlatFee: true),
+        PosTransactionType(name: 'Deposit', hasProviderFee: true, hasCustomerCharge: true, hasTransferFlatFee: false),
+        PosTransactionType(name: 'Airtime', hasProviderFee: false, hasCustomerCharge: true, hasTransferFlatFee: false),
+        PosTransactionType(name: 'Data', hasProviderFee: false, hasCustomerCharge: true, hasTransferFlatFee: false),
+        PosTransactionType(name: 'Electricity', hasProviderFee: false, hasCustomerCharge: true, hasTransferFlatFee: false),
       ];
     }
   }
@@ -524,6 +525,7 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
           const Divider(color: Colors.white10),
           _buildSmallToggleRow("Customer Charge Enabled", type.hasCustomerCharge, (val) => _updateType(index, hasCustomerCharge: val)),
           _buildSmallToggleRow("OPay Provider Fee Applies", type.hasProviderFee, (val) => _updateType(index, hasProviderFee: val)),
+          _buildSmallToggleRow("Opay transfer charge ₦20.00", type.hasTransferFlatFee, (val) => _updateType(index, hasTransferFlatFee: val)),
         ],
       ),
     );
@@ -552,13 +554,14 @@ class _AdminBranchPosConfigDetailScreenState extends State<AdminBranchPosConfigD
     );
   }
 
-  void _updateType(int index, {String? name, bool? hasProviderFee, bool? hasCustomerCharge}) {
+  void _updateType(int index, {String? name, bool? hasProviderFee, bool? hasCustomerCharge, bool? hasTransferFlatFee}) {
     setState(() {
       final old = _transactionTypes[index];
       _transactionTypes[index] = PosTransactionType(
         name: name ?? old.name,
         hasProviderFee: hasProviderFee ?? old.hasProviderFee,
         hasCustomerCharge: hasCustomerCharge ?? old.hasCustomerCharge,
+        hasTransferFlatFee: hasTransferFlatFee ?? old.hasTransferFlatFee,
       );
     });
   }

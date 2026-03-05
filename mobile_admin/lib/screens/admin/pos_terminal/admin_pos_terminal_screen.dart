@@ -91,6 +91,11 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     if (currentType?.hasProviderFee ?? true) {
       opayFee = OPayFeeCalculator.calculateFee(terminalAmount, config?.charges.opayTier ?? 'Regular');
     }
+
+    // Add flat transfer fee if enabled
+    if (currentType?.hasTransferFlatFee ?? false) {
+      opayFee += 20.0;
+    }
     
     setState(() {
       _previewOpayFee = opayFee;
@@ -164,7 +169,19 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       terminalAmount = withdrawalAmount + customerCharge;
     }
     
-    final opayFee = OPayFeeCalculator.calculateFee(terminalAmount, branch.posConfig?.charges.opayTier ?? 'Regular');
+    final currentType = config?.transactionTypes.firstWhere(
+      (t) => t.name == _transactionType, 
+      orElse: () => PosTransactionType(name: _transactionType, hasProviderFee: true, hasCustomerCharge: true)
+    );
+
+    double opayFee = 0;
+    if (currentType?.hasProviderFee ?? true) {
+      opayFee = OPayFeeCalculator.calculateFee(terminalAmount, branch.posConfig?.charges.opayTier ?? 'Regular');
+    }
+
+    if (currentType?.hasTransferFlatFee ?? false) {
+      opayFee += 20.0;
+    }
 
     setState(() => _isSaving = true);
     

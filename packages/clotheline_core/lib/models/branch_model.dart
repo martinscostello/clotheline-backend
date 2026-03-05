@@ -73,11 +73,13 @@ class PosTransactionType {
   final String name;
   final bool hasProviderFee;
   final bool hasCustomerCharge;
+  final bool hasTransferFlatFee;
 
   PosTransactionType({
     required this.name,
     this.hasProviderFee = true,
     this.hasCustomerCharge = true,
+    this.hasTransferFlatFee = false,
   });
 
   factory PosTransactionType.fromJson(Map<String, dynamic> json) {
@@ -85,6 +87,7 @@ class PosTransactionType {
       name: json['name'] ?? "",
       hasProviderFee: json['hasProviderFee'] ?? true,
       hasCustomerCharge: json['hasCustomerCharge'] ?? true,
+      hasTransferFlatFee: json['hasTransferFlatFee'] ?? false,
     );
   }
 
@@ -92,6 +95,7 @@ class PosTransactionType {
     'name': name,
     'hasProviderFee': hasProviderFee,
     'hasCustomerCharge': hasCustomerCharge,
+    'hasTransferFlatFee': hasTransferFlatFee,
   };
 }
 

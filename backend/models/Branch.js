@@ -57,7 +57,8 @@ const BranchSchema = new mongoose.Schema({
             type: [{
                 name: { type: String, required: true },
                 hasProviderFee: { type: Boolean, default: true },
-                hasCustomerCharge: { type: Boolean, default: true }
+                hasCustomerCharge: { type: Boolean, default: true },
+                hasTransferFlatFee: { type: Boolean, default: false }
             }],
             default: [
                 { name: 'Withdrawal', hasProviderFee: true, hasCustomerCharge: true },
