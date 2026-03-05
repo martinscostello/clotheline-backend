@@ -204,27 +204,13 @@ class _PremiumNavBarState extends State<PremiumNavBar> with TickerProviderStateM
                     duration: const Duration(milliseconds: 200),
                     opacity: isSelected ? 1.0 : 0.0,
                     child: Container(
-                      width: 90, // [FIX] EXACTLY 360 / 4 for perfect alignment with edges
-                      height: 62,
+                      width: 72, // [FIX] Inset width for "floating pill" look
+                      height: 56, // [FIX] Slightly shorter for padding
                       decoration: BoxDecoration(
                         color: isDark 
                             ? Colors.white.withValues(alpha: 0.1) 
                             : Colors.black.withValues(alpha: 0.05),
-                        borderRadius: index == 0
-                            ? BorderRadius.only(
-                                topLeft: effectiveBorderRadius.topLeft,
-                                bottomLeft: effectiveBorderRadius.bottomLeft,
-                                topRight: const Radius.circular(20),
-                                bottomRight: const Radius.circular(20),
-                              )
-                            : index == widget.items.length - 1
-                                ? BorderRadius.only(
-                                    topRight: effectiveBorderRadius.topRight,
-                                    bottomRight: effectiveBorderRadius.bottomRight,
-                                    topLeft: const Radius.circular(20),
-                                    bottomLeft: const Radius.circular(20),
-                                  )
-                                : BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(25), // [FIX] Uniform radius
                       ),
                     ),
                   ),
