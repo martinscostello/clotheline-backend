@@ -7,18 +7,13 @@ import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
 import 'package:clotheline_core/clotheline_core.dart';
 import '../../../widgets/glass/GlassContainer.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import '../../../widgets/custom_cached_image.dart'; // [FIX] Imported for web-safe images
+import '../../../widgets/custom_cached_image.dart';
 import 'admin_edit_staff_screen.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 
 class AdminStaffScreen extends StatefulWidget {
   const AdminStaffScreen({super.key});
@@ -361,6 +356,9 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         final branchName = bp.branches.any((b) => b.id == staff.branchId)
             ? bp.branches.firstWhere((b) => b.id == staff.branchId).name
             : "N/A";
+        
+        final isAbuja = branchName.toLowerCase().contains('abuja');
+        final companyName = isAbuja ? 'Brimarck Cleaning Services' : 'Clotheline Services';
 
         return Center(
           child: Container(
@@ -1035,17 +1033,25 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
   }
 
   Future<void> _generateIDCardPDF(Staff staff) async {
-    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-    final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
-    final pdfBytes = await StaffPdfService.generateIDCard(staff: staff, branch: branch);
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdfBytes);
+    try {
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+      final pdfBytes = await StaffPdfService.generateIDCard(staff: staff, branch: branch);
+      await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdfBytes);
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "PDF Error: $e", type: ToastType.error);
+    }
   }
 
   Future<void> _generatePaySlip(Staff staff, StaffPayment payment) async {
-    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-    final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
-    final pdfBytes = await StaffPdfService.generatePaySlip(staff: staff, branch: branch, payment: payment);
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdfBytes);
+    try {
+      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
+      final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
+      final pdfBytes = await StaffPdfService.generatePaySlip(staff: staff, branch: branch, payment: payment);
+      await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdfBytes);
+    } catch (e) {
+      if (mounted) ToastUtils.show(context, "PDF Error: $e", type: ToastType.error);
+    }
   }
 
   Future<void> _generateAgreement(Staff staff) async {
@@ -1370,15 +1376,6 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     }
   }
 
-  Future<void> _generatePaySlip(Staff staff, StaffPayment payment) async {
-    try {
-      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-      final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
-      await StaffPdfService.generatePaySlip(staff: staff, branch: branch, payment: payment);
-    } catch (e) {
-       if (mounted) ToastUtils.show(context, "PDF Error: $e", type: ToastType.error);
-    }
-  }
 
   Widget _buildAgreementSection(Staff staff) {
     final branchProvider = Provider.of<BranchProvider>(context, listen: false);
@@ -1490,15 +1487,6 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     }
   }
 
-  Future<void> _generateIDCardPDF(Staff staff) async {
-    try {
-      final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-      final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
-      await StaffPdfService.generateIDCard(staff: staff, branch: branch);
-    } catch (e) {
-      if (mounted) ToastUtils.show(context, "PDF Error: $e", type: ToastType.error);
-    }
-  }
 
   Widget _buildDialogInput(String label, TextEditingController controller, {int maxLines = 1, TextInputType keyboard = TextInputType.text}) {
     return TextField(

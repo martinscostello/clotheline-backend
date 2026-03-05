@@ -194,4 +194,20 @@ Management.''';
       rethrow;
     }
   }
+
+  Future<void> suspendStaff(String id) async {
+    try {
+      await _apiService.client.put('/staff/$id/suspend');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> unsuspendStaff(String id) async {
+    try {
+      await _apiService.client.put('/staff/$id/unsuspend');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
