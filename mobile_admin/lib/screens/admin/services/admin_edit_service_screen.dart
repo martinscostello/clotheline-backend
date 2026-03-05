@@ -106,6 +106,7 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
   String _icon = "local_laundry_service"; 
   String _fulfillmentMode = "logistics"; 
   bool _isSaving = false;
+  String _itemSortOrder = "manual"; 
 
   @override
   void initState() {
@@ -132,6 +133,8 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
         _color = s.color;
         _icon = s.icon;
         _fulfillmentMode = s.fulfillmentMode;
+        _itemSortOrder = s.itemSortOrder;
+        _applySorting();
     }
 
     if (widget.saveTrigger != null) {
@@ -216,6 +219,7 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
       "inspectionFee": double.tryParse(_inspectionFeeController.text) ?? 0,
       "deploymentLocation": _deploymentLocation != null ? {"lat": _deploymentLocation!.latitude, "lng": _deploymentLocation!.longitude} : null,
       "inspectionFeeZones": _inspectionZones.map((z) => z.toJson()).toList(),
+      "itemSortOrder": _itemSortOrder,
     };
     
     if (widget.scopeBranch != null) {
@@ -256,7 +260,54 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
   void _addItem() {
     _showItemDialog();
   }
-  
+
+  void _showSortOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E2C),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Sort Items By", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            _buildSortOptionTile("Alphabetically A-Z", "alphabetical", Icons.sort_by_alpha),
+            _buildSortOptionTile("Newest - Oldest", "newest", Icons.history),
+            _buildSortOptionTile("Oldest - Newest", "oldest", Icons.update),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortOptionTile(String title, String value, IconData icon) {
+    final isSelected = _itemSortOrder == value;
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? AppTheme.primaryColor : Colors.white54),
+      title: Text(title, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+      trailing: isSelected ? const Icon(Icons.check_circle, color: AppTheme.primaryColor, size: 20) : null,
+      onTap: () {
+        Navigator.pop(context);
+        setState(() {
+          _itemSortOrder = value;
+          _applySorting();
+        });
+      },
+    );
+  }
+
+  void _applySorting() {
+    if (_itemSortOrder == 'alphabetical') {
+      _items.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    } else if (_itemSortOrder == 'newest') {
+      _items.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+    } else if (_itemSortOrder == 'oldest') {
+      _items.sort((a, b) => (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now()));
+    }
+  }
+
   void _showItemDialog([int? index]) {
     final nameCtrl = TextEditingController(text: index != null ? _items[index].name : "");
     List<ServiceOption> nestedServices = index != null ? List.from(_items[index].services) : [];
@@ -353,6 +404,7 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
                       name: nameCtrl.text, 
                       price: nestedServices.isNotEmpty ? nestedServices.first.price : 0, 
                       services: nestedServices,
+                      createdAt: index != null ? (_items[index].createdAt ?? DateTime.now()) : DateTime.now(),
                     );
                     if (index != null) {
                       _items[index] = newItem;
@@ -754,14 +806,36 @@ class _AdminEditServiceBodyState extends State<AdminEditServiceBody> {
 
                 const SizedBox(height: 20),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(widget.scopeBranch != null ? "Edit Prices (${widget.scopeBranch!.name})" : "Types & Prices", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor), 
-                      onPressed: _addItem
-                    )
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(widget.scopeBranch != null ? "Edit Prices (${widget.scopeBranch!.name})" : "Types & Prices", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor), 
+                          onPressed: _addItem
+                        )
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 15),
+                      child: InkWell(
+                        onTap: _showSortOptions,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.sort, color: AppTheme.primaryColor, size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              "Sort: ${_itemSortOrder == 'alphabetical' ? 'A-Z' : _itemSortOrder == 'newest' ? 'Newest' : _itemSortOrder == 'oldest' ? 'Oldest' : 'Manual'}",
+                              style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 ListView.builder(

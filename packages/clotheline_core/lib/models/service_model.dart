@@ -26,6 +26,7 @@ class ServiceModel {
   final List<InspectionZone> inspectionFeeZones; // [NEW]
   final String typeLabel; // [NEW] e.g. "Select Type", "Select Frequency"
   final String subTypeLabel; // [NEW] e.g. "Service Type", "Square Meters"
+  final String itemSortOrder; // [NEW] alphabetical | newest | oldest | manual
 
   ServiceModel({
     required this.id,
@@ -52,6 +53,7 @@ class ServiceModel {
     this.inspectionFeeZones = const [],
     this.typeLabel = 'Select Type',
     this.subTypeLabel = 'Service Type',
+    this.itemSortOrder = 'alphabetical',
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
@@ -88,6 +90,7 @@ class ServiceModel {
       inspectionFeeZones: (json['inspectionFeeZones'] as List?)?.map((z) => InspectionZone.fromJson(z)).toList() ?? [],
       typeLabel: json['typeLabel'] ?? 'Select Type',
       subTypeLabel: json['subTypeLabel'] ?? 'Service Type',
+      itemSortOrder: json['itemSortOrder'] ?? 'alphabetical',
       items: (json['items'] as List?)?.map((e) => ServiceItem.fromJson(e)).toList() ?? [],
       serviceTypes: (json['serviceTypes'] as List?)?.map((e) => ServiceVariant.fromJson(e)).toList() ?? [],
       branchPricing: (json['branchPricing'] as List?)?.map((e) => BranchPrice.fromJson(e)).toList() ?? [],
@@ -130,6 +133,7 @@ class ServiceModel {
       'inspectionFeeZones': inspectionFeeZones.map((z) => z.toJson()).toList(),
       'typeLabel': typeLabel,
       'subTypeLabel': subTypeLabel,
+      'itemSortOrder': itemSortOrder,
       'items': items.map((e) => e.toJson()).toList(),
       'serviceTypes': serviceTypes.map((e) => e.toJson()).toList(),
       'branchPricing': branchPricing.map((e) => e.toJson()).toList(),
@@ -154,12 +158,14 @@ class ServiceItem {
   final String name;
   final double price; // Legacy Base Price
   final List<ServiceOption> services; // [NEW] Nested services
+  final DateTime? createdAt; // [NEW]
 
   ServiceItem({
     this.id, 
     required this.name, 
     required this.price,
-    this.services = const []
+    this.services = const [],
+    this.createdAt,
   });
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
@@ -168,6 +174,7 @@ class ServiceItem {
       name: json['name'],
       price: (json['price'] as num).toDouble(),
       services: (json['services'] as List?)?.map((s) => ServiceOption.fromJson(s)).toList() ?? [],
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
     );
   }
   
@@ -176,6 +183,7 @@ class ServiceItem {
     'name': name, 
     'price': price,
     'services': services.map((s) => s.toJson()).toList(),
+    if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
   };
 }
 

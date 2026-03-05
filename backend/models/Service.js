@@ -106,10 +106,12 @@ const ServiceSchema = new mongoose.Schema({
 
         // [STRICT BRANCH INDEPENDENCE]
         // Items here REPLACE the global items list for this branch.
+        itemSortOrder: { type: String, enum: ['alphabetical', 'newest', 'oldest', 'manual'], default: 'alphabetical' },
         items: [{
             name: String,
             price: Number, // Legacy Base Price
             isActive: { type: Boolean, default: true },
+            createdAt: { type: Date, default: Date.now },
             services: [{ // [NEW] Nested services for this item
                 name: String,
                 price: Number
