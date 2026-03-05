@@ -225,8 +225,7 @@ class StaffPdfService {
               // Blue side bar
               pw.Positioned(
                 left: 0, top: 0, bottom: 0,
-                width: 25,
-                child: pw.Container(color: PdfColors.blue900),
+                child: pw.Container(width: 25, color: PdfColors.blue900),
               ),
               // Diagonal accent
               pw.Positioned(
@@ -320,8 +319,7 @@ class StaffPdfService {
               // Bottom colored bar
               pw.Positioned(
                 bottom: 0, left: 25, right: 0,
-                height: 4,
-                child: pw.Container(color: PdfColors.amber),
+                child: pw.Container(height: 4, color: PdfColors.amber),
               ),
             ],
           );

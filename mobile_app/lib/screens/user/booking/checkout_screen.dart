@@ -1272,8 +1272,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
-                  ),
-                      : Text(_isQuoteRequired ? "PAY INSPECTION FEE" : (_paymentMethod == 'pod' ? "CONFIRM ORDER (POD)" : "PAY NOW"), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: Text(_isQuoteRequired ? "PAY INSPECTION FEE" : (_paymentMethod == 'pod' ? "CONFIRM ORDER (POD)" : "PAY NOW"), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
               if (_isPODEligible && !_isQuoteRequired) ...[

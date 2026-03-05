@@ -59,6 +59,7 @@ class CartItem {
   final LatLng? deploymentLocation; // [NEW]
   final String? serviceId; // [NEW] Originating Service ID for isolation
   final String? serviceName; // [NEW] Originating Service Name
+  final bool allowPOD; // [NEW]
   int quantity;
 
   CartItem({
@@ -73,6 +74,7 @@ class CartItem {
     this.deploymentLocation,
     this.serviceId,
     this.serviceName,
+    this.allowPOD = false,
   });
 
   // [NEW] Gross Total for the line item (Quantity * Price * Multiplier)
@@ -107,6 +109,7 @@ class CartItem {
     'deploymentLocation': deploymentLocation != null ? {'lat': deploymentLocation!.latitude, 'lng': deploymentLocation!.longitude} : null,
     'serviceId': serviceId,
     'serviceName': serviceName,
+    'allowPOD': allowPOD,
   };
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
@@ -122,6 +125,7 @@ class CartItem {
       deploymentLocation: json['deploymentLocation'] != null ? LatLng(json['deploymentLocation']['lat'], json['deploymentLocation']['lng']) : null,
       serviceId: json['serviceId'],
       serviceName: json['serviceName'],
+      allowPOD: json['allowPOD'] ?? false,
     );
   }
 }

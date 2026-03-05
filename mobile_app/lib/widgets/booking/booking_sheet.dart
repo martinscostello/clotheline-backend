@@ -76,6 +76,7 @@ class _BookingSheetState extends State<BookingSheet> {
         deploymentLocation: widget.serviceModel.deploymentLocation,
         serviceId: widget.serviceModel.id,
         serviceName: widget.serviceModel.name,
+        allowPOD: widget.serviceModel.allowPOD,
       ));
       
       setState(() {
