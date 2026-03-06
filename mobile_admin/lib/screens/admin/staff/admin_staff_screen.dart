@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'dart:io' if (dart.library.html) 'dart:html';
+import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
@@ -581,7 +581,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
       } else {
         // [MOBILE] Save to Temp File + Trigger WhatsApp + File Share
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/$fileName');
+        final file = io.File('${tempDir.path}/$fileName');
         await file.writeAsBytes(pdfBytes);
 
         // Trigger WhatsApp + File Share

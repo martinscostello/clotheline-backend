@@ -3,9 +3,10 @@ import 'package:dio/dio.dart';
 import 'package:clotheline_admin/widgets/glass/LiquidBackground.dart';
 import 'package:clotheline_admin/widgets/glass/GlassContainer.dart';
 import 'package:clotheline_core/clotheline_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'dart:io';
+import 'dart:io' as io;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:clotheline_core/utils/money_formatter.dart';
@@ -378,11 +379,23 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
         ]);
       }
       String csvStr = rows.map((row) => row.join(',')).join('\n');
-      final dir = await getTemporaryDirectory();
-      final path = "${dir.path}/POS_Ledger_${DateTime.now().millisecondsSinceEpoch}.csv";
-      final file = File(path);
-      await file.writeAsString(csvStr);
-      await Share.shareXFiles([XFile(path)], text: 'POS Ledger Report');
+      
+      if (kIsWeb) {
+        // [WEB] Convert string to bytes and use Printing.sharePdf or similar for download
+        final bytes = Uint8List.fromList(utf8.encode(csvStr));
+        await Printing.sharePdf(
+          bytes: bytes,
+          filename: "POS_Ledger_${DateTime.now().millisecondsSinceEpoch}.csv",
+          subject: 'POS Ledger Report',
+        );
+      } else {
+        // [MOBILE] Save to local file system
+        final dir = await getTemporaryDirectory();
+        final path = "${dir.path}/POS_Ledger_${DateTime.now().millisecondsSinceEpoch}.csv";
+        final file = io.File(path);
+        await file.writeAsString(csvStr);
+        await Share.shareXFiles([XFile(path)], text: 'POS Ledger Report');
+      }
     } catch (e) {
       ToastUtils.show(context, "Export error", type: ToastType.error);
     }

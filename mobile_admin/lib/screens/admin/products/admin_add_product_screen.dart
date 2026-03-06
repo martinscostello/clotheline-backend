@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'dart:io' as io;
 import 'package:dio/dio.dart';
 import 'package:clotheline_core/clotheline_core.dart';
 import '../../../widgets/glass/LiquidBackground.dart';
@@ -189,7 +189,7 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
     final List<XFile> images = await _picker.pickMultiImage(imageQuality: 100);
     if (images.isNotEmpty) {
       for (var xFile in images) {
-        final file = File(xFile.path); // Fallback for Mobile Cached Image Preview
+        final file = kIsWeb ? null : io.File(xFile.path); // Fallback for Mobile Cached Image Preview
         final id = DateTime.now().microsecondsSinceEpoch.toString();
         // [CRITICAL] Supply xFile directly for Web Blob extraction
         final item = UploadItem(id: id, localFile: file, xFile: xFile, status: UploadStatus.uploading);
@@ -669,7 +669,7 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
     final nameCtrl = TextEditingController();
     final reviewCtrl = TextEditingController();
     int rating = 5;
-    List<File> reviewImages = [];
+    List<io.File> reviewImages = [];
     showDialog(
       context: context, 
       builder: (ctx) => StatefulBuilder(
@@ -686,7 +686,7 @@ class _AdminAddProductBodyState extends State<AdminAddProductBody> {
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(5, (index) => IconButton(icon: Icon(index < rating ? Icons.star : Icons.star_border, color: Colors.amber), onPressed: () => setDialogState(() => rating = index + 1)))),
                   TextField(controller: reviewCtrl, maxLines: 3, decoration: const InputDecoration(labelText: "Review Text", labelStyle: TextStyle(color: Colors.white54)), style: const TextStyle(color: Colors.white)),
                   const SizedBox(height: 15),
-                  Wrap(spacing: 10, children: [GestureDetector(onTap: () async { final XFile? img = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 100); if (img != null) setDialogState(() => reviewImages.add(File(img.path))); }, child: Container(width: 50, height: 50, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.add_a_photo, color: Colors.white54, size: 20))), ...reviewImages.map((img) => Stack(children: [ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(img, width: 50, height: 50, fit: BoxFit.cover)), Positioned(top: -2, right: -2, child: GestureDetector(onTap: () => setDialogState(() => reviewImages.remove(img)), child: const CircleAvatar(radius: 8, backgroundColor: Colors.black54, child: Icon(Icons.close, size: 10, color: Colors.white))))]))]),
+                  Wrap(spacing: 10, children: [GestureDetector(onTap: () async { final XFile? img = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 100); if (img != null) setDialogState(() => reviewImages.add(io.File(img.path))); }, child: Container(width: 50, height: 50, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.add_a_photo, color: Colors.white54, size: 20))), ...reviewImages.map((img) => Stack(children: [ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(img, width: 50, height: 50, fit: BoxFit.cover)), Positioned(top: -2, right: -2, child: GestureDetector(onTap: () => setDialogState(() => reviewImages.remove(img)), child: const CircleAvatar(radius: 8, backgroundColor: Colors.black54, child: Icon(Icons.close, size: 10, color: Colors.white))))]))]),
                 ],
                ),
             ),

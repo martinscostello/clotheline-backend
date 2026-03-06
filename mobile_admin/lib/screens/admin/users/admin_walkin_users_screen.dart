@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:clotheline_admin/widgets/glass/LiquidBackground.dart';
 import 'package:clotheline_admin/widgets/glass/GlassContainer.dart';
 import 'package:clotheline_core/clotheline_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import 'dart:io' as io;
 import 'package:share_plus/share_plus.dart';
+import 'package:printing/printing.dart';
+import 'dart:typed_data';
+import 'dart:convert';
 import 'package:provider/provider.dart';
 
 class AdminWalkInUsersScreen extends StatefulWidget {
@@ -107,19 +111,29 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
       }
 
       // 2. Generate CSV String
-      String csvData = csv.encode(rows);
+      String csvData = const ListToCsvConverter().convert(rows);
 
-      // 3. Save to Temp File
-      final directory = await getTemporaryDirectory();
-      final path = "${directory.path}/WalkInUsers_Export_${DateTime.now().millisecondsSinceEpoch}.csv";
-      final file = File(path);
-      await file.writeAsString(csvData);
+      // 3. Handle Platform
+      if (kIsWeb) {
+        final bytes = Uint8List.fromList(utf8.encode(csvData));
+        await Printing.sharePdf(
+          bytes: bytes,
+          filename: "WalkInUsers_Export_${DateTime.now().millisecondsSinceEpoch}.csv",
+          subject: 'Clotheline Walk-In Users Export',
+        );
+      } else {
+        // 3. Save to Temp File
+        final directory = await getTemporaryDirectory();
+        final path = "${directory.path}/WalkInUsers_Export_${DateTime.now().millisecondsSinceEpoch}.csv";
+        final file = io.File(path);
+        await file.writeAsString(csvData);
 
-      // 4. Share File
-      await Share.shareXFiles(
-          [XFile(path)], 
-          text: 'Clotheline Walk-In Users Export'
-      );
+        // 4. Share File
+        await Share.shareXFiles(
+            [XFile(path)], 
+            text: 'Clotheline Walk-In Users Export'
+        );
+      }
 
     } catch (e) {
       if (!mounted) return;
