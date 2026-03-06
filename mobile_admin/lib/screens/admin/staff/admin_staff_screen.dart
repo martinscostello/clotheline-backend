@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -544,17 +545,21 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         branchName: branch.name,
       );
 
-      final String safeName = staff.name.replaceAll(RegExp(r'[^\w\s]+'), '').replaceAll(' ', '_');
-      final String fileName = "${safeName}_${type.replaceAll(' ', '_')}.pdf";
+      // 3. Share via Printing
+      // Note: We copy the phone number to clipboard to make it easier for the user to find the contact in WhatsApp
+      await Clipboard.setData(ClipboardData(text: staff.phone));
       
-      // 3. Share via Printing (Bypasses path_provider issues and works better cross-platform)
+      if (mounted) {
+        ToastUtils.show(context, "Phone copied! Opening share sheet...", type: ToastType.info);
+      }
+
       await Printing.sharePdf(
         bytes: pdfBytes,
         filename: fileName,
         subject: message,
       );
       
-      if (mounted) ToastUtils.show(context, "Ready to share!", type: ToastType.success);
+      if (mounted) ToastUtils.show(context, "Sharing process started!", type: ToastType.success);
     } catch (e) {
       if (mounted) ToastUtils.show(context, "Sharing Error: $e", type: ToastType.error);
     }

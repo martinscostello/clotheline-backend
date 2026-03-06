@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import 'package:clotheline_core/clotheline_core.dart';
 
@@ -200,19 +200,19 @@ class StaffPdfService {
     // Load Images
     pw.ImageProvider? passportImage;
     if (staff.passportPhoto != null && staff.passportPhoto!.isNotEmpty) {
-      try { passportImage = await networkImage(staff.passportPhoto!); } catch (_) {}
+      passportImage = await _fetchImage(staff.passportPhoto!);
     }
 
     pw.ImageProvider? signatureImage;
     if (staff.signature != null && staff.signature!.isNotEmpty) {
-      try { 
-        if (staff.signature!.startsWith('data:image')) {
+      if (staff.signature!.startsWith('data:image')) {
+        try {
           final String base64Data = staff.signature!.split(',').last;
           signatureImage = pw.MemoryImage(base64Decode(base64Data));
-        } else {
-          signatureImage = await networkImage(staff.signature!);
-        }
-      } catch (_) {}
+        } catch (_) {}
+      } else {
+        signatureImage = await _fetchImage(staff.signature!);
+      }
     }
 
     final format = PdfPageFormat(86 * PdfPageFormat.mm, 54 * PdfPageFormat.mm);
@@ -463,5 +463,18 @@ class StaffPdfService {
         ],
       ),
     );
+  }
+
+  /// Robustly fetch image bytes using http
+  static Future<pw.ImageProvider?> _fetchImage(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return pw.MemoryImage(response.bodyBytes);
+      }
+    } catch (e) {
+      print("Error fetching image for PDF: $e");
+    }
+    return null;
   }
 }
