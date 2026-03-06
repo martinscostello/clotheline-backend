@@ -111,7 +111,7 @@ class _AdminWalkInUsersScreenState extends State<AdminWalkInUsersScreen> {
       }
 
       // 2. Generate CSV String
-      String csvData = const ListToCsvConverter().convert(rows);
+      String csvData = rows.map((row) => row.join(',')).join('\n');
 
       // 3. Handle Platform
       if (kIsWeb) {

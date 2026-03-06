@@ -7,8 +7,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:io' as io;
+import 'dart:typed_data';
+import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:printing/printing.dart';
 import 'package:clotheline_core/utils/money_formatter.dart';
 
 class AdminPosTerminalScreen extends StatefulWidget {
