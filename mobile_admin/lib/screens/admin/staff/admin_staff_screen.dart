@@ -1,9 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -357,119 +354,118 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
             : "N/A";
         
         final deepBlue = const Color(0xFF1A237E);
+        final accentBlue = const Color(0xFF283593);
         final joinDate = DateFormat('dd.MM.yyyy').format(staff.employmentDate);
         final expireDate = DateFormat('dd.MM.yyyy').format(staff.employmentDate.add(const Duration(days: 365 * 2)));
 
         return Center(
           child: Container(
-            width: 340,
-            height: 210,
+            width: 320,
+            height: 190,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(12),
               color: Colors.white,
               boxShadow: const [
-                BoxShadow(color: Colors.black45, blurRadius: 15, offset: Offset(0, 8))
+                BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5))
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(12),
               child: Stack(
                 children: [
-                  // Left Dark Geometric Section
+                  // Top Accent Strip
+                  Positioned(top: 0, left: 0, right: 0, height: 8, child: Container(color: deepBlue)),
+
+                  // Left Blue Panel
                   Positioned(
                     left: 0, top: 0, bottom: 0,
-                    width: 120,
+                    width: 110,
                     child: Stack(
                       children: [
-                        Container(color: const Color(0xFF121212)),
+                        Container(color: deepBlue),
                         Positioned(
-                          right: -20, top: 0, bottom: 0,
+                          right: -10, top: 0, bottom: 0,
                           child: Transform.rotate(
-                            angle: 0.2,
-                            child: Container(width: 40, color: const Color(0xFF121212)),
+                            angle: 0.1,
+                            child: Container(width: 25, color: deepBlue),
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  // Vertical Dates Labels
+                  // Rotated Date Labels
                   Positioned(
-                    left: 5, bottom: 15,
+                    left: 4, bottom: 12,
                     child: RotatedBox(
                       quarterTurns: 3,
                       child: Row(
                         children: [
-                          Text("JOIN DATE: $joinDate", style: const TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 15),
-                          Text("EXPIRE DATE: $expireDate", style: const TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
+                          Text("JOINED: $joinDate", style: const TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                          const SizedBox(width: 12),
+                          Text("EXPIRES: $expireDate", style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 6, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                         ],
                       ),
                     ),
                   ),
 
-                  // Geometric Photo Frame (Hexagon/Shield)
+                  // Photo Frame
                   Positioned(
-                    left: 55,
-                    top: 45,
-                    child: SizedBox(
-                      width: 85,
-                      height: 105,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Accent Shape
-                          Transform.rotate(
-                            angle: 0.1,
-                            child: Container(
-                              width: 85, height: 105,
-                              decoration: BoxDecoration(color: deepBlue, borderRadius: BorderRadius.circular(6)),
-                            ),
-                          ),
-                          // Main Photo
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              width: 80, height: 100,
-                              color: Colors.grey[300],
-                              child: staff.passportPhoto != null 
-                                ? CustomCachedImage(imageUrl: staff.passportPhoto!, fit: BoxFit.cover)
-                                : const Center(child: Icon(Icons.person, size: 40, color: Colors.black12)),
-                            ),
-                          ),
-                        ],
+                    left: 45,
+                    top: 35,
+                    child: Container(
+                      width: 80,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))]
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Container(
+                          color: Colors.grey[200],
+                          child: staff.passportPhoto != null 
+                            ? CustomCachedImage(imageUrl: staff.passportPhoto!, fit: BoxFit.cover)
+                            : const Center(child: Icon(Icons.person, size: 40, color: Colors.black12)),
+                        ),
                       ),
                     ),
                   ),
 
-                  // Main Info Section (Right)
+                  // Right Side Details
                   Positioned(
-                    left: 150,
-                    top: 25, right: 15, bottom: 15,
+                    left: 145,
+                    top: 25, right: 15, bottom: 12,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(staff.name.toUpperCase(), style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
-                        Text(staff.position.toUpperCase(), style: TextStyle(color: Colors.grey[600], fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                        Text(staff.name.toUpperCase(), style: TextStyle(color: deepBlue, fontSize: 13, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+                        Container(height: 1.5, width: 30, color: accentBlue, margin: const EdgeInsets.symmetric(vertical: 2)),
+                        Text(staff.position.toUpperCase(), style: TextStyle(color: Colors.grey[600], fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                         
                         const SizedBox(height: 15),
                         
-                        _buildPreviewIdRow("ID NO:", staff.staffId),
-                        _buildPreviewIdRow("BRANCH:", branchName.toUpperCase()),
-                        _buildPreviewIdRow("EMAIL:", staff.email ?? "N/A"),
-                        _buildPreviewIdRow("PHONE:", staff.phone),
+                        _buildPreviewIdRow("STAFF ID", staff.staffId, deepBlue),
+                        const SizedBox(height: 5),
+                        _buildPreviewIdRow("BRANCH", branchName.toUpperCase(), deepBlue),
+                        const SizedBox(height: 5),
+                        _buildPreviewIdRow("PHONE", staff.phone, deepBlue),
 
                         const Spacer(),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                              child: const Text("AUTHORIZED PERSONNEL", style: TextStyle(color: Colors.green, fontSize: 6, fontWeight: FontWeight.bold)),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.green.withOpacity(0.3)),
+                                borderRadius: BorderRadius.circular(3)
+                              ),
+                              child: const Text("AUTHORIZED PERSONNEL", style: TextStyle(color: Colors.green, fontSize: 5, fontWeight: FontWeight.bold)),
                             ),
-                            // Small deep blue accent at bottom right
-                            Container(width: 25, height: 4, decoration: BoxDecoration(color: deepBlue, borderRadius: BorderRadius.circular(2))),
+                            Container(width: 20, height: 3, decoration: BoxDecoration(color: deepBlue, borderRadius: BorderRadius.circular(1))),
                           ],
                         ),
                       ],
@@ -484,17 +480,13 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     );
   }
 
-  Widget _buildPreviewIdRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black54)),
-          const SizedBox(width: 6),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 8, color: Colors.black87, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis)),
-        ],
-      ),
+  Widget _buildPreviewIdRow(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 6, fontWeight: FontWeight.bold, color: Colors.grey)),
+        Text(value, style: TextStyle(fontSize: 8, color: color, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+      ],
     );
   }
 
@@ -545,25 +537,24 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         return;
       }
       
-      // 2. Save to Temp File
-      final tempDir = await getTemporaryDirectory();
-      final String safeName = staff.name.replaceAll(RegExp(r'[^\w\s]+'), '').replaceAll(' ', '_');
-      final String fileName = "${safeName}_${type.replaceAll(' ', '_')}.pdf";
-      final file = File('${tempDir.path}/$fileName');
-      await file.writeAsBytes(pdfBytes);
-      
-      // 3. Prepare Message
+      // 2. Prepare Message
       final String message = WhatsAppService.getStaffDocumentMessage(
         staffName: staff.name,
         documentType: type,
         branchName: branch.name,
       );
+
+      final String safeName = staff.name.replaceAll(RegExp(r'[^\w\s]+'), '').replaceAll(' ', '_');
+      final String fileName = "${safeName}_${type.replaceAll(' ', '_')}.pdf";
       
-      // 4. Share via XFile
-      final xFile = XFile(file.path, mimeType: 'application/pdf');
-      await Share.shareXFiles([xFile], text: message);
+      // 3. Share via Printing (Bypasses path_provider issues and works better cross-platform)
+      await Printing.sharePdf(
+        bytes: pdfBytes,
+        filename: fileName,
+        subject: message,
+      );
       
-      if (mounted) ToastUtils.show(context, "Ready to share via WhatsApp!", type: ToastType.success);
+      if (mounted) ToastUtils.show(context, "Ready to share!", type: ToastType.success);
     } catch (e) {
       if (mounted) ToastUtils.show(context, "Sharing Error: $e", type: ToastType.error);
     }

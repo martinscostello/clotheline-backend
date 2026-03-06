@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -191,28 +192,34 @@ class StaffPdfService {
     required Branch branch,
   }) async {
     final pdf = pw.Document();
-    final isAbuja = branch.name.toLowerCase().contains('abuja');
-    final companyName = isAbuja ? 'Brimarck Cleaning Services' : 'Clotheline Services';
     
-    // Colors
-    final deepBlue = PdfColor.fromHex('#1A237E');
+    // Colors - Premium Blue & White
+    final deepBlue = PdfColor.fromHex('#1A237E'); // Navy Blue
+    final accentBlue = PdfColor.fromHex('#283593'); 
     
     // Load Images
     pw.ImageProvider? passportImage;
-    if (staff.passportPhoto != null) {
+    if (staff.passportPhoto != null && staff.passportPhoto!.isNotEmpty) {
       try { passportImage = await networkImage(staff.passportPhoto!); } catch (_) {}
     }
 
     pw.ImageProvider? signatureImage;
-    if (staff.signature != null) {
-      try { signatureImage = await networkImage(staff.signature!); } catch (_) {}
+    if (staff.signature != null && staff.signature!.isNotEmpty) {
+      try { 
+        if (staff.signature!.startsWith('data:image')) {
+          final String base64Data = staff.signature!.split(',').last;
+          signatureImage = pw.MemoryImage(base64Decode(base64Data));
+        } else {
+          signatureImage = await networkImage(staff.signature!);
+        }
+      } catch (_) {}
     }
 
     final format = PdfPageFormat(86 * PdfPageFormat.mm, 54 * PdfPageFormat.mm);
     final joinDate = DateFormat('dd.MM.yyyy').format(staff.employmentDate);
     final expireDate = DateFormat('dd.MM.yyyy').format(staff.employmentDate.add(const Duration(days: 365 * 2)));
 
-    // PAGE 1: FRONT SIDE
+    // PAGE 1: FRONT SIDE (Redesigned with Blue/White)
     pdf.addPage(
       pw.Page(
         pageFormat: format,
@@ -223,91 +230,95 @@ class StaffPdfService {
               // White Base
               pw.FullPage(ignoreMargins: true, child: pw.Container(color: PdfColors.white)),
               
-              // Left Dark Geometric Section
+              // Top Blue Header Section
+              pw.Positioned(
+                top: 0, left: 0, right: 0,
+                child: pw.Container(height: 12, color: deepBlue),
+              ),
+
+              // Left Blue Geometric Section
               pw.Positioned(
                 left: 0, top: 0, bottom: 0,
                 child: pw.SizedBox(
-                  width: format.width * 0.35,
+                  width: format.width * 0.38,
                   child: pw.Stack(
-                  children: [
-                    pw.Container(color: PdfColor.fromHex('#121212')),
-                    pw.Positioned(
-                      right: -20, top: 0, bottom: 0,
-                      child: pw.Transform.rotate(
-                        angle: 0.2,
-                        child: pw.Container(width: 40, color: PdfColor.fromHex('#121212')),
+                    children: [
+                      pw.Container(color: deepBlue),
+                      pw.Positioned(
+                        right: -15, top: 0, bottom: 0,
+                        child: pw.Transform.rotate(
+                          angle: 0.15,
+                          child: pw.Container(width: 30, color: deepBlue),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-              // Vertical Dates Labels
+              // Vertical Titles (Rotated)
               pw.Positioned(
-                left: 8, bottom: 12,
+                left: 6, bottom: 10,
                 child: pw.Transform.rotate(
-                  angle: 3.14159 / 2, // 90 degrees
+                  angle: 3.14159 / 2,
                   child: pw.Row(
                     children: [
-                      pw.Text("JOIN DATE: $joinDate", style: pw.TextStyle(color: PdfColors.white, fontSize: 5, fontWeight: pw.FontWeight.bold)),
-                      pw.SizedBox(width: 15),
-                      pw.Text("EXPIRE DATE: $expireDate", style: pw.TextStyle(color: PdfColors.white, fontSize: 5, fontWeight: pw.FontWeight.bold)),
+                      pw.Text("JOINED: $joinDate", style: pw.TextStyle(color: PdfColors.white, fontSize: 4.5, fontWeight: pw.FontWeight.bold, letterSpacing: 0.5)),
+                      pw.SizedBox(width: 12),
+                      pw.Text("EXPIRES: $expireDate", style: pw.TextStyle(color: PdfColors.white, fontSize: 4.5, fontWeight: pw.FontWeight.bold, letterSpacing: 0.5)),
                     ],
                   ),
                 ),
               ),
 
-              // Geometric Photo Frame (Hexagon/Shield)
+              // Passport Photo with White Border
               pw.Positioned(
-                left: format.width * 0.15,
+                left: format.width * 0.14,
                 top: format.height * 0.2,
                 child: pw.Container(
-                  width: 65,
-                  height: 75,
-                  child: pw.Stack(
-                    alignment: pw.Alignment.center,
-                    children: [
-                      // Accent Shape
-                      pw.Transform.rotate(
-                        angle: 0.1,
-                        child: pw.Container(
-                          width: 65, height: 75,
-                          decoration: pw.BoxDecoration(color: deepBlue, borderRadius: pw.BorderRadius.circular(4)),
-                        ),
-                      ),
-                      // Main Photo
-                      pw.ClipRRect(
-                        horizontalRadius: 4, verticalRadius: 4,
-                        child: pw.Container(
-                          width: 60, height: 70,
-                          color: PdfColors.grey300,
-                          child: passportImage != null 
-                            ? pw.Image(passportImage, fit: pw.BoxFit.cover)
-                            : pw.Center(child: pw.Text("PHOTO", style: pw.TextStyle(fontSize: 8))),
-                        ),
-                      ),
-                    ],
+                  width: 68,
+                  height: 78,
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.white,
+                    borderRadius: pw.BorderRadius.circular(4),
+                    boxShadow: [
+                      pw.BoxShadow(color: PdfColors.black, blurRadius: 2, offset: const PdfPoint(0, 1))
+                    ]
+                  ),
+                  padding: const pw.EdgeInsets.all(2),
+                  child: pw.ClipRRect(
+                    horizontalRadius: 2, verticalRadius: 2,
+                    child: pw.Container(
+                      color: PdfColors.grey200,
+                      child: passportImage != null 
+                        ? pw.Image(passportImage, fit: pw.BoxFit.cover)
+                        : pw.Center(child: pw.Icon(pw.IconData(0xe853), size: 25, color: PdfColors.grey400)),
+                    ),
                   ),
                 ),
               ),
 
-              // Main Info Section (Right)
+              // Main Info (Right)
               pw.Positioned(
-                left: format.width * 0.42,
-                top: 15, right: 10, bottom: 10,
+                left: format.width * 0.45,
+                top: 18, right: 10, bottom: 10,
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text(staff.name.toUpperCase(), style: pw.TextStyle(color: PdfColors.black, fontSize: 13, fontWeight: pw.FontWeight.bold)),
-                    pw.Text(staff.position.toUpperCase(), style: pw.TextStyle(color: PdfColors.grey600, fontSize: 7, fontWeight: pw.FontWeight.bold, letterSpacing: 1)),
+                    pw.Text(staff.name.toUpperCase(), style: pw.TextStyle(color: deepBlue, fontSize: 13, fontWeight: pw.FontWeight.bold)),
+                    pw.Container(
+                      height: 1.5, width: 40, color: accentBlue,
+                      margin: const pw.EdgeInsets.symmetric(vertical: 2),
+                    ),
+                    pw.Text(staff.position.toUpperCase(), style: pw.TextStyle(color: PdfColors.grey600, fontSize: 7, fontWeight: pw.FontWeight.bold, letterSpacing: 0.8)),
                     
                     pw.SizedBox(height: 15),
                     
-                    _buildIdRow("ID NO:", staff.staffId),
-                    _buildIdRow("BRANCH:", branch.name.toUpperCase()),
-                    _buildIdRow("EMAIL:", staff.email ?? "N/A"),
-                    _buildIdRow("PHONE:", staff.phone),
+                    _buildIdRow("STAFF ID", staff.staffId, deepBlue),
+                    pw.SizedBox(height: 4),
+                    _buildIdRow("BRANCH", branch.name.toUpperCase(), deepBlue),
+                    pw.SizedBox(height: 4),
+                    _buildIdRow("PHONE", staff.phone, deepBlue),
 
                     pw.Spacer(),
                     pw.Row(
@@ -315,11 +326,14 @@ class StaffPdfService {
                       children: [
                         pw.Container(
                           padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: pw.BoxDecoration(color: PdfColors.green50, borderRadius: pw.BorderRadius.circular(2)),
-                          child: pw.Text("AUTHORIZED PERSONNEL", style: pw.TextStyle(color: PdfColors.green900, fontSize: 5, fontWeight: pw.FontWeight.bold)),
+                          decoration: pw.BoxDecoration(
+                            border: pw.Border.all(color: PdfColors.green300, width: 0.5),
+                            borderRadius: pw.BorderRadius.circular(2)
+                          ),
+                          child: pw.Text("AUTHORIZED PERSONNEL", style: pw.TextStyle(color: PdfColors.green800, fontSize: 4.5, fontWeight: pw.FontWeight.bold)),
                         ),
-                        // Small deep blue accent at bottom right
-                        pw.Container(width: 15, height: 2, color: deepBlue),
+                        // Small Brand Bar
+                        pw.Container(width: 20, height: 3, color: deepBlue),
                       ],
                     ),
                   ],
@@ -341,67 +355,81 @@ class StaffPdfService {
             children: [
               pw.FullPage(ignoreMargins: true, child: pw.Container(color: PdfColors.white)),
               
-              // Right Geometric Section (Inverse of Front)
+              // Blue Bottom Footer
+              pw.Positioned(
+                bottom: 0, left: 0, right: 0, 
+                child: pw.Container(height: 8, color: deepBlue),
+              ),
+
+              // Side Barcode Section
               pw.Positioned(
                 right: 0, top: 0, bottom: 0,
                 child: pw.SizedBox(
-                  width: format.width * 0.25,
-                  child: pw.Stack(
-                  children: [
-                    pw.Container(color: PdfColor.fromHex('#121212')),
-                    pw.Positioned(
-                      left: -15, top: 0, bottom: 0,
-                      child: pw.Transform.rotate(
-                        angle: 0.2,
-                        child: pw.Container(width: 30, color: PdfColor.fromHex('#121212')),
-                      ),
-                    ),
-                    // Barcode Positioned vertically
-                    pw.Positioned(
-                      right: 8, top: 10, bottom: 10,
+                  width: format.width * 0.22,
+                  child: pw.Container(
+                    color: PdfColor.fromHex('#F5F5F5'),
+                    child: pw.Center(
                       child: pw.Transform.rotate(
                         angle: 3.14159 / 2,
-                        child: pw.BarcodeWidget(
-                          barcode: pw.Barcode.code128(),
-                          data: staff.staffId,
-                          width: 80,
-                          height: 15,
-                          color: PdfColors.white,
-                          drawText: false,
+                        child: pw.Column(
+                          mainAxisSize: pw.MainAxisSize.min,
+                          children: [
+                            pw.BarcodeWidget(
+                              barcode: pw.Barcode.code128(),
+                              data: staff.staffId,
+                              width: 60,
+                              height: 15,
+                              color: deepBlue,
+                              drawText: false,
+                            ),
+                            pw.SizedBox(height: 2),
+                            pw.Text(staff.staffId, style: const pw.TextStyle(fontSize: 4, color: PdfColors.grey600)),
+                          ],
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
 
               // T&C Content
               pw.Padding(
-                padding: pw.EdgeInsets.fromLTRB(15, 12, format.width * 0.3, 12),
+                padding: pw.EdgeInsets.fromLTRB(15, 12, format.width * 0.25, 10),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text("TERMS & CONDITIONS", style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: deepBlue)),
-                    pw.SizedBox(height: 4),
-                    _buildTcItem("This card is the property of $companyName."),
-                    _buildTcItem("It must be carried at all times while on duty and presented upon request."),
-                    _buildTcItem("Loss of this card must be reported to the HR department immediately."),
-                    _buildTcItem("A replacement fee may apply for lost or damaged cards."),
-                    _buildTcItem("If found, please return to any Clotheline branch or the nearest police station."),
+                    pw.SizedBox(height: 6),
+                    _buildTcItem("This card remains the property of Clotheline Services."),
+                    _buildTcItem("Carry at all times while on duty and present upon request."),
+                    _buildTcItem("Report loss to the HR department immediately."),
+                    _buildTcItem("Replacement fee applies for lost or damaged cards."),
+                    _buildTcItem("If found, return to nearest Clotheline branch or police station."),
                     
                     pw.Spacer(),
                     
-                    // Staff Signature Lift
-                    pw.Text("STAFF SIGNATURE", style: pw.TextStyle(fontSize: 6, color: PdfColors.grey600, fontWeight: pw.FontWeight.bold)),
-                    pw.SizedBox(height: 2),
-                    pw.Container(
-                      width: 60, height: 25,
-                      child: signatureImage != null 
-                        ? pw.Image(signatureImage, fit: pw.BoxFit.contain)
-                        : pw.Text(staff.name, style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 10, color: PdfColors.grey700)),
+                    // Staff Signature
+                    pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text("STAFF SIGNATURE", style: pw.TextStyle(fontSize: 5, color: PdfColors.grey600, fontWeight: pw.FontWeight.bold)),
+                            pw.SizedBox(height: 1),
+                            pw.Container(
+                              width: 60, height: 22,
+                              decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.5))),
+                              child: signatureImage != null 
+                                ? pw.Image(signatureImage, fit: pw.BoxFit.contain)
+                                : pw.Center(child: pw.Text(staff.name, style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 8, color: PdfColors.grey500))),
+                            ),
+                          ],
+                        ),
+                        pw.SizedBox(width: 20),
+                        pw.Text("OFFICIALLY STAMPED", style: pw.TextStyle(fontSize: 4, color: PdfColors.grey400)),
+                      ],
                     ),
-                    pw.Container(width: 80, height: 0.5, color: PdfColors.grey400),
                   ],
                 ),
               ),
@@ -414,16 +442,13 @@ class StaffPdfService {
     return pdf.save();
   }
 
-  static pw.Widget _buildIdRow(String label, String value) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 3),
-      child: pw.Row(
-        children: [
-          pw.Text(label, style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
-          pw.SizedBox(width: 4),
-          pw.Text(value, style: pw.TextStyle(fontSize: 6, color: PdfColors.black)),
-        ],
-      ),
+  static pw.Widget _buildIdRow(String label, String value, PdfColor color) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(label, style: pw.TextStyle(fontSize: 4.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey500, letterSpacing: 0.5)),
+        pw.Text(value, style: pw.TextStyle(fontSize: 7, color: PdfColors.black, fontWeight: pw.FontWeight.bold)),
+      ],
     );
   }
 
