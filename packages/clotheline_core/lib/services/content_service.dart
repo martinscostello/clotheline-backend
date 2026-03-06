@@ -80,8 +80,7 @@ class ContentService {
       }
     } catch (_) {}
     
-    // Fallback to Seed Data (First Launch)
-    return AppContentModel.fromJson(kDefaultContent); 
+    return null; 
   }
   
   // 2. Silent Sync (branch-aware)
@@ -111,16 +110,7 @@ class ContentService {
      final api = await fetchFromApi(branchId: branchId);
      if (api != null) return api;
 
-     return AppContentModel(
-       id: "empty", 
-       brandText: "Welcome", 
-       heroCarousel: [], 
-       homeGridServices: [],
-       productAds: [],
-       productCategories: [],
-       contactAddress: "",
-       contactPhone: ""
-     );
+     return AppContentModel.fromJson(kDefaultContent);
   }
 
   Future<AppContentModel?> refreshAppContent({String? branchId}) async {

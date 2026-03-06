@@ -357,100 +357,124 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
             ? bp.branches.firstWhere((b) => b.id == staff.branchId).name
             : "N/A";
         
-        final isAbuja = branchName.toLowerCase().contains('abuja');
-        final companyName = isAbuja ? 'Brimarck Cleaning Services' : 'Clotheline Services';
+        final deepBlue = const Color(0xFF1A237E);
+        final joinDate = DateFormat('dd.MM.yyyy').format(staff.employmentDate);
+        final expireDate = DateFormat('dd.MM.yyyy').format(staff.employmentDate.add(const Duration(days: 365 * 2)));
 
         return Center(
           child: Container(
-            width: 320,
-            height: 200,
+            width: 340,
+            height: 210,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(15),
               color: Colors.white,
-              boxShadow: [
-                BoxShadow(color: Colors.black45, blurRadius: 15, offset: const Offset(0, 8))
+              boxShadow: const [
+                BoxShadow(color: Colors.black45, blurRadius: 15, offset: Offset(0, 8))
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(15),
               child: Stack(
                 children: [
-                  // Blue Side Bar
+                  // Left Dark Geometric Section
                   Positioned(
                     left: 0, top: 0, bottom: 0,
-                    width: 30,
-                    child: Container(color: const Color(0xFF1A237E)),
-                  ),
-                  // Background Accent
-                  Positioned(
-                    right: -30, top: -30,
-                    child: Transform.rotate(
-                      angle: 0.5,
-                      child: Container(width: 120, height: 120, color: Colors.blue.withValues(alpha: 0.1)),
-                    ),
-                  ),
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(45, 20, 20, 20),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    width: 120,
+                    child: Stack(
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(companyName.toUpperCase(), style: const TextStyle(color: Color(0xFF1A237E), fontSize: 13, fontWeight: FontWeight.bold)),
-                              const Text("STAFF IDENTIFICATION", style: TextStyle(color: Colors.black38, fontSize: 8, letterSpacing: 1.5)),
-                              const SizedBox(height: 15),
-                              Text(staff.name.toUpperCase(), style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
-                              Text(staff.position, style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
-                              const Spacer(),
-                              Row(
-                                children: [
-                                  _buildPreviewInfoLabel("STAFF ID", staff.staffId),
-                                  const SizedBox(width: 20),
-                                  _buildPreviewInfoLabel("BRANCH", branchName.toUpperCase()),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text("VERIFIED PERSONNEL", style: TextStyle(color: Colors.green, fontSize: 8, fontWeight: FontWeight.bold)),
-                              ),
-                            ],
+                        Container(color: const Color(0xFF121212)),
+                        Positioned(
+                          right: -20, top: 0, bottom: 0,
+                          child: Transform.rotate(
+                            angle: 0.2,
+                            child: Container(width: 40, color: const Color(0xFF121212)),
                           ),
-                        ),
-                        // Profile Photo
-                        Column(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: const Color(0xFF1A237E), width: 2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: staff.passportPhoto != null 
-                                  ? CustomCachedImage(imageUrl: staff.passportPhoto!, fit: BoxFit.cover)
-                                  : const Icon(Icons.person, size: 40, color: Colors.black12),
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
                   ),
-                  // Bottom Bar
+
+                  // Vertical Dates Labels
                   Positioned(
-                    bottom: 0, left: 30, right: 0,
-                    height: 5,
-                    child: Container(color: Colors.amber),
+                    left: 5, bottom: 15,
+                    child: RotatedBox(
+                      quarterTurns: 3,
+                      child: Row(
+                        children: [
+                          Text("JOIN DATE: $joinDate", style: const TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 15),
+                          Text("EXPIRE DATE: $expireDate", style: const TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Geometric Photo Frame (Hexagon/Shield)
+                  Positioned(
+                    left: 55,
+                    top: 45,
+                    child: SizedBox(
+                      width: 85,
+                      height: 105,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Accent Shape
+                          Transform.rotate(
+                            angle: 0.1,
+                            child: Container(
+                              width: 85, height: 105,
+                              decoration: BoxDecoration(color: deepBlue, borderRadius: BorderRadius.circular(6)),
+                            ),
+                          ),
+                          // Main Photo
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              width: 80, height: 100,
+                              color: Colors.grey[300],
+                              child: staff.passportPhoto != null 
+                                ? CustomCachedImage(imageUrl: staff.passportPhoto!, fit: BoxFit.cover)
+                                : const Center(child: Icon(Icons.person, size: 40, color: Colors.black12)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Main Info Section (Right)
+                  Positioned(
+                    left: 150,
+                    top: 25, right: 15, bottom: 15,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(staff.name.toUpperCase(), style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+                        Text(staff.position.toUpperCase(), style: TextStyle(color: Colors.grey[600], fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                        
+                        const SizedBox(height: 15),
+                        
+                        _buildPreviewIdRow("ID NO:", staff.staffId),
+                        _buildPreviewIdRow("BRANCH:", branchName.toUpperCase()),
+                        _buildPreviewIdRow("EMAIL:", staff.email ?? "N/A"),
+                        _buildPreviewIdRow("PHONE:", staff.phone),
+
+                        const Spacer(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                              child: const Text("AUTHORIZED PERSONNEL", style: TextStyle(color: Colors.green, fontSize: 6, fontWeight: FontWeight.bold)),
+                            ),
+                            // Small deep blue accent at bottom right
+                            Container(width: 25, height: 4, decoration: BoxDecoration(color: deepBlue, borderRadius: BorderRadius.circular(2))),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -458,6 +482,20 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPreviewIdRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black54)),
+          const SizedBox(width: 6),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 8, color: Colors.black87, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis)),
+        ],
+      ),
     );
   }
 
@@ -1009,15 +1047,6 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     }
   }
 
-  Widget _buildPreviewInfoLabel(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.black38, fontSize: 7, fontWeight: FontWeight.bold)),
-        Text(value, style: const TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
 
   Future<void> _toggleSuspension(Staff staff) async {
     try {
