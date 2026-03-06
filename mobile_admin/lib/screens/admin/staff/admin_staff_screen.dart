@@ -545,6 +545,9 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         branchName: branch.name,
       );
 
+      final String safeName = staff.name.replaceAll(RegExp(r'[^\w\s]+'), '').replaceAll(' ', '_');
+      final String fileName = "${safeName}_${type.replaceAll(' ', '_')}.pdf";
+
       // 3. Share via Printing
       // Note: We copy the phone number to clipboard to make it easier for the user to find the contact in WhatsApp
       await Clipboard.setData(ClipboardData(text: staff.phone));
