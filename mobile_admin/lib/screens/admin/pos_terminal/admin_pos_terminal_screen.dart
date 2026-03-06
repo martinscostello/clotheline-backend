@@ -234,9 +234,13 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
 
   Future<void> _deleteTransaction(dynamic tx) async {
     final branch = Provider.of<BranchProvider>(context, listen: false).branches.firstWhere((b) => b.id == _selectedBranchId);
+    final auth = Provider.of<AuthService>(context, listen: false); // [NEW]
     final config = branch.posConfig;
     
-    if (config?.security.lockAfter24h == true) {
+    // Check if user is Master Admin to bypass logic
+    final bool isMaster = auth.currentUser?['isMasterAdmin'] == true;
+    
+    if (config?.security.lockAfter24h == true && !isMaster) { // [UPDATED]
       final txDate = DateTime.parse(tx['createdAt']);
       if (DateTime.now().difference(txDate).inHours > 24) {
         ToastUtils.show(context, "Transaction locked (over 24h old)", type: ToastType.error);
@@ -1101,46 +1105,77 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
               ),
             ),
           ),
-          SizedBox(
-            width: 40,
-            child: isUnresolved 
-              ? IconButton(
-                  icon: const Icon(Icons.check_circle_outline, color: Colors.orange, size: 20),
-                  onPressed: () => _resolveTransaction(tx, branch),
-                  tooltip: "Resolve",
-                )
-              : IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.white24, size: 18),
-                  onPressed: () => _confirmDelete(tx),
+          Builder(
+            builder: (context) {
+              final auth = Provider.of<AuthService>(context, listen: false);
+              final bool isMaster = auth.currentUser?['isMasterAdmin'] == true;
+
+              return SizedBox(
+                width: isMaster ? 70 : 40,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (isMaster || isUnresolved)
+                      IconButton(
+                        icon: Icon(
+                          isUnresolved ? Icons.check_circle_outline : Icons.history_rounded, 
+                          color: isUnresolved ? Colors.orange : Colors.white24, 
+                          size: 20
+                        ),
+                        onPressed: () => _resolveTransaction(tx, branch),
+                        tooltip: isUnresolved ? "Resolve" : "Mark as Unresolved",
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                      ),
+                    if (isMaster || !isUnresolved)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.white24, size: 18),
+                        onPressed: () => _confirmDelete(tx),
+                        tooltip: "Delete Log",
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                      ),
+                  ],
                 ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Future<void> _resolveTransaction(Map<String, dynamic> tx, Branch branch) async {
+  Future<void> _resolveTransaction(Map<String, dynamic> tx, Branch branch, {String? targetStatus}) async {
     setState(() => _isSaving = true);
     try {
       final api = ApiService();
-      final amount = (tx['terminalAmount'] ?? tx['amount'] ?? 0).toDouble();
-      final charges = (tx['customerCharge'] ?? tx['charges'] ?? 0).toDouble();
-      final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
+      final String status = targetStatus ?? (tx['status'] == 'unresolved' ? 'resolved' : 'unresolved');
+      
+      // Only re-calculate fees if we are moving TO resolved
+      if (status == 'resolved') {
+        final amount = (tx['terminalAmount'] ?? tx['amount'] ?? 0).toDouble();
+        final charges = (tx['customerCharge'] ?? tx['charges'] ?? 0).toDouble();
+        final opayFee = OPayFeeCalculator.calculateFee(amount, branch.posConfig?.charges.opayTier ?? 'Regular');
+        
+        await api.client.put('/pos-transactions/${tx['_id']}', data: {
+          'status': 'resolved',
+          'providerFee': opayFee,
+          'netProfit': charges - opayFee,
+        });
+      } else {
+        await api.client.put('/pos-transactions/${tx['_id']}', data: {
+          'status': status,
+        });
+      }
 
-      final response = await api.client.put('/pos-transactions/${tx['_id']}', data: {
-        'status': 'resolved',
-        'providerFee': opayFee,
-        'netProfit': charges - opayFee,
-      });
-
-      if (response.statusCode == 200) {
-        ToastUtils.show(context, "Transaction Resolved", type: ToastType.success);
+      if (mounted) {
+        ToastUtils.show(context, "Transaction Marked as ${status.toUpperCase()}", type: ToastType.success);
         _fetchData();
       }
     } catch (e) {
-      ToastUtils.show(context, "Resolution failed: $e", type: ToastType.error);
+      if (mounted) ToastUtils.show(context, "Update failed: $e", type: ToastType.error);
     } finally {
-      setState(() => _isSaving = false);
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 

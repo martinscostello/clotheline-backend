@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'dart:html';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -548,42 +549,70 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
         branchName: branch.name,
       );
 
-      // 3. Save to Temp File (Needed for direct sharing to work better)
-      final tempDir = await getTemporaryDirectory();
       final String safeName = staff.name.replaceAll(RegExp(r'[^\w\s]+'), '').replaceAll(' ', '_');
       final String fileName = "${safeName}_${type.replaceAll(' ', '_')}.pdf";
-      final file = File('${tempDir.path}/$fileName');
-      await file.writeAsBytes(pdfBytes);
 
-      // 4. Trigger WhatsApp + File Share
-      // Note: We copy the phone number and open WhatsApp first to pre-fill the contact context.
-      await Clipboard.setData(ClipboardData(text: staff.phone));
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Phone copied! Opening WhatsApp & Share Sheet..."),
-            duration: Duration(seconds: 3),
-            backgroundColor: Color(0xFF1A237E),
-          ),
+      // 3. Handle Platform Specific Sharing
+      if (kIsWeb) {
+        // [WEB] Cannot use path_provider or direct file sharing
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Downloading PDF... Please attach it manually in WhatsApp."),
+              backgroundColor: Color(0xFF1A237E),
+            ),
+          );
+        }
+
+        // Open WhatsApp for text context
+        await WhatsAppService.sendStaffDocument(
+          phone: staff.phone,
+          staffName: staff.name,
+          documentType: type,
+          branchName: branch.name,
         );
+
+        // This triggers a direct browser download/print
+        await Printing.sharePdf(
+          bytes: pdfBytes,
+          filename: fileName,
+          subject: message,
+        );
+      } else {
+        // [MOBILE] Save to Temp File + Trigger WhatsApp + File Share
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/$fileName');
+        await file.writeAsBytes(pdfBytes);
+
+        // Trigger WhatsApp + File Share
+        await Clipboard.setData(ClipboardData(text: staff.phone));
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Phone copied! Opening WhatsApp & Share Sheet..."),
+              duration: Duration(seconds: 3),
+              backgroundColor: Color(0xFF1A237E),
+            ),
+          );
+        }
+
+        // Open WhatsApp for text context
+        await WhatsAppService.sendStaffDocument(
+          phone: staff.phone,
+          staffName: staff.name,
+          documentType: type,
+          branchName: branch.name,
+        );
+        
+        // Short delay to let WhatsApp open, then trigger file share
+        await Future.delayed(const Duration(milliseconds: 1200));
+
+        final xFile = XFile(file.path, mimeType: 'application/pdf');
+        await Share.shareXFiles([xFile], text: message);
       }
-
-      // Open WhatsApp for text context
-      await WhatsAppService.sendStaffDocument(
-        phone: staff.phone,
-        staffName: staff.name,
-        documentType: type,
-        branchName: branch.name,
-      );
       
-      // Short delay to let WhatsApp open, then trigger file share
-      await Future.delayed(const Duration(milliseconds: 1200));
-
-      final xFile = XFile(file.path, mimeType: 'application/pdf');
-      await Share.shareXFiles([xFile], text: message);
-      
-      if (mounted) ToastUtils.show(context, "Ready to share file!", type: ToastType.success);
+      if (mounted) ToastUtils.show(context, "Ready to share!", type: ToastType.success);
     } catch (e) {
       if (mounted) ToastUtils.show(context, "Sharing Error: $e", type: ToastType.error);
     }
