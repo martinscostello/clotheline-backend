@@ -468,9 +468,21 @@ class StaffPdfService {
   /// Robustly fetch image bytes using http
   static Future<pw.ImageProvider?> _fetchImage(String url) async {
     try {
-      final response = await http.get(Uri.parse(url));
+      String finalUrl = url;
+      // Handle relative paths
+      if (!url.startsWith('http')) {
+        final serverUrl = ApiService.baseUrl.contains('/api') 
+            ? ApiService.baseUrl.substring(0, ApiService.baseUrl.indexOf('/api'))
+            : ApiService.baseUrl;
+        finalUrl = serverUrl + (url.startsWith('/') ? '' : '/') + url;
+      }
+      
+      print("Fetching PDF image from: $finalUrl");
+      final response = await http.get(Uri.parse(finalUrl)).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         return pw.MemoryImage(response.bodyBytes);
+      } else {
+        print("Failed to fetch image: ${response.statusCode}");
       }
     } catch (e) {
       print("Error fetching image for PDF: $e");
