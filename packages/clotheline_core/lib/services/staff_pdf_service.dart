@@ -1,10 +1,8 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import 'package:clotheline_core/clotheline_core.dart';
 
 class StaffPdfService {
@@ -198,7 +196,6 @@ class StaffPdfService {
     
     // Colors
     final deepBlue = PdfColor.fromHex('#1A237E');
-    final accentBlue = PdfColor.fromHex('#283593');
     
     // Load Images
     pw.ImageProvider? passportImage;
@@ -229,8 +226,9 @@ class StaffPdfService {
               // Left Dark Geometric Section
               pw.Positioned(
                 left: 0, top: 0, bottom: 0,
-                width: format.width * 0.35,
-                child: pw.Stack(
+                child: pw.SizedBox(
+                  width: format.width * 0.35,
+                  child: pw.Stack(
                   children: [
                     pw.Container(color: PdfColor.fromHex('#121212')),
                     pw.Positioned(
@@ -243,6 +241,7 @@ class StaffPdfService {
                   ],
                 ),
               ),
+            ),
 
               // Vertical Dates Labels
               pw.Positioned(
@@ -345,8 +344,9 @@ class StaffPdfService {
               // Right Geometric Section (Inverse of Front)
               pw.Positioned(
                 right: 0, top: 0, bottom: 0,
-                width: format.width * 0.25,
-                child: pw.Stack(
+                child: pw.SizedBox(
+                  width: format.width * 0.25,
+                  child: pw.Stack(
                   children: [
                     pw.Container(color: PdfColor.fromHex('#121212')),
                     pw.Positioned(
@@ -374,10 +374,11 @@ class StaffPdfService {
                   ],
                 ),
               ),
+            ),
 
               // T&C Content
               pw.Padding(
-                padding: const pw.EdgeInsets.fromLTRB(15, 12, format.width * 0.3, 12),
+                padding: pw.EdgeInsets.fromLTRB(15, 12, format.width * 0.3, 12),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [

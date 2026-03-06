@@ -6,7 +6,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:clotheline_core/clotheline_core.dart';
@@ -570,34 +569,7 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     }
   }
 
-  Widget _buildIDCardPhoto(Staff staff) {
-    final image = staff.passportPhoto;
-    return Container(
-      width: 70, height: 90,
-      decoration: BoxDecoration(
-        color: Colors.white10,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: image != null 
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: CustomCachedImage(imageUrl: image, fit: BoxFit.cover),
-            )
-          : const Icon(Icons.person, color: Colors.white24, size: 40),
-    );
-  }
 
-  Widget _buildIDCardInfo(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 8)),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-      ],
-    );
-  }
 
   Widget _buildInfoSection(String title, List<Widget> children) {
     return Column(
@@ -1083,16 +1055,6 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     }
   }
 
-  Future<void> _generateAgreement(Staff staff) async {
-    final branchProvider = Provider.of<BranchProvider>(context, listen: false);
-    final branch = branchProvider.branches.firstWhere((b) => b.id == staff.branchId);
-    final pdfBytes = await StaffPdfService.generateAgreement(
-      staff: staff, 
-      branch: branch, 
-      signingDate: DateFormat('dd MMMM yyyy').format(DateTime.now())
-    );
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdfBytes);
-  }
   
   Future<void> _removeWarning(Staff staff, String warningId) async {
     final confirm = await showDialog<bool>(
@@ -1414,7 +1376,6 @@ class _AdminStaffScreenState extends State<AdminStaffScreen> {
     
     final isAbuja = branchName.toLowerCase().contains('abuja');
     final companyName = isAbuja ? 'Brimarck Cleaning Services' : 'Clotheline Services';
-    final ceoName = isAbuja ? 'Mrs Natalie Usigbe Izuwagbe' : 'Mr Martins Usigbe';
 
     // Probation logic
     final months = staff.probation?.durationMonths ?? 3;
