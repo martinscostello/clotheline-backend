@@ -52,6 +52,8 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   double _previewOpayFee = 0;
   double _previewNetProfit = 0;
 
+  final Set<String> _selectedIds = {}; // [NEW] Multi-selection
+
   @override
   void initState() {
     super.initState();
@@ -262,6 +264,95 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
     }
   }
   
+  // --- Bulk Actions [NEW] ---
+  
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _toggleSelectAll() {
+    setState(() {
+      if (_selectedIds.length == _transactions.length) {
+        _selectedIds.clear();
+      } else {
+        _selectedIds.clear();
+        for (var tx in _transactions) {
+          _selectedIds.add(tx['_id']);
+        }
+      }
+    });
+  }
+
+  Future<void> _bulkDelete() async {
+    if (_selectedIds.isEmpty) return;
+    
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text("Bulk Delete", style: TextStyle(color: Colors.white)),
+        content: Text("Are you sure you want to delete ${_selectedIds.length} transactions? This cannot be undone.", style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text("Delete Batch", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final api = ApiService();
+      final response = await api.client.post('/pos-transactions/bulk-delete', data: {
+        'ids': _selectedIds.toList(),
+      });
+
+      if (response.statusCode == 200) {
+        ToastUtils.show(context, response.data['msg'], type: ToastType.success);
+        _selectedIds.clear();
+        _fetchData();
+      }
+    } catch (e) {
+      ToastUtils.show(context, "Bulk delete failed", type: ToastType.error);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _bulkUpdateStatus(String status) async {
+    if (_selectedIds.isEmpty) return;
+    
+    setState(() => _isSaving = true);
+    try {
+      final api = ApiService();
+      final response = await api.client.post('/pos-transactions/bulk-update', data: {
+        'ids': _selectedIds.toList(),
+        'status': status,
+      });
+
+      if (response.statusCode == 200) {
+        ToastUtils.show(context, response.data['msg'], type: ToastType.success);
+        _selectedIds.clear();
+        _fetchData();
+      }
+    } catch (e) {
+      ToastUtils.show(context, "Bulk update failed", type: ToastType.error);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+  
   void _calculateVariance() {
     final openingCash = MoneyTextInputFormatter.getNumericValue(_openingCashCtrl.text);
     final closingCash = MoneyTextInputFormatter.getNumericValue(_closingCashCtrl.text);
@@ -311,6 +402,7 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: false,
+      bottomNavigationBar: _selectedIds.isEmpty ? null : _buildBulkActionsBar(),
       appBar: AppBar(
         title: const Text("POS Terminal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF0F172A),
@@ -975,6 +1067,24 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
+          Builder(
+            builder: (context) {
+              final auth = Provider.of<AuthService>(context, listen: false);
+              final bool isMaster = auth.currentUser?['isMasterAdmin'] == true;
+              if (!isMaster) return const SizedBox.shrink();
+              return SizedBox(
+                width: 30,
+                child: Checkbox(
+                  value: _selectedIds.length == _transactions.length && _transactions.isNotEmpty,
+                  onChanged: (_) => _toggleSelectAll(),
+                  side: const BorderSide(color: Colors.white24),
+                  activeColor: AppTheme.secondaryColor,
+                  checkColor: Colors.black,
+                  visualDensity: VisualDensity.compact,
+                ),
+              );
+            }
+          ),
           const Expanded(flex: 2, child: Text("DATE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
           const Expanded(flex: 2, child: Text("TYPE", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold))),
           const Expanded(flex: 2, child: Text("WITHDRAWAL", style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
@@ -1003,6 +1113,24 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
       ),
       child: Row(
         children: [
+          Builder(
+            builder: (context) {
+              final auth = Provider.of<AuthService>(context, listen: false);
+              final bool isMaster = auth.currentUser?['isMasterAdmin'] == true;
+              if (!isMaster) return const SizedBox.shrink();
+              return SizedBox(
+                width: 30,
+                child: Checkbox(
+                  value: _selectedIds.contains(tx['_id']),
+                  onChanged: (_) => _toggleSelection(tx['_id']),
+                  side: const BorderSide(color: Colors.white24),
+                  activeColor: AppTheme.secondaryColor,
+                  checkColor: Colors.black,
+                  visualDensity: VisualDensity.compact,
+                ),
+              );
+            }
+          ),
           Expanded(
             flex: 2,
             child: Text(
@@ -1198,6 +1326,47 @@ class _AdminPosTerminalScreenState extends State<AdminPosTerminalScreen> {
             child: const Text("Delete", style: TextStyle(color: Colors.white)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBulkActionsBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10, offset: const Offset(0, -2))],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("${_selectedIds.length} Selected", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                const Text("Batch Actions", style: TextStyle(color: Colors.white38, fontSize: 10)),
+              ],
+            ),
+            const Spacer(),
+            TextButton.icon(
+              icon: const Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 20),
+              label: const Text("RESOLVE", style: TextStyle(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+              onPressed: _isSaving ? null : () => _bulkUpdateStatus('resolved'),
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.history_rounded, color: Colors.orangeAccent, size: 20),
+              label: const Text("PENDING", style: TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+              onPressed: _isSaving ? null : () => _bulkUpdateStatus('unresolved'),
+            ),
+            const SizedBox(width: 5),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent.withOpacity(0.2), foregroundColor: Colors.redAccent, elevation: 0),
+              onPressed: _isSaving ? null : _bulkDelete,
+              child: const Text("DELETE", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }

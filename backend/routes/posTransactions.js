@@ -28,9 +28,12 @@ router.post('/', [
 // @access  Private (Admin only)
 router.put('/:id', [auth, adminAuth], posController.updateTransaction);
 
-// @route   DELETE /api/pos-transactions/:id
-// @desc    Delete a POS transaction (Master Admin only)
+// @route   POST /api/pos-transactions/bulk-delete
 // @access  Private (Master Admin only)
-router.delete('/:id', [auth, adminAuth], posController.deleteTransaction);
+router.post('/bulk-delete', [auth, adminAuth], posController.bulkDelete);
+
+// @route   POST /api/pos-transactions/bulk-update
+// @access  Private (Master Admin only)
+router.post('/bulk-update', [auth, adminAuth], posController.bulkUpdate);
 
 module.exports = router;

@@ -265,3 +265,50 @@ exports.deleteTransaction = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// POST /api/pos-transactions/bulk-delete
+exports.bulkDelete = async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ msg: 'No transaction IDs provided' });
+        }
+
+        if (!req.adminUser.isMasterAdmin) {
+            return res.status(403).json({ msg: 'Only Master Admin can bulk delete' });
+        }
+
+        await POSTransaction.deleteMany({ _id: { $in: ids } });
+        res.json({ msg: `${ids.length} transactions deleted successfully` });
+    } catch (err) {
+        console.error("Bulk Delete Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// POST /api/pos-transactions/bulk-update
+exports.bulkUpdate = async (req, res) => {
+    try {
+        const { ids, status } = req.body;
+        if (!ids || !Array.isArray(ids) || ids.length === 0 || !status) {
+            return res.status(400).json({ msg: 'Invalid request data' });
+        }
+
+        if (!req.adminUser.isMasterAdmin) {
+            return res.status(403).json({ msg: 'Only Master Admin can bulk update' });
+        }
+
+        // If resolving, we might want to update providerFees, but for now we'll just update status
+        // to keep it simple, or we can fetch them and update them one by one if complexity is needed.
+        // For bulk status toggle, we'll just update the status field.
+        await POSTransaction.updateMany(
+            { _id: { $in: ids } },
+            { $set: { status: status } }
+        );
+
+        res.json({ msg: `${ids.length} transactions updated to ${status}` });
+    } catch (err) {
+        console.error("Bulk Update Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
