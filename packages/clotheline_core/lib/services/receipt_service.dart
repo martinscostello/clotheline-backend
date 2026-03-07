@@ -27,6 +27,8 @@ class ReceiptService {
     required double subtotal,
     required double deliveryFee,
     required double total,
+    double? amountPaid,
+    double? balance,
     required String paymentMethod,
     double? discountAmount,
     double? discountPercentage,

@@ -1044,7 +1044,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                     _buildSummaryRow("Subtotal", CurrencyFormatter.format(pos.subtotal)),
                     if (pos.discountPercentage > 0) ...[
                       const SizedBox(height: 10),
-                      _buildSummaryRow("Discount (${pos.discountPercentage.toStringAsFixed(0)}%)", "- ${CurrencyFormatter.format(pos.discountAmount)}"),
+                      _buildSummaryRow("Discount (${pos.discountPercentage.toStringAsFixed(0)}%)", "- ${CurrencyFormatter.format(pos.discountAmount)}", color: Colors.greenAccent),
                     ],
                     const SizedBox(height: 10),
                     _buildSummaryRow("Delivery Fee", CurrencyFormatter.format(pos.deliveryFee)),
@@ -1053,7 +1053,13 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                       _buildSummaryRow("VAT", CurrencyFormatter.format(pos.taxAmount)),
                     ],
                     const Divider(color: Colors.white10),
-                    _buildSummaryRow("Total Amount", CurrencyFormatter.format(pos.totalAmount), isBold: true),
+                    _buildSummaryRow("Total Amount", CurrencyFormatter.format(pos.totalAmount), isBold: true, color: AppTheme.secondaryColor),
+                    
+                    if (pos.paymentMethod == 'partial') ...[
+                       const Divider(color: Colors.white10),
+                       _buildSummaryRow("Amount Paid", CurrencyFormatter.format(pos.amountPaid), color: Colors.greenAccent),
+                       _buildSummaryRow("Balance Remaining", CurrencyFormatter.format(pos.balance), isBold: true, color: Colors.orangeAccent),
+                    ],
                   ],
                 ),
               ),
@@ -1066,6 +1072,40 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
               const Text("Payment Method", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(height: 15),
               _buildPaymentGrid(pos),
+
+              if (pos.paymentMethod == 'partial') ...[
+                const SizedBox(height: 20),
+                const Text("Record Deposit Amount", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                GlassContainer(
+                   opacity: 0.1,
+                   border: _amountPaidError != null ? Border.all(color: Colors.redAccent.withOpacity(0.5)) : Border.all(color: Colors.white10),
+                   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                   child: TextField(
+                     controller: _amountPaidController,
+                     keyboardType: TextInputType.number,
+                     style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 18),
+                     onChanged: (val) {
+                       final amount = double.tryParse(val) ?? 0;
+                       setState(() {
+                         pos.amountPaid = amount;
+                         _amountPaidError = null;
+                       });
+                     },
+                     decoration: const InputDecoration(
+                       icon: Icon(Icons.payments_outlined, color: AppTheme.secondaryColor),
+                       hintText: "0.00",
+                       hintStyle: TextStyle(color: Colors.white24, fontSize: 14),
+                       border: InputBorder.none,
+                     ),
+                   ),
+                ),
+                if (_amountPaidError != null)
+                   Padding(
+                     padding: const EdgeInsets.only(top: 5, left: 10),
+                     child: Text(_amountPaidError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                   ),
+              ],
               
               if (_checkoutError != null) ...[
                 const SizedBox(height: 20),
@@ -1089,12 +1129,12 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
+  Widget _buildSummaryRow(String label, String value, {bool isBold = false, Color color = Colors.white}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: TextStyle(color: isBold ? Colors.white : Colors.white70, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-        Text(value, style: TextStyle(color: isBold ? AppTheme.secondaryColor : Colors.white, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, fontSize: isBold ? 18 : 14)),
+        Text(value, style: TextStyle(color: isBold ? (color == Colors.white ? AppTheme.secondaryColor : color) : (color == Colors.white ? Colors.white : color), fontWeight: isBold ? FontWeight.bold : FontWeight.normal, fontSize: isBold ? 18 : 14)),
       ],
     );
   }
@@ -1182,98 +1222,7 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
     );
   }
 
-  Widget _buildPaymentStep() {
-    final pos = Provider.of<AdminPOSProvider>(context);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Step 5: Payment", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          const Text("Select payment method and finalize order.", style: TextStyle(color: Colors.white54, fontSize: 13)),
-          const SizedBox(height: 25),
 
-          _buildPaymentGrid(pos),
-          const SizedBox(height: 20),
-
-          if (pos.paymentMethod == 'partial') ...[
-            const Text("Amount Paid Now", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            GlassContainer(
-               opacity: 0.1,
-               border: _amountPaidError != null ? Border.all(color: Colors.redAccent) : Border.all(color: Colors.white10),
-               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-               child: TextField(
-                 controller: _amountPaidController,
-                 keyboardType: TextInputType.number,
-                 style: const TextStyle(color: AppTheme.secondaryColor, fontWeight: FontWeight.bold, fontSize: 18),
-                 onChanged: (val) {
-                   final amount = double.tryParse(val) ?? 0;
-                   setState(() {
-                     pos.amountPaid = amount;
-                     _amountPaidError = null;
-                   });
-                 },
-                 decoration: const InputDecoration(
-                   icon: Icon(Icons.payments_outlined, color: AppTheme.secondaryColor),
-                   hintText: "Enter amount paid",
-                   hintStyle: TextStyle(color: Colors.white24, fontSize: 14),
-                   border: InputBorder.none,
-                 ),
-               ),
-            ),
-            if (_amountPaidError != null)
-               Padding(
-                 padding: const EdgeInsets.only(top: 5, left: 10),
-                 child: Text(_amountPaidError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
-               ),
-            const SizedBox(height: 20),
-          ],
-
-          const Text("Summary", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          GlassContainer(
-            opacity: 0.1,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                _buildSummaryRow("Subtotal", CurrencyFormatter.format(pos.subtotal)),
-                if (pos.discountAmount > 0)
-                  _buildSummaryRow("Discount (${pos.discountPercentage.toStringAsFixed(0)}%)", "-${CurrencyFormatter.format(pos.discountAmount)}", color: Colors.greenAccent),
-                _buildSummaryRow("Tax", CurrencyFormatter.format(pos.taxAmount)),
-                _buildSummaryRow("Logistics", CurrencyFormatter.format(pos.deliveryFee)),
-                const Divider(color: Colors.white10, height: 20),
-                _buildSummaryRow("Total Amount", CurrencyFormatter.format(pos.totalAmount), isBold: true, color: AppTheme.secondaryColor),
-                if (pos.paymentMethod == 'partial') ...[
-                  const SizedBox(height: 5),
-                  _buildSummaryRow("Amount Paid", CurrencyFormatter.format(pos.amountPaid), color: Colors.greenAccent),
-                  const SizedBox(height: 5),
-                  _buildSummaryRow("Balance Remaining", CurrencyFormatter.format(pos.balance), isBold: true, color: Colors.orangeAccent),
-                ],
-              ],
-            ),
-          ),
-          
-          if (_checkoutError != null) ...[
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(_checkoutError!, style: const TextStyle(color: Colors.redAccent, fontSize: 13))),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: 100),
-        ],
-      ),
-    );
-  }
 
   Widget _buildBottomNavigation() {
     return Container(
@@ -1422,6 +1371,8 @@ class _AdminPOSScreenState extends State<AdminPOSScreen> {
                      subtotal: pos.subtotal,
                      deliveryFee: pos.deliveryFee,
                      total: pos.totalAmount,
+                     amountPaid: pos.amountPaid,
+                     balance: pos.balance,
                      paymentMethod: pos.paymentMethod,
                      discountAmount: pos.discountAmount,
                      discountPercentage: pos.discountPercentage,

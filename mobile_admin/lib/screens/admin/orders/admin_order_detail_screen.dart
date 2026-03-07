@@ -1247,14 +1247,21 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
     );
   }
 
-  Widget _buildSummaryRow(String label, double amount, {Color color = Colors.white70}) {
+  Widget _buildSummaryRow(String label, double amount, {bool isBold = false, Color color = Colors.white}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: color, fontSize: 13)),
-          Text(CurrencyFormatter.format(amount), style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(color: isBold ? Colors.white : Colors.white70, fontSize: isBold ? 14 : 13, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+          Text(
+            CurrencyFormatter.format(amount), 
+            style: TextStyle(
+              color: isBold ? (color == Colors.white ? AppTheme.secondaryColor : color) : (color == Colors.white ? Colors.white : color), 
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              fontSize: isBold ? 16 : 14,
+            )
+          ),
         ],
       ),
     );

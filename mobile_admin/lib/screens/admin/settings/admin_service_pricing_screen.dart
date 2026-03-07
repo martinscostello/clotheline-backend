@@ -43,7 +43,7 @@ class AdminServicePricingScreen extends StatelessWidget {
 
   Widget _buildBranchCard(BuildContext context, Branch branch) {
     return Padding(
-      padding: const EdgeInsets.bottom(15),
+      padding: const EdgeInsets.only(bottom: 15),
       child: GlassContainer(
         opacity: 0.1,
         child: ListTile(
