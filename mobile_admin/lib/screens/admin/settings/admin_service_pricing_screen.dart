@@ -58,9 +58,9 @@ class AdminServicePricingScreen extends StatelessWidget {
   }
 
   void _showQRDialog(BuildContext context, Branch branch) {
-    // Simplified slug logic to ensure it matches common patterns like 'abuja' or 'benin'
+    // Unified slug logic
     final String branchSlug = branch.name.trim().split(' ').first.toLowerCase();
-    final String url = "https://www.brimarcglobal.com/pricelist/$branchSlug";
+    final String url = "https://clotheline-admin.vercel.app/pricelist/$branchSlug";
 
     showDialog(
       context: context,
