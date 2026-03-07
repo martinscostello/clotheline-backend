@@ -89,6 +89,26 @@ function renderPriceList(services, container) {
             day: 'numeric', month: 'short', year: 'numeric'
         });
 
+        if (service.name.toLowerCase().includes('home and cleaning')) {
+            html += `
+                <div class="tc-section">
+                    <details>
+                        <summary>Terms and condition</summary>
+                        <div class="tc-content">
+• Standard home cleaning covers sweeping, mopping, dusting, and general tidying.
+• Post construction cleaning covers removal of debris, paint spots, and deep washing.
+• Please ensure any fragile or highly valuable items are properly secured before our arrival.
+• Cancellations or rescheduling must be done at least 24 hours in advance.
+• Additional charges may apply for spaces significantly larger than average.
+                        </div>
+                    </details>
+                    <div class="tc-notice">
+                        Notice: Post construction service is determined after inspection
+                    </div>
+                </div>
+            `;
+        }
+
         html += `
                 <div class="last-updated">Last Updated: ${updatedDate}</div>
             </div>
