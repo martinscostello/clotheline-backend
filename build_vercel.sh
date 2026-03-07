@@ -24,13 +24,15 @@ flutter build web --release --base-href "/"
 echo "==== Preparing Output ===="
 cd ..
 rm -rf public
+# Explicitly copy pricelist files into the Flutter build output in case Vercel uses it
+mkdir -p mobile_admin/build/web/pricelist/benin
+mkdir -p mobile_admin/build/web/pricelist/abuja
+cp mobile_admin/web/pricelist-app.html mobile_admin/build/web/pricelist/benin/index.html
+cp mobile_admin/web/pricelist-app.html mobile_admin/build/web/pricelist/abuja/index.html
+cp mobile_admin/web/pricelist.js mobile_admin/build/web/
+
 mkdir -p public
 cp -R mobile_admin/build/web/* public/
 cp mobile_admin/build/web/.* public/ 2>/dev/null || :
-mkdir -p public/pricelist/benin
-mkdir -p public/pricelist/abuja
-cp mobile_admin/web/pricelist-app.html public/pricelist/benin/index.html
-cp mobile_admin/web/pricelist-app.html public/pricelist/abuja/index.html
-cp mobile_admin/web/pricelist.js public/
 
 echo "==== Build Complete ===="
