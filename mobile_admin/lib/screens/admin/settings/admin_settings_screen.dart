@@ -16,6 +16,7 @@ import '../staff/admin_staff_screen.dart'; // [NEW]
 import '../reports/admin_financial_reports_screen.dart'; // [NEW]
 import 'admin_manage_data_screen.dart'; // [NEW]
 import 'admin_pos_settings_screen.dart'; // [NEW] POS Settings
+import 'admin_service_pricing_screen.dart'; // [NEW] Service Pricing QR
 import 'package:clotheline_core/clotheline_core.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
@@ -162,10 +163,12 @@ class AdminSettingsContent extends StatelessWidget {
                             _buildSettingTile(Icons.storage, "Manage Data", () {
                                Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => AdminManageDataScreen()));
                             }),
-                           if (isMaster)
                             _buildSettingTile(Icons.point_of_sale, "POS Terminal Config", () {
                                Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminPosSettingsScreen()));
                             }),
+                           _buildSettingTile(Icons.qr_code_2_rounded, "Service Pricing QR", () {
+                              Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminServicePricingScreen()));
+                           }),
                            _buildSettingTile(Icons.auto_graph, "Financial Intelligence", () {
                               if (isMaster || permissions['manageFinancials'] == true || permissions['manageSettings'] == true) { 
                                 Navigator.of(context, rootNavigator: !isTablet).push(MaterialPageRoute(builder: (_) => const AdminFinancialReportsScreen()));

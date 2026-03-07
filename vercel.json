@@ -1,6 +1,6 @@
 {
     "buildCommand": "./build_vercel.sh",
-    "outputDirectory": "mobile_admin/build/web",
+    "outputDirectory": "public",
     "rewrites": [
         {
             "source": "/pricelist/(.*)",
