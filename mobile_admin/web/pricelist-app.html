@@ -81,14 +81,20 @@
             padding: 16px;
             margin-bottom: 12px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s;
         }
 
         .service-card:active {
-            transform: scale(0.98);
+            transform: scale(0.99);
+        }
+
+        .service-main-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
         }
 
         .service-info {
@@ -98,20 +104,87 @@
         .service-name {
             font-weight: 600;
             font-size: 16px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+        }
+
+        .service-primary-type {
+            font-size: 13px;
+            color: var(--secondary);
+            font-weight: 600;
         }
 
         .service-desc {
             font-size: 12px;
             color: var(--text-dim);
+            margin-top: 2px;
         }
 
         .service-price {
             font-weight: 700;
-            color: var(--secondary);
+            color: var(--text-main);
             font-size: 16px;
             margin-left: 15px;
             white-space: nowrap;
+        }
+
+        .service-sub-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .service-count {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        .more-toggle {
+            font-size: 12px;
+            color: var(--secondary);
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .more-toggle:hover {
+            background: rgba(68, 138, 255, 0.1);
+        }
+
+        .service-dropdown {
+            display: none;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+
+        .service-dropdown.active {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .dropdown-item-name {
+            color: var(--text-dim);
+        }
+
+        .dropdown-item-price {
+            font-weight: 600;
+            color: var(--text-main);
         }
 
         .disclaimer {

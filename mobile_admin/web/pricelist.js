@@ -73,14 +73,39 @@ function renderPriceList(services, container) {
                 </div>
         `;
 
-        service.items.forEach(item => {
+        service.items.forEach((item, index) => {
+            const hasMultipleServices = item.services && item.services.length > 0;
+            const primaryService = hasMultipleServices ? item.services[0] : { name: '', price: item.price };
+            const otherServices = hasMultipleServices ? item.services.slice(1) : [];
+            const serviceCount = hasMultipleServices ? item.services.length : 1;
+
             html += `
                 <div class="service-card">
-                    <div class="service-info">
-                        <div class="service-name">${item.name}</div>
-                        ${item.description ? `<div class="service-desc">${item.description}</div>` : ''}
+                    <div class="service-main-row">
+                        <div class="service-info">
+                            <div class="service-name">${item.name}</div>
+                            <div class="service-primary-type">${primaryService.name}</div>
+                            ${item.description ? `<div class="service-desc">${item.description}</div>` : ''}
+                        </div>
+                        <div class="service-price">₦${primaryService.price.toLocaleString()}</div>
                     </div>
-                    <div class="service-price">₦${item.price.toLocaleString()}</div>
+                    
+                    ${hasMultipleServices && item.services.length > 1 ? `
+                        <div class="service-sub-row">
+                            <div class="service-count">${serviceCount} services</div>
+                            <button class="more-toggle" data-target="dropdown-${service.name.replace(/\s+/g, '-')}-${index}">
+                                <span>More</span> ⬇️
+                            </button>
+                        </div>
+                        <div class="service-dropdown" id="dropdown-${service.name.replace(/\s+/g, '-')}-${index}">
+                            ${otherServices.map(s => `
+                                <div class="dropdown-item">
+                                    <span class="dropdown-item-name">${s.name}</span>
+                                    <span class="dropdown-item-price">₦${s.price.toLocaleString()}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 </div>
             `;
         });
@@ -234,3 +259,18 @@ By proceeding with a booking, you confirm that you have read, understood, and ag
 }
 
 init();
+
+// Handle "More" toggles
+document.addEventListener('click', (e) => {
+    const toggle = e.target.closest('.more-toggle');
+    if (toggle) {
+        const targetId = toggle.getAttribute('data-target');
+        const dropdown = document.getElementById(targetId);
+        if (dropdown) {
+            const isActive = dropdown.classList.contains('active');
+            dropdown.classList.toggle('active');
+            toggle.querySelector('span').textContent = isActive ? 'More' : 'Less';
+            toggle.querySelector('span').nextSibling.textContent = isActive ? ' ⬇️' : ' ⬆️';
+        }
+    }
+});
