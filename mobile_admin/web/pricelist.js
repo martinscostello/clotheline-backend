@@ -89,7 +89,7 @@ function renderPriceList(services, container) {
             day: 'numeric', month: 'short', year: 'numeric'
         });
 
-        if (service.name.toLowerCase().includes('home and cleaning')) {
+        if (service.name.toLowerCase().includes('home/office cleaning') || service.name.toLowerCase().includes('home and cleaning')) {
             html += `
                 <div class="tc-section">
                     <details>
