@@ -1,6 +1,7 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import '../models/order_model.dart';
 import '../models/booking_models.dart';
 import '../models/store_product.dart';
@@ -32,6 +33,8 @@ class ReceiptService {
   }) async {
     final pdf = pw.Document();
     final String brand = _getBrandedName(branchName);
+
+    final qrSection = await _buildQrSection();
 
     pdf.addPage(
       pw.Page(
@@ -108,7 +111,7 @@ class ReceiptService {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text("Subtotal:", style: const pw.TextStyle(fontSize: 9)),
+                   pw.Text("Subtotal:", style: const pw.TextStyle(fontSize: 9)),
                   pw.Text("N${subtotal.toStringAsFixed(0)}", style: const pw.TextStyle(fontSize: 9)),
                 ],
               ),
@@ -140,6 +143,7 @@ class ReceiptService {
               pw.Divider(thickness: 0.5),
               pw.Text("Payment: ${paymentMethod.toUpperCase()}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)),
               pw.SizedBox(height: 15),
+              qrSection,
               pw.Center(
                 child: pw.Text("Thank you for your patronage!", style: const pw.TextStyle(fontSize: 8)),
               ),
@@ -169,6 +173,7 @@ class ReceiptService {
   }) async {
     final pdf = pw.Document();
     final String brand = _getBrandedName(branchName);
+    final qrSection = await _buildQrSection();
 
     pdf.addPage(
       pw.Page(
@@ -255,6 +260,7 @@ class ReceiptService {
               pw.Divider(),
               pw.Text("Payment: ${paymentMethod.toUpperCase()}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 20),
+              qrSection,
               pw.Center(
                 child: pw.Text("Thank you for your patronage!", style: const pw.TextStyle(fontSize: 8)),
               ),
@@ -284,6 +290,8 @@ class ReceiptService {
     final pdf = pw.Document();
     final String brand = _getBrandedName(branchName);
 
+    final qrSection = await _buildQrSection();
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.roll80,
@@ -297,7 +305,7 @@ class ReceiptService {
                     pw.Text(brand.toUpperCase(), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18)),
                     pw.Text("Laundry & Store", style: pw.TextStyle(fontSize: 10)),
                     if (branchName.toLowerCase().contains('benin') || branchName.toLowerCase().contains('abuja'))
-                       pw.Text(branchName, style: pw.TextStyle(fontSize: 10)),
+                        pw.Text(branchName, style: pw.TextStyle(fontSize: 10)),
                     pw.Divider(),
                   ],
                 ),
@@ -338,7 +346,7 @@ class ReceiptService {
               
               pw.Divider(),
               pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text("Subtotal:"),
                   pw.Text("N${subtotal.toStringAsFixed(0)}"),
@@ -354,7 +362,7 @@ class ReceiptService {
               if (discountAmount != null && discountAmount > 0)
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
+                   children: [
                     pw.Text("Discount (${(discountPercentage ?? 0).toStringAsFixed(0)}%):"),
                     pw.Text("-N${discountAmount.toStringAsFixed(0)}"),
                   ],
@@ -369,6 +377,7 @@ class ReceiptService {
               pw.Divider(),
               pw.Text("Payment: ${paymentMethod.toUpperCase()}", style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 20),
+              qrSection,
               pw.Center(
                 child: pw.Text("Thank you for your patronage!", style: const pw.TextStyle(fontSize: 8)),
               ),
@@ -551,5 +560,34 @@ class ReceiptService {
       discountAmount: order is Map ? (order['discountAmount'] as num?)?.toDouble() : (order is OrderModel ? (order as OrderModel).discountAmount : 0.0),
       discountPercentage: order is Map ? (order['discountPercentage'] as num?)?.toDouble() : null,
     );
+  }
+
+  static Future<pw.Widget> _buildQrSection() async {
+    try {
+      final qrBytes = await rootBundle.load('packages/clotheline_core/assets/images/app_qr.png');
+      final qrImage = pw.MemoryImage(qrBytes.buffer.asUint8List());
+      
+      return pw.Center(
+        child: pw.Column(
+          children: [
+            pw.Divider(thickness: 0.5),
+            pw.SizedBox(height: 8),
+            pw.Text("scan me", style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 5),
+            pw.Container(
+              width: 80,
+              height: 80,
+              child: pw.Image(qrImage),
+            ),
+            pw.SizedBox(height: 5),
+            pw.Text("download the app now", style: const pw.TextStyle(fontSize: 9)),
+            pw.SizedBox(height: 15),
+          ],
+        ),
+      );
+    } catch (e) {
+      // If asset missing, don't crash receipt generation
+      return pw.SizedBox.shrink();
+    }
   }
 }
