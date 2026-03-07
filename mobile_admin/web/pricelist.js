@@ -94,12 +94,127 @@ function renderPriceList(services, container) {
                 <div class="tc-section">
                     <details>
                         <summary>Terms and condition</summary>
-                        <div class="tc-content">
-• Standard home cleaning covers sweeping, mopping, dusting, and general tidying.
-• Post construction cleaning covers removal of debris, paint spots, and deep washing.
-• Please ensure any fragile or highly valuable items are properly secured before our arrival.
-• Cancellations or rescheduling must be done at least 24 hours in advance.
-• Additional charges may apply for spaces significantly larger than average.
+                        <div class="tc-content" style="text-align: left;">
+Home & Office Cleaning – Terms & Conditions
+
+By accessing and booking Home & Office Cleaning services through this platform, you agree to the following Terms & Conditions.
+
+⸻
+
+ 1. Service Booking & Confirmation
+All cleaning services must be booked at least 24 hours in advance.
+A booking is considered confirmed only after acknowledgment and scheduling confirmation within the platform.
+Services may be rescheduled where necessary due to operational, safety, or unforeseen circumstances.
+
+⸻
+
+ 2. Scope of Services
+Cleaning services may include, but are not limited to:
+• Home deep cleaning
+• Office cleaning
+• Post-construction cleaning
+• Move-in / Move-out cleaning
+• Specialized surface treatment
+
+Any services outside the agreed scope must be approved in advance and may attract additional charges.
+
+⸻
+
+ 3. Pricing & Inspection
+Service pricing is determined based on:
+• Property size
+• Level of dirt or staining
+• Type of cleaning required
+• Special treatments or additional requests
+
+Certain jobs may require a mandatory inspection before final pricing is confirmed.
+Where inspection is required, an inspection fee may apply. This fee will be communicated before scheduling and must be paid prior to inspection.
+Final pricing will be confirmed after inspection where applicable.
+
+⸻
+
+ 4. Payment Terms
+Unless otherwise agreed:
+• Full payment is required upon completion of service.
+• For large-scale or corporate jobs, a deposit (up to 70%) may be required before commencement.
+• Outstanding balances must be cleared immediately after service completion.
+
+Future service requests may be restricted in cases of unpaid balances.
+
+⸻
+
+ 5. Cancellation Policy
+To ensure fairness and operational efficiency:
+• Cancellation more than 48 hours before service date: No cancellation fee.
+• Cancellation between 24–48 hours before service date: 25% of total service cost.
+• Cancellation less than 24 hours before service date: 50% of total service cost.
+• Cancellation after arrival of cleaning team or after service has commenced: 70% of total service cost.
+
+Cancellation fees cover manpower allocation, logistics, and reserved scheduling time.
+All cancellations must be made through official communication channels within the platform.
+
+⸻
+
+ 6. Refund Policy
+Due to the nature of cleaning services:
+• Refunds are not automatically granted once service has commenced.
+• Any dissatisfaction must be reported within 24 hours of service completion.
+• Verified service gaps may be rectified where applicable.
+
+Once a service has been completed and approved on-site, refunds will not be issued.
+
+⸻
+
+ 7. Client Responsibilities
+Clients are responsible for providing:
+• Access to water and electricity
+• Safe working conditions
+• Unrestricted access to service areas
+• Removal or secure storage of valuables prior to service
+
+The service provider shall not be held responsible for:
+• Delays caused by denied or restricted access
+• Loss or damage to items not disclosed or secured prior to service
+
+⸻
+
+ 8. Damages & Liability
+Any pre-existing damage must be disclosed before service begins.
+
+While all items are handled with care, liability does not extend to:
+• Pre-existing damage
+• Normal wear and tear
+• Poorly installed fixtures
+• Undisclosed fragile or defective items
+
+In the event of verified service-related damage, resolution will be handled at management’s discretion.
+
+⸻
+
+ 9. Health & Safety
+The property must be free from hazardous conditions.
+Aggressive or unsecured pets must be properly restrained during service.
+Service may be suspended if working conditions are deemed unsafe.
+
+⸻
+
+10. Staff Conduct
+Service personnel are trained professionals and are not permitted to:
+• Perform personal errands
+• Accept tasks outside the agreed service scope
+• Negotiate pricing directly
+
+All service adjustments must be handled through official platform channels.
+
+⸻
+
+11. Amendments
+Policies and procedures may be updated where necessary. The most current version will always be reflected within the platform.
+
+⸻
+
+12. Acceptance of Terms
+By proceeding with a booking, you confirm that you have read, understood, and agreed to these Terms & Conditions.
                         </div>
                     </details>
                     <div class="tc-notice">
