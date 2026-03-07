@@ -7,7 +7,12 @@ const BRANCHES = {
 async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const pathParts = window.location.pathname.split('/').filter(p => p);
-    const pathBranch = pathParts[pathParts.length - 1];
+    let pathBranch = pathParts[pathParts.length - 1];
+
+    // If serving from a physical directory (e.g. /pricelist/abuja/index.html)
+    if (pathBranch === 'index.html') {
+        pathBranch = pathParts[pathParts.length - 2];
+    }
 
     // Check if the last path segment is 'pricelist' (meaning no branch was provided in path)
     let branchKey = urlParams.get('branch');
