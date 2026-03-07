@@ -28,7 +28,7 @@ mkdir -p public
 cp -R mobile_admin/build/web/* public/
 cp mobile_admin/build/web/.* public/ 2>/dev/null || :
 # Explicitly copy pricelist files from source web dir to be safe
-cp mobile_admin/web/pricelist.html public/
+cp mobile_admin/web/pricelist-app.html public/
 cp mobile_admin/web/pricelist.js public/
 
 echo "==== Build Complete ===="

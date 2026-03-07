@@ -60,7 +60,7 @@ class AdminServicePricingScreen extends StatelessWidget {
   void _showQRDialog(BuildContext context, Branch branch) {
     // Unified slug logic
     final String branchSlug = branch.name.trim().split(' ').first.toLowerCase();
-    final String url = "https://clotheline-admin.vercel.app/pricelist/$branchSlug";
+    final String url = "https://clotheline-backend.vercel.app/pricelist/$branchSlug";
 
     showDialog(
       context: context,

@@ -5,10 +5,10 @@
     "rewrites": [
         {
             "source": "/pricelist/:branch",
-            "destination": "/pricelist.html?branch=:branch"
+            "destination": "/pricelist-app.html?branch=:branch"
         },
         {
-            "source": "/((?!api/|pricelist\\.html|pricelist\\.js).*)",
+            "source": "/((?!api/|pricelist-app\\.html|pricelist\\.js).*)",
             "destination": "/index.html"
         }
     ]

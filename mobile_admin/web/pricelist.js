@@ -1,4 +1,4 @@
-const API_BASE = 'https://clotheline-backend.vercel.app/api'; // Primary API
+const API_BASE = 'https://clotheline-api.onrender.com/api'; // Primary API (Render)
 const BRANCHES = {
     'benin': '67ca9f977fc24b898be25330', // I'll need to confirm these IDs from the DB if possible, or fetch by name
     'abuja': '67ca9f977fc24b898be25331'
