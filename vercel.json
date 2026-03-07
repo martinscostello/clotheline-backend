@@ -3,8 +3,8 @@
     "outputDirectory": "public",
     "rewrites": [
         {
-            "source": "/pricelist/:branch",
-            "destination": "/pricelist-app.html?branch=:branch"
+            "source": "/pricelist/(.*)",
+            "destination": "/pricelist-app.html?branch=$1"
         },
         {
             "source": "/((?!api/|pricelist|pricelist-app\\.html|pricelist\\.js).*)",
