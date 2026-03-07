@@ -93,6 +93,9 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             // [NEW] Special Care
             laundryNotes,
 
+            // [NEW] Partial Payment
+            amountPaid: manualAmountPaid,
+
             // [NEW] Idempotency
             originPaymentReference
         } = orderData;
@@ -141,6 +144,15 @@ exports.createOrderInternal = async (orderData, userId = null) => {
             ? ((typeof userId === 'string') ? new mongoose.Types.ObjectId(userId) : userId)
             : null;
 
+        // [NEW] Partial Payment Calculation
+        const amountPaid = Number(manualAmountPaid) || 0;
+        const balance = Math.max(0, finalTotal - amountPaid);
+        let paymentStatus = manualPaymentStatus || (isWalkIn ? 'Paid' : 'Pending');
+
+        if (isWalkIn && amountPaid > 0 && balance > 0) {
+            paymentStatus = 'Part Payment';
+        }
+
         const newOrder = new Order({
             user: userObjectId,
             branchId,
@@ -158,7 +170,9 @@ exports.createOrderInternal = async (orderData, userId = null) => {
 
             // Status
             status: 'New',
-            paymentStatus: manualPaymentStatus || (isWalkIn ? 'Paid' : 'Pending'),
+            paymentStatus: paymentStatus,
+            amountPaid: amountPaid,
+            balance: balance,
 
             // [NEW] POS Logic
             isWalkIn: isWalkIn || false,
@@ -984,12 +998,29 @@ exports.convertOrderToDeployment = async (req, res) => {
 
 exports.markOrderAsPaid = async (req, res) => {
     try {
-        const { method, reference } = req.body;
+        const { method, reference, amount } = req.body;
         let order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ msg: 'Order not found' });
 
-        order.paymentStatus = 'Paid';
-        order.paymentMethod = method || 'other';
+        const paymentAmount = Number(amount) || 0;
+
+        if (paymentAmount > 0) {
+            order.amountPaid = (order.amountPaid || 0) + paymentAmount;
+            order.balance = Math.max(0, order.totalAmount - order.amountPaid);
+
+            if (order.balance === 0) {
+                order.paymentStatus = 'Paid';
+            } else {
+                order.paymentStatus = 'Part Payment';
+            }
+        } else {
+            // Legacy behavior if no amount sent: assume full payment
+            order.paymentStatus = 'Paid';
+            order.amountPaid = order.totalAmount;
+            order.balance = 0;
+        }
+
+        order.paymentMethod = method || order.paymentMethod || 'other';
         if (reference) order.paymentReference = reference;
 
         // If it was pending adjustment, clear it
@@ -1003,7 +1034,9 @@ exports.markOrderAsPaid = async (req, res) => {
         if (order.user) {
             const shortId = order._id.toString().slice(-6).toUpperCase();
             const title = "Payment Confirmed";
-            const message = `Your payment for order #${shortId} has been manually confirmed.`;
+            const message = paymentAmount > 0
+                ? `Partial payment of ₦${paymentAmount.toLocaleString()} confirmed for order #${shortId}. Remaining balance: ₦${order.balance.toLocaleString()}.`
+                : `Your payment for order #${shortId} has been manually confirmed.`;
 
             await new Notification({
                 userId: order.user,
@@ -1017,7 +1050,7 @@ exports.markOrderAsPaid = async (req, res) => {
             _sendPushAsync(order.user, title, message, order._id);
         }
 
-        res.json({ msg: 'Order marked as paid', order });
+        res.json({ msg: paymentAmount > 0 ? 'Payment recorded' : 'Order marked as paid', order });
     } catch (err) {
         console.error("Mark as Paid Error:", err);
         res.status(500).send('Server Error');
@@ -1048,6 +1081,29 @@ exports.deleteOrder = async (req, res) => {
         res.json({ msg: 'Order and associated financial records deleted successfully' });
     } catch (err) {
         console.error("Delete Order Error:", err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// @route   POST /api/orders/batch-delete
+// @desc    Delete multiple orders (Master Admin Only)
+// @access  Private (Admin)
+exports.batchDeleteOrders = async (req, res) => {
+    try {
+        const { orderIds } = req.body;
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ msg: 'No order IDs provided' });
+        }
+
+        // Only Master Admin can delete orders
+        if (!req.adminUser.isMasterAdmin) {
+            return res.status(403).json({ msg: 'Access Denied: Only Master Admin can batch delete orders' });
+        }
+
+        await Order.deleteMany({ _id: { $in: orderIds } });
+        res.json({ msg: `${orderIds.length} orders deleted successfully` });
+    } catch (err) {
+        console.error("Batch Delete Orders Error:", err);
         res.status(500).send('Server Error');
     }
 };

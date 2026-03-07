@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { getAllServices, createService, updateService, deleteService, reorderServices } = require('../controllers/serviceController');
+const { getAllServices, createService, updateService, deleteService, reorderServices, getPricelist } = require('../controllers/serviceController');
 
 // Public route to get services
 router.get('/', getAllServices);
+router.get('/pricelist/:branchId', getPricelist);
 
 // Admin routes
 router.post('/', createService);

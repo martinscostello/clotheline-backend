@@ -1,5 +1,5 @@
 enum OrderStatus { New, InProgress, Ready, Completed, Cancelled, Refunded, PendingUserConfirmation, Inspecting }
-enum PaymentStatus { Pending, Paid, Refunded }
+enum PaymentStatus { Pending, Paid, Refunded, PartPayment }
 enum OrderExceptionStatus { None, Stain, Damage, Delay, MissingItem, Other }
 enum QuoteStatus { None, Pending, Approved, Rejected }
 
@@ -10,6 +10,8 @@ class OrderModel {
   final OrderStatus status;
   final PaymentStatus paymentStatus;
   final String? paymentMethod; // [NEW] cash, pos, transfer, pay_on_delivery, paystack
+  final double amountPaid; // [NEW] Partial Payment
+  final double balance; // [NEW] Partial Payment
   final OrderExceptionStatus exceptionStatus; // [NEW]
   final String? exceptionNote; // [NEW]
   final String fulfillmentMode; // [NEW] logistics | deployment | bulky
@@ -98,6 +100,8 @@ class OrderModel {
     this.fulfillmentMode = 'logistics',
     this.quoteStatus = QuoteStatus.None,
     this.inspectionFee = 0.0,
+    this.amountPaid = 0.0,
+    this.balance = 0.0,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -111,6 +115,8 @@ class OrderModel {
       status: OrderStatus.values.firstWhere((e) => e.name == json['status'], orElse: () => OrderStatus.New),
       paymentStatus: PaymentStatus.values.firstWhere((e) => e.name == json['paymentStatus'], orElse: () => PaymentStatus.Pending),
       paymentMethod: json['paymentMethod'],
+      amountPaid: (json['amountPaid'] as num?)?.toDouble() ?? 0.0,
+      balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
       exceptionStatus: OrderExceptionStatus.values.firstWhere((e) => e.name == (json['exceptionStatus'] ?? 'None'), orElse: () => OrderExceptionStatus.None),
       exceptionNote: json['exceptionNote'],
       pickupOption: json['pickupOption'],

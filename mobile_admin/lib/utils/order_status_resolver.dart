@@ -90,4 +90,21 @@ class OrderStatusResolver {
       case OrderStatus.Inspecting: return Colors.indigoAccent;
     }
   }
+
+  static String getPaymentStatusDisplay(OrderModel order) {
+    if (order.paymentStatus == PaymentStatus.PartPayment) {
+      return "PART PAID";
+    }
+    return order.paymentStatus.name.toUpperCase();
+  }
+
+  static Color getPaymentStatusColor(OrderModel order) {
+    if (order.paymentStatus == PaymentStatus.PartPayment) {
+      return Colors.orange;
+    }
+    if (order.paymentStatus == PaymentStatus.Paid) {
+      return Colors.green;
+    }
+    return Colors.grey;
+  }
 }

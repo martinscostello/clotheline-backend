@@ -479,6 +479,85 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
     }
   }
 
+  Future<void> _showRecordPaymentDialog() async {
+    final amountCtrl = TextEditingController(text: _order!.balance.toStringAsFixed(0));
+    String method = "cash";
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF202020),
+          title: const Text("Record Payment", style: TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Outstanding Balance: ${CurrencyFormatter.format(_order!.balance)}", style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: amountCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: "Amount to Record",
+                  labelStyle: TextStyle(color: Colors.white54),
+                  prefixText: "₦ ",
+                  prefixStyle: TextStyle(color: Colors.white54),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text("Payment Method", style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                children: ["cash", "transfer", "pos"].map((m) {
+                  bool selected = method == m;
+                  return ChoiceChip(
+                    label: Text(m.toUpperCase()),
+                    selected: selected,
+                    onSelected: (val) => setDialogState(() => method = m),
+                    backgroundColor: Colors.white10,
+                    selectedColor: AppTheme.secondaryColor.withOpacity(0.3),
+                    labelStyle: TextStyle(color: selected ? AppTheme.secondaryColor : Colors.white60),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(child: const Text("CANCEL"), onPressed: () => Navigator.pop(ctx)),
+            TextButton(
+              child: const Text("RECORD", style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+              onPressed: () async {
+                final double? amt = double.tryParse(amountCtrl.text);
+                if (amt == null || amt <= 0) {
+                  ToastUtils.show(context, "Invalid Amount", type: ToastType.error);
+                  return;
+                }
+                Navigator.pop(ctx);
+                setState(() => _isUpdating = true);
+                try {
+                  final success = await Provider.of<OrderService>(context, listen: false).markAsPaid(_order!.id, method, amount: amt);
+                  if (success) {
+                    await _fetchOrder();
+                    if (mounted) ToastUtils.show(context, "Payment Recorded", type: ToastType.success);
+                  } else {
+                    if (mounted) ToastUtils.show(context, "Failed to record payment", type: ToastType.error);
+                  }
+                } catch (e) {
+                  if (mounted) ToastUtils.show(context, "Error: $e", type: ToastType.error);
+                } finally {
+                  if (mounted) setState(() => _isUpdating = false);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildInspectionActions() {
     final bool showAdjust = _order!.status == OrderStatus.Inspecting || 
                            _order!.status == OrderStatus.New || 
@@ -852,22 +931,22 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                           const Text("Payment Status", style: TextStyle(color: Colors.white70, fontSize: 14)),
                           Row(
                             children: [
-                              Text(_order!.paymentStatus.name.toUpperCase(), 
+                              Text(_order!.paymentStatus == PaymentStatus.PartPayment ? "PART PAYMENT" : _order!.paymentStatus.name.toUpperCase(), 
                                 style: TextStyle(
-                                  color: _order!.paymentStatus == PaymentStatus.Paid ? Colors.green : Colors.orange, 
+                                  color: _order!.paymentStatus == PaymentStatus.Paid ? Colors.green : (_order!.paymentStatus == PaymentStatus.PartPayment ? Colors.orangeAccent : Colors.orange), 
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14
                                 )
                               ),
-                              if (_order!.paymentStatus == PaymentStatus.Pending)
+                              if (_order!.paymentStatus != PaymentStatus.Paid)
                                 Padding(
                                   padding: const EdgeInsets.only(left: 8),
                                   child: IconButton(
-                                    icon: const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                                    icon: const Icon(Icons.payments_outlined, color: Colors.green, size: 20),
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
-                                    onPressed: _markAsPaid,
-                                    tooltip: "Mark as Paid",
+                                    onPressed: _showRecordPaymentDialog,
+                                    tooltip: "Record Payment",
                                   ),
                                 ),
                             ],
@@ -901,6 +980,11 @@ class _AdminOrderDetailBodyState extends State<AdminOrderDetailBody> {
                           ),
                         ],
                       ),
+                      if (_order!.amountPaid > 0) ...[
+                        const SizedBox(height: 10),
+                        _buildSummaryRow("Amount Paid", _order!.amountPaid, color: Colors.green),
+                        _buildSummaryRow("Balance Remaining", _order!.balance, isBold: true, color: Colors.orangeAccent),
+                      ],
                       if (_order!.fulfillmentMode == 'deployment' && _order!.inspectionFee > 0) ...[
                         const Divider(color: Colors.white10, height: 30),
                         const Center(

@@ -24,6 +24,7 @@ class AdminPOSProvider extends ChangeNotifier {
   String? deliveryAddress;
   String? laundryNotes;
   double discountPercentage = 0.0; // [NEW] POS Discount Percentage
+  double amountPaid = 0.0; // [NEW] Partial Payment
   
   bool isSaving = false;
   
@@ -163,6 +164,7 @@ class AdminPOSProvider extends ChangeNotifier {
   
   double get taxAmount => _taxEnabled ? (subtotal * (_taxRate / 100)) : 0.0;
   double get totalAmount => subtotal + deliveryFee + taxAmount;
+  double get balance => totalAmount - amountPaid;
 
   void reset() {
     guestName = null;
@@ -172,10 +174,10 @@ class AdminPOSProvider extends ChangeNotifier {
     laundryItems.clear();
     storeItems.clear();
     paymentMethod = 'cash';
-    deliveryFee = 0;
     deliveryAddress = null;
     laundryNotes = null;
     discountPercentage = 0.0;
+    amountPaid = 0.0;
     isSaving = false;
     notifyListeners();
   }
@@ -227,8 +229,10 @@ class AdminPOSProvider extends ChangeNotifier {
         'discountAmount': discountAmount,
         'taxRate': _taxEnabled ? _taxRate : 0, 
         'totalAmount': totalAmount,
+        'amountPaid': amountPaid,
+        'balance': balance,
         'paymentMethod': paymentMethod,
-        'paymentStatus': paymentMethod == 'pay_on_delivery' ? 'Pending' : 'Paid',
+        'paymentStatus': paymentMethod == 'pay_on_delivery' ? 'Pending' : (balance > 0 ? 'Part Payment' : 'Paid'),
         'pickupOption': pickupOption,
         'deliveryOption': deliveryOption,
         'deliveryAddress': deliveryAddress,

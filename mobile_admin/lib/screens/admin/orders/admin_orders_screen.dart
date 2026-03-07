@@ -1,17 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:clotheline_core/clotheline_core.dart';
-import '../../../../widgets/glass/GlassContainer.dart';
-import '../../../../widgets/glass/LiquidBackground.dart';
-import 'package:provider/provider.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import 'package:intl/intl.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart';
-import 'package:clotheline_core/clotheline_core.dart'; // Ensure utils imported
 import 'admin_order_detail_screen.dart';
-import 'package:clotheline_core/clotheline_core.dart';
 import '../../../../utils/order_status_resolver.dart';
 
 class AdminOrdersScreen extends StatefulWidget {
@@ -120,6 +111,47 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
     }
   }
 
+  Future<void> _batchDelete() async {
+    if (_selectedIds.isEmpty) return;
+
+    final auth = Provider.of<AuthService>(context, listen: false);
+    if (auth.currentUser?['isMasterAdmin'] != true) {
+      ToastUtils.show(context, "Only Master Admin can delete orders", type: ToastType.error);
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text("Delete Orders?", style: TextStyle(color: Colors.white)),
+        content: Text("Are you sure you want to permanently delete ${_selectedIds.length} orders? This cannot be undone.", style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("DELETE", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final service = Provider.of<OrderService>(context, listen: false);
+    final success = await service.batchDeleteOrders(_selectedIds.toList());
+
+    if (success) {
+      if (mounted) {
+        ToastUtils.show(context, "Deleted ${_selectedIds.length} orders", type: ToastType.success);
+        _clearSelection();
+      }
+    } else {
+      if (mounted) ToastUtils.show(context, "Batch Delete Failed", type: ToastType.error);
+    }
+  }
+
   void _showBatchMenu() {
     showModalBottomSheet(
       context: context,
@@ -153,6 +185,18 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
                     _clearSelection();
                  },
                ),
+               Builder(builder: (context) {
+                 final auth = Provider.of<AuthService>(context, listen: false);
+                 if (auth.currentUser?['isMasterAdmin'] != true) return const SizedBox.shrink();
+                 return ListTile(
+                   leading: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                   title: const Text("Delete Selected (Forever)", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                   onTap: () {
+                     Navigator.pop(ctx);
+                     _batchDelete();
+                   },
+                 );
+               }),
                const SizedBox(height: 20),
             ],
           ),
@@ -424,7 +468,32 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.5))
       ),
-      child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withValues(alpha: 0.5))
+            ),
+            child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          if (order.paymentStatus == PaymentStatus.PartPayment) ...[
+             const SizedBox(width: 6),
+             Container(
+               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+               decoration: BoxDecoration(
+                 color: Colors.orange.withValues(alpha: 0.2),
+                 borderRadius: BorderRadius.circular(8),
+                 border: Border.all(color: Colors.orange.withValues(alpha: 0.5))
+               ),
+               child: const Text("PART PAID", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+             ),
+          ],
+        ],
+      ),
     );
   }
 

@@ -256,6 +256,49 @@ exports.updateService = async (req, res) => {
     }
 };
 
+exports.getPricelist = async (req, res) => {
+    try {
+        const { branchId } = req.params;
+        if (!branchId) return res.status(400).json({ msg: 'Branch ID is required' });
+
+        const services = await Service.find({ isActive: true }).sort({ order: 1 });
+        const processedServices = [];
+
+        for (let s of services) {
+            let config = s.branchConfig.find(b => b.branchId.toString() === branchId);
+
+            // If no branch config, use global but skip if global is not active
+            if (!config) {
+                if (!s.isActive) continue;
+                processedServices.push({
+                    name: s.name,
+                    description: s.description,
+                    items: s.items.filter(i => i.price > 0),
+                    image: s.image,
+                    lastUpdated: s.updatedAt
+                });
+                continue;
+            }
+
+            if (!config.isActive) continue;
+
+            processedServices.push({
+                name: config.customName || s.name,
+                description: config.customDescription || s.description,
+                items: config.items.filter(i => i.isActive !== false && i.price > 0),
+                image: config.customImage || s.image,
+                lastUpdated: config.lastUpdated || s.updatedAt
+            });
+        }
+
+        res.json(processedServices);
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
 exports.deleteService = async (req, res) => {
     try {
         let service = await Service.findById(req.params.id);

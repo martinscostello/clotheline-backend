@@ -221,10 +221,11 @@ class OrderService extends ChangeNotifier {
   }
 
   // [NEW] Mark as Paid (Admin)
-  Future<bool> markAsPaid(String id, String method, {String? reference}) async {
+  Future<bool> markAsPaid(String id, String method, {double? amount, String? reference}) async {
     try {
       final response = await _apiService.client.put('/orders/$id/mark-as-paid', data: {
         'method': method,
+        'amount': amount,
         'reference': reference
       });
       if (response.statusCode == 200) {
@@ -250,6 +251,24 @@ class OrderService extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint("Error deleting order: $e");
+      return false;
+    }
+  }
+
+  // [NEW] Batch Delete Orders (Master Admin Only)
+  Future<bool> batchDeleteOrders(List<String> ids) async {
+    try {
+      final response = await _apiService.client.post('/orders/batch-delete', data: {
+        'orderIds': ids
+      });
+      if (response.statusCode == 200) {
+        _orders.removeWhere((o) => ids.contains(o.id));
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint("Error batch deleting orders: $e");
       return false;
     }
   }

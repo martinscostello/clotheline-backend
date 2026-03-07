@@ -3,6 +3,10 @@
     "outputDirectory": "mobile_admin/build/web",
     "rewrites": [
         {
+            "source": "/pricelist/(.*)",
+            "destination": "/pricelist.html?branch=$1"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

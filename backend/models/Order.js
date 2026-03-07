@@ -49,13 +49,21 @@ const OrderSchema = new mongoose.Schema({
     taxAmount: { type: Number, default: 0 }, // Calculated tax
     totalAmount: { type: Number, required: true }, // subtotal - discount + taxAmount
 
+    // Partial Payment Support
+    amountPaid: { type: Number, default: 0 },
+    balance: { type: Number, default: 0 },
+
     status: {
         type: String,
         enum: ['New', 'InProgress', 'Ready', 'Completed', 'Cancelled', 'Refunded', 'PendingUserConfirmation', 'Inspecting'],
         default: 'New'
     },
 
-    paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Refunded'], default: 'Pending' },
+    paymentStatus: {
+        type: String,
+        enum: ['Pending', 'Paid', 'Refunded', 'Part Payment'],
+        default: 'Pending'
+    },
 
     // Exception Handling
     exceptionStatus: {
