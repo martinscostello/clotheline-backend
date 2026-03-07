@@ -1,13 +1,14 @@
 {
     "buildCommand": "./build_vercel.sh",
     "outputDirectory": "public",
+    "cleanUrls": true,
     "rewrites": [
         {
-            "source": "/pricelist/(.*)",
-            "destination": "/pricelist.html?branch=$1"
+            "source": "/pricelist/:branch",
+            "destination": "/pricelist.html?branch=:branch"
         },
         {
-            "source": "/(.*)",
+            "source": "/((?!api/|pricelist\\.html|pricelist\\.js).*)",
             "destination": "/index.html"
         }
     ]
