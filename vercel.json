@@ -8,7 +8,7 @@
             "destination": "/pricelist-app.html?branch=:branch"
         },
         {
-            "source": "/((?!api/|pricelist-app\\.html|pricelist\\.js).*)",
+            "source": "/((?!api/|pricelist|pricelist-app\\.html|pricelist\\.js).*)",
             "destination": "/index.html"
         }
     ]
