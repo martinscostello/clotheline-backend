@@ -489,8 +489,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> with SingleTicker
              ),
           ],
         ],
-      ),
-    );
+      );
   }
 
   String _formatCurrency(double amount) {
