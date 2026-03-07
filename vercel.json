@@ -4,7 +4,7 @@
     "rewrites": [
         {
             "source": "/pricelist/(.*)",
-            "destination": "/pricelist-app.html?branch=$1"
+            "destination": "/pricelist-app.html"
         },
         {
             "source": "/((?!api/|pricelist|pricelist-app\\.html|pricelist\\.js).*)",

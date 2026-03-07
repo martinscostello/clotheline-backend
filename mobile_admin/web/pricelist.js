@@ -6,7 +6,15 @@ const BRANCHES = {
 
 async function init() {
     const urlParams = new URLSearchParams(window.location.search);
-    const branchKey = urlParams.get('branch') || 'benin';
+    const pathParts = window.location.pathname.split('/').filter(p => p);
+    const pathBranch = pathParts[pathParts.length - 1];
+
+    // Check if the last path segment is 'pricelist' (meaning no branch was provided in path)
+    let branchKey = urlParams.get('branch');
+    if (!branchKey && pathBranch && pathBranch !== 'pricelist' && pathBranch !== 'pricelist-app.html') {
+        branchKey = pathBranch;
+    }
+    branchKey = branchKey || 'benin';
 
     // Set branch name in UI
     const branchNameEl = document.getElementById('branch-name');
