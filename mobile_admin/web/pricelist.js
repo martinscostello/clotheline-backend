@@ -19,7 +19,10 @@ async function init() {
         // For now, I'll attempt to fetch all branches to find the one matching the name
         const branchesResp = await fetch(`${API_BASE}/branches`);
         const branches = await branchesResp.json();
-        const branch = branches.find(b => b.name.toLowerCase() === branchKey.toLowerCase());
+        const branch = branches.find(b =>
+            b.name.toLowerCase().includes(branchKey.toLowerCase()) ||
+            branchKey.toLowerCase().includes(b.name.toLowerCase().trim().split(' ')[0])
+        );
 
         if (!branch) {
             throw new Error(`Branch ${branchKey} not found`);
